@@ -1,0 +1,8 @@
+#! /bin/sh
+
+PYTHON="C:/Python25/wpython.exe"
+PYTHONPATH="C:/Python25/site-packages/"
+SCRIPT="/prod/exe/dispatcher/v0.1/bin/dispatch_launcher.py"
+
+exec $PYTHON $SCRIPT
+

@@ -1,0 +1,9 @@
+PYTHON="/prod/exe/python/linux/dispatcher/runpy"
+PYTHONPATH="/prod/exe/dispatcher/v0.1/lib/python2.5/site-packages/"
+SCRIPT="/prod/exe/dispatcher/v0.1/bin/worker_launcher.py"
+PULI_LOG_DIR=/prod/report/puli
+
+export PULI_LOG_DIR
+
+$PYTHON $SCRIPT
+

@@ -1,0 +1,122 @@
+body {
+	background-color: #EEEEEE;
+	font-family: arial;
+	font-size: 10px;
+	margin: 20px;
+}
+
+.largeTable {
+	width: 100%;
+	font-size: 10px;
+}
+
+.zone {
+	background-color: #AAAAAA;
+	position: relative;
+}
+
+.headers {
+	background-color: #CCCCCC;
+	text-align: center;
+	font-size: 12;
+	font-weight: bold;
+}
+
+.zone th {
+	background-color: #EEEEEE;
+	font-size: 14px;
+	height: 25px;
+}
+
+.poolName {
+	background-color: #F0F0F0;
+	font-size: 12px;
+	font-style: italic;
+	font-weight: bold;
+	padding-left: 15px;
+	width: 5%;
+}
+
+.item {
+	background-color: #CCCCCC;
+	padding-left: 15px;
+	padding: 1px;
+}
+
+.item td {
+	padding-left: 15px;
+}
+
+.todo {
+	background-color: #EEEEEE;
+	font-size: 1px;
+	height: 10px;
+}
+
+.done {
+	background-color: #66FF66;
+	font-size: 1px;
+	height: 10px;
+}
+
+.progress {
+	padding: 0px : 
+ margin : 0px;
+	text-align: center;
+	font-size: 10px;
+}
+
+.progressT {
+	padding: 0px : 
+ margin : 0px;
+	width: 100%;
+	font-size: 10px;
+	text-align: center;
+	height: 10px;
+}
+
+.aliasName {
+	font-size: 12px;
+}
+
+.tinyCol {
+	width: 5%;
+	text-align: center;
+	padding: 0px : 
+	 margin : 0px;
+}
+
+.commandsTableGreen {
+	background-color: #66FF66;
+	text-align: center;
+	border: 1px solid black;
+}
+
+.commandsTableYellow {
+	background-color: #FFFF66;
+	text-align: center;
+	border: 1px solid black;
+}
+
+.commandsTable {
+	text-align: center;
+	border: 1px solid black;
+}
+
+.control {
+border:1px solid black;
+font-size:14px;
+min-width:50px;
+padding:3px;
+background-color:#ddd;
+font-weight: bold;
+cursor:pointer ;
+}
+
+.stop {
+background-color:#000000;
+margin:5px;
+padding-left:2px;
+padding-right:4px;
+font-size:10px;
+}

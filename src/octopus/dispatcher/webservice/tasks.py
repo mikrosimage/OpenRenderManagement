@@ -102,6 +102,7 @@ class TaskEnvResource(TaskResource):
         message = "Environment of task %d has successfully been updated." % taskId
         self.writeCallback(message)
 
+
 class TaskArgumentResource(TaskResource):
     @queue
     def post(self, taskId):
@@ -128,6 +129,7 @@ class TaskArgumentResource(TaskResource):
         task.arguments.update(arguments)
         message = "Arguments of task %d have successfully been updated." % taskId
         self.writeCallback(message)
+    
     
 class TaskCommandResource(TaskResource):
     @queue
@@ -160,6 +162,7 @@ class TaskCommandResource(TaskResource):
         while root.parent:
             root = root.parent
         return [c.to_json() for c in commands], root.id
+
 
 class TaskTreeResource(TaskResource):
     @queue

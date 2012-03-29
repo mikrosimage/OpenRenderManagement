@@ -847,6 +847,7 @@ class PuliDB(object):
             # set the task on the appropriate commands
             for cmd in taskCmds:
                 cmd.task = realTask
+                #cmd.computeAvgTimeByFrame()
                 # update the command in the dispatch tree
                 tree.commands[cmd.id] = cmd
 
@@ -953,6 +954,10 @@ class PuliDB(object):
                 nodesById[int(id)].taskGroup = tree.tasks[tgId]
                 tree.tasks[tgId].nodes[realRulesForFolderNodes[int(id)]] = nodesById[int(id)]
             tree.nodes[int(id)] = nodesById[int(id)]
+
+        # calculate the average time by frame
+        for cmd in tree.commands.values():
+            cmd.computeAvgTimeByFrame()
 
         ### calculate the correct max ids for all elements, get them from db in case of archived elements that would not appear in the dispatchtree
         tree.nodeMaxId = int(max([FolderNodes.select().max(FolderNodes.q.id), TaskNodes.select().max(TaskNodes.q.id)]))

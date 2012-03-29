@@ -28,6 +28,8 @@ class Command(models.Model):
     startTime = models.FloatField(allow_null=True)
     updateTime = models.FloatField(allow_null=True)
     endTime = models.FloatField(allow_null=True)
+    nbFrames = models.IntegerField(allow_null=True)
+    avgTimeByFrame = models.FloatField(allow_null=True)
 
     def __init__(self, id, description, task, arguments, status=CMD_READY, completion=None, renderNode=None, creationTime=None, startTime=None, updateTime=None, endTime=None, message=""):
         from octopus.dispatcher.model import Task
@@ -63,6 +65,8 @@ class Command(models.Model):
             self.startTime = startTime
             self.endTime = endTime
         self.message = str(message)
+        # compute the average time by frame
+        self.computeAvgTimeByFrame()
 
 
     def __repr__(self):
@@ -108,6 +112,27 @@ class Command(models.Model):
         self.completion = 0.0
         self.message = ""
 
+    def computeAvgTimeByFrame(self):
+        # compute the nbFrames
+        self.nbFrames = 0
+        self.avgTimeByFrame = 0.0
+        descTab = self.description.split('_')
+        try:
+            self.nbFrames = int(descTab[-1]) - int(descTab[-2]) + 1
+        except ValueError:
+            pass
+        except IndexError:
+            pass
+        # compute the average time by frame
+        if self.nbFrames != 0 and self.startTime is not None and self.endTime is not None:
+            totalTime = self.endTime - self.startTime
+            self.avgTimeByFrame = (1000 * totalTime) / self.nbFrames
+            if self.task:
+                for node in self.task.nodes.values():
+                    node.averageTimeByFrameList.append(self.avgTimeByFrame)
+                    node.averageTimeByFrame = sum(node.averageTimeByFrameList) / len(node.averageTimeByFrameList)
+        
+
     def finish(self):
         "Called on a finished command, it sets the endTime for this command and releases the resources on its associated render node"
         if not isFinalStatus(self.status):
@@ -148,6 +173,7 @@ class CommandDatesUpdater(object):
         cmd.updateTime = time.time()
         if isFinalStatus(cmd.status):
             cmd.endTime = cmd.updateTime
+            cmd.computeAvgTimeByFrame()
         else:
             cmd.endTime = None
         if cmd.status is CMD_ASSIGNED:

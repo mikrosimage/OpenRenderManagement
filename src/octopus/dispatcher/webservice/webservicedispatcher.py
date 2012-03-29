@@ -53,7 +53,6 @@ class WebServiceDispatcher(Application):
             
             (r'^/poolshares/?$', poolshares.PoolSharesResource, dict(framework=framework)),
             (r'^/poolshares/(\d+)/?$', poolshares.PoolShareResource, dict(framework=framework)),
-            (r'^/poolshares/(\d+)/?$', poolshares.PoolShareMaxrnResource, dict(framework=framework)),
 
             (r'^/pools/?$', pools.PoolsResource, dict(framework=framework)),
             (r'^/pools/([\w.-]+)/?$', pools.PoolResource, dict(framework=framework)),

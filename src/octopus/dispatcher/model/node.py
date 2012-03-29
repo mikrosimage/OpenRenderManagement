@@ -41,6 +41,7 @@ class BaseNode(models.Model):
     updateTime = models.FloatField(allow_null=True)
     endTime = models.FloatField(allow_null=True)
     dependencies = DependencyListField()
+    averageTimeByFrame = models.FloatField(allow_null=True)
 
     @property
     def tags(self):
@@ -83,6 +84,8 @@ class BaseNode(models.Model):
         self.lastDependenciesSatisfaction = False
         self.lastDependenciesSatisfactionDispatchCycle = -1
         self.readyCommandCount = 0
+        self.averageTimeByFrameList = []
+        self.averageTimeByFrame = 0.0
 
     def to_json(self):
         base = super(BaseNode, self).to_json()
@@ -341,11 +344,13 @@ class FolderNode(BaseNode):
 
     def setStatus(self, status):
         '''Propagates a target status update request.
-
         @see doc/design/node-status-update.txt
         '''
         for child in self.children:
             child.setStatus(status)
+        if len(self.children) == 0:
+            self.status = status
+            return True
 
 class TaskNode(BaseNode):
 

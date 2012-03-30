@@ -42,6 +42,8 @@ class BaseNode(models.Model):
     endTime = models.FloatField(allow_null=True)
     dependencies = DependencyListField()
     averageTimeByFrame = models.FloatField(allow_null=True)
+    minTimeByFrame = models.FloatField(allow_null=True)
+    maxTimeByFrame = models.FloatField(allow_null=True)
 
     @property
     def tags(self):
@@ -86,6 +88,8 @@ class BaseNode(models.Model):
         self.readyCommandCount = 0
         self.averageTimeByFrameList = []
         self.averageTimeByFrame = 0.0
+        self.minTimeByFrame = 0.0
+        self.maxTimeByFrame = 0.0
 
     def to_json(self):
         base = super(BaseNode, self).to_json()

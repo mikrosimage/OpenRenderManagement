@@ -131,6 +131,8 @@ class Command(models.Model):
                 for node in self.task.nodes.values():
                     node.averageTimeByFrameList.append(self.avgTimeByFrame)
                     node.averageTimeByFrame = sum(node.averageTimeByFrameList) / len(node.averageTimeByFrameList)
+                    node.minTimeByFrame = min(node.averageTimeByFrameList)
+                    node.maxTimeByFrame = max(node.averageTimeByFrameList)
         
 
     def finish(self):

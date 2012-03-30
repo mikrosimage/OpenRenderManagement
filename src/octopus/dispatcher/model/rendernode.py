@@ -187,7 +187,7 @@ class RenderNode(models.Model):
     #
     def updateStatus(self):
         if time.time() > (self.lastAliveTime + TIMEOUT):
-            # FIXME: maybe we should timeout the commands running on this node?
+            # timeout the commands running on this node
             if RN_UNKNOWN != self.status:
                 LOGGER.info("rendernode %s is not responding", self.name)
                 self.status = RN_UNKNOWN

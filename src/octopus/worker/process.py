@@ -4,9 +4,11 @@ Created on Sep 16, 2009
 @author: bud
 '''
 
+import logging
 import os
 import subprocess
 
+LOGGER = logging.getLogger("process")
 CLOSE_FDS = (os.name != 'nt')
 
 def spawnCommandWatcher(pidfile, logfile, args, env):
@@ -39,9 +41,11 @@ class CommandWatcherProcess(object):
             # PHASE 1
             try:
                 # do not kill the process, kill the whole process group!
+                LOGGER.warning("Trying to kill process group %s" % str(self.pid))
                 os.killpg(self.pid, SIGTERM)
                 return
             except OSError, e:
+                LOGGER.error("A problem occured")
                 # If the process is dead already, let it rest in peace.
                 # Else, we have a problem, so reraise.
                 if e.args[0] != ESRCH:

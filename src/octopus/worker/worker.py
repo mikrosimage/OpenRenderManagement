@@ -15,14 +15,14 @@ from octopus.worker.model.command import Command
 from octopus.worker.process import CommandWatcherProcess, spawnCommandWatcher
 from octopus.core.http import Request
 
-DEBUG = True
+#DEBUG = True
 LOGGER = logging.getLogger("worker")
 COMPUTER_NAME_TEMPLATE = "%s:%d"
 
-def getLocalAddress():
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.connect(('1.2.3.4', 12000))
-    return sock.getsockname()[0]
+#def getLocalAddress():
+#    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+#    sock.connect(('1.2.3.4', 12000))
+#    return sock.getsockname()[0]
 
 class Worker(MainLoopApplication):
 
@@ -46,7 +46,7 @@ class Worker(MainLoopApplication):
     def finishedCommandWatchers(self):
         return (watcher for watcher in self.commandWatchers.values() if watcher.finished and not watcher.modified)
 
-    PID_DIR = "/tmp"
+    #PID_DIR = "/tmp"
 
     def __init__(self, framework):
         LOGGER.info("Starting worker on %s:%d.",
@@ -66,7 +66,7 @@ class Worker(MainLoopApplication):
         self.lastSysInfosMessageTime = 0
         self.sysInfosMessagePeriod = 6
         self.httpconn = httplib.HTTPConnection(settings.DISPATCHER_ADDRESS, settings.DISPATCHER_PORT)
-        #self.PID_DIR = settings.PID_DIR
+        self.PID_DIR = os.path.dirname(settings.PIDFILE)
         if not os.path.exists(self.PID_DIR):
             LOGGER.warning("Worker pid directory does not exist.")
             try:
@@ -85,38 +85,42 @@ class Worker(MainLoopApplication):
         #self.killfile = False
         self.updateSys = False
         self.isPaused = False
+        self.speed = 1.0
+        self.cpuName = ""
+        self.distrib = ""
+        self.mikdistrib = ""
         
 
     def prepare(self):
         for name in (name for name in dir(settings) if name.isupper()):
             LOGGER.info("settings.%s = %r", name, getattr(settings, name))
-        self.reloadCommandWatchers()
+#        self.reloadCommandWatchers()
         self.registerWorker()
 
 
-    def reloadCommandWatchers(self):
-        import glob
-        import re
-        pathname = os.path.join(self.PID_DIR, "cw*.pid")
-        for pidfile in glob.glob(pathname):
-            basepidfile = os.path.basename(pidfile)
-            print "pidfile", pidfile
-            match = re.match(r"cw(\d+).pid", basepidfile)
-            if match is None:
-                continue
-            commandId = int(match.groups()[0])
-            commandWatcherPID = int(file(pidfile, "r").read())
-            print "found PID for command %d: %d" % (commandId, commandWatcherPID)
-            command = Command(commandId, None, {}, "")
-            cw = self.CommandWatcher()
-            cw.commandId = commandId
-            cw.processObj = CommandWatcherProcess(pidfile, commandWatcherPID)
-            cw.startTime = os.path.getmtime(pidfile)
-            cw.timeOut = None
-            cw.command = command
-            cw.processId = commandWatcherPID
-            self.commandWatchers[cw.commandId] = cw
-            self.commands[commandId] = command
+#   def reloadCommandWatchers(self):
+#       import glob
+#       import re
+#       pathname = os.path.join(self.PID_DIR, "cw*.pid")
+#       for pidfile in glob.glob(pathname):
+#           basepidfile = os.path.basename(pidfile)
+#           print "pidfile", pidfile
+#           match = re.match(r"cw(\d+).pid", basepidfile)
+#           if match is None:
+#               continue
+#           commandId = int(match.groups()[0])
+#           commandWatcherPID = int(file(pidfile, "r").read())
+#           print "found PID for command %d: %d" % (commandId, commandWatcherPID)
+#           command = Command(commandId, None, {}, "")
+#           cw = self.CommandWatcher()
+#           cw.commandId = commandId
+#           cw.processObj = CommandWatcherProcess(pidfile, commandWatcherPID)
+#           cw.startTime = os.path.getmtime(pidfile)
+#           cw.timeOut = None
+#           cw.command = command
+#           cw.processId = commandWatcherPID
+#           self.commandWatchers[cw.commandId] = cw
+#           self.commands[commandId] = command
 
     
     def getNbCores(self):
@@ -152,8 +156,6 @@ class Worker(MainLoopApplication):
     
     
     def getCpuInfo(self):
-        self.speed = 1.0
-        self.cpuName = ""
         if os.path.exists('/proc/cpuinfo'):
             try:
                 # get cpu speed
@@ -170,8 +172,6 @@ class Worker(MainLoopApplication):
                 pass
             
     def getDistribName(self):
-        self.distrib = ""
-        self.mikdistrib = ""
         if os.path.exists('/etc/mik-release'):
             try:
                 f = open('/etc/mik-release', 'r')
@@ -367,10 +367,16 @@ class Worker(MainLoopApplication):
                         self.updateCompletionAndStatus(commandWatcher.commandId, None, COMMAND.CMD_CANCELED, None)
             
             # This is necessary in the case of blocked 'working' state
-            if not self.commandWatchers:
+            if not self.commandWatchers and len(self.commands.values()) != 0:
                 # FIXME patch for a weird bug : sometimes, there is a phantom command in the list, even if there is no more command processes
+                LOGGER.warning("No more cmd watcher but still command in list, reset the RN on the dispatcher")
                 self.commands.clear()
-                #self.status = rendernode.RN_IDLE
+                datas = {}
+                datas['nomorecmd'] = 1
+                dct = json.dumps(datas)
+                headers = {}
+                headers['content-length'] = len(dct)
+                self.requestManager.put("/rendernodes/%s/reset" % self.computerName, dct, headers)
             
             # time resync
             now = time.time()
@@ -415,28 +421,30 @@ class Worker(MainLoopApplication):
 
 
     def removeCommandWatcher(self, commandWatcher):
+        # FIXME remove this request !!! the worker should not interfere with the dispatcher model like this
+        # NOT THREAD SAFE !!!!
         # 1. send a DELETE request to the dispatcher
         # 2. on success, remove the command watcher from the list and remove the pid file
-        LOGGER.info("before connect")
-        conn = self.connect()
-        path = '/rendernodes/%s/commands/%d' % (self.computerName, commandWatcher.command.id)
-        LOGGER.info("path : " + path)
-        r = Request('DELETE', path, {'Accept': 'application/json'})
-        r.commandWatcher = commandWatcher
-        LOGGER.info("calling...")
-        r.call(conn, self._onRemoveCommandWatcherResponse, self._onRemoveCommandWatcherError)
+        #LOGGER.info("before connect")
+        #conn = self.connect()
+        #path = '/rendernodes/%s/commands/%d' % (self.computerName, commandWatcher.command.id)
+        #LOGGER.info("path : " + path)
+        #r = Request('DELETE', path, {'Accept': 'application/json'})
+        #r.commandWatcher = commandWatcher
+        #LOGGER.info("calling...")
+        #r.call(conn, self._onRemoveCommandWatcherResponse, self._onRemoveCommandWatcherError)
 
 
-    def _onRemoveCommandWatcherResponse(self, request, response):
-        commandWatcher = request.commandWatcher
+    #def _onRemoveCommandWatcherResponse(self, request, response):
+    #    commandWatcher = request.commandWatcher
         print "\nREMOVING COMMAND WATCHER %d\n" % commandWatcher.command.id
-        if response.status == 200:
-            LOGGER.info('removing command watcher for command %d', commandWatcher.commandId)
-        elif response.status == 403 or response.status == 404:
-            LOGGER.warning('removing command watcher for obsolete command %d', commandWatcher.commandId)
-        else:
-            LOGGER.error('command watcher removal request returned unexpected status %d', response.status)
-            return
+    #    if response.status == 200:
+        LOGGER.info('removing command watcher for command %d', commandWatcher.commandId)
+    #    elif response.status == 403 or response.status == 404:
+    #        LOGGER.warning('removing command watcher for obsolete command %d', commandWatcher.commandId)
+    #    else:
+    #        LOGGER.error('command watcher removal request returned unexpected status %d', response.status)
+    #         return
         del self.commandWatchers[commandWatcher.commandId]
         del self.commands[commandWatcher.commandId]
         try:
@@ -450,12 +458,12 @@ class Worker(MainLoopApplication):
                 raise
 
 
-    def _onRemoveCommandWatcherError(self, request, error):
-        LOGGER.debug('removeCommandWatcher failed in exception')
-        if error == None:
-            LOGGER.debug('Unexpected error:' + sys.exc_info()[0])
-        if DEBUG:
-            raise error
+    #def _onRemoveCommandWatcherError(self, request, error):
+    #    LOGGER.debug('removeCommandWatcher failed in exception')
+    #    if error == None:
+    #        LOGGER.debug('Unexpected error:' + sys.exc_info()[0])
+    #    if settings.DEBUG:
+    #        raise error
 
 
     def updateCompletionAndStatus(self, commandId, completion, status, message):

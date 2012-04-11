@@ -247,10 +247,11 @@ class TaskGroup(object):
 
 class Graph(object):
 
-    def __init__(self, name, root, user=None, poolName=None):
+    def __init__(self, name, root, user=None, poolName=None, maxRN=-1):
         self.name = unicode(name)
         self.root = root
         self.poolName = poolName
+        self.maxRN = maxRN
         self.meta = {}
         if user is None:
             import getpass
@@ -331,6 +332,7 @@ class GraphDumper():
             'tasks': [self.taskRepresentations[task] for task in self.tasks],
             'user': graph.user,
             'poolName': graph.poolName,
+            'maxRN': graph.maxRN,
         }
         return repr
 

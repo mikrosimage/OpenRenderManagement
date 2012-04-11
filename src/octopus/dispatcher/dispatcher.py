@@ -8,7 +8,6 @@ import os
 import time
 from Queue import Queue
 from itertools import groupby
-import math
 import collections
 
 from octopus.core.tools import json
@@ -278,6 +277,12 @@ class Dispatcher(MainLoopApplication):
             # the new maxRN value is calculated based on the number of active jobs of the pool, and the number of online rendernodes of the pool
             rnsNotOffline = set([rn for rn in pool.renderNodes if rn.status not in [RN_UNKNOWN, RN_PAUSED]])
             rnsSize = len(rnsNotOffline)
+            # if we have a userdefined maxRN for some nodes, remove them from the list and substracts their maxRN from the pool's size
+            l = nodesList[:] # duplicate the list to be safe when removing elements
+            for node in l:
+                if node.poolShares.values()[0].userDefinedMaxRN:
+                    nodesList.remove(node)
+                    rnsSize -= node.poolShares.values()[0].maxRN
             LOGGER.warning("Pool %s has a size of %s rns and %s nodes" % (pool.name, str(rnsSize), str(len(nodesList))))
             updatedmaxRN = rnsSize // len(nodesList)
             remainingRN = rnsSize % len(nodesList)

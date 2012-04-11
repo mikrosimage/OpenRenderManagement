@@ -26,6 +26,7 @@ class PoolShare(models.Model):
     node = models.ModelField()
     allocatedRN = models.IntegerField()
     maxRN = models.IntegerField()
+    userDefinedMaxRN = models.BooleanField()
 
     # Use PoolShare.UNBOUND as maxRN value to allow full pool usage
     UNBOUND = -1
@@ -49,6 +50,11 @@ class PoolShare(models.Model):
         # registration
         self.pool.poolShares[self.node] = self
         self.node.poolShares[self.pool] = self
+        # the default maxRN at the creation is -1, if it is a different value, it means it's user defined
+        if self.maxRN != -1:
+            self.userDefinedMaxRN = True
+        else:
+            self.userDefinedMaxRN = False
 
 
     def hasRenderNodesAvailable(self):

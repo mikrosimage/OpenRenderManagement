@@ -49,6 +49,7 @@ class PoolSharesResource(BaseResource):
         except PoolShareCreationException:
             return HttpConflict("PoolShare of pool for this node already exists")
 
+
 class PoolShareResource(BaseResource):
     @queue
     def get(self, id):
@@ -60,12 +61,17 @@ class PoolShareResource(BaseResource):
             'poolshare': poolShare.to_json()
         })
 
-class PoolShareMaxrnResource(BaseResource):
     @queue
     def post(self, id):
         try:
             poolShare = self.getDispatchTree().poolShares[int(id)]
         except KeyError:
             return Http404("No such poolshare")
-        
+        dct = self.getBodyAsJSON()
+        maxRN = int(dct['maxRN'])
+        poolShare.maxRN = maxRN
+        poolShare.userDefinedMaxRN = True
+        self.writeCallback({
+            'poolshare': poolShare.to_json()
+        })
         

@@ -138,6 +138,10 @@ class DispatchTree(object):
         user = graph['user']
         taskDefs = graph['tasks']
         poolName = graph['poolName']
+        if 'maxRN' in graph.items():
+            maxRN = int(graph['maxRN'])
+        else:
+            maxRN = -1
         
         #
         # Create objects.
@@ -203,7 +207,7 @@ class DispatchTree(object):
         # create the poolshare, if any, and affect it to the node
         if pool:
             # FIXME nodes[0] may not be the root node of the graph...
-            PoolShare(None, pool, nodes[0], PoolShare.UNBOUND)
+            PoolShare(None, pool, nodes[0], maxRN)
 
         #
         # Process dependencies

@@ -503,6 +503,7 @@ class TaskNode(BaseNode):
             self.status = NODE_PAUSED
         elif self.status == NODE_PAUSED and not paused:
             self.status = NODE_READY
+        self.invalidate()
 
 
     def resetCompletion(self):

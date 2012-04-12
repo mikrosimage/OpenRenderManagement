@@ -27,7 +27,8 @@ class WebServiceDispatcher(Application):
             (r'/rendernodes/((?:\d+)|(?:[\w.-]+:\d+))/?$', rendernodes.RenderNodeResource, dict(framework=framework)),
             (r'/rendernodes/((?:\d+)|(?:[\w.-]+:\d+))/commands/(\d+)/?$', rendernodes.RenderNodeCommandsResource, dict(framework=framework)),
             (r'/rendernodes/((?:\d+)|(?:[\w.-]+:\d+))/sysinfos/?$', rendernodes.RenderNodeSysInfosResource, dict(framework=framework)),
-            (r'/rendernodes/((?:\d+)|(?:[\w.-]+:\d+))/paused/?$', rendernodes.RenderNodePausedResource, dict(framework=framework)),           
+            (r'/rendernodes/((?:\d+)|(?:[\w.-]+:\d+))/paused/?$', rendernodes.RenderNodePausedResource, dict(framework=framework)),
+            (r'/rendernodes/((?:\d+)|(?:[\w.-]+:\d+))/reset/?$', rendernodes.RenderNodeResetResource, dict(framework=framework)),           
             
             (r'^/graphs/?$', graphs.GraphesResource, dict(framework=framework)),
 

@@ -92,19 +92,34 @@ class RenderNode(models.Model):
     ## Returns True if this render node is available for command assignment.
     #
     def isAvailable(self):
-        # at least one core is needed to do a job
-        return (self.isRegistered and self.status >= RN_IDLE and self.freeCoresNumber)
+        return (self.isRegistered and self.status == RN_IDLE)# and self.freeCoresNumber)
 
-    def release(self):
-        self.status = RN_IDLE
-        self.reset()
+    #def release(self):
+    #    self.reset()
+    #    self.status = RN_FINISHING
     
-    def reset(self):
+    def reset(self, paused=False):
+        # if paused, set the status to RN_PAUSED, else set it to Finishing, it will be set to IDLE in the next iteration of dispatcher main loop
+        if paused:
+            self.status = RN_PAUSED
+        else:
+            self.status = RN_FINISHING
+        # reset the commands left on this RN, if any
+        for command in self.commands.values():
+            command.status = CMD_READY
+            command.completion = 0.
+            command.renderNode = None
         self.commands = {}
+        # reset the associated poolshare, if any
+        if self.currentpoolshare:
+            self.currentpoolshare.allocatedRN -= 1
+            self.currentpoolshare = None
+        # reset the values for cores and ram
         self.freeCoresNumber = int(self.coresNumber)
         self.usedCoresNumber = {}
         self.freeRam = int(self.ramSize)
         self.usedRam = {}
+
 
     ## Returns a human readable representation of this RenderNode.
     #
@@ -189,15 +204,16 @@ class RenderNode(models.Model):
         if time.time() > (self.lastAliveTime + TIMEOUT):
             # timeout the commands running on this node
             if RN_UNKNOWN != self.status:
-                LOGGER.info("rendernode %s is not responding", self.name)
+                LOGGER.warning("rendernode %s is not responding", self.name)
                 self.status = RN_UNKNOWN
                 if self.commands:
                     for command in self.commands.values():
                         command.status = CMD_TIMEOUT
             return
-        if not self.commands and self.status not in (RN_PAUSED, RN_BOOTING) :
-            self.status = RN_IDLE
-            # Actually, I think this is necessary in case of a cancel command
+        # This is necessary in case of a cancel command or a mylawn -k
+        if not self.commands:
+            if self.status not in (RN_PAUSED, RN_BOOTING):
+                self.status = RN_IDLE
             if self.currentpoolshare:
                 self.currentpoolshare.allocatedRN -= 1
                 self.currentpoolshare = None
@@ -222,12 +238,19 @@ class RenderNode(models.Model):
     ## releases the finishing status of the rendernodes
     #
     def releaseFinishingStatus(self):
-        if self.status in (RN_FINISHING, RN_BOOTING):
-            print "releaseFinishingStatus : %s, %s" % (self.name, self.status)
+        if self.status is RN_FINISHING:
+            LOGGER.warning("Trying to release Finishing status for : %s, %s" % (self.name, self.status))
+            # remove the done commands
+            for cmd in self.commands.values():
+                if isFinalStatus(cmd.status):
+                    if CMD_DONE == cmd.status:
+                        cmd.completion = 1.0
+                    cmd.finish()
+                    self.unassign(cmd)
             self.status = RN_IDLE
-            if self.currentpoolshare:
-                self.currentpoolshare.allocatedRN -= 1
-                self.currentpoolshare = None
+            #if self.currentpoolshare:
+            #    self.currentpoolshare.allocatedRN -= 1
+            #    self.currentpoolshare = None
     ##
     #
     # @warning The returned HTTPConnection is not safe to use from multiple threads

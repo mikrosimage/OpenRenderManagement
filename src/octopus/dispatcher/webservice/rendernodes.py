@@ -2,6 +2,7 @@ from __future__ import with_statement
 
 import time
 
+from tornado.web import HTTPError
 from octopus.core.communication import Http400, Http404, Http403, HttpConflict
 from octopus.core.enums.rendernode import RN_PAUSED, RN_IDLE, RN_UNKNOWN, RN_BOOTING
 from octopus.core import enums
@@ -165,15 +166,15 @@ class RenderNodeCommandsResource(BaseResource):
         try:
             computer = self.framework.application.dispatchTree.renderNodes[computerName]
         except KeyError:
-            return Http404("No such RenderNode")
+            return HTTPError(404, "No such RenderNode")
 
         try:
             command = computer.commands[commandId]
         except KeyError:
-            return Http404("No such command running on this RenderNode")
+            return HTTPError(404, "No such command running on this RenderNode")
 
         if command.id not in computer.commands:
-            return Http400("Command %d not running on RenderNode %s" % (command.id, computer.name))
+            return HTTPError(400, "Command %d not running on RenderNode %s" % (command.id, computer.name))
         else:
             if enums.command.isFinalStatus(command.status):
                 if enums.command.CMD_DONE == command.status:
@@ -184,7 +185,7 @@ class RenderNodeCommandsResource(BaseResource):
             else:
                 # command.cancel() ??? dans ce cas c'est pas ce qu'on devrait faire ??? FIXME
                 message = "Cannot remove a running command from a RenderNode."
-                return Http403(message)
+                return HTTPError(403, message)
     
 
 class RenderNodeSysInfosResource(BaseResource):
@@ -198,8 +199,6 @@ class RenderNodeSysInfosResource(BaseResource):
         renderNode = rns[computerName]
         if "caracteristics" in dct:
             renderNode.caracteristics = eval(str(dct["caracteristics"]))
-#        if "status" in dct:
-#            renderNode.status = int(dct["status"])
         if "cores" in dct:
             renderNode.cores = int(dct["cores"])
         if "ram" in dct:
@@ -208,6 +207,20 @@ class RenderNodeSysInfosResource(BaseResource):
             renderNode.speed = float(dct["speed"])
         renderNode.lastAliveTime = time.time()
         renderNode.isRegistered = True
+
+
+class RenderNodeResetResource(BaseResource):
+    @queue
+    def put(self, computerName):
+        computerName = computerName.lower()
+        rns = self.getDispatchTree().renderNodes
+        if not computerName in rns:
+            return Http404("RenderNode not found")
+        dct = self.getBodyAsJSON()
+        renderNode = rns[computerName]
+        noMoreCmd = int(dct["nomorecmd"])
+        if noMoreCmd:
+            renderNode.reset()
 
 
 class RenderNodePausedResource(BaseResource):
@@ -224,10 +237,12 @@ class RenderNodePausedResource(BaseResource):
         if paused:
             renderNode.status = RN_PAUSED
             if killproc:
-                for command in renderNode.commands.values():
-                    command.status = enums.command.CMD_READY
-                    command.completion = 0.
-                    command.renderNode = None
-                renderNode.reset()
+                #for command in renderNode.commands.values():
+                #    command.status = enums.command.CMD_READY
+                #    command.completion = 0.
+                #    command.renderNode = None
+                # FIXME ACS: the above code has been moved to the reset() method
+                renderNode.reset(paused=True)
         else:
+            # FIXME maybe set this to RN_FINISHING ?
             renderNode.status = RN_IDLE

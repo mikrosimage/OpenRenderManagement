@@ -58,6 +58,9 @@ class MentalrayDecomposer(TaskDecomposer):
         cmdArgs = self.task.arguments.copy()
         cmdArgs[START] = packetStart
         cmdArgs[END] = packetEnd
+        # default values
+        if VERBOSE not in self.task.arguments.keys():
+            cmdArgs[VERBOSE] = "5"
         cmdName = "%s_%s_%s" % (self.task.name, str(packetStart), str(packetEnd))
         self.task.addCommand(cmdName, cmdArgs)
 

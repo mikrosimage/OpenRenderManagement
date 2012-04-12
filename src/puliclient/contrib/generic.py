@@ -3,7 +3,7 @@ Created on Sep 28, 2011
 
 @author: red
 '''
-import subprocess
+import os
 from puliclient.jobs import TaskDecomposer, CommandRunner
 from puliclient.contrib.helper.helper import PuliActionHelper
 
@@ -33,8 +33,10 @@ class GenericDecomposer(TaskDecomposer):
 
 class GenericRunner(CommandRunner):
     def execute(self, arguments, updateCompletion, updateMessage):
+        # init the helper
+        helper = PuliActionHelper(cleanTemp = True)
         cmd = arguments[CMD]
         print 'Running command "%s"' % cmd
         updateCompletion(0)
-        subprocess.call(cmd.split(" "), close_fds=True, shell=True)
+        helper.execute(cmd.split(" "), env=os.environ)
         updateCompletion(1)

@@ -24,6 +24,8 @@ NUKE_VERSION = "nuke"
 ENV_MAYA_LOCATION = "MAYA_LOCATION"
 
 class PuliActionHelper(object):
+    MikrosEnv = mikrosEnv.MikrosEnv()
+    
     def __init__(self, cleanTemp = False):
         # first of all, call the clean temp dir function
         if cleanTemp:

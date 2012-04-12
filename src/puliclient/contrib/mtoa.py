@@ -254,7 +254,7 @@ class MtoaRunner(CommandRunner):
                                 if nb == 0:
                                     extStr = extfile
                                 else:
-                                    extStr = extStr + ',' + extFile
+                                    extStr = extStr + ',' + extfile
                         if nb:
                             arguments['le'] = extStr
                         else:
@@ -284,7 +284,7 @@ class MtoaRunner(CommandRunner):
         print '===================================================='
         print '  MikserActionMtoARender returns with code %d' % (ret)
         print '===================================================='
-        if ret!=0:
+        if ret != 0:
             print '  Export failed, exiting...'
             raise Exception, '  Export failed, exiting...'
 
@@ -331,15 +331,23 @@ class MtoaRunner(CommandRunner):
                 if int(arguments[NO_LIC_CHECK]):
                     argList += ["-sl"]
             # verbose level
-            argList += ["-v", str(arguments[VERBOSE_LEVEL])]
+            if VERBOSE_LEVEL in arguments.keys():
+                argList += ["-v", str(arguments[VERBOSE_LEVEL])]
             # number of threads
-            argList += ["-t", str(arguments[NUMBER_OF_THREADS])]
+            if NUMBER_OF_THREADS in arguments.keys():
+                argList += ["-t", str(arguments[NUMBER_OF_THREADS])]
             # Extra kick flags
             argList += extraKickFlags
             
             # kick the command
             print "\nKicking command : " + " ".join(argList)
-            helper.execute(argList, env=env)
+            kickret = helper.execute(argList, env=env)
+            print '===================================================='
+            print '  kick command returns with code %d' % (kickret)
+            print '===================================================='
+            if kickret != 0:
+                print '  Kick command failed...'
+                raise Exception, '  Kick command failed...'  
             
             # suppression of ass files
             if not int(arguments[LEAVE_ASS_FILES]):

@@ -109,10 +109,17 @@ class MayagenfluidcacheRunner(CommandRunner):
             # TODO: a real mikser warning and exit
             print ('Warning: unable to find the maya root directory')
             
+        #check existence and writability of render dir
+        renderDir = arguments[RENDER_DIR]
+        helper.checkExistenceOrCreateDir(renderDir, 'render dir')
+        if not os.access(renderDir, os.W_OK):
+            print('Error: unable to write in %s' % renderDir)
+            raise Exception
+        
         self.melArgs[1] = str(arguments[START])
         self.melArgs[2] = str(arguments[END])
         self.melArgs[5] = arguments[RENDER_DIR]
-        self.melArgs[7] = os.path.splitext(OUTPUT_IMAGE)[0]
+        self.melArgs[7] = os.path.splitext(arguments[OUTPUT_IMAGE])[0]
         try:
             self.melArgs[3] = 'OneFile' if int(arguments[ONE_FILE]) == 1 else 'OneFilePerFrame'
         except KeyError:

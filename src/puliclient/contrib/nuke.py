@@ -45,7 +45,7 @@ class NukeDecomposer(TaskDecomposer):
 
     def __init__(self, task):
         self.task = task
-        task.runner = "puliclient.contrib.nuke.NukeRunner"
+        self.task.runner = "puliclient.contrib.nuke.NukeRunner"
         PuliActionHelper().decompose(task.arguments[START], task.arguments[END], task.arguments[PACKET_SIZE], self)
 
     def addCommand(self, packetStart, packetEnd):
@@ -74,9 +74,7 @@ class NukeRunner(CommandRunner):
                                  applis=self.helper.mapPath("/s/apps/lin"))
         
         # init log
-        self.helper.printStartLog("NukeRunner", "1.1")
-        
-        
+        self.helper.printStartLog("NukeRunner", "1.2")
         
         # replace the local nuke scene argument in the argslist
         if outImages != "":
@@ -92,6 +90,8 @@ class NukeRunner(CommandRunner):
         out = subprocess.Popen(cmdArgs, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=0, env=env)
         completedFrames = 0
         totalFrames = (int(arguments[END]) - int(arguments[START]) + 1) // int(arguments[STEP])
+        if arguments.get("views", ''):
+            totalFrames = totalFrames * len(arguments["views"].split(","))
         while True:
             line = out.stdout.readline()
             if not line:
@@ -109,6 +109,7 @@ class NukeRunner(CommandRunner):
                 updateMessage("render done.")
                 updateCompletion(1)
                 break
+        out.terminate()
         if completedFrames != totalFrames:
             raise Exception, "Incomplete job: %d/%d images rendered" % (completedFrames, totalFrames)
 

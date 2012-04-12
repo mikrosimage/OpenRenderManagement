@@ -50,7 +50,7 @@ class Http400(HTTPError):
     """A basic HttpResponse for error 400 (Bad request)"""
     
     def __init__(self, msg="Bad request", **kwargs):
-        super(Http400, self).__init__(400, msg, **kwargs)
+        super(Http400, self).__init__(400, msg)
 
 
 ## A basic HttpResponse for error 405 (Method not allowed)
@@ -59,7 +59,7 @@ class Http405(HTTPError):
     """A basic HttpResponse for error 405 (Method not allowed)"""
     
     def __init__(self, allowed, **kwargs):
-        super(Http405, self).__init__(405, "Method not allowed", **kwargs)
+        super(Http405, self).__init__(405, "Method not allowed")
         self['Allow'] = ', '.join(allowed)
 
 
@@ -69,7 +69,7 @@ class Http403(HTTPError):
     """A basic HttpResponse for error 403 (Action forbidden)"""
 
     def __init__(self, message="Action forbidden", content='', contenttype='text/plain'):
-        super(Http403, self).__init__(403, message, content, contenttype)
+        super(Http403, self).__init__(403, message)
 
 
 ## A basic HttpResponse for error 404 (Resource not found)
@@ -78,7 +78,7 @@ class Http404(HTTPError):
     """A basic HttpResponse for error 404 (Resource not found)"""
 
     def __init__(self, message="Resource not found", content='', contenttype='text/plain'):
-        super(Http404, self).__init__(404, message, content, contenttype)
+        super(Http404, self).__init__(404, message,)
 
 
 ## A basic HttpResponse for error 409 (Conflict)

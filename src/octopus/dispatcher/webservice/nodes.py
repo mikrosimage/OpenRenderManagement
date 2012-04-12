@@ -3,7 +3,8 @@ Controller for the /nodes service.
 '''
 from octopus.core.enums.node import NODE_ERROR, NODE_CANCELED, NODE_DONE, NODE_READY
 from octopus.dispatcher.model.task import TaskGroup
-from octopus.core.enums.command import CMD_READY
+from octopus.core.enums.command import CMD_READY, CMD_DONE, CMD_BLOCKED,\
+    CMD_RUNNING
 
 import logging
 import time
@@ -163,7 +164,8 @@ class NodePauseKillResource(NodesResource):
         nodeId = int(nodeId)
         node = self._findNode(nodeId)
         for command in node.task.commands:
-            command.setReadyAndKill()
+            if command.status is CMD_RUNNING:
+                command.setReadyAndKill()
         for poolShare in node.poolShares:
             poolShare.allocatedRN = 0
         node.setPaused(True)

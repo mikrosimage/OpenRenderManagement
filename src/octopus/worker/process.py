@@ -20,9 +20,9 @@ def spawnCommandWatcher(pidfile, logfile, args, env):
     envN = {}
     for key in env:
         envN[str(key)] = str(env[key])
-    pid = subprocess.Popen(args, bufsize=0, stdin=devnull, stdout=logfile,
+    pid = subprocess.Popen(args, bufsize=-1, stdin=devnull, stdout=logfile,
                            stderr=subprocess.STDOUT, close_fds=CLOSE_FDS,
-                           env=envN).pid
+                           preexec_fn=os.setsid, env=envN).pid
     file(pidfile, "w").write(str(pid))
     return CommandWatcherProcess(pidfile, pid)
 

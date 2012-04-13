@@ -354,9 +354,9 @@ if __name__ == "__main__":
 
     closeFileDescriptors()
 
-    import os
-    if os.name == 'posix':
-        os.setpgid(0, 0)
+    #if os.name == 'posix':
+        # FIXME maybe use setsid instead?
+    #    os.setpgid(0, 0)
 
     logger = logging.getLogger()
     logger.setLevel(logging.ERROR)

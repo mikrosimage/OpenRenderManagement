@@ -367,16 +367,16 @@ class Worker(MainLoopApplication):
                         self.updateCompletionAndStatus(commandWatcher.commandId, None, COMMAND.CMD_CANCELED, None)
             
             # This is necessary in the case of blocked 'working' state
-            if not self.commandWatchers and len(self.commands.values()) != 0:
-                # FIXME patch for a weird bug : sometimes, there is a phantom command in the list, even if there is no more command processes
-                LOGGER.warning("No more cmd watcher but still command in list, reset the RN on the dispatcher")
-                self.commands.clear()
-                datas = {}
-                datas['nomorecmd'] = 1
-                dct = json.dumps(datas)
-                headers = {}
-                headers['content-length'] = len(dct)
-                self.requestManager.put("/rendernodes/%s/reset" % self.computerName, dct, headers)
+            #if not self.commandWatchers and len(self.commands.values()) != 0:
+            #    # FIXME patch for a weird bug : sometimes, there is a phantom command in the list, even if there is no more command processes
+            #    LOGGER.warning("No more cmd watcher but still command in list, reset the RN on the dispatcher")
+            #    self.commands.clear()
+            #    datas = {}
+            #    datas['nomorecmd'] = 1
+            #    dct = json.dumps(datas)
+            #    headers = {}
+            #    headers['content-length'] = len(dct)
+            #    self.requestManager.put("/rendernodes/%s/reset" % self.computerName, dct, headers)
             
             # time resync
             now = time.time()
@@ -421,7 +421,7 @@ class Worker(MainLoopApplication):
 
 
     def removeCommandWatcher(self, commandWatcher):
-        # FIXME remove this request !!! the worker should not interfere with the dispatcher model like this
+        # remove this request !!! the worker should not interfere with the dispatcher model like this
         # NOT THREAD SAFE !!!!
         # 1. send a DELETE request to the dispatcher
         # 2. on success, remove the command watcher from the list and remove the pid file

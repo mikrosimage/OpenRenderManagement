@@ -198,21 +198,14 @@ class Dispatcher(MainLoopApplication):
             pass
         else:
             LOGGER.info("finished some network requests")
-        #if self.dispatchTree.modified:
-        #    self.dispatchTree.modified = False
-        #el
-        #if not self.modified and self.queue.empty():
-        #    self.event.clear()
-        #    self.event.wait(5)
+            
         self.cycle += 1
         self.dispatchTree.updateCompletionAndStatus()
         self.updateRenderNodes()
 
         self.dispatchTree.validateDependencies()
 
-        #size = self.queue.qsize()
         executedRequests = []
-        #for i in xrange(size):
         first = True
         while first or not self.queue.empty():
             workload = self.queue.get()
@@ -223,17 +216,8 @@ class Dispatcher(MainLoopApplication):
         # update db
         self.updateDB()
 
+        # compute and send command assignments to rendernodes
         assignments = self.computeAssignments()
-#        import trace
-#        tracer = trace.Trace(trace=0, count=1)
-#        tracer.runfunc(self.computeAssignments)
-#        r = tracer.results()
-#        r.write_results(summary=True, coverdir="/tmp/covers/%d/" % self.cycle)
-#
-#        assignments = []
-
-#        self.dumpToHTML()
-
         self.sendAssignments(assignments)
         
         # call the release finishing status on all rendernodes

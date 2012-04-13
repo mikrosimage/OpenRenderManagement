@@ -10,10 +10,14 @@
 ####################################################################################################
 
 import time
+import logging
 
 from octopus.core.enums.command import *
 from . import models
 from octopus.core.enums.rendernode import RN_IDLE
+from httplib import HTTPResponse
+
+LOGGER = logging.getLogger('command')
 
 class Command(models.Model):
 
@@ -93,11 +97,15 @@ class Command(models.Model):
             self.status = CMD_CANCELED
         elif isRunningStatus(self.status):
             self.renderNode.request("DELETE", "/commands/" + str(self.id) + "/")
+            # test the return value of this request
+            self.renderNode.clearAssignment(self)
 
     def setReadyAndKill(self):
         if self.renderNode is not None:
-            self.renderNode.request("DELETE", "/commands/" + str(self.id) + "/")
-            self.renderNode.release()
+            response, data = self.renderNode.request("DELETE", "/commands/" + str(self.id) + "/")
+            # test the return value of this request
+            LOGGER.warning("response of request is : %s" % str(response.status))
+            self.renderNode.reset()
         self.setReadyStatusAndClear()
 
     def setReadyStatus(self):

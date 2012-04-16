@@ -108,8 +108,14 @@ class MentalrayRunner(CommandRunner):
             for layer in layer2Render:
                 for frameInt in range(start, end+1):
                     frameStr = str(frameInt).rjust(padding, "0")
+                    # FIXME improve this...
                     # check the file
-                    filename = str(arguments[RENDER_DIR]) + "/" + layer + "/" + prefix + "-" + layer + "." + frameStr + "." + str(arguments[FORMAT]) 
+                    if layer == "defaultRenderLayer":
+                        layerfolder = "masterLayer"
+                    else:
+                        layerfolder = layer
+                    renderdir = str(arguments[RENDER_DIR]) + "/" + layerfolder + "/"
+                    filename = renderdir + prefix + "-" + layer + "." + frameStr + "." + str(arguments[FORMAT]) 
                     print "Checking \"%s\"..." % filename
                     if not os.path.isfile(filename):
                         raise Exception("File does not exist")

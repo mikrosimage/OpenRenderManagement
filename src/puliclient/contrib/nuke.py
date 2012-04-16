@@ -11,6 +11,7 @@ import re
 import subprocess
 import sys
 import datetime
+import time
 
 
 #<arguments>
@@ -88,6 +89,7 @@ class NukeRunner(CommandRunner):
         sys.stdout.flush()
         
         out = subprocess.Popen(cmdArgs, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=0, env=env)
+        begintime = time.time()
         completedFrames = 0
         totalFrames = (int(arguments[END]) - int(arguments[START]) + 1) // int(arguments[STEP])
         if arguments.get("views", ''):
@@ -100,7 +102,7 @@ class NukeRunner(CommandRunner):
             sys.stdout.flush()
             if re.match(FRAME_WRITE_PATTERN, line):
                 completedFrames += 1
-                print "-- frame %d of %d rendered --" % (completedFrames, totalFrames)
+                print "%s -- frame %d of %d rendered --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)), completedFrames, totalFrames)
                 sys.stdout.flush()
                 updateMessage("%d frames rendered" % completedFrames)
                 updateCompletion(float(completedFrames) / totalFrames)

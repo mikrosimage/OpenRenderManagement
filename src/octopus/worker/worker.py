@@ -13,16 +13,10 @@ from octopus.core.tools import json, httplib
 from octopus.worker import settings
 from octopus.worker.model.command import Command
 from octopus.worker.process import CommandWatcherProcess, spawnCommandWatcher
-from octopus.core.http import Request
 
 #DEBUG = True
 LOGGER = logging.getLogger("worker")
 COMPUTER_NAME_TEMPLATE = "%s:%d"
-
-#def getLocalAddress():
-#    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-#    sock.connect(('1.2.3.4', 12000))
-#    return sock.getsockname()[0]
 
 class Worker(MainLoopApplication):
 
@@ -46,7 +40,6 @@ class Worker(MainLoopApplication):
     def finishedCommandWatchers(self):
         return (watcher for watcher in self.commandWatchers.values() if watcher.finished and not watcher.modified)
 
-    #PID_DIR = "/tmp"
 
     def __init__(self, framework):
         LOGGER.info("Starting worker on %s:%d.",
@@ -82,7 +75,6 @@ class Worker(MainLoopApplication):
             LOGGER.error("Missing read or write access on %s", self.PID_DIR)
             sys.exit(1)
         self.status = rendernode.RN_BOOTING
-        #self.killfile = False
         self.updateSys = False
         self.isPaused = False
         self.speed = 1.0
@@ -316,19 +308,19 @@ class Worker(MainLoopApplication):
     def mainLoop(self):
         try:
             now = time.time()
-    
             # check if the killfile is present
+            #
             if os.path.isfile(settings.KILLFILE):
                 if not self.isPaused:
                     with open(settings.KILLFILE, 'r') as f:
                         data = f.read()
                     if len(data) != 0:
                         data = int(data)
-                    LOGGER.warning("killfile detected, pausing worker")
+                    LOGGER.warning("Killfile detected, pausing worker")
                     # kill cmd watchers, if the flag in the killfile is set to -1
                     killproc = False
                     if data == -1:
-                        LOGGER.warning("flag -1 detected in killfile")
+                        LOGGER.warning("Flag -1 detected in killfile")
                         killproc = True
                         for commandWatcher in self.commandWatchers.values():
                             LOGGER.warning("Aborting command %d", commandWatcher.commandId)
@@ -341,10 +333,20 @@ class Worker(MainLoopApplication):
                 if self.isPaused:
                     self.pauseWorker(False, False)
     
+            # Waits for any child process, non-blocking (this is necessary to clean up finished process properly)
+            #
+            try:
+                pid, stat = os.waitpid(-1, os.WNOHANG)
+                if pid:
+                    LOGGER.warning("Cleaned process %s" % str(pid))
+            except OSError:
+                pass
+    
             # Send updates for every modified command watcher.
             #
             for commandWatcher in self.modifiedCommandWatchers:
                 self.updateCommandWatcher(commandWatcher)
+    
     
             # Attempt to remove finished command watchers
             #
@@ -385,7 +387,7 @@ class Worker(MainLoopApplication):
                 self.lastSysInfosMessageTime = now
     
             self.httpconn.close()
-    
+            
             # let's be CPU friendly
             time.sleep(0.05)
         except:
@@ -439,7 +441,7 @@ class Worker(MainLoopApplication):
     #    commandWatcher = request.commandWatcher
         print "\nREMOVING COMMAND WATCHER %d\n" % commandWatcher.command.id
     #    if response.status == 200:
-        LOGGER.info('removing command watcher for command %d', commandWatcher.commandId)
+        LOGGER.info('Removing command watcher for command %d', commandWatcher.commandId)
     #    elif response.status == 403 or response.status == 404:
     #        LOGGER.warning('removing command watcher for obsolete command %d', commandWatcher.commandId)
     #    else:

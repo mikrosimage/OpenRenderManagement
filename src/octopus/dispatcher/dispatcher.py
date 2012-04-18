@@ -255,8 +255,10 @@ class Dispatcher(MainLoopApplication):
                 rnsBool = True
         if not rnsBool:
             return []
+        
         # update the value of the maxrn for the poolshares (parallel dispatching)
         for pool, nodesiterator in groupby(entryPoints, lambda x: x.poolShares.values()[0].pool):
+            # we are treating every active node of the pool
             nodesList = [node for node in nodesiterator]
             # the new maxRN value is calculated based on the number of active jobs of the pool, and the number of online rendernodes of the pool
             rnsNotOffline = set([rn for rn in pool.renderNodes if rn.status not in [RN_UNKNOWN, RN_PAUSED]])
@@ -268,19 +270,29 @@ class Dispatcher(MainLoopApplication):
                     nodesList.remove(node)
                     rnsSize -= node.poolShares.values()[0].maxRN
             LOGGER.warning("Pool %s has a size of %s rns and %s nodes" % (pool.name, str(rnsSize), str(len(nodesList))))
+            if len(nodesList) == 0:
+                break
             updatedmaxRN = rnsSize // len(nodesList)
             remainingRN = rnsSize % len(nodesList)
             # sort by id (fifo)
             nodesList = sorted(nodesList, key= lambda x: x.id)
+            # then sort by dispatchKey (priority)
+            nodesList = sorted(nodesList, key= lambda x: x.dispatchKey, reverse=True)
             for node in nodesList:
+                if node.dispatchKey != 0:
+                    node.poolShares.values()[0].maxRN = -1
+                    continue
                 node.poolShares.values()[0].maxRN = updatedmaxRN
                 if remainingRN > 0:
                     node.poolShares.values()[0].maxRN += 1
                     remainingRN -= 1
                 LOGGER.warning("   Node %s has a maxrn of %s" % (node.name, str(node.poolShares.values()[0].maxRN)))
-             
+        
+        # now, we are treating every nodes
         # sort by id (fifo)   
         entryPoints = sorted(entryPoints, key= lambda node: node.id)
+        # then sort by dispatchKey (priority)
+        entryPoints = sorted(entryPoints, key= lambda node: node.dispatchKey, reverse=True)
         
         # todo : tant qu'on a des rns availables dans les pools actives et des commandes ready dans les entrypoints, on boucle sur les eps et on procede aux affectations mais 1 rn par ep a la fois
             

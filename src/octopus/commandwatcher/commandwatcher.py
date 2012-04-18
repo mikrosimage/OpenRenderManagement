@@ -95,10 +95,10 @@ class CommandWatcher(object):
     #
     def __init__(self, workerPort, id, runner, validationExpression, arguments):
         import socket
-        logger.info("starting command %r on rendernode %r", id, socket.gethostname())
-        logger.info("jobtype is %r", runner)
-        logger.info("validation expression is %r" % validationExpression)
-        logger.info("argument list is %r" % arguments)
+        #logger.info("starting command %r on rendernode %r", id, socket.gethostname())
+        #logger.info("jobtype is %r", runner)
+        #logger.info("validation expression is %r" % validationExpression)
+        #logger.info("argument list is %r" % arguments)
 
         self.id = id
         self.requestManager = RequestManager("127.0.0.1", workerPort)
@@ -108,7 +108,7 @@ class CommandWatcher(object):
         self.arguments = arguments
 
         self.finalState = CMD_DONE
-        self.logger = logging.getLogger("")
+        self.logger = logging.getLogger("cmdwatcher")
 
         self.runnerErrorInExec = None
         self.runnerErrorInPostExec = None
@@ -153,8 +153,10 @@ class CommandWatcher(object):
             self.finalState = CMD_ERROR
             self.updateCommandStatusAndCompletion(self.finalState, True)
             return
+        
 
         self.execScriptChecker()
+        
 
 #        self.logger.info("Trying to validate")
 #        self.logger.info("Validation expression is :" + self.commandValidationExpression)

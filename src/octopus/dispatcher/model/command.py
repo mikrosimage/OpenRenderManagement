@@ -97,14 +97,13 @@ class Command(models.Model):
             self.status = CMD_CANCELED
         elif isRunningStatus(self.status):
             self.renderNode.request("DELETE", "/commands/" + str(self.id) + "/")
-            # test the return value of this request
+            # test the return value of this request ?
             self.renderNode.clearAssignment(self)
 
     def setReadyAndKill(self):
         if self.renderNode is not None:
-            response, data = self.renderNode.request("DELETE", "/commands/" + str(self.id) + "/")
-            # test the return value of this request
-            LOGGER.warning("response of request is : %s" % str(response.status))
+            self.renderNode.request("DELETE", "/commands/" + str(self.id) + "/")
+            # test the return value of this request ?
             self.renderNode.reset()
         self.setReadyStatusAndClear()
 

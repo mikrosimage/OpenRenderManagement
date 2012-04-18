@@ -65,19 +65,12 @@ class RenderNode(models.Model):
         self.usedRam = {}
 
         self.speed = speed
-        # @change: self.commands replace self.command and allows multiple commands
-        # on the same rendernode. Indexed by command.id
-        # @todo: remove that change note.
         self.commands = {}
         self.status = RN_UNKNOWN
         self.responseId = None
-#        try:
-#            self.host = socket.gethostbyname(self.name.split('.')[0])
-#        except:
         self.host = str(ip)
         self.port = int(port)
         self.pools = []
-#        self.poolId = 0
         self.idInformed = False
         self.isRegistered = False
         self.lastAliveTime = 0
@@ -94,21 +87,18 @@ class RenderNode(models.Model):
     def isAvailable(self):
         return (self.isRegistered and self.status == RN_IDLE)# and self.freeCoresNumber)
 
-    #def release(self):
-    #    self.reset()
-    #    self.status = RN_FINISHING
-    
+  
     def reset(self, paused=False):
-        # if paused, set the status to RN_PAUSED, else set it to Finishing, it will be set to IDLE in the next iteration of dispatcher main loop
+        # if paused, set the status to RN_PAUSED, else set it to Finishing, it will be set to IDLE in the next iteration of the dispatcher main loop
         if paused:
             self.status = RN_PAUSED
         else:
             self.status = RN_FINISHING
         # reset the commands left on this RN, if any
-        for command in self.commands.values():
-            command.status = CMD_READY
-            command.completion = 0.
-            command.renderNode = None
+        for cmd in self.commands.values():
+            cmd.status = CMD_READY
+            cmd.completion = 0.
+            cmd.renderNode = None
         self.commands = {}
         # reset the associated poolshare, if any
         if self.currentpoolshare:
@@ -194,6 +184,7 @@ class RenderNode(models.Model):
         self.clearAssignment(command)
         self.updateStatus()
 
+
     def remove(self):
         self.fireDestructionEvent(self)
 
@@ -207,8 +198,8 @@ class RenderNode(models.Model):
                 LOGGER.warning("rendernode %s is not responding", self.name)
                 self.status = RN_UNKNOWN
                 if self.commands:
-                    for command in self.commands.values():
-                        command.status = CMD_TIMEOUT
+                    for cmd in self.commands.values():
+                        cmd.status = CMD_TIMEOUT
             return
         # This is necessary in case of a cancel command or a mylawn -k
         if not self.commands:
@@ -362,16 +353,12 @@ class RenderNode(models.Model):
 
         if command.task.minNbCores:
             if self.freeCoresNumber < command.task.minNbCores:
-#                LOGGER.debug(self.name + " has not enough ressources (%s instead of %s required)" % (str(self.freeCoresNumber), str(command.task.minNbCores)))
                 return False
         else:
             if self.freeCoresNumber != self.coresNumber:
-#                LOGGER.debug(self.name + " has not enough ressources. All cores should be free.")
                 return False
 
-
         if self.freeRam < command.task.ramUse:
-#            LOGGER.debug(self.name + " has not enough ram (%s instead of %s required)" % (str(self.freeRam), str(command.task.ramUse)))
             return False
 
         return True

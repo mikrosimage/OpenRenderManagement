@@ -4,7 +4,7 @@ import logging
 
 logger = logging.getLogger('dispatcher.webservice.TaskController')
 
-from octopus.core.communication.http import Http400, Http404
+from tornado.web import HTTPError
 from octopus.core.framework import ResourceNotFoundError, BaseResource, queue
 from octopus.core.enums.node import *
 from octopus.core.tools import json
@@ -13,12 +13,12 @@ from octopus.dispatcher.model import TaskGroup
 ALLOWED_STATUS_VALUES = (NODE_DONE, NODE_CANCELED)
 
 
-class BadStatusValueResponse(Http400):
+class BadStatusValueResponse(HTTPError):
 
     error_message = u'Status value not allowed (must be one of %s)' % (u", ".join([unicode(val) for val in ALLOWED_STATUS_VALUES]))
 
     def __init__(self):
-        super(BadStatusValueResponse, self).__init__(self.error_message)
+        super(BadStatusValueResponse, self).__init__(400, self.error_message)
 
 
 class TaskNotFoundError(ResourceNotFoundError):
@@ -33,6 +33,30 @@ class TasksResource(BaseResource):
         body = json.dumps(data)
         self.writeCallback(body)
         
+    @queue
+    def delete(self):
+        data = self.getBodyAsJSON()
+        try:
+            taskids = data['taskids']
+        except:
+            return HTTPError(400, 'Missing entry: "taskids".')
+        else:
+            #message = ""
+            taskidsList = taskids.split(",")
+            for taskId in taskidsList:
+                taskId = int(taskId)
+                try:
+                    task = self.getDispatchTree().tasks[taskId]
+                except KeyError:
+                    raise TaskNotFoundError(taskId)
+                if task.nodes.values()[0].status not in ALLOWED_STATUS_VALUES:
+                    return BadStatusValueResponse()
+                task.archive()   
+        self.set_status(202)
+                #message += "Task %d archived successfully.\n" % taskId
+            #self.writeCallback(message)
+                
+                
 class TaskResource(BaseResource):
     @queue
     def get(self, taskID):
@@ -41,16 +65,6 @@ class TaskResource(BaseResource):
         odict = {'tasks': [task.to_json()]}
         body = json.dumps(odict)
         self.writeCallback(body)
-    
-    @queue
-    def delete(self, taskId):
-        taskId = int(taskId)
-        task = self._findTask(taskId)
-        if task.nodes.values()[0].status not in ALLOWED_STATUS_VALUES:
-            return BadStatusValueResponse()
-        task.archive()
-        message = "Task %d archived successfully." % taskId
-        self.writeCallback(message)
     
     def _findTask(self, taskId):
         taskId = int(taskId)
@@ -69,7 +83,7 @@ class TaskCommentResource(TaskResource):
         try:
             comment = data['comment']
         except:
-            return Http400('Missing entry: "comment".')
+            return HTTPError(400, 'Missing entry: "comment".')
         else:
             taskId = int(taskId)
             task = self._findTask(taskId)
@@ -94,7 +108,7 @@ class TaskEnvResource(TaskResource):
         taskId = int(taskId)
         data = self.getBodyAsJSON()
         if not 'environment' in data:
-            return Http400("Missing 'environment' key in data.")
+            return HTTPError(400, "Missing 'environment' key in data.")
         task = self._findTask(taskId)
         env = data['environment']
         task.environment.clear()
@@ -109,11 +123,11 @@ class TaskArgumentResource(TaskResource):
         taskId = int(taskId)
         data = self.getBodyAsJSON()
         if not 'environment' in data:
-            return Http400("Missing 'environment' key in data.")
+            return HTTPError(400, "Missing 'environment' key in data.")
         try:
             task = self._findTask(taskId)
         except TaskNotFoundError:
-            return Http404("Task not found. No such task %d" % taskId)
+            return HTTPError(404, "Task not found. No such task %d" % taskId)
         arguments = data['arguments']
         task.arguments.clear()
         task.arguments.update(arguments)
@@ -144,7 +158,7 @@ class TaskCommandResource(TaskResource):
             body, rootTaskId = self.filteredTask(taskId, filterfunc)
             body = json.dumps({'commands': body, 'rootTask': rootTaskId})
         except TaskNotFoundError, exc:
-            return Http404("No such task. Task %d was not found." % taskId)
+            return HTTPError(404, "No such task. Task %d was not found." % taskId)
         else:
             self.writeCallback(body)
     
@@ -172,7 +186,7 @@ class TaskTreeResource(TaskResource):
             data = self.getSubTasks(taskId)
         except RuntimeError, e:
             if e.args[0][0] is TaskNotFoundError:
-                return Http404("Task %d not found." % taskId)
+                return HTTPError(404, "Task %d not found." % taskId)
         else:
             self.writeCallback(data)
         

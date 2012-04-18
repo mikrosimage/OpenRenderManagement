@@ -90,6 +90,7 @@ class TaskGroups(SQLObject):
     tags = UnicodeCol()
     strategy = UnicodeCol()
     archived = BoolCol()
+    args = UnicodeCol()
 
 
 class Rules(SQLObject):
@@ -119,17 +120,18 @@ class Tasks(SQLObject):
     tags = UnicodeCol()
     validationExpression = UnicodeCol()
     archived = BoolCol()
+    args = UnicodeCol()
 
 
-class Arguments(SQLObject):
-    class sqlmeta:
-        lazyUpdate = True
-    taskId = IntCol()
-    taskGroupId = IntCol()
-    commandId = IntCol()
-    name = UnicodeCol()
-    value = UnicodeCol()
-    archived = BoolCol()
+#class Arguments(SQLObject):
+#    class sqlmeta:
+#        lazyUpdate = True
+#    taskId = IntCol()
+#    taskGroupId = IntCol()
+#    commandId = IntCol()
+#    name = UnicodeCol()
+#    value = UnicodeCol()
+#    archived = BoolCol()
 
 
 class Commands(SQLObject):
@@ -146,6 +148,7 @@ class Commands(SQLObject):
     assignedRNId = IntCol()
     message = UnicodeCol()
     archived = BoolCol()
+    args = UnicodeCol()
 
 
 class Pools(SQLObject):
@@ -185,7 +188,7 @@ def createTables():
     TaskGroups.createTable(ifNotExists=True)
     Rules.createTable(ifNotExists=True)
     Tasks.createTable(ifNotExists=True)
-    Arguments.createTable(ifNotExists=True)
+    #Arguments.createTable(ifNotExists=True)
     Commands.createTable(ifNotExists=True)
     Pools.createTable(ifNotExists=True)
     PoolShares.createTable(ifNotExists=True)
@@ -199,7 +202,7 @@ def dropTables():
     TaskGroups.dropTable(ifExists=True)
     Rules.dropTable(ifExists=True)
     Tasks.dropTable(ifExists=True)
-    Arguments.dropTable(ifExists=True)
+    #Arguments.dropTable(ifExists=True)
     Commands.dropTable(ifExists=True)
     Pools.dropTable(ifExists=True)
     PoolShares.dropTable(ifExists=True)
@@ -319,19 +322,20 @@ class PuliDB(object):
                           TaskGroups.q.requirements.fieldName:json.dumps(element.requirements),
                           TaskGroups.q.tags.fieldName:json.dumps(element.tags),
                           TaskGroups.q.strategy.fieldName:element.strategy.getClassName(),
-                          TaskGroups.q.archived.fieldName:False}
+                          TaskGroups.q.archived.fieldName:False,
+                          TaskGroups.q.args.fieldName:str(element.arguments)}
                 conn.query(conn.sqlrepr(Insert(TaskGroups.q, values=fields)))
                 conn.cache.clear()
-                for arg in element.arguments.items():
-                    conn = Arguments._connection
-                    fields = {Arguments.q.taskId.fieldName:None,
-                              Arguments.q.taskGroupId.fieldName:element.id,
-                              Arguments.q.commandId.fieldName:None,
-                              Arguments.q.name.fieldName:str(arg[0]),
-                              Arguments.q.value.fieldName:str(arg[1]),
-                              Arguments.q.archived.fieldName:False}
-                    conn.query(conn.sqlrepr(Insert(Arguments.q, values=fields)))
-                    conn.cache.clear()
+                #for arg in element.arguments.items():
+                #    conn = Arguments._connection
+                #    fields = {Arguments.q.taskId.fieldName:None,
+                #              Arguments.q.taskGroupId.fieldName:element.id,
+                #              Arguments.q.commandId.fieldName:None,
+                #              Arguments.q.name.fieldName:str(arg[0]),
+                #              Arguments.q.value.fieldName:str(arg[1]),
+                #              Arguments.q.archived.fieldName:False}
+                #    conn.query(conn.sqlrepr(Insert(Arguments.q, values=fields)))
+                #    conn.cache.clear()
                     
             # /////////////// Handling of the Task
             elif isinstance(element, Task):
@@ -359,19 +363,20 @@ class PuliDB(object):
                           Tasks.q.licence.fieldName:element.licence,
                           Tasks.q.tags.fieldName:json.dumps(element.tags),
                           Tasks.q.validationExpression.fieldName:element.validationExpression,
-                          Tasks.q.archived.fieldName:False}
+                          Tasks.q.archived.fieldName:False,
+                          Tasks.q.args.fieldName:str(element.arguments)}
                 conn.query(conn.sqlrepr(Insert(Tasks.q, values=fields)))
                 conn.cache.clear()
-                for arg in element.arguments.items():
-                    conn = Arguments._connection
-                    fields = {Arguments.q.taskId.fieldName:element.id,
-                              Arguments.q.taskGroupId.fieldName:None,
-                              Arguments.q.commandId.fieldName:None,
-                              Arguments.q.name.fieldName:str(arg[0]),
-                              Arguments.q.value.fieldName:str(arg[1]),
-                              Arguments.q.archived.fieldName:False}
-                    conn.query(conn.sqlrepr(Insert(Arguments.q, values=fields)))
-                    conn.cache.clear()
+                #for arg in element.arguments.items():
+                #    conn = Arguments._connection
+                #    fields = {Arguments.q.taskId.fieldName:element.id,
+                #              Arguments.q.taskGroupId.fieldName:None,
+                #              Arguments.q.commandId.fieldName:None,
+                #              Arguments.q.name.fieldName:str(arg[0]),
+                #              Arguments.q.value.fieldName:str(arg[1]),
+                #              Arguments.q.archived.fieldName:False}
+                #    conn.query(conn.sqlrepr(Insert(Arguments.q, values=fields)))
+                #    conn.cache.clear()
                     
             # /////////////// Handling of the Command
             elif isinstance(element, Command):
@@ -387,19 +392,20 @@ class PuliDB(object):
                           Commands.q.endTime.fieldName:self.getDateFromTimeStamp(element.endTime),
                           Commands.q.assignedRNId.fieldName:element.renderNode.id if element.renderNode else None,
                           Commands.q.message.fieldName:element.message,
-                          Commands.q.archived.fieldName:False}
+                          Commands.q.archived.fieldName:False,
+                          Commands.q.args.fieldName:str(element.arguments)}
                 conn.query(conn.sqlrepr(Insert(Commands.q, values=fields)))
                 conn.cache.clear()
-                for arg in element.arguments.items():
-                    conn = Arguments._connection
-                    fields = {Arguments.q.taskId.fieldName:None,
-                              Arguments.q.taskGroupId.fieldName:None,
-                              Arguments.q.commandId.fieldName:element.id,
-                              Arguments.q.name.fieldName:str(arg[0]),
-                              Arguments.q.value.fieldName:str(arg[1]),
-                              Arguments.q.archived.fieldName:False}
-                    conn.query(conn.sqlrepr(Insert(Arguments.q, values=fields)))
-                    conn.cache.clear()
+                #for arg in element.arguments.items():
+                #    conn = Arguments._connection
+                #    fields = {Arguments.q.taskId.fieldName:None,
+                #              Arguments.q.taskGroupId.fieldName:None,
+                #              Arguments.q.commandId.fieldName:element.id,
+                #              Arguments.q.name.fieldName:str(arg[0]),
+                #              Arguments.q.value.fieldName:str(arg[1]),
+                #              Arguments.q.archived.fieldName:False}
+                #    conn.query(conn.sqlrepr(Insert(Arguments.q, values=fields)))
+                #    conn.cache.clear()
                     
             # /////////////// Handling of the RenderNode
             elif isinstance(element, RenderNode):
@@ -512,66 +518,94 @@ class PuliDB(object):
     # @param elements the elements to archive
     #
     def archiveElements(self, elements):
+        if not len(elements):
+            return
+        tasksList = []
+        taskgroupsList = []
+        commandsList = []
+        taskNodesList = []
+        folderNodesList = []
+        poolsList = []
+        poolsharesList = []
+        rendernodesList = []
         for element in elements:
-            # /////////////// Handling of the Task
             if isinstance(element, Task):
-                conn = Tasks._connection
-                conn.query(conn.sqlrepr(Update(Tasks.q, values={Tasks.q.archived.fieldName:True}, where=(Tasks.q.id == element.id))))
-                conn.cache.clear()
-                conn = Arguments._connection
-                conn.query(conn.sqlrepr(Update(Arguments.q, values={Arguments.q.archived.fieldName:True}, where=(Arguments.q.taskId == element.id))))
-                conn.cache.clear()
-
-            # /////////////// Handling of the TaskGroup
+                tasksList.append(element.id)
             elif isinstance(element, TaskGroup):
-                conn = TaskGroups._connection
-                conn.query(conn.sqlrepr(Update(TaskGroups.q, values={TaskGroups.q.archived.fieldName:True}, where=(TaskGroups.q.id == element.id))))
-                conn.cache.clear()
-                conn = Arguments._connection
-                conn.query(conn.sqlrepr(Update(Arguments.q, values={Arguments.q.archived.fieldName:True}, where=(Arguments.q.taskGroupId == element.id))))
-                conn.cache.clear()
-                
-            # /////////////// Handling of the Command
+                taskgroupsList.append(element.id)
             elif isinstance(element, Command):
-                conn = Commands._connection
-                conn.query(conn.sqlrepr(Update(Commands.q, values={Commands.q.archived.fieldName:True}, where=(Commands.q.id == element.id))))
-                conn.cache.clear()
-                
-            # /////////////// Handling of the TaskNode
+                commandsList.append(element.id)
             elif isinstance(element, TaskNode):
-                conn = TaskNodes._connection
-                conn.query(conn.sqlrepr(Update(TaskNodes.q, values={TaskNodes.q.archived.fieldName:True}, where=(TaskNodes.q.id == element.id))))
-                conn.cache.clear()
-                
-            # /////////////// Handling of the FolderNode
+                taskNodesList.append(element.id)
             elif isinstance(element, FolderNode):
-                conn = FolderNodes._connection
-                conn.query(conn.sqlrepr(Update(FolderNodes.q, values={FolderNodes.q.archived.fieldName:True}, where=(FolderNodes.q.id == element.id))))
-                conn.cache.clear()
-
-            # /////////////// Handling of the Pool
+                folderNodesList.append(element.id)
             elif isinstance(element, Pool):
-                conn = Pools._connection
-                conn.query(conn.sqlrepr(Update(Pools.q, values={Pools.q.archived.fieldName:True}, where=(Pools.q.id == element.id))))
-                conn.cache.clear()
-                for poolShare in element.poolShares.values():
-                    conn = PoolShares._connection
-                    conn.query(conn.sqlrepr(Update(PoolShares.q, values={PoolShares.q.archived.fieldName:True}, where=(PoolShares.q.id == poolShare.id))))
-                    conn.cache.clear()
-                    
-            # /////////////// Handling of the PoolShare
+                poolsList.append(element.id)
             elif isinstance(element, PoolShare):
-                conn = PoolShares._connection
-                conn.query(conn.sqlrepr(Update(PoolShares.q, values={PoolShares.q.archived.fieldName:True}, where=(PoolShares.q.id == element.id))))
-                conn.cache.clear()
-
-            # /////////////// Handling of the RenderNode
+                poolsharesList.append(element.id)
             elif isinstance(element, RenderNode):
-                conn = RenderNodes._connection
-                conn.query(conn.sqlrepr(Delete(RenderNodes.q, where=(RenderNodes.q.id == element.id))))
-                conn.cache.clear()
-
-
+                rendernodesList.append(element.id)
+                
+        # /////////////// Handling of the Tasks
+        if len(tasksList):
+            conn = Tasks._connection
+            sqlrepr = conn.sqlrepr(Update(Tasks.q, values={Tasks.q.archived.fieldName:True}, where=IN(Tasks.q.id, tasksList)))
+            conn.query(sqlrepr)
+            conn.cache.clear()
+            #conn = Arguments._connection
+            #conn.query(conn.sqlrepr(Update(Arguments.q, values={Arguments.q.archived.fieldName:True}, where=IN(Arguments.q.taskId, tasksList))))
+            #conn.cache.clear()
+        # /////////////// Handling of the TaskGroups
+        if len(taskgroupsList):
+            conn = TaskGroups._connection
+            conn.query(conn.sqlrepr(Update(TaskGroups.q, values={TaskGroups.q.archived.fieldName:True}, where=IN(TaskGroups.q.id, taskgroupsList))))
+            conn.cache.clear()
+            #conn = Arguments._connection
+            #conn.query(conn.sqlrepr(Update(Arguments.q, values={Arguments.q.archived.fieldName:True}, where=IN(Arguments.q.taskGroupId, taskgroupsList))))
+            #conn.cache.clear()
+        # /////////////// Handling of the Commands
+        if len(commandsList):
+            conn = Commands._connection
+            conn.query(conn.sqlrepr(Update(Commands.q, values={Commands.q.archived.fieldName:True}, where=IN(Commands.q.id, commandsList))))
+            conn.cache.clear()
+        # /////////////// Handling of the TaskNodes
+        if len(taskNodesList):
+            conn = TaskNodes._connection
+            sqlrepr = conn.sqlrepr(Update(TaskNodes.q, values={TaskNodes.q.archived.fieldName:True}, where=IN(TaskNodes.q.id, taskNodesList)))
+            conn.query(sqlrepr)
+            conn.cache.clear()
+            conn = PoolShares._connection
+            conn.query(conn.sqlrepr(Update(PoolShares.q, values={PoolShares.q.archived.fieldName:True}, where=IN(PoolShares.q.nodeId, taskNodesList))))
+            conn.cache.clear()
+        # /////////////// Handling of the FolderNodes
+        if len(folderNodesList):
+            conn = FolderNodes._connection
+            conn.query(conn.sqlrepr(Update(FolderNodes.q, values={FolderNodes.q.archived.fieldName:True}, where=IN(FolderNodes.q.id, folderNodesList))))
+            conn.cache.clear()
+            conn = PoolShares._connection
+            conn.query(conn.sqlrepr(Update(PoolShares.q, values={PoolShares.q.archived.fieldName:True}, where=IN(PoolShares.q.nodeId, folderNodesList))))
+            conn.cache.clear()
+        # /////////////// Handling of the Pools
+        if len(poolsList):
+            conn = Pools._connection
+            conn.query(conn.sqlrepr(Update(Pools.q, values={Pools.q.archived.fieldName:True}, where=IN(Pools.q.id, poolsList))))
+            conn.cache.clear()
+            conn = PoolShares._connection
+            conn.query(conn.sqlrepr(Update(PoolShares.q, values={PoolShares.q.archived.fieldName:True}, where=IN(PoolShares.q.poolId, poolsList))))
+            conn.cache.clear()
+        # /////////////// Handling of the PoolShares
+        if len(poolsharesList):
+            conn = PoolShares._connection
+            sqlrepr = conn.sqlrepr(Update(PoolShares.q, values={PoolShares.q.archived.fieldName:True}, where=IN(PoolShares.q.id, poolsharesList)))
+            conn.query(sqlrepr)
+            conn.cache.clear()
+        # /////////////// Handling of the RenderNodes
+        if len(rendernodesList):
+            conn = RenderNodes._connection
+            conn.query(conn.sqlrepr(Delete(RenderNodes.q, where=IN(RenderNodes.q.id, rendernodesList))))
+            conn.cache.clear()
+            
+            
     def getDateFromTimeStamp(self, timeStamp):
         return datetime.datetime.fromtimestamp(timeStamp) if timeStamp else None
 
@@ -777,14 +811,15 @@ class PuliDB(object):
                   Commands.q.endTime,
                   Commands.q.assignedRNId,
                   Commands.q.message,
-                  Commands.q.archived]
+                  Commands.q.archived,
+                  Commands.q.args]
         commands = conn.queryAll(conn.sqlrepr(Select(fields, where=(Commands.q.archived == False))))
         for num, dbCmd in enumerate(commands):
-            id, description, taskId, status, completion, creationTime, startTime, updateTime, endTime, assignedRNId, message, archived = dbCmd
+            id, description, taskId, status, completion, creationTime, startTime, updateTime, endTime, assignedRNId, message, archived, args = dbCmd
             realCmd = Command(id,
                               description,
                               None,
-                              {},
+                              eval(args),
                               status,
                               completion,
                               rnById.get(assignedRNId, None),
@@ -796,7 +831,8 @@ class PuliDB(object):
             assert not(status in [2, 3, 4] and realCmd.renderNode == None)
             cmdTaskIdList[taskId].append(realCmd)
             cmdDict[realCmd.id] = realCmd
-
+            
+        
         ### recreate the tasks
         realTasksList = {}
         conn = Tasks._connection
@@ -816,10 +852,11 @@ class PuliDB(object):
                   Tasks.q.licence,
                   Tasks.q.tags,
                   Tasks.q.validationExpression,
-                  Tasks.q.archived]
+                  Tasks.q.archived,
+                  Tasks.q.args]
         tasks = conn.queryAll(conn.sqlrepr(Select(fields, where=(Tasks.q.archived == False))))
         for num, dbTask in enumerate(tasks):
-            id, name, parentId, user, priority, dispatchKey, maxRN, runner, environment, requirements, minNbCores, maxNbCores, ramUse, licence, tags, validationExpression, archived = dbTask
+            id, name, parentId, user, priority, dispatchKey, maxRN, runner, environment, requirements, minNbCores, maxNbCores, ramUse, licence, tags, validationExpression, archived, args = dbTask
             taskCmds = []
             # get the commands associated to this task
             taskCmds = cmdTaskIdList[id]
@@ -831,7 +868,7 @@ class PuliDB(object):
                             priority,
                             dispatchKey,
                             runner,
-                            {},
+                            eval(args),
                             validationExpression,
                             taskCmds,
                             json.loads(requirements),
@@ -866,15 +903,16 @@ class PuliDB(object):
                   TaskGroups.q.requirements,
                   TaskGroups.q.tags,
                   TaskGroups.q.strategy,
-                  TaskGroups.q.archived]
+                  TaskGroups.q.archived,
+                  TaskGroups.q.args]
         taskGroups = conn.queryAll(conn.sqlrepr(Select(fields, where=(TaskGroups.q.archived == False))))
         for num, dbTaskGroup in enumerate(taskGroups):
-            id, name, parentId, user, priority, dispatcherKey, maxRN, environment, requirements, tags, strategy, archived = dbTaskGroup
+            id, name, parentId, user, priority, dispatcherKey, maxRN, environment, requirements, tags, strategy, archived, args = dbTaskGroup
             realTaskGroup = TaskGroup(id,
                                       name,
                                       None,
                                       user,
-                                      {},
+                                      eval(args),
                                       json.loads(environment),
                                       json.loads(requirements),
                                       maxRN, 
@@ -887,7 +925,7 @@ class PuliDB(object):
 
         # set the parents of the taskGroups
         for num, dbTaskGroup in enumerate(taskGroups):
-            id, name, parentId, user, priority, dispatcherKey, maxRN, environment, requirements, tags, strategy, archived = dbTaskGroup
+            id, name, parentId, user, priority, dispatcherKey, maxRN, environment, requirements, tags, strategy, archived, args = dbTaskGroup
             if parentId:
                 realTaskGroupsList[int(parentId)].addTask(realTaskGroupsList[int(id)])
                 realTaskGroupsList[int(id)].parent = realTaskGroupsList[int(parentId)]
@@ -895,30 +933,30 @@ class PuliDB(object):
 
         # set the parents of the tasks
         for num, dbTask in enumerate(tasks):
-            id, name, parentId, user, priority, dispatchKey, maxRN, runner, environment, requirements, minNbCores, maxNbCores, ramUse, licence, tags, validationExpression, archived = dbTask
+            id, name, parentId, user, priority, dispatchKey, maxRN, runner, environment, requirements, minNbCores, maxNbCores, ramUse, licence, tags, validationExpression, archived, args = dbTask
             if parentId:
                 realTaskGroupsList[int(parentId)].addTask(realTasksList[int(id)])
                 realTasksList[int(id)].parent = realTaskGroupsList[int(parentId)]
 
         ### relink arguments to tasks or taskGroups or commands
-        conn = Arguments._connection
-        fields = [Arguments.q.name,
-                  Arguments.q.value,
-                  Arguments.q.commandId,
-                  Arguments.q.taskId,
-                  Arguments.q.taskGroupId]
-        arguments = conn.queryAll(conn.sqlrepr(Select(fields, where=(Arguments.q.archived == False))))
+        #conn = Arguments._connection
+        #fields = [Arguments.q.name,
+        #          Arguments.q.value,
+        #          Arguments.q.commandId,
+        #          Arguments.q.taskId,
+        #          Arguments.q.taskGroupId]
+        #arguments = conn.queryAll(conn.sqlrepr(Select(fields, where=(Arguments.q.archived == False))))
         # process the results
-        for num, argument in enumerate(arguments):
-            name, value, commandId, taskId, taskGroupId = argument
-            name = str(name)
-            value = str(value)
-            if commandId is not None and commandId in cmdDict:
-                cmdDict[commandId].arguments[name] = value
-            elif taskId is not None and taskId in realTasksList:
-                realTasksList[taskId].arguments[name] = value
-            elif taskGroupId is not None and taskGroupId in realTaskGroupsList:
-                realTaskGroupsList[taskGroupId].arguments[name] = value
+        #for num, argument in enumerate(arguments):
+        #    name, value, commandId, taskId, taskGroupId = argument
+        #    name = str(name)
+        #    value = str(value)
+        #    if commandId is not None and commandId in cmdDict:
+        #        cmdDict[commandId].arguments[name] = value
+        #    elif taskId is not None and taskId in realTasksList:
+        #        realTasksList[taskId].arguments[name] = value
+        #    elif taskGroupId is not None and taskGroupId in realTaskGroupsList:
+        #        realTaskGroupsList[taskGroupId].arguments[name] = value
 
         ### recreate the rules:
         realRulesForFolderNodes = {}

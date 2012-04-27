@@ -100,6 +100,7 @@ class Command(models.Model):
             # test the return value of this request ?
             self.renderNode.clearAssignment(self)
 
+
     def setReadyAndKill(self):
         if self.renderNode is not None:
             self.renderNode.request("DELETE", "/commands/" + str(self.id) + "/")
@@ -107,10 +108,12 @@ class Command(models.Model):
             self.renderNode.reset()
         self.setReadyStatusAndClear()
 
+
     def setReadyStatus(self):
         if isRunningStatus(self.status):
             raise RuntimeError, "Cannot reset a running command."
         self.setReadyStatusAndClear()
+        
         
     def setReadyStatusAndClear(self):
         self.status = CMD_READY
@@ -118,6 +121,7 @@ class Command(models.Model):
         self.clearAssignment()
         self.completion = 0.0
         self.message = ""
+
 
     def computeAvgTimeByFrame(self):
         # compute the nbFrames
@@ -136,10 +140,15 @@ class Command(models.Model):
             self.avgTimeByFrame = (1000 * totalTime) / self.nbFrames
             if self.task:
                 for node in self.task.nodes.values():
-                    node.averageTimeByFrameList.append(self.avgTimeByFrame)
-                    node.averageTimeByFrame = sum(node.averageTimeByFrameList) / len(node.averageTimeByFrameList)
-                    node.minTimeByFrame = min(node.averageTimeByFrameList)
-                    node.maxTimeByFrame = max(node.averageTimeByFrameList)
+                    # FIXME if the node has a parent e.g we are in a FolderNode, we set the avgtime on the FolderNode -> can be improved
+                    if node.parent and node.parent != 1: 
+                        nodeToUpdate = node.parent
+                    else:
+                        nodeToUpdate = node
+                    nodeToUpdate.averageTimeByFrameList.append(self.avgTimeByFrame)
+                    nodeToUpdate.averageTimeByFrame = sum(nodeToUpdate.averageTimeByFrameList) / len(nodeToUpdate.averageTimeByFrameList)
+                    nodeToUpdate.minTimeByFrame = min(nodeToUpdate.averageTimeByFrameList)
+                    nodeToUpdate.maxTimeByFrame = max(nodeToUpdate.averageTimeByFrameList)
         
 
     def finish(self):

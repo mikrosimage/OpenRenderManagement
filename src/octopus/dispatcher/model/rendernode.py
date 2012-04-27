@@ -99,6 +99,7 @@ class RenderNode(models.Model):
             cmd.status = CMD_READY
             cmd.completion = 0.
             cmd.renderNode = None
+            self.clearAssignment(cmd)
         self.commands = {}
         # reset the associated poolshare, if any
         if self.currentpoolshare:
@@ -141,27 +142,35 @@ class RenderNode(models.Model):
         self.commands[command.id] = command
         self.updateStatus()
 
+    ## Reserve license
+    #
+    def reserveLicence(self, command, licenceManager):
+        self.licenceManager = licenceManager
+        licence = command.task.licence
+        if not licence:
+            return True
+        return licenceManager.reserveLicenceForRenderNode(licence, self)
+
+
+    ## Release licence
+    # 
+    def releaseLicence(self, command):
+        licence = command.task.licence
+        if licence:
+            self.licenceManager.releaseLicenceForRenderNode(licence, self)
+
 
     ## Reserve ressource
-    # @todo: check
+    # 
     def reserveRessources(self, command):
         res = min(self.freeCoresNumber, command.task.maxNbCores) or self.freeCoresNumber
         self.usedCoresNumber[command.id] = res
         self.freeCoresNumber -= res
 
-
         res = min(self.freeRam, command.task.ramUse) or self.freeRam
 
         self.usedRam[command.id] = res
         self.freeRam -= res
-
-
-    ## Release licence
-    # @todo: check
-    def releaseLicence(self, command):
-        licence = command.task.licence
-        if licence:
-            self.licenceManager.releaseLicenceForRenderNode(licence, self)
 
 
     ## Release ressource
@@ -213,7 +222,7 @@ class RenderNode(models.Model):
         if CMD_RUNNING in commandStatus:
             self.status = RN_WORKING
         elif CMD_ERROR in commandStatus:
-            self.status = RN_WORKING
+            self.status = RN_FINISHING
         elif CMD_FINISHING in commandStatus:
             self.status = RN_FINISHING
         elif CMD_ASSIGNED in commandStatus:
@@ -231,7 +240,7 @@ class RenderNode(models.Model):
     def releaseFinishingStatus(self):
         if self.status is RN_FINISHING:
             LOGGER.warning("Trying to release Finishing status for : %s, %s" % (self.name, self.status))
-            # remove the done commands
+            # remove the commands that are in a final status
             for cmd in self.commands.values():
                 if isFinalStatus(cmd.status):
                     if CMD_DONE == cmd.status:
@@ -311,14 +320,6 @@ class RenderNode(models.Model):
             time.sleep(settings.RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE)
         # request failed too many times so report a failure
         raise self.RequestFailed()
-
-
-    def reserveLicence(self, command, licenceManager):
-        self.licenceManager = licenceManager
-        licence = command.task.licence
-        if not licence:
-            return True
-        return licenceManager.reserveLicenceForRenderNode(licence, self)
 
 
     def canRun(self, command):

@@ -8,7 +8,7 @@
 ####################################################################################################
 from tornado.web import Application
 from octopus.dispatcher.webservice import commands, rendernodes, graphs, nodes,\
-    tasks, poolshares, pools
+    tasks, poolshares, pools, licenses
 from octopus.core.enums.command import *
 from octopus.core.framework import BaseResource
 
@@ -19,6 +19,9 @@ class WebServiceDispatcher(Application):
     def __init__(self, framework, port):
         super(WebServiceDispatcher, self).__init__([
             (r'/stats/?$', StatsResource, dict(framework=framework)),
+            
+            (r'/licenses/?$', licenses.LicensesResource, dict(framework=framework)),
+            (r'/licenses/([\w.-]+)/?$', licenses.LicenseResource, dict(framework=framework)),
             
             (r'/commands/?$', commands.CommandsResource, dict(framework=framework)),
             (r'/commands/(\d+)/?$', commands.CommandResource, dict(framework=framework)),
@@ -88,7 +91,8 @@ class StatsResource(BaseResource):
         stats = {
             'commands': commandsByStatus,
             'rendernodes': renderNodeStats,
-            'jobs': {'total': len([t for t in tree.tasks.values() if t.parent is None])}
+            'jobs': {'total': len([t for t in tree.tasks.values() if t.parent is None])},
+            'licences': repr(self.dispatcher.licenceManager)
         }
         self.writeCallback(stats)
 

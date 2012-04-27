@@ -23,7 +23,7 @@ class LicenceManager:
             
 
         def __repr__(self):
-            return self.name + " : " + str(self.used) + "/" + str(self.maximum) + " on use."
+            return self.name + " : " + str(self.used) + "/" + str(self.maximum) + " on use"
 
         def reserve(self):
             if self.used < self.maximum:                                   
@@ -104,6 +104,14 @@ class LicenceManager:
     def showLicences(self):
         for licence in self.licences.values():
             print licence
+            
+    
+    def __repr__(self):
+        rep = "{"
+        for lic in self.licences.values():
+            rep += repr(lic) + ","
+        rep += "}"
+        return rep
     
 
     def setMaxLicencesNumber(self,licenceName,number):

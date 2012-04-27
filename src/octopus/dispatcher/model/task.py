@@ -121,6 +121,7 @@ class Task(Model):
     startTime = FloatField(allow_null=True)
     updateTime = FloatField(allow_null=True)
     endTime = FloatField(allow_null=True)
+    licence = StringField()
 
     def __init__(self, id, name, parent, user, maxRN, priority, dispatchKey, runner, arguments, validationExpression, commands, requirements=[], minNbCores=1, maxNbCores=0, ramUse=0, environment={}, nodes={}, licence="", tags={}):
         assert parent is None or isinstance(parent, TaskGroup)

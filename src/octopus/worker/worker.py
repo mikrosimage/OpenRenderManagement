@@ -326,7 +326,8 @@ class Worker(MainLoopApplication):
                             LOGGER.warning("Aborting command %d", commandWatcher.commandId)
                             commandWatcher.processObj.kill()
                             commandWatcher.finished = True
-                            self.updateCompletionAndStatus(commandWatcher.commandId, None, COMMAND.CMD_READY, None)
+                            # don't think it's necessary here
+                            #self.updateCompletionAndStatus(commandWatcher.commandId, None, COMMAND.CMD_READY, None)
                     self.pauseWorker(True, killproc)
             else:
                 # if no killfile present and worker is paused, unpause it

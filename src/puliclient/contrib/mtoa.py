@@ -223,7 +223,7 @@ class MtoaRunner(CommandRunner):
                             use_shave=use_shave)
         
         # init log
-        helper.printStartLog("mtoarunner", "v2.0")
+        helper.printStartLog("mtoarunner", "v2.1")
 
         # check existence of output ass folders
         helper.checkExistenceOrCreateDir(arguments[OUTPUT_ASS_FILE], "output ass folder")
@@ -407,6 +407,16 @@ class MtoaRunner(CommandRunner):
                             print '      ' + oldy
                             shutil.move(filename, oldy)
                             shutil.move(dest, filename)
+                            # idiff comparison
+                            idiffcmd = ["/s/apps/lin/bin/idiff"]
+                            idiffcmd.append(filename)
+                            idiffcmd.append(oldy)
+                            idiffret = helper.execute(idiffcmd, env=os.environ)
+                            # if no difference, delete tiled version
+                            if idiffret == 0:
+                                print "       idiff : Tiled and Scanlined images match, removing Tiled version..."
+                                os.remove(oldy)
+                                print "         Tiled version removed."
             
             # Suppress image outputs list
             try:

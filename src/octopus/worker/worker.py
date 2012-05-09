@@ -206,6 +206,9 @@ class Worker(MainLoopApplication):
         self.updateSys = True
         infos = self.fetchSysInfos()
         dct = json.dumps(infos)
+        # if a command is currently running on this worker, notify the dispatcher
+        if len(self.commands.items()):
+            dct['commands'] = self.commands.items()
         headers = {}
         headers['content-length'] = len(dct)
 

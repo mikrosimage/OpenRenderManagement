@@ -839,6 +839,10 @@ class PuliDB(object):
                 #cmd.computeAvgTimeByFrame()
                 # update the command in the dispatch tree
                 tree.commands[cmd.id] = cmd
+                # if the command was last reported as running, reassign the rendernode in the model
+                if cmd.status == 3:
+                    cmd.renderNode.commands[cmd.id] = cmd
+                    cmd.renderNode.reserveRessources(cmd)
 
 
         ### recreate the taskGroups

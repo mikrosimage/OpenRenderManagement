@@ -47,10 +47,13 @@ class RenderNodeResource(BaseResource):
         if computerName.startswith(('1', '2')):
             return Http403(message="Cannot register a RenderNode without a name", content="Cannot register a RenderNode without a name")
         
+        dct = self.getBodyAsJSON()
         if computerName in self.getDispatchTree().renderNodes:
+            if 'commands' in dct:
+                for cmdId in dct['commands']:
+                    self.getDispatchTree().renderNodes[computerName].commands[cmdId] = self.getDispatchTree().commands[cmdId]
             return HttpConflict("RenderNode already registered.")
         else:
-            dct = self.getBodyAsJSON()
             import logging
             logging.getLogger("service.rendernodes").info("received" + repr(dct))
             for key in ('name', 'port', 'status', 'cores', 'speed', 'ram', 'pools', 'caracteristics'):

@@ -141,7 +141,7 @@ class Command(models.Model):
             if self.task:
                 for node in self.task.nodes.values():
                     # FIXME if the node has a parent e.g we are in a FolderNode, we set the avgtime on the FolderNode -> can be improved
-                    if node.parent and node.parent != 1: 
+                    if node.parent and node.parent.id != 1: 
                         nodeToUpdate = node.parent
                     else:
                         nodeToUpdate = node

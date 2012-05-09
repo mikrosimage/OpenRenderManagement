@@ -21,6 +21,10 @@ class PoolShareDictField(models.Field):
 
     def to_json(self, instance):
         return [poolShare.id for poolShare in instance.poolShares.values()]
+    
+class FolderNodeChildrenField(models.Field):
+    def to_json(self, instance):
+        return [child.id for child in instance.children]
 
 class BaseNode(models.Model):
 
@@ -184,6 +188,7 @@ class FolderNode(BaseNode):
 
     strategy = models.StrategyField()
     taskGroup = models.ModelField(allow_null=True)
+    children = FolderNodeChildrenField()
 
     @property
     def tags(self):
@@ -271,7 +276,7 @@ class FolderNode(BaseNode):
     def updateCompletionAndStatus(self):
         if not self.invalidated:
             return
-        if  not self.children:
+        if not self.children:
             completion = 1.0
             status = NODE_DONE
         else:
@@ -293,11 +298,13 @@ class FolderNode(BaseNode):
                 self.status = NODE_ERROR
             elif NODE_RUNNING in status:
                 self.status = NODE_RUNNING
-            elif NODE_READY in status or self.completion != 1.0:
+            elif NODE_READY in status:
                 self.status = NODE_READY
             elif NODE_BLOCKED  in status:
                 self.status = NODE_BLOCKED
             else:
+                # all commands are DONE, ensure the completion is at 1.0 (in case of failed completion update from some workers)
+                self.completion = 1.0
                 self.status = NODE_DONE
 
             times = [childNode.creationTime for childNode in self.children if childNode.creationTime is not None]
@@ -352,9 +359,9 @@ class FolderNode(BaseNode):
         '''
         for child in self.children:
             child.setStatus(status)
-        if len(self.children) == 0:
-            self.status = status
-            return True
+        #if len(self.children) == 0:
+        self.status = status
+        return True
 
 class TaskNode(BaseNode):
 
@@ -414,7 +421,6 @@ class TaskNode(BaseNode):
             for rendernode in  poolshare.pool.renderNodes:
                 if rendernode.isAvailable() and rendernode.canRun(command):
                     if rendernode.reserveLicence(command, self.dispatcher.licenceManager):
-#                        rendernode.status = RN_ASSIGNED
                         rendernode.addAssignment(command)
                         rendernode.reserveRessources(command)
                         return rendernode
@@ -426,7 +432,6 @@ class TaskNode(BaseNode):
     def updateCompletionAndStatus(self):
         if not self.invalidated:
             return
-        # FIXME: update to new status schema
         completion = 0.0
         status = defaultdict(int)
         self.readyCommandCount = 0
@@ -459,7 +464,8 @@ class TaskNode(BaseNode):
         elif CMD_TIMEOUT in status:
             self.status = NODE_ERROR
         else:
-            # all commands are DONE or USER_VALIDATED
+            # all commands are DONE, ensure the completion is at 1.0 (in case of failed completion update from some workers)
+            self.completion = 1.0
             self.status = NODE_DONE
 
         times = [command.creationTime for command in self.task.commands if command.creationTime is not None]

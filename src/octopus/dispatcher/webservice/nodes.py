@@ -163,12 +163,19 @@ class NodePauseKillResource(NodesResource):
     def put(self, nodeId):
         nodeId = int(nodeId)
         node = self._findNode(nodeId)
-        for command in node.task.commands:
-            if command.status is CMD_RUNNING:
-                command.setReadyAndKill()
+        if node.taskGroup:
+            for task in node.taskGroup.tasks:
+                self.pauseandkill(task)
+        else:
+            self.pauseandkill(node.task)
         for poolShare in node.poolShares:
             poolShare.allocatedRN = 0
         node.setPaused(True)
+        
+    def pauseandkill(self, task):
+        for command in task.commands:
+            if command.status is CMD_RUNNING:
+                command.setReadyAndKill()
 
 class NodePriorityResource(NodesResource):
     @queue

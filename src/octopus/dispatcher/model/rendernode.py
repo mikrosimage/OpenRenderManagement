@@ -156,7 +156,7 @@ class RenderNode(models.Model):
     # 
     def releaseLicence(self, command):
         licence = command.task.licence
-        if licence:
+        if licence and self.licenceManager:
             self.licenceManager.releaseLicenceForRenderNode(licence, self)
 
 
@@ -209,6 +209,7 @@ class RenderNode(models.Model):
                 if self.commands:
                     for cmd in self.commands.values():
                         cmd.status = CMD_TIMEOUT
+                        self.clearAssignment(cmd)
             return
         # This is necessary in case of a cancel command or a mylawn -k
         if not self.commands:

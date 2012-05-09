@@ -9,8 +9,6 @@ from octopus.dispatcher import settings
 
 
 class LicenceManager:
-    
-    
     class Licence:
         def __init__(self, name, maximum, renderNodeMode=False):
             if isinstance(renderNodeMode, str) and renderNodeMode.lower() == "false":
@@ -70,26 +68,26 @@ class LicenceManager:
                     self.licences[newLicence.name] = newLicence
 
 
-    def releaseLicenceForRenderNode(self, licenceName,renderNode):        
+    def releaseLicenceForRenderNode(self, licenceName, renderNode):        
         try:
             lic = self.licences[licenceName]
             try:
                 rnId = lic.currentUsingRenderNodes.index(renderNode)
                 del lic.currentUsingRenderNodes[rnId]
-                if (not lic.renderNodeMode) or (not renderNode in lic.currentUsingRenderNodes):
+                if not lic.renderNodeMode or not renderNode in lic.currentUsingRenderNodes:
                     # last instance of rendernode for that licence
                     lic.release()
             except IndexError:
-                print "cannot release licence",licenceName,"for renderNode",renderNode               
+                print "cannot release licence %s for renderNode %s" % (licenceName,renderNode)             
         except KeyError:
-            print "Licence " + licenceName + " not found"
+            print "Licence %s not found" % licenceName
             return False       
              
+             
     def reserveLicenceForRenderNode(self, licenceName,renderNode):      
-       
         try:
             lic = self.licences[licenceName]
-            if lic.renderNodeMode and (renderNode in lic.currentUsingRenderNodes):
+            if lic.renderNodeMode and renderNode in lic.currentUsingRenderNodes:
                 success = True
             else:
                 success = lic.reserve()
@@ -100,6 +98,7 @@ class LicenceManager:
         except KeyError, e:
             print "Licence " + licenceName + " not found"
             return False
+
 
     def showLicences(self):
         for licence in self.licences.values():

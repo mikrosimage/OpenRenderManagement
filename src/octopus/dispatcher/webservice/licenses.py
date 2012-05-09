@@ -37,4 +37,18 @@ class LicenseResource(BaseResource):
             self.dispatcher.licenceManager.setMaxLicencesNumber(licenseName, maxLic)
             self.writeCallback("OK")
             
+    @queue
+    def delete(self, licenseName):
+        data = self.getBodyAsJSON()
+        try:
+            rns = data['rns']
+        except KeyError:
+            return HTTPError(404, "Missing entry : 'rns'")
+        else:
+            rnsList = rns.split(",")
+            for rn in rnsList:
+                self.dispatcher.licenceManager.releaseLicenceForRenderNode(licenseName, rn)
+            self.writeCallback("OK")
+             
+            
             

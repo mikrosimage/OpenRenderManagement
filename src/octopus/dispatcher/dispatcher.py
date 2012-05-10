@@ -20,7 +20,7 @@ from octopus.dispatcher.db.pulidb import PuliDB
 from octopus.dispatcher import settings
 from octopus.dispatcher.poolman.filepoolman import FilePoolManager
 from octopus.dispatcher.poolman.wspoolman import WebServicePoolManager
-from octopus.dispatcher.licences.licencemanager import LicenceManager
+from octopus.dispatcher.licenses.licensemanager import LicenseManager
 from octopus.dispatcher.model.enums import *
 
 LOGGER = logging.getLogger('dispatcher')
@@ -61,7 +61,7 @@ class Dispatcher(MainLoopApplication):
 
         self.cycle = 1
         self.dispatchTree = DispatchTree()
-        self.licenceManager = LicenceManager()
+        self.licenseManager = LicenseManager()
         self.enablePuliDB = settings.DB_ENABLE
         self.cleanDB = settings.DB_CLEAN_DATA
 
@@ -432,12 +432,12 @@ class Dispatcher(MainLoopApplication):
     #
     def dumpToHTML(self):
         """
-        # for licence testing
+        # for license testing
         import random
         try:
             if not random.randint(0, 10):
-                self.licenceManager.setRenderNodeMode("maya", random.randint(0, 1))
-                self.licenceManager.setMaxLicencesNumber("maya", random.randint(1, 20))
+                self.licenseManager.setRenderNodeMode("maya", random.randint(0, 1))
+                self.licenseManager.setMaxLicensesNumber("maya", random.randint(1, 20))
         except:
             pass
         """
@@ -670,14 +670,14 @@ font-size:10px;
             self.currentUsingRenderNodes = []
         """
         corpus += "<tr class = \"headers\"><td>name</td><td>Used</td><td>RN mode</td><td>currently used by</td></tr>\n"
-        licences = self.licenceManager.licences
+        licences = self.licenseManager.licenses
         licencesNames = licences.keys()
         licencesNames.sort()
         for licenceName in licencesNames:
             linesNumber = max(1, len(set(licences[licenceName].currentUsingRenderNodes)))
             corpus += "<tr><td rowspan=\"%d\" align=\"center\" class = \"item\">%s</td>\n" % (linesNumber, licenceName)
             corpus += "<td rowspan=\"%d\" align=\"center\" class = \"item\">%d/%d</td>" % (linesNumber, licences[licenceName].used, licences[licenceName].maximum)
-            corpus += "<td rowspan=\"%d\" align=\"center\" class = \"item\">%r</td>" % (linesNumber, licences[licenceName].renderNodeMode)
+            #corpus += "<td rowspan=\"%d\" align=\"center\" class = \"item\">%r</td>" % (linesNumber, licences[licenceName].renderNodeMode)
             currentUsing = ""
             rns = [x for x in set(licences[licenceName].currentUsingRenderNodes)]
             rns.sort(lambda a, b: cmp(a.name, b.name))
@@ -691,10 +691,10 @@ font-size:10px;
                     if num == 1:
                         add = ""
                     else:
-                        if licences[licenceName].renderNodeMode:
-                            add = " (shared for %d commands)" % num
-                        else:
-                            add = " (for %d commands)" % num
+                        #if licences[licenceName].renderNodeMode:
+                        #    add = " (shared for %d commands)" % num
+                        #else:
+                        add = " (for %d commands)" % num
                     currentUsing += "<td class = \"item\">%s%s</td>" % (rn.name, add)
                     if c == 0 and len(rns):
                         currentUsing += "</tr><tr>"
@@ -926,8 +926,8 @@ font-size:10px;
         self.htmlData = "".join([header, corpus, bottom])
 
         if settings.DUMP_HTML_DATA:
-            srcFile = os.getenv('TEMP') + "/dumpDispatch_%03d.html" % self.cycle
-            destFile = os.getenv('TEMP') + "/dumpDispatch.html"
+            srcFile = "/tmp/dumpDispatch_%03d.html" % self.cycle
+            destFile = "/tmp/dumpDispatch.html"
 
             fileOut = open(srcFile , "w")
             fileOut.write(self.htmlData)

@@ -257,11 +257,11 @@ class DispatchTree(object):
         minNbCores = taskDefinition['minNbCores']
         maxNbCores = taskDefinition['maxNbCores']
         ramUse = taskDefinition['ramUse']
-        licence = taskDefinition['licence']
+        lic = taskDefinition['lic']
         tags = taskDefinition['tags']
         task = Task(None, name, None, user, maxRN, priority, dispatchKey, runner,
                     arguments, validationExpression, [], requirements, minNbCores,
-                    maxNbCores, ramUse, environment, licence=licence, tags=tags)
+                    maxNbCores, ramUse, environment, lic=lic, tags=tags)
 
         for commandDef in taskDefinition['commands']:
             description = commandDef['description']

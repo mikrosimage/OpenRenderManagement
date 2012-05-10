@@ -420,7 +420,7 @@ class TaskNode(BaseNode):
         for poolshare in [poolShare for poolShare in ep.poolShares.values() if poolShare.hasRenderNodesAvailable()]:
             for rendernode in  poolshare.pool.renderNodes:
                 if rendernode.isAvailable() and rendernode.canRun(command):
-                    if rendernode.reserveLicence(command, self.dispatcher.licenceManager):
+                    if rendernode.reserveLicense(command, self.dispatcher.licenseManager):
                         rendernode.addAssignment(command)
                         rendernode.reserveRessources(command)
                         return rendernode
@@ -451,6 +451,8 @@ class TaskNode(BaseNode):
             self.status = NODE_PAUSED
         elif CMD_ERROR in status:
             self.status = NODE_ERROR
+        elif CMD_TIMEOUT in status:
+            self.status = NODE_ERROR
         elif CMD_RUNNING in status:
             self.status = NODE_RUNNING
         elif CMD_ASSIGNED in status:
@@ -461,8 +463,6 @@ class TaskNode(BaseNode):
             self.status = NODE_READY
         elif CMD_BLOCKED in status:
             self.status = NODE_BLOCKED
-        elif CMD_TIMEOUT in status:
-            self.status = NODE_ERROR
         else:
             # all commands are DONE, ensure the completion is at 1.0 (in case of failed completion update from some workers)
             self.completion = 1.0

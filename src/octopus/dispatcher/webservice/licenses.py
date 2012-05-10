@@ -11,13 +11,13 @@ from tornado.httpclient import HTTPError
 class LicensesResource(BaseResource):
     @queue
     def get(self):
-        self.writeCallback(repr(self.dispatcher.licenceManager))
+        self.writeCallback(repr(self.dispatcher.licenseManager))
         
 class LicenseResource(BaseResource):
     @queue
     def get(self, licenseName):
         try:
-            lic = self.dispatcher.licenceManager.licences[licenseName]
+            lic = self.dispatcher.licenseManager.licenses[licenseName]
             licenseRepr = repr(lic) + " by {"
             for rn in lic.currentUsingRenderNodes:
                 licenseRepr += rn.name + ","
@@ -34,7 +34,7 @@ class LicenseResource(BaseResource):
         except KeyError:
             return HTTPError(404, "Missing entry : 'maxlic'")
         else:
-            self.dispatcher.licenceManager.setMaxLicencesNumber(licenseName, maxLic)
+            self.dispatcher.licenseManager.setMaxLicensesNumber(licenseName, maxLic)
             self.writeCallback("OK")
             
     @queue
@@ -47,7 +47,7 @@ class LicenseResource(BaseResource):
         else:
             rnsList = rns.split(",")
             for rn in rnsList:
-                self.dispatcher.licenceManager.releaseLicenceForRenderNode(licenseName, rn)
+                self.dispatcher.licenseManager.releaseLicenseForRenderNode(licenseName, rn)
             self.writeCallback("OK")
              
             

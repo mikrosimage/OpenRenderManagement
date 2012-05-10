@@ -121,9 +121,9 @@ class Task(Model):
     startTime = FloatField(allow_null=True)
     updateTime = FloatField(allow_null=True)
     endTime = FloatField(allow_null=True)
-    licence = StringField()
+    lic = StringField()
 
-    def __init__(self, id, name, parent, user, maxRN, priority, dispatchKey, runner, arguments, validationExpression, commands, requirements=[], minNbCores=1, maxNbCores=0, ramUse=0, environment={}, nodes={}, licence="", tags={}):
+    def __init__(self, id, name, parent, user, maxRN, priority, dispatchKey, runner, arguments, validationExpression, commands, requirements=[], minNbCores=1, maxNbCores=0, ramUse=0, environment={}, nodes={}, lic="", tags={}):
         assert parent is None or isinstance(parent, TaskGroup)
         Model.__init__(self)
         self.id = int(id) if id else None
@@ -143,7 +143,7 @@ class Task(Model):
         self.maxNbCores = int(maxNbCores)
         self.ramUse = int(ramUse)
         self.nodes = nodes.copy()
-        self.licence = licence
+        self.lic = lic
         self.tags = tags.copy()
         self.completion = 0
         self.status = 0
@@ -172,7 +172,7 @@ class Task(Model):
                                                              self.validationExpression,
                                                              self.commands,
                                                              self.requirements,
-                                                             self.licence)
+                                                             self.lic)
 
 class TaskListener(object):
 

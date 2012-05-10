@@ -58,7 +58,7 @@ class RenderNode(models.Model):
 
         self.coresNumber = int(coresNumber)
         self.ramSize = int(ramSize)
-        self.licenceManager = None
+        self.licenseManager = None
         self.freeCoresNumber = int(coresNumber)
         self.usedCoresNumber = {}
         self.freeRam = int(ramSize)
@@ -132,7 +132,7 @@ class RenderNode(models.Model):
             LOGGER.debug('attempt to clear assignment of not assigned command %d on worker %s', command.id, self.name)
         else:
             self.releaseRessources(command)
-            self.releaseLicence(command)
+            self.releaseLicense(command)
 
 
     ## Add a command assignment 
@@ -144,20 +144,20 @@ class RenderNode(models.Model):
 
     ## Reserve license
     #
-    def reserveLicence(self, command, licenceManager):
-        self.licenceManager = licenceManager
-        licence = command.task.licence
-        if not licence:
+    def reserveLicense(self, command, licenseManager):
+        self.licenseManager = licenseManager
+        lic = command.task.lic
+        if not lic:
             return True
-        return licenceManager.reserveLicenceForRenderNode(licence, self)
+        return licenseManager.reserveLicenseForRenderNode(lic, self)
 
 
     ## Release licence
     # 
-    def releaseLicence(self, command):
-        licence = command.task.licence
-        if licence and self.licenceManager:
-            self.licenceManager.releaseLicenceForRenderNode(licence, self)
+    def releaseLicense(self, command):
+        lic = command.task.lic
+        if lic and self.licenseManager:
+            self.licenseManager.releaseLicenseForRenderNode(lic, self)
 
 
     ## Reserve ressource

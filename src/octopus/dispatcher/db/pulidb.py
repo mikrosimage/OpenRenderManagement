@@ -334,7 +334,7 @@ class PuliDB(object):
                           Tasks.q.minNbCores.fieldName:element.minNbCores,
                           Tasks.q.maxNbCores.fieldName:element.maxNbCores,
                           Tasks.q.ramUse.fieldName:element.ramUse,
-                          Tasks.q.licence.fieldName:element.licence,
+                          Tasks.q.licence.fieldName:element.lic,
                           Tasks.q.tags.fieldName:json.dumps(element.tags),
                           Tasks.q.validationExpression.fieldName:element.validationExpression,
                           Tasks.q.archived.fieldName:False,

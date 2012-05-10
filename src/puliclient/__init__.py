@@ -105,7 +105,7 @@ class Task(object):
                  maxNbCores=0,
                  ramUse=0,
                  requirements={},
-                 licence="",
+                 lic="",
                  decomposer='puliclient.jobs.DefaultTaskDecomposer',
                  tags={}):
         self.parent = None
@@ -127,7 +127,7 @@ class Task(object):
         self.maxNbCores = maxNbCores
         self.ramUse = ramUse
         self.commands = []
-        self.licence = licence
+        self.lic = lic
         self.tags = tags.copy()
 
 
@@ -381,7 +381,8 @@ class GraphDumper():
             'maxNbCores': task.maxNbCores,
             'ramUse': task.ramUse,
             'commands': [self.computeCommandRepresentation(command) for command in task.commands],
-            'licence':task.licence,
+            'lic':task.lic,
+            'licence':task.lic,
             'tags': task.tags,
         }
 

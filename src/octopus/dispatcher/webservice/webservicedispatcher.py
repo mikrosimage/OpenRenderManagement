@@ -92,7 +92,7 @@ class StatsResource(BaseResource):
             'commands': commandsByStatus,
             'rendernodes': renderNodeStats,
             'jobs': {'total': len([t for t in tree.tasks.values() if t.parent is None])},
-            'licences': repr(self.dispatcher.licenceManager)
+            'licenses': repr(self.dispatcher.licenseManager)
         }
         self.writeCallback(stats)
 

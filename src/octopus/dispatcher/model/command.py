@@ -135,20 +135,22 @@ class Command(models.Model):
         except IndexError:
             pass
         # compute the average time by frame
-        if self.nbFrames != 0 and self.startTime is not None and self.endTime is not None:
+        if self.nbFrames != 0 and self.startTime is not None and self.endTime is not None and self.status == 5:
             totalTime = self.endTime - self.startTime
             self.avgTimeByFrame = (1000 * totalTime) / self.nbFrames
             if self.task:
                 for node in self.task.nodes.values():
-                    # FIXME if the node has a parent e.g we are in a FolderNode, we set the avgtime on the FolderNode -> can be improved
+                    # if the node has a parent e.g we are in a FolderNode, we set the avgtime on the FolderNode as well
                     if node.parent and node.parent.id != 1: 
-                        nodeToUpdate = node.parent
-                    else:
-                        nodeToUpdate = node
-                    nodeToUpdate.averageTimeByFrameList.append(self.avgTimeByFrame)
-                    nodeToUpdate.averageTimeByFrame = sum(nodeToUpdate.averageTimeByFrameList) / len(nodeToUpdate.averageTimeByFrameList)
-                    nodeToUpdate.minTimeByFrame = min(nodeToUpdate.averageTimeByFrameList)
-                    nodeToUpdate.maxTimeByFrame = max(nodeToUpdate.averageTimeByFrameList)
+                        self.appendAvgTimeByFrameToNode(node.parent)
+                    self.appendAvgTimeByFrameToNode(node)
+                    
+    
+    def appendAvgTimeByFrameToNode(self, node):
+        node.averageTimeByFrameList.append(self.avgTimeByFrame)
+        node.averageTimeByFrame = sum(node.averageTimeByFrameList) / len(node.averageTimeByFrameList)
+        node.minTimeByFrame = min(node.averageTimeByFrameList)
+        node.maxTimeByFrame = max(node.averageTimeByFrameList)
         
 
     def finish(self):

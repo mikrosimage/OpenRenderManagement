@@ -47,7 +47,7 @@ class PoolSharesResource(BaseResource):
             self.set_header('Location', '/poolshares/%r/' % poolShare.id)
             self.writeCallback(json.dumps(poolShare.to_json()))
         except PoolShareCreationException:
-            return HttpConflict("PoolShare of pool for this node already exists")
+            return HttpConflict("PoolShare of pool for this node already exists, re-assigning...")
 
 
 class PoolShareResource(BaseResource):

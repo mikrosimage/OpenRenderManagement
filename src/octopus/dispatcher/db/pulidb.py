@@ -197,7 +197,7 @@ def dropTables():
 
 
 class PuliDB(object):
-    def __init__(self, cleanDB):
+    def __init__(self, cleanDB, licManager=None):
         from octopus.dispatcher import settings
         # init the connection
         sqlhub.processConnection = connectionForURI(settings.DB_URL)
@@ -208,6 +208,7 @@ class PuliDB(object):
         # create the tables, if necessary
         LOGGER.info("checking database")
         createTables()
+        self.licenseManager = licManager
 #        Tasks._connection.debug = True
 
 
@@ -566,7 +567,7 @@ class PuliDB(object):
     # @var tree the DispatchTree instance.
     #
     def restoreStateFromDb(self, tree, rnsAlreadyLoaded):
-
+        begintime = time.time()
         # reload the pools and rns from the database
         if not rnsAlreadyLoaded:
             ### recreate the pools
@@ -625,7 +626,8 @@ class PuliDB(object):
                 poolsById[pool.id] = pool
             for rn in tree.renderNodes.values():
                 rnById[rn.id] = rn
-
+                
+        print "%s -- rendernodes complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
         ####### recreate the folder nodes with the correct ids
         nodesById = {}
         conn = FolderNodes._connection
@@ -660,6 +662,7 @@ class PuliDB(object):
                                     self.getTimeStampFromDate(endTime))
             nodesById[realFolder.id] = realFolder
 
+        print "%s -- foldernodes complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
         ### recreate the task nodes with the correct ids
         conn = TaskNodes._connection
         fields = [TaskNodes.q.id,
@@ -692,6 +695,7 @@ class PuliDB(object):
                                     self.getTimeStampFromDate(endTime))
             nodesById[realTaskNode.id] = realTaskNode
 
+        print "%s -- tasknodes complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
         ###### additional loops for nodes
         for num, dbFolderNode in enumerate(folderNodes):
             id, name, parentId, user, priority, dispatchKey, maxRN, taskGroupId, strategy, creationTime, startTime, updateTime, endTime, archived = dbFolderNode
@@ -728,6 +732,7 @@ class PuliDB(object):
                 statusIntList = [int(i) for i in statusList.split(",")]
                 nodesById[id].addDependency(nodesById[toNodeId], statusIntList)
 
+        print "%s -- add loop complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
         ### recreate the poolShares
         conn = PoolShares._connection
         fields = [PoolShares.q.id,
@@ -744,6 +749,7 @@ class PuliDB(object):
                                       maxRN)
             tree.poolShares[realPoolShare.id] = realPoolShare
 
+        print "%s -- poolshares complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
         ### recreate the commands
         cmdTaskIdList = defaultdict(list)
         cmdDict = {}
@@ -762,6 +768,8 @@ class PuliDB(object):
                   Commands.q.archived,
                   Commands.q.args]
         commands = conn.queryAll(conn.sqlrepr(Select(fields, where=(Commands.q.archived == False))))
+        
+        print "%s -- req for cmd complete %s --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)), len(commands))
         for num, dbCmd in enumerate(commands):
             id, description, taskId, status, completion, creationTime, startTime, updateTime, endTime, assignedRNId, message, archived, args = dbCmd
             if args is None:
@@ -782,6 +790,7 @@ class PuliDB(object):
             cmdTaskIdList[taskId].append(realCmd)
             cmdDict[realCmd.id] = realCmd
             
+        print "%s -- commands complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
         
         ### recreate the tasks
         realTasksList = {}
@@ -842,8 +851,10 @@ class PuliDB(object):
                 # if the command was last reported as running, reassign the rendernode in the model
                 if cmd.status == 3:
                     cmd.renderNode.commands[cmd.id] = cmd
+                    cmd.renderNode.reserveLicense(cmd, self.licenseManager)
                     cmd.renderNode.reserveRessources(cmd)
 
+        print "%s -- tasks complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
 
         ### recreate the taskGroups
         realTaskGroupsList = {}
@@ -896,6 +907,7 @@ class PuliDB(object):
                 realTaskGroupsList[int(parentId)].addTask(realTasksList[int(id)])
                 realTasksList[int(id)].parent = realTaskGroupsList[int(parentId)]
 
+        print "%s -- taskgroups complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
         ### recreate the rules:
         realRulesForFolderNodes = {}
         realRulesForTaskNodes = {}
@@ -921,6 +933,7 @@ class PuliDB(object):
             tree.tasks[nodesById[dbTaskNodeId].task.id].nodes[realRulesForTaskNodes[dbTaskNodeId]] = nodesById[dbTaskNodeId]
             tree.nodes[dbTaskNodeId] = nodesById[dbTaskNodeId]
 
+        print "%s -- affect task complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
         ### affect the taskGroup objects to the corresponding FolderNodes
         for num, dbFolderNode in enumerate(folderNodes):
             id, name, parentId, user, priority, dispatchKey, maxRN, taskGroupId, strategy, creationTime, startTime, updateTime, endTime, archived = dbFolderNode
@@ -930,6 +943,7 @@ class PuliDB(object):
                 tree.tasks[tgId].nodes[realRulesForFolderNodes[int(id)]] = nodesById[int(id)]
             tree.nodes[int(id)] = nodesById[int(id)]
 
+        print "%s -- affect taskgroup complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
         # calculate the average time by frame
         for cmd in tree.commands.values():
             cmd.computeAvgTimeByFrame()

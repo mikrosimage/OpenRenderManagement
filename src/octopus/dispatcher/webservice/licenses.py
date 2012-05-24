@@ -18,10 +18,10 @@ class LicenseResource(BaseResource):
     def get(self, licenseName):
         try:
             lic = self.dispatcher.licenseManager.licenses[licenseName]
-            licenseRepr = repr(lic) + " by {"
+            licenseRepr = "{'max':%s, 'used':%s, 'rns':[" % (str(lic.maximum), str(lic.used))
             for rn in lic.currentUsingRenderNodes:
-                licenseRepr += rn.name + ","
-            licenseRepr += "}"
+                licenseRepr += "\"%s\"," % rn.name
+            licenseRepr += "]}"
             self.writeCallback(licenseRepr)
         except KeyError:
             raise ResourceNotFoundError

@@ -4,7 +4,6 @@ from __future__ import with_statement
 
 import logging
 import socket
-import os
 import time
 from Queue import Queue
 from itertools import groupby
@@ -67,7 +66,7 @@ class Dispatcher(MainLoopApplication):
 
         self.pulidb = None
         if self.enablePuliDB:
-            self.pulidb = PuliDB(self.cleanDB)
+            self.pulidb = PuliDB(self.cleanDB, self.licenseManager)
         self.dispatchTree.registerModelListeners()
         rnsAlreadyInitialized = self.initPoolsDataFromBackend()
         if self.enablePuliDB and not self.cleanDB:

@@ -17,7 +17,7 @@ class LicenseManager:
             self.currentUsingRenderNodes = []
 
         def __repr__(self):
-            return self.name + " : " + str(self.used) + "/" + str(self.maximum) + " on use"
+            return "'" + self.name + "' : '" + str(self.used) + " / " + str(self.maximum) + "'"
 
         def reserve(self):
             if self.used < self.maximum:                                   
@@ -53,30 +53,49 @@ class LicenseManager:
                     self.licenses[newLicense.name] = newLicense
 
 
-    def releaseLicenseForRenderNode(self, licenseName, renderNode):        
-        try:
-            lic = self.licenses[licenseName]
-            try:
+    def releaseLicenseForRenderNode(self, licenseName, renderNode):
+        if "&" not in licenseName:
+            licenseName += "&"
+        for licName in licenseName.split("&"):
+            if len(licName):
+                try:
+                    lic = self.licenses[licName]
+                    try:
+                        rnId = lic.currentUsingRenderNodes.index(renderNode)
+                        del lic.currentUsingRenderNodes[rnId]
+                        lic.release()
+                    except IndexError:
+                        print "Cannot release license %s for renderNode %s" % (licName, renderNode)             
+                except KeyError:
+                    print "License %s not found" % licName
+             
+             
+    def reserveLicenseForRenderNode(self, licenseName, renderNode):
+        if "&" not in licenseName:
+            licenseName += "&"
+        globalsuccess = True
+        liclist = []
+        for licName in licenseName.split("&"):
+            if len(licName): 
+                try:
+                    lic = self.licenses[licName]
+                    success = lic.reserve()
+                    if success:
+                        lic.currentUsingRenderNodes.append(renderNode)
+                        liclist.append(lic)
+                    else:
+                        # if only one reservation fails, the whole reservation fails
+                        globalsuccess = False
+                except KeyError:
+                    print "License %s not found" % licName
+                    globalsuccess = False
+        # in case of reservation failure, release the already reserved licenses, if any
+        if not globalsuccess:
+            for lic in liclist:
                 rnId = lic.currentUsingRenderNodes.index(renderNode)
                 del lic.currentUsingRenderNodes[rnId]
                 lic.release()
-            except IndexError:
-                print "cannot release license %s for renderNode %s" % (licenseName,renderNode)             
-        except KeyError:
-            print "License %s not found" % licenseName
-            return False       
-             
-             
-    def reserveLicenseForRenderNode(self, licenseName,renderNode):      
-        try:
-            lic = self.licenses[licenseName]
-            success = lic.reserve()
-            if success:
-                lic.currentUsingRenderNodes.append(renderNode)
-            return success           
-        except KeyError:
-            print "License " + licenseName + " not found"
-            return False
+        return globalsuccess
 
 
     def showLicenses(self):

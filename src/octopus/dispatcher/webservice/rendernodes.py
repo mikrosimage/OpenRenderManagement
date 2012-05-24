@@ -4,7 +4,7 @@ import time
 
 from tornado.web import HTTPError
 from octopus.core.communication import Http400, Http404, Http403, HttpConflict
-from octopus.core.enums.rendernode import RN_PAUSED, RN_IDLE, RN_UNKNOWN, RN_BOOTING
+from octopus.core.enums.rendernode import RN_PAUSED, RN_IDLE, RN_UNKNOWN, RN_BOOTING, RN_ASSIGNED
 from octopus.core import enums
 from octopus.core.tools import json
 
@@ -118,13 +118,15 @@ class RenderNodeResource(BaseResource):
     def delete(self, computerName):
         computerName = computerName.lower()
         try:
-            rendernode = self.getDispatchTree().renderNodes[computerName]
+            renderNode = self.getDispatchTree().renderNodes[computerName]
         except KeyError:
             return Http404("RenderNode not found")
+        if renderNode.status == RN_ASSIGNED:
+            renderNode.reset()
         for pool in self.getDispatchTree().pools.values():
-            pool.removeRenderNode(rendernode)
+            pool.removeRenderNode(renderNode)
         #del self.getDispatchTree().renderNodes[computerName]
-        rendernode.remove()
+        renderNode.remove()
     
 class RenderNodeCommandsResource(BaseResource):
     @queue

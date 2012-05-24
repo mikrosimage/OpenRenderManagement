@@ -107,13 +107,13 @@ class MayagenfluidcacheRunner(CommandRunner):
         mayaSceneRootName = '3d_pr'
         if mayaScene.count(mayaSceneRootName) == 0:
             # TODO: a real mikser warning and exit
-            print ('Warning: unable to find the maya root directory')
+            print 'Warning: unable to find the maya root directory'
             
         #check existence and writability of render dir
         renderDir = arguments[RENDER_DIR]
         helper.checkExistenceOrCreateDir(renderDir, 'render dir')
         if not os.access(renderDir, os.W_OK):
-            print('Error: unable to write in %s' % renderDir)
+            print 'Error: unable to write in %s' % renderDir
             raise Exception
         
         self.melArgs[1] = str(arguments[START])

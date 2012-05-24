@@ -14,8 +14,6 @@ import logging
 
 from octopus.core.enums.command import *
 from . import models
-from octopus.core.enums.rendernode import RN_IDLE
-from httplib import HTTPResponse
 
 LOGGER = logging.getLogger('command')
 
@@ -134,7 +132,7 @@ class Command(models.Model):
             pass
         except IndexError:
             pass
-        # compute the average time by frame
+        # compute the average time by frame if the command is done
         if self.nbFrames != 0 and self.startTime is not None and self.endTime is not None and self.status == 5:
             totalTime = self.endTime - self.startTime
             self.avgTimeByFrame = (1000 * totalTime) / self.nbFrames

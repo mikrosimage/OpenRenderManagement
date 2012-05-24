@@ -41,20 +41,19 @@ class TasksResource(BaseResource):
         except:
             return HTTPError(400, 'Missing entry: "taskids".')
         else:
-            #message = ""
             taskidsList = taskids.split(",")
             for taskId in taskidsList:
                 taskId = int(taskId)
                 try:
                     task = self.getDispatchTree().tasks[taskId]
                 except KeyError:
+                    logger.warning("a pb occured with task %s" % str(taskId))
                     raise TaskNotFoundError(taskId)
                 if task.nodes.values()[0].status not in ALLOWED_STATUS_VALUES:
+                    logger.warning("bad status for task %s" % str(taskId))
                     return BadStatusValueResponse()
-                task.archive()   
-        self.set_status(202)
-                #message += "Task %d archived successfully.\n" % taskId
-            #self.writeCallback(message)
+                task.archive()
+            self.writeCallback("Tasks archived successfully.")
                 
                 
 class TaskResource(BaseResource):

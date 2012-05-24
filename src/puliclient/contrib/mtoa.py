@@ -411,8 +411,10 @@ class MtoaRunner(CommandRunner):
                             idiffcmd = ["/s/apps/lin/bin/idiff"]
                             idiffcmd.append(filename)
                             idiffcmd.append(oldy)
-                            idiffret = helper.execute(idiffcmd, env=os.environ)
-                            # if no difference, delete tiled version
+                            devnull = open('/dev/null', 'w')
+                            idiffret = subprocess.Popen(idiffcmd, env=os.environ, stdout=devnull).wait()
+                            #idiffret = helper.execute(idiffcmd, env=os.environ)
+                            # if no difference, delete the tiled version
                             if idiffret == 0:
                                 print "       idiff : Tiled and Scanlined images match, removing Tiled version..."
                                 os.remove(oldy)

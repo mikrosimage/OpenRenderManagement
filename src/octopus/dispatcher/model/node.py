@@ -95,11 +95,13 @@ class BaseNode(models.Model):
         self.minTimeByFrame = 0.0
         self.maxTimeByFrame = 0.0
 
+
     def to_json(self):
         base = super(BaseNode, self).to_json()
         base["tags"] = self.tags.copy()
         base["readyCommandCount"] = self.readyCommandCount
         return base
+    
 
     def addDependency(self, node, acceptedStatus):
         if not acceptedStatus:
@@ -113,6 +115,7 @@ class BaseNode(models.Model):
             self.dependencies.append(val)
             if self not in node.reverseDependencies:
                 node.reverseDependencies.append(self)
+
 
     def checkDependenciesSatisfaction(self):
         if self.dispatcher.cycle == self.lastDependenciesSatisfactionDispatchCycle:
@@ -137,10 +140,12 @@ class BaseNode(models.Model):
         obj.invalidated = True
         return obj
 
+
     def __setattr__(self, name, value):
         if name == 'parent':
             self.setParentValue(value)
         super(BaseNode, self).__setattr__(name, value)
+
 
     def setParentValue(self, parent):
         if self.parent is parent:
@@ -504,10 +509,10 @@ class TaskNode(BaseNode):
 
 
     def setPaused(self, paused):
-        self.paused = paused
-        if self.status == NODE_READY:
-            self.status = NODE_PAUSED
-        elif self.status == NODE_PAUSED and not paused:
+        # pause every job not done
+        if self.status != NODE_DONE:
+            self.paused = paused
+        if self.status == NODE_PAUSED and not paused:
             self.status = NODE_READY
         self.invalidate()
 

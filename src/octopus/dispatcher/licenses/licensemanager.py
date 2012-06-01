@@ -17,7 +17,7 @@ class LicenseManager:
             self.currentUsingRenderNodes = []
 
         def __repr__(self):
-            return "'" + self.name + "' : '" + str(self.used) + " / " + str(self.maximum) + "'"
+            return "\"" + self.name + "\" : \"" + str(self.used) + " / " + str(self.maximum) + "\""
 
         def reserve(self):
             if self.used < self.maximum:                                   
@@ -107,6 +107,8 @@ class LicenseManager:
         rep = "{"
         for lic in self.licenses.values():
             rep += repr(lic) + ","
+        # get rid of the last coma
+        rep = rep[:-1]
         rep += "}"
         return rep
     

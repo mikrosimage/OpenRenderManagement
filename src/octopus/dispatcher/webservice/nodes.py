@@ -158,6 +158,7 @@ class NodePausedResource(NodesResource):
             node.setPaused(paused)
         self.writeCallback("Paused flag changed.")
 
+
 class NodePauseKillResource(NodesResource):
     @queue
     def put(self, nodeId):

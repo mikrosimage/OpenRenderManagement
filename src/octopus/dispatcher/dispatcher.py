@@ -268,7 +268,7 @@ class Dispatcher(MainLoopApplication):
                 if node.poolShares.values()[0].userDefinedMaxRN:
                     nodesList.remove(node)
                     rnsSize -= node.poolShares.values()[0].maxRN
-            LOGGER.warning("Pool %s has a size of %s rns and %s nodes" % (pool.name, str(rnsSize), str(len(nodesList))))
+            #LOGGER.warning("Pool %s has a size of %s rns and %s nodes" % (pool.name, str(rnsSize), str(len(nodesList))))
             if len(nodesList) == 0:
                 break
             updatedmaxRN = rnsSize // len(nodesList)
@@ -285,7 +285,7 @@ class Dispatcher(MainLoopApplication):
                 if remainingRN > 0:
                     node.poolShares.values()[0].maxRN += 1
                     remainingRN -= 1
-                LOGGER.warning("   Node %s has a maxrn of %s" % (node.name, str(node.poolShares.values()[0].maxRN)))
+                #LOGGER.warning("   Node %s has a maxrn of %s" % (node.name, str(node.poolShares.values()[0].maxRN)))
         
         # now, we are treating every nodes
         # sort by id (fifo)   

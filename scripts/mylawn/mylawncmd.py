@@ -12,7 +12,7 @@ KILLFILE = "/tmp/render/killfile"
 class MyLawn(object):
     def process_args(self):
         parser = OptionParser("MyLawn v%s - Commandline to allow or forbid local renders" % VERSION)
-        parser.add_option("-k", "--kill", action="store_true", dest="killproc", help="kill all render processes", default=False)
+        parser.add_option("-k", "--kill", action="store_true", dest="killproc", help="kill all render processes and disable rendering", default=False)
         parser.add_option("-c", "--check", action="store_true", dest="checkstatusonly", help="only check server status and killfile presence", default=False)
         parser.add_option("-s", "--status", action="store", type="int", dest="status", help="'mylawn 0' to enable rendering (deletes killfile)\n'mylawn 1' to disable rendering (creates killfile)")
         return parser.parse_args()

@@ -347,8 +347,11 @@ if __name__ == "__main__":
         validationExpression = sys.argv[5]
         rawArguments = sys.argv[6:]
         argumentsDict = {}
-        for argument in rawArguments:
-            key, value = argument.split("=")
+        for argument in rawArguments: 
+            arglist = argument.split("=")
+            key = arglist[0]
+            value ='='.join(arglist[1:])
+            #key, value = argument.split("=")
             argumentsDict[key] = value
     except:
         print "Usage : commandwatcher.py /path/to/the/log/file workerPort id runnerscript argument1=value1,argument2=value2...",

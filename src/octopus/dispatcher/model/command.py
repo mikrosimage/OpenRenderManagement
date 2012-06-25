@@ -189,11 +189,9 @@ class CommandDatesUpdater(object):
 
     def onStatusUpdate(self, cmd):
         cmd.updateTime = time.time()
-        if isFinalStatus(cmd.status):
+        if cmd.status is CMD_DONE:
             cmd.endTime = cmd.updateTime
             cmd.computeAvgTimeByFrame()
-        else:
-            cmd.endTime = None
         if cmd.status is CMD_ASSIGNED:
             cmd.startTime = cmd.updateTime
         elif cmd.status < CMD_ASSIGNED:

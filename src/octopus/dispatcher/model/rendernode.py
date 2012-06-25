@@ -15,13 +15,14 @@ import logging
 import errno
 
 from octopus.dispatcher.model.enums import *
+from octopus.dispatcher import settings
 
 from . import models
 
 LOGGER = logging.getLogger('dispatcher.webservice')
 
 # set the status of a render node to RN_UNKNOWN after TIMEOUT secondes have elapsed after last update
-TIMEOUT = 60.0
+TIMEOUT = settings.RN_TIMEOUT
 
 ## This class represents the state of a RenderNode.
 #

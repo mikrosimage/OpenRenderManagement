@@ -54,3 +54,5 @@ DB_URL = "mysql://red:0ct0pus@127.0.0.1/pulidb"
 
 IMAGES_BASE_URL = "http://localhost/~bud/images"
 DUMP_HTML_DATA = False
+
+RN_TIMEOUT = 60.0

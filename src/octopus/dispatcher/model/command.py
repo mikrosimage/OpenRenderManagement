@@ -91,12 +91,15 @@ class Command(models.Model):
 
 
     def cancel(self):
-        if not isRunningStatus(self.status):
-            self.status = CMD_CANCELED
-        elif isRunningStatus(self.status):
+        if self.status in (CMD_FINISHING, CMD_DONE, CMD_CANCELED):
+            return
+        elif self.status == CMD_RUNNING:
             self.renderNode.request("DELETE", "/commands/" + str(self.id) + "/")
-            # test the return value of this request ?
+            # FIXME test the return value of this request ?
             self.renderNode.clearAssignment(self)
+        elif self.status == CMD_ASSIGNED:
+            self.renderNode.clearAssignment(self)
+        self.status = CMD_CANCELED
 
 
     def setReadyAndKill(self):

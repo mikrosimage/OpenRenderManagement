@@ -36,7 +36,7 @@ class CommandResource(BaseResource):
                 return None
             command = self.getDispatchTree().commands[commandId]
             # TODO should run the following piece of code at boot...
-            if command.status in [CMD_ASSIGNED, CMD_RUNNING] and command.renderNode and command not in command.renderNode.commands:
+            if command.status in [CMD_ASSIGNED, CMD_RUNNING] and command.renderNode and command.id not in command.renderNode.commands.keys():
                 command.status = CMD_ERROR
                 return Http400("Invalid command state. Command has been set to error.")
             if 'description' in toUpdate:

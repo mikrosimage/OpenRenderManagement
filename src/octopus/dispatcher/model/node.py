@@ -13,14 +13,13 @@ class NoRenderNodeAvailable(BaseException):
     '''Raised to interrupt the dispatch iteration on an entry point node.'''
 
 class DependencyListField(models.Field):
-
     def to_json(self, node):
         return [[dep.id, statusList] for (dep, statusList) in node.dependencies]
 
 class PoolShareDictField(models.Field):
-
     def to_json(self, instance):
-        return [poolShare.id for poolShare in instance.poolShares.values()]
+        #return [poolShare.id for poolShare in instance.poolShares.values()]
+        return [[poolShare.id, poolShare.pool.name] for poolShare in instance.poolShares.values()]
     
 class FolderNodeChildrenField(models.Field):
     def to_json(self, instance):
@@ -295,9 +294,7 @@ class FolderNode(BaseNode):
                 self.readyCommandCount += child.readyCommandCount
             self.completion = completion / len(self.children)
 
-            if NODE_CANCELED in status:
-                self.status = NODE_CANCELED
-            elif NODE_PAUSED in status:
+            if NODE_PAUSED in status:
                 self.status = NODE_PAUSED
             elif NODE_ERROR in  status:
                 self.status = NODE_ERROR
@@ -307,6 +304,8 @@ class FolderNode(BaseNode):
                 self.status = NODE_READY
             elif NODE_BLOCKED  in status:
                 self.status = NODE_BLOCKED
+            elif NODE_CANCELED in status:
+                self.status = NODE_CANCELED
             else:
                 # all commands are DONE, ensure the completion is at 1.0 (in case of failed completion update from some workers)
                 self.completion = 1.0
@@ -450,9 +449,7 @@ class TaskNode(BaseNode):
         else:
             self.completion = 1.0
 
-        if CMD_CANCELED in status:
-            self.status = NODE_CANCELED
-        elif self.paused:
+        if self.paused:
             self.status = NODE_PAUSED
         elif CMD_ERROR in status:
             self.status = NODE_ERROR
@@ -468,6 +465,8 @@ class TaskNode(BaseNode):
             self.status = NODE_READY
         elif CMD_BLOCKED in status:
             self.status = NODE_BLOCKED
+        elif CMD_CANCELED in status:
+            self.status = NODE_CANCELED
         else:
             # all commands are DONE, ensure the completion is at 1.0 (in case of failed completion update from some workers)
             self.completion = 1.0
@@ -485,7 +484,8 @@ class TaskNode(BaseNode):
         if times:
             self.updateTime = max(times)
 
-        if isFinalNodeStatus(self.status):
+        # only set the endTime on the node if it's done
+        if self.status == NODE_DONE:
             times = [command.endTime for command in self.task.commands if command.endTime is not None]
             if times:
                 self.endTime = max(times)

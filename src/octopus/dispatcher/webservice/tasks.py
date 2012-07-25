@@ -24,15 +24,16 @@ class BadStatusValueResponse(HTTPError):
 class TaskNotFoundError(ResourceNotFoundError):
     '''Raised when a requested task does not exist'''
 
+
 class TasksResource(BaseResource):
     @queue
     def get(self):
         tasks = self.getDispatchTree().tasks
         tasks = [task.to_json() for task in tasks.values()]
-        data = { 'tasks': tasks }
+        data = {'tasks': tasks}
         body = json.dumps(data)
         self.writeCallback(body)
-        
+
     @queue
     def delete(self):
         data = self.getBodyAsJSON()
@@ -54,8 +55,8 @@ class TasksResource(BaseResource):
                     return BadStatusValueResponse()
                 task.archive()
             self.writeCallback("Tasks archived successfully.")
-                
-                
+
+
 class TaskResource(BaseResource):
     @queue
     def get(self, taskID):
@@ -64,13 +65,14 @@ class TaskResource(BaseResource):
         odict = {'tasks': [task.to_json()]}
         body = json.dumps(odict)
         self.writeCallback(body)
-    
+
     def _findTask(self, taskId):
         taskId = int(taskId)
         try:
             return self.getDispatchTree().tasks[taskId]
         except KeyError:
             raise TaskNotFoundError(taskId)
+
 
 class TaskCommentResource(TaskResource):
     @queue
@@ -88,7 +90,7 @@ class TaskCommentResource(TaskResource):
             task = self._findTask(taskId)
             task.tags["comment"] = comment
             self.dispatcher.dispatchTree.toModifyElements.append(task)
-            
+
 
 class TaskEnvResource(TaskResource):
     @queue
@@ -101,7 +103,7 @@ class TaskEnvResource(TaskResource):
         task.environment.update(env)
         message = "Environment of task %d has successfully been set." % taskId
         self.writeCallback(message)
-    
+
     @queue
     def put(self, taskId):
         taskId = int(taskId)
@@ -132,7 +134,7 @@ class TaskArgumentResource(TaskResource):
         task.arguments.update(arguments)
         message = "Arguments of task %d have successfully been set." % taskId
         self.writeCallback(message)
-    
+
     @queue
     def put(self, taskId):
         taskId = int(taskId)
@@ -142,8 +144,8 @@ class TaskArgumentResource(TaskResource):
         task.arguments.update(arguments)
         message = "Arguments of task %d have successfully been updated." % taskId
         self.writeCallback(message)
-    
-    
+
+
 class TaskCommandResource(TaskResource):
     @queue
     def get(self, taskId):
@@ -156,11 +158,11 @@ class TaskCommandResource(TaskResource):
         try:
             body, rootTaskId = self.filteredTask(taskId, filterfunc)
             body = json.dumps({'commands': body, 'rootTask': rootTaskId})
-        except TaskNotFoundError, exc:
+        except TaskNotFoundError:
             return HTTPError(404, "No such task. Task %d was not found." % taskId)
         else:
             self.writeCallback(body)
-    
+
     def filteredTask(self, taskId, filterfunc):
         root = self._findTask(taskId)
         commands = []
@@ -188,7 +190,7 @@ class TaskTreeResource(TaskResource):
                 return HTTPError(404, "Task %d not found." % taskId)
         else:
             self.writeCallback(data)
-        
+
     def getSubTasks(self, rootTaskId):
         rootTask = self._findTask(rootTaskId)
         tasks = []
@@ -205,4 +207,3 @@ class TaskTreeResource(TaskResource):
             'tasks': tasks,
             'commands': commands
         }
-

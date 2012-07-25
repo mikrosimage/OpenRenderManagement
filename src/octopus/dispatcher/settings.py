@@ -1,5 +1,6 @@
 import os
 
+
 def getLocalAddress():
     import socket
     try:
@@ -9,6 +10,7 @@ def getLocalAddress():
     except:
         return "127.0.0.1"
 
+
 def loadSettingsFile(filename):
     g = {}
     l = {}
@@ -16,7 +18,6 @@ def loadSettingsFile(filename):
     settings = ((name, value) for name, value in l.items() if name.isupper() and  name in globals())
     globals().update(settings)
 
-from octopus.core.enums.config import *
 
 ## SETTINGS ###########################################################
 
@@ -50,7 +51,6 @@ DB_CLEAN_DATA = False
 DB_URL = "mysql://red:0ct0pus@127.0.0.1/pulidb"
 #DB_URL = "mysql://puliuser:0ct0pus@127.0.0.1/pulidb"
 #DB_URL = "sqlite:///path/to/my/database/file.db"
-#DB_URL = "sqlite:///tmp/dispatcher.db"
 
 IMAGES_BASE_URL = "http://localhost/~bud/images"
 DUMP_HTML_DATA = False

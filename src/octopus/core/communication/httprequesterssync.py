@@ -5,18 +5,18 @@ from octopus.core.communication.requestmanager import RequestManager
 
 
 class HTTPRequester(Thread):
-    
+
     def __init__(self, taskList):
         super(HTTPRequester, self).__init__()
         self.taskList = taskList
         self.stopFlag = False
-    
+
     def stopRequested(self):
         return self.stopFlag
-    
+
     def stop(self):
         self.stopFlag = True
-    
+
     def run(self):
         while True:
             self.taskList.cond.acquire()
@@ -25,32 +25,27 @@ class HTTPRequester(Thread):
                     self.taskList.cond.release()
                     return
                 self.taskList.cond.wait()
-            
+
             # get next url to retrieve from taskList.tasks
             id, host, port, path, headers, data, method = self.taskList.tasks.pop()
             self.taskList.cond.release()
-            
-            # get url content
-            url = "http://%s:%d/%s" % (host, port, path)
-            #print "(%s) getting url '%s'" % (self.getName(), url)
-            
+
             req = RequestManager(host, port)
             try:
                 data = getattr(req, method.lower())(path, data, headers)
-                #print "(%s) done getting url '%s' (%d bytes read)" % (self.getName(), url, len(data))
-                #self.synchronizer.responses[self.requestId] = handle.read()               
                 self.taskList.setResponse(id, data)
-            except http.BadStatusLine,e:
-                self.taskList.setResponse(id, 'BadStatusLine Error')  
+            except http.BadStatusLine:
+                self.taskList.setResponse(id, 'BadStatusLine Error')
+
 
 class HTTPRequestersSync(object):
-   
-    NOT_READY,IN_PROGRESS,READY = range(3)
-    
+
+    NOT_READY, IN_PROGRESS, READY = range(3)
+
     def __init__(self, threadCount=8):
         self.tasks = []
         self.cond = Condition()
-        self.threads = [ HTTPRequester(self) for i in xrange(threadCount) ]
+        self.threads = [HTTPRequester(self) for i in xrange(threadCount)]
         self.responses = {}
         self.idCounter = 0
         self.responsesLock = Lock()
@@ -58,12 +53,11 @@ class HTTPRequestersSync(object):
         self.workDone = Event()
         self.prepare()
         self.start()
-   
+
     def start(self):
         for thread in self.threads:
             thread.start()
-        #self.cond.notify(len(self.tasks))
-   
+
     def stopAll(self):
         for thread in self.threads:
             thread.stop()
@@ -72,8 +66,8 @@ class HTTPRequestersSync(object):
         self.cond.release()
         for thread in self.threads:
             thread.join()
-   
-    def addRequest(self, host, port, path,headers={}, data=None, method="GET"):
+
+    def addRequest(self, host, port, path, headers={}, data=None, method="GET"):
         self.cond.acquire()
         id = self.idCounter + 1
         self.idCounter = id
@@ -81,17 +75,17 @@ class HTTPRequestersSync(object):
         self.cond.notify(1)
         self.cond.release()
         self.responsesLock.acquire()
-        self.pendingRequests+=1
+        self.pendingRequests += 1
         self.responsesLock.release()
         return id
-    
+
     def setResponse(self, id, response):
         self.responsesLock.acquire()
         self.responses[id] = response
-        self.pendingRequests-=1
+        self.pendingRequests -= 1
         self.responsesLock.release()
         self.workDone.set()
-    
+
     def executeRequests(self):
         self.status = self.IN_PROGRESS
         if self.pendingRequests:
@@ -101,7 +95,7 @@ class HTTPRequestersSync(object):
                 self.responsesLock.acquire()
                 pendingRequests = self.pendingRequests
                 self.responsesLock.release()
-                if pendingRequests<=0:
+                if pendingRequests <= 0:
                     break
         self.status = self.READY
 
@@ -111,14 +105,14 @@ class HTTPRequestersSync(object):
         self.pendingRequests = 0
         self.responses.clear()
 
-    def getResponseByRequestId(self,id):
+    def getResponseByRequestId(self, id):
         if self.status == HTTPRequestersSync.READY:
             return self.responses[id]
         if self.status == HTTPRequestersSync.IN_PROGRESS:
-            raise RuntimeError("The request synchronization is still in progress")   
+            raise RuntimeError("The request synchronization is still in progress")
         if self.status == HTTPRequestersSync.NOT_READY:
-            raise RuntimeError("You should perform an .executeRequests() call first")           
-        
+            raise RuntimeError("You should perform an .executeRequests() call first")
+
 
 if __name__ == '__main__':
     import time
@@ -126,14 +120,13 @@ if __name__ == '__main__':
     t = HTTPRequestersSync(8)
     requests = []
     for i in xrange(5):
-        requests.append( t.addRequest("www.google.fr", 80, "/") )
+        requests.append(t.addRequest("www.google.fr", 80, "/"))
 
     t.executeRequests()
     for id in requests:
         resp = t.getResponseByRequestId(id)
         print id, ":", "%s..." % resp[:10]
-    
+
     t.stopAll()
     t0 = time.time() - t0
     print "done in %ss" % t0
-    

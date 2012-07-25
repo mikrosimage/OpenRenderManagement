@@ -1,6 +1,7 @@
 from octopus.core import framework
 from octopus.core.tools import Workload
 
+
 def queue(func):
     def queued_func(self, *args, **kwargs):
         return self.queueAndWait(func, self, *args, **kwargs)
@@ -13,7 +14,6 @@ class Controller(framework.Controller):
         workload = Workload(lambda: func(*args))
         self.framework.application.queueWorkload(workload)
         return workload.wait()
-
 
     @property
     def dispatcher(self):

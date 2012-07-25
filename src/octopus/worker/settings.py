@@ -1,9 +1,11 @@
 import socket
 
+
 def getLocalAddress():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.connect(('1.2.3.4', 56))
     return s.getsockname()[0]
+
 
 def loadSettingsFile(filename):
     g = {}
@@ -31,7 +33,7 @@ DISPATCHER_PORT = 8004
 DISPATCHER_ADDRESS = "puliserver"
 #DISPATCHER_ADDRESS = "pbookdev01"
 
-RUN_AS = "" 
+RUN_AS = ""
 #LOGDIR = os.path.join("/", "s", "apps", "lin", "puli", "logs", "workers")
 #LOGDIR = os.path.join("/", "tmp", "puli", "logs")
 #LOGDIR = os.path.abspath(LOGDIR)

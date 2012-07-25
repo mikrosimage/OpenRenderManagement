@@ -9,21 +9,25 @@ from . import models
 import logging
 LOGGER = logging.getLogger("dispatcher.dispatchtree")
 
+
 class NoRenderNodeAvailable(BaseException):
     '''Raised to interrupt the dispatch iteration on an entry point node.'''
+
 
 class DependencyListField(models.Field):
     def to_json(self, node):
         return [[dep.id, statusList] for (dep, statusList) in node.dependencies]
 
+
 class PoolShareDictField(models.Field):
     def to_json(self, instance):
-        #return [poolShare.id for poolShare in instance.poolShares.values()]
         return [[poolShare.id, poolShare.pool.name] for poolShare in instance.poolShares.values()]
-    
+
+
 class FolderNodeChildrenField(models.Field):
     def to_json(self, instance):
         return [child.id for child in instance.children]
+
 
 class BaseNode(models.Model):
 
@@ -94,13 +98,11 @@ class BaseNode(models.Model):
         self.minTimeByFrame = 0.0
         self.maxTimeByFrame = 0.0
 
-
     def to_json(self):
         base = super(BaseNode, self).to_json()
         base["tags"] = self.tags.copy()
         base["readyCommandCount"] = self.readyCommandCount
         return base
-    
 
     def addDependency(self, node, acceptedStatus):
         if not acceptedStatus:
@@ -114,7 +116,6 @@ class BaseNode(models.Model):
             self.dependencies.append(val)
             if self not in node.reverseDependencies:
                 node.reverseDependencies.append(self)
-
 
     def checkDependenciesSatisfaction(self):
         if self.dispatcher.cycle == self.lastDependenciesSatisfactionDispatchCycle:
@@ -132,19 +133,16 @@ class BaseNode(models.Model):
 
         return self.lastDependenciesSatisfaction
 
-
     def __new__(cls, *args, **kwargs):
         obj = super(BaseNode, cls).__new__(cls, *args, **kwargs)
         obj._parent_value = None
         obj.invalidated = True
         return obj
 
-
     def __setattr__(self, name, value):
         if name == 'parent':
             self.setParentValue(value)
         super(BaseNode, self).__setattr__(name, value)
-
 
     def setParentValue(self, parent):
         if self.parent is parent:
@@ -155,20 +153,16 @@ class BaseNode(models.Model):
                 parent.addChild(self, False)
         self.__dict__['parent'] = parent
 
-
     def dispatchIterator(self):
         raise NotImplementedError
-
 
     def computeDispatch(self):
         if self.poolShares:
             return list(self.dispatchIterator())
         return []
 
-
     def updateCompletionAndStatus(self):
         raise NotImplementedError
-
 
     def __repr__(self):
         nodes = [self]
@@ -208,12 +202,11 @@ class FolderNode(BaseNode):
     #              nodes that can be allocated to this tree node.
     # @param allocator a DispatchStrategy object
     #
-    def __init__(self, id, name, parent, user, priority, dispatchKey, maxRN, strategy, creationTime=None, startTime=None, updateTime=None, endTime=None, status=NODE_BLOCKED, taskGroup=None):
+    def __init__(self, id, name, parent, user, priority, dispatchKey, maxRN, strategy, creationTime=None, startTime=None, updateTime=None, endTime=None, status=NODE_DONE, taskGroup=None):
         BaseNode.__init__(self, id, name, parent, user, priority, dispatchKey, maxRN, creationTime, startTime, updateTime, endTime, status)
         self.children = []
         self.strategy = strategy
         self.taskGroup = taskGroup
-
 
     def addChild(self, child, setParent=True):
             if child.parent is not self and setParent:
@@ -222,14 +215,12 @@ class FolderNode(BaseNode):
                 self.children.append(child)
                 self.fireChildAddedEvent(child)
 
-
     def removeChild(self, child, setParent=True):
             if child.parent is self and setParent:
                 child.parent = None
             else:
                 self.children.remove(child)
                 self.fireChildRemovedEvent(child)
-
 
     def fireChildAddedEvent(self, child):
         self.invalidate()
@@ -239,7 +230,6 @@ class FolderNode(BaseNode):
             except AttributeError:
                 pass
 
-
     def fireChildRemovedEvent(self, child):
         self.invalidate()
         for l in self.changeListeners:
@@ -247,7 +237,6 @@ class FolderNode(BaseNode):
                 l.onChildRemovedEvent(self, child)
             except AttributeError:
                 pass
-
 
     ##
     # @return yields (node, command) tuples
@@ -275,7 +264,6 @@ class FolderNode(BaseNode):
                         continue
             else:
                 return
-
 
     def updateCompletionAndStatus(self):
         if not self.invalidated:
@@ -345,17 +333,14 @@ class FolderNode(BaseNode):
             # FIXME: suboptimal... lazy update someday ?
             self.taskGroup.updateStatusAndCompletion()
 
-
     def setPaused(self, paused):
         for child in self.children:
             child.setPaused(paused)
-
 
     def resetCompletion(self):
         self.completion = 0
         for child in self.children:
             child.resetCompletion()
-
 
     def setStatus(self, status):
         '''Propagates a target status update request.
@@ -363,9 +348,9 @@ class FolderNode(BaseNode):
         '''
         for child in self.children:
             child.setStatus(status)
-        #if len(self.children) == 0:
         self.status = status
         return True
+
 
 class TaskNode(BaseNode):
 
@@ -390,7 +375,6 @@ class TaskNode(BaseNode):
         BaseNode.__init__(self, id, name, parent, user, priority, dispatchKey, maxRN, creationTime, startTime, updateTime, endTime, status)
         self.task = task
         self.paused = paused
-
 
     def dispatchIterator(self, stopFunc, ep=None):
         if ep == None:
@@ -417,7 +401,6 @@ class TaskNode(BaseNode):
             else:
                 return
 
-
     def reserve_rendernode(self, command, ep):
         if ep == None:
             ep = self
@@ -431,7 +414,6 @@ class TaskNode(BaseNode):
         if not [poolShare for poolShare in ep.poolShares.values() if poolShare.hasRenderNodesAvailable()]:
             raise NoRenderNodeAvailable
         return None
-
 
     def updateCompletionAndStatus(self):
         if not self.invalidated:
@@ -507,7 +489,6 @@ class TaskNode(BaseNode):
                      if isinstance(taskNode, TaskNode) and taskNode.task == self.task]
         return all(BaseNode.checkDependenciesSatisfaction(taskNode) for taskNode in taskNodes)
 
-
     def setPaused(self, paused):
         # pause every job not done
         if self.status != NODE_DONE:
@@ -516,19 +497,14 @@ class TaskNode(BaseNode):
             self.status = NODE_READY
         self.invalidate()
 
-
     def resetCompletion(self):
         self.completion = 0
         for command in self.task.commands:
             command.completion = 0
 
-
     def setStatus(self, status):
         '''Update commands in order to reach the required status.
-        
-        @see doc/design/node-status-update.txt
         '''
-        from octopus.core.enums.command import isRunningStatus
         if status == NODE_CANCELED and self.status != NODE_DONE:
             for command in self.task.commands:
                 command.cancel()
@@ -540,4 +516,3 @@ class TaskNode(BaseNode):
         elif status in (NODE_DONE, NODE_ERROR, NODE_BLOCKED, NODE_RUNNING):
             return False
         return True
-

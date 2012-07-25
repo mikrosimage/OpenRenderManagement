@@ -3,8 +3,7 @@ Controller for the /nodes service.
 '''
 from octopus.core.enums.node import NODE_ERROR, NODE_CANCELED, NODE_DONE, NODE_READY
 from octopus.dispatcher.model.task import TaskGroup
-from octopus.core.enums.command import CMD_READY, CMD_DONE, CMD_BLOCKED,\
-    CMD_RUNNING
+from octopus.core.enums.command import CMD_READY, CMD_RUNNING
 
 import logging
 import time
@@ -19,11 +18,12 @@ from octopus.dispatcher.model import FolderNode
 
 from octopus.dispatcher.model.enums import NODE_STATUS
 
-__all__ = ['NodeNotFoundError', 'NotFolderInstanceError', 'NodesResource', 'NodeResource', 
-           'NodeNameResource', 'NodeStatusResource', 'NodePausedResource', 'NodePriorityResource', 
+__all__ = ['NodeNotFoundError', 'NotFolderInstanceError', 'NodesResource', 'NodeResource',
+           'NodeNameResource', 'NodeStatusResource', 'NodePausedResource', 'NodePriorityResource',
            'NodeDispatchKeyResource', 'NodeMaxRNResource', 'NodeStrategyResource', 'NodeChildrenResource']
 
 DEFAULT_LIMIT = 25
+
 
 class NodeNotFoundError(ResourceNotFoundError):
     '''
@@ -32,6 +32,7 @@ class NodeNotFoundError(ResourceNotFoundError):
 
     def __init__(self, node, *args, **kwargs):
         ResourceNotFoundError.__init__(self, node=node, *args, **kwargs)
+
 
 class NotFolderInstanceError(ControllerError):
     '''
@@ -58,12 +59,13 @@ class NodesResource(BaseResource):
             return Http404("Node not found. %s" % str(e))
         data = json.dumps(node.to_json())
         return data
-    
+
     def _findNode(self, nodeId):
         try:
             return self.getDispatchTree().nodes[int(nodeId)]
         except KeyError:
             raise NodeNotFoundError(nodeId)
+
 
 class NodeResource(NodesResource):
     @queue
@@ -84,7 +86,7 @@ class NodeNameResource(NodesResource):
         node = self._findNode(nodeId)
         node.name = nodeName
         self.writeCallback("Node name set")
-            
+
 
 class NodeStatusResource(NodesResource):
     @queue
@@ -96,7 +98,7 @@ class NodeStatusResource(NodesResource):
         data = self.getBodyAsJSON()
         try:
             nodeStatus = data['status']
-        except :
+        except:
             return Http400('Missing entry: "status".')
         else:
             arguments = self.request.arguments
@@ -105,7 +107,7 @@ class NodeStatusResource(NodesResource):
             # TODO handle the case when there is no node with nodeId
 
             # handles the case of retry all commands on error
-            if arguments.has_key("cmdStatus") and nodeStatus == NODE_READY:
+            if "cmdStatus" in arguments.keys() and nodeStatus == NODE_READY:
                 filterfunc = lambda command: command.status in [int(s) for s in arguments['cmdStatus']]
                 # get the list of commands that are in the requested status
                 if isinstance(node, FolderNode):
@@ -147,7 +149,7 @@ class NodeStatusResource(NodesResource):
 class NodePausedResource(NodesResource):
     @queue
     def put(self, nodeId):
-        data = self.getBodyAsJSON() 
+        data = self.getBodyAsJSON()
         try:
             paused = data['paused']
         except KeyError:
@@ -164,7 +166,7 @@ class NodePauseKillResource(NodesResource):
     def put(self, nodeId):
         nodeId = int(nodeId)
         node = self._findNode(nodeId)
-        if node.taskGroup:
+        if hasattr(node, "taskGroup"):
             for task in node.taskGroup.tasks:
                 self.pauseandkill(task)
         else:
@@ -172,11 +174,12 @@ class NodePauseKillResource(NodesResource):
         for poolShare in node.poolShares:
             poolShare.allocatedRN = 0
         node.setPaused(True)
-        
+
     def pauseandkill(self, task):
         for command in task.commands:
             if command.status is CMD_RUNNING:
                 command.setReadyAndKill()
+
 
 class NodePriorityResource(NodesResource):
     @queue
@@ -194,6 +197,7 @@ class NodePriorityResource(NodesResource):
         message = "Priority for node %d set to %d." % (nodeId, priority)
         self.writeCallback(message)
 
+
 class NodeDispatchKeyResource(NodesResource):
     @queue
     def put(self, nodeId):
@@ -210,6 +214,7 @@ class NodeDispatchKeyResource(NodesResource):
         message = "Dispatch key for node %d set to %f." % (nodeId, dispatchKey)
         self.writeCallback(message)
 
+
 class NodeMaxRNResource(NodesResource):
     @queue
     def put(self, nodeId):
@@ -225,6 +230,7 @@ class NodeMaxRNResource(NodesResource):
         node.maxRN = maxRN
         message = "MaxRN for node %d set to %d." % (nodeId, maxRN)
         self.writeCallback(message)
+
 
 class NodeStrategyResource(NodesResource):
     @queue
@@ -254,7 +260,7 @@ class NodeChildrenResource(NodesResource):
     def get(self, nodeId):
         '''
         Returns a HTTP response containing the list of the children of node `nodeId`.
-        
+
         :Parameters:
             nodeId : int
                 the id of the node from which to retrieve children
@@ -270,7 +276,7 @@ class NodeChildrenResource(NodesResource):
             data = self.request.arguments
         except Http400:
             data = {}
-            
+
         #
         # --- filtering
         #
@@ -286,7 +292,7 @@ class NodeChildrenResource(NodesResource):
         if 'user' in data:
             children = [child for child in children if child.user in data['user']]
         if 'days' in data:
-            children = [child for child in children if int((time.time() - child.creationTime)//86400) <= int(data['days'][0])]
+            children = [child for child in children if int((time.time() - child.creationTime) // 86400) <= int(data['days'][0])]
         for key in data:
             if key.startswith("tags:"):
                 tag = unicode(key[5:])

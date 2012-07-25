@@ -3,8 +3,10 @@ import re
 from octopus.dispatcher.model import Task, TaskNode, FolderNode
 from octopus.dispatcher.strategies import loadStrategyClass
 
+
 class RuleError(Exception):
     pass
+
 
 class GraphExistsError(RuleError):
     pass

@@ -6,13 +6,14 @@ Created on Apr 27, 2012
 
 from octopus.core.framework import ResourceNotFoundError, BaseResource, queue
 from tornado.httpclient import HTTPError
-    
-    
+
+
 class LicensesResource(BaseResource):
     @queue
     def get(self):
         self.writeCallback(repr(self.dispatcher.licenseManager))
-        
+
+
 class LicenseResource(BaseResource):
     @queue
     def get(self, licenseName):
@@ -25,7 +26,7 @@ class LicenseResource(BaseResource):
             self.writeCallback(licenseRepr)
         except KeyError:
             raise ResourceNotFoundError
-    
+
     @queue
     def put(self, licenseName):
         data = self.getBodyAsJSON()
@@ -36,7 +37,7 @@ class LicenseResource(BaseResource):
         else:
             self.dispatcher.licenseManager.setMaxLicensesNumber(licenseName, maxLic)
             self.writeCallback("OK")
-            
+
     @queue
     def delete(self, licenseName):
         data = self.getBodyAsJSON()
@@ -49,6 +50,3 @@ class LicenseResource(BaseResource):
             for rn in rnsList:
                 self.dispatcher.licenseManager.releaseLicenseForRenderNode(licenseName, rn)
             self.writeCallback("OK")
-             
-            
-            

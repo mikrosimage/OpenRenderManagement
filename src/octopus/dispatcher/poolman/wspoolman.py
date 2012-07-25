@@ -13,21 +13,19 @@ from octopus.dispatcher.poolman import IPoolManager, PoolDescription, ComputerDe
 
 
 class WebServicePoolManager(IPoolManager):
-    
+
     def __init__(self):
         self.requestManager = RequestManager(settings.WS_BACKEND_URL, settings.WS_BACKEND_PORT)
         self.defaultPool = PoolDescription(1, u'default', None)
         self.pools = [self.defaultPool]
         self.computers = []
-        
-        
+
     def getPool(self, poolName):
         for pool in self.pools:
             if pool.name == poolName:
                 return pool
         raise PoolNotFoundError(poolName)
-    
-    
+
     def listPools(self):
         poolsDict = json.loads(self.requestManager.get("/dev-Hd3dServices/v1/pools"))
         for pool in poolsDict['records']:
@@ -44,23 +42,20 @@ class WebServicePoolManager(IPoolManager):
                     continue
             self.pools.append(poolDesc)
         return self.pools
-    
-    
+
     def getComputer(self, computerName):
         computerName = socket.getfqdn(computerName)
         for computer in self.computers:
             if computer.name == computerName:
                 return computer
         raise ComputerNotFoundError(computerName)
-    
-    
+
     def getComputerById(self, id):
         for computer in self.computers:
             if computer.id == id:
                 return computer
         raise ComputerNotFoundError(id)
-    
-    
+
     def listComputers(self):
         computersDict = json.loads(self.requestManager.get("/dev-Hd3dServices/v1/computers"))
         for computer in computersDict['records']:
@@ -78,12 +73,9 @@ class WebServicePoolManager(IPoolManager):
             computerDesc = ComputerDescription(id, name, version, pools, cpucount, cpufreq, cpucores, ramsize, port, properties)
             self.computers.append(computerDesc)
         return self.computers
-    
-    
+
     def listComputersForPool(self, poolName):
         raise PoolNotFoundError(poolName)
 
-
     def setComputerWorkingFlag(self, computer, workingFlag):
         raise ComputerNotFoundError(computer)
-    

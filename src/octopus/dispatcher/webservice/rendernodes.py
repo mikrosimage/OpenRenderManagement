@@ -11,6 +11,10 @@ from octopus.core.tools import json
 from octopus.dispatcher.model import RenderNode
 from octopus.core.framework import BaseResource, queue
 
+import logging
+
+logger = logging.getLogger("dispatcher.webservice.RenderNodesResource")
+
 
 class RenderNodesResource(BaseResource):
     ## Lists the render nodes known by the dispatcher.
@@ -23,7 +27,8 @@ class RenderNodesResource(BaseResource):
         content = {'rendernodes': list(rendernode.to_json() for rendernode in rendernodes)}
         content = json.dumps(content)
         self.writeCallback(content)
-   
+
+
 class RenderNodeResource(BaseResource):
     ## Sends the JSON detailed representation of a given render node.
     #
@@ -40,13 +45,13 @@ class RenderNodeResource(BaseResource):
         content = rendernode.to_json()
         content = json.dumps(content)
         self.writeCallback(content)
-    
+
     @queue
     def post(self, computerName):
         computerName = computerName.lower()
         if computerName.startswith(('1', '2')):
             return Http403(message="Cannot register a RenderNode without a name", content="Cannot register a RenderNode without a name")
-        
+
         dct = self.getBodyAsJSON()
         if computerName in self.getDispatchTree().renderNodes:
             if 'commands' in dct:
@@ -54,12 +59,10 @@ class RenderNodeResource(BaseResource):
                     self.getDispatchTree().renderNodes[computerName].commands[cmdId] = self.getDispatchTree().commands[cmdId]
             return HttpConflict("RenderNode already registered.")
         else:
-            import logging
-            logging.getLogger("service.rendernodes").info("received" + repr(dct))
+            logger.info("received" + repr(dct))
             for key in ('name', 'port', 'status', 'cores', 'speed', 'ram', 'pools', 'caracteristics'):
                 if not key in dct:
                     return Http400("Missing key %r" % key, content="Missing key %r" % key)
-#                name = str(dct['name'])
             port = int(dct['port'])
             status = int(dct['status'])
             if status not in (RN_UNKNOWN, RN_PAUSED, RN_IDLE, RN_BOOTING):
@@ -88,7 +91,7 @@ class RenderNodeResource(BaseResource):
             renderNode.pools = poolList
             self.getDispatchTree().renderNodes[renderNode.name] = renderNode
             self.writeCallback(json.dumps(renderNode.to_json()))
-    
+
     @queue
     def put(self, computerName):
         computerName = computerName.lower()
@@ -107,7 +110,7 @@ class RenderNodeResource(BaseResource):
             else:
                 return Http403("Modifying %r attribute is not authorized." % key)
         self.writeCallback(json.dumps(renderNode.to_json()))
-    
+
     ## Removes a RenderNode from the dispatchTree and all pools.
     #
     # @param request the HTTP request object for this request
@@ -125,9 +128,9 @@ class RenderNodeResource(BaseResource):
             renderNode.reset()
         for pool in self.getDispatchTree().pools.values():
             pool.removeRenderNode(renderNode)
-        #del self.getDispatchTree().renderNodes[computerName]
         renderNode.remove()
-    
+
+
 class RenderNodeCommandsResource(BaseResource):
     @queue
     def put(self, computerName, commandId):
@@ -163,7 +166,7 @@ class RenderNodeCommandsResource(BaseResource):
                     raise TypeError(name, value)
                 res[name] = value
         return res
-    
+
     @queue
     def delete(self, computerName, commandId):
         computerName = computerName.lower()
@@ -191,7 +194,7 @@ class RenderNodeCommandsResource(BaseResource):
                 # command.cancel() ??? dans ce cas c'est pas ce qu'on devrait faire ??? FIXME
                 message = "Cannot remove a running command from a RenderNode."
                 return HTTPError(403, message)
-    
+
 
 class RenderNodeSysInfosResource(BaseResource):
     @queue
@@ -210,6 +213,16 @@ class RenderNodeSysInfosResource(BaseResource):
             renderNode.ram = int(dct["ram"])
         if "speed" in dct:
             renderNode.speed = float(dct["speed"])
+        if "status" in dct:
+            if renderNode.status == RN_UNKNOWN:
+                logger.warning("Worker was timeout...")
+                if int(dct["status"]) == RN_PAUSED:
+                    logger.warning("... is now paused")
+                    renderNode.status = RN_PAUSED
+                else:
+                    logger.warning("... is now idle")
+                    renderNode.status = RN_IDLE
+
         renderNode.lastAliveTime = time.time()
         renderNode.isRegistered = True
 
@@ -242,11 +255,6 @@ class RenderNodePausedResource(BaseResource):
         if paused:
             renderNode.status = RN_PAUSED
             if killproc:
-                #for command in renderNode.commands.values():
-                #    command.status = enums.command.CMD_READY
-                #    command.completion = 0.
-                #    command.renderNode = None
-                # FIXME ACS: the above code has been moved to the reset() method
                 renderNode.reset(paused=True)
         else:
             # FIXME maybe set this to RN_FINISHING ?

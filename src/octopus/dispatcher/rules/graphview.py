@@ -23,7 +23,6 @@ class GraphViewBuilder(object):
         self.dispatchTree = dispatchTree
         self.root = root
 
-
     def apply(self, task):
         id = None
         name = task.name
@@ -41,11 +40,9 @@ class GraphViewBuilder(object):
         task.nodes['graph_rule'] = node
         return [node]
 
-
     def processDependencies(self, dependencies):
         for task, taskdeps in dependencies.items():
             node = task.nodes['graph_rule']
             for deptask, statuslist in taskdeps.items():
                 depnode = deptask.nodes['graph_rule']
                 node.addDependency(depnode,  statuslist)
-

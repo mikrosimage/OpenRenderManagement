@@ -1,8 +1,6 @@
 import socket
 import httplib as http
-import urllib
-import urllib2, time
-
+import time
 
 
 def connect(self):
@@ -28,8 +26,6 @@ def connect(self):
         raise socket.error, msg
     self.sock.settimeout(None)
 
-#http.HTTPConnection.connect = connect
-
 
 class RequestManager(object):
 
@@ -38,19 +34,14 @@ class RequestManager(object):
             super(RequestManager.RequestError, self).__init__(message)
             self.status = status
 
-
-
     def __init__(self, host, port):
         self.host = host
         self.port = port
         self.requestId = 1
 
-
-
     def request(self, method, path, data=None, headers=None):
-        import socket
         if not headers:
-            header = {}
+            headers = {}
         headers["requestId"] = str(self.requestId)
         self.requestId += 1
         maxi = 10
@@ -97,7 +88,6 @@ class RequestManager(object):
                     # enough retry
                     raise
 
-
         else:
             rdata = "ERROR"
         return rdata
@@ -113,5 +103,3 @@ class RequestManager(object):
 
     def delete(self, path, data, headers={}):
         return self.request("DELETE", path, data, headers=headers)
-
-

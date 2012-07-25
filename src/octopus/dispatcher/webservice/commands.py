@@ -5,9 +5,10 @@ from octopus.core.enums.command import *
 from octopus.core.framework import BaseResource, queue
 from octopus.core.communication.http import Http404, Http400
 
-__all__ = [ 'CommandsResource', 'CommandResource' ]
+__all__ = ['CommandsResource', 'CommandResource']
 
 ALLOWED_STATUS_VALUES = (CMD_READY, CMD_DONE, CMD_CANCELED)
+
 
 class CommandsResource(BaseResource):
     def get(self):
@@ -15,7 +16,8 @@ class CommandsResource(BaseResource):
         commandRepresentations = [command.to_json() for command in commands]
         commandRepresentations = json.dumps(commandRepresentations)
         self.writeCallback(commandRepresentations)
-        
+
+
 class CommandResource(BaseResource):
     @queue
     def get(self, commandId):
@@ -27,7 +29,7 @@ class CommandResource(BaseResource):
             return Http404("No such command. Command with id %d not found." % id)
         body = json.dumps(rep)
         self.writeCallback(body)
-        
+
     @queue
     def put(self, commandId):
         def work(self, commandId, toUpdate):
@@ -63,17 +65,15 @@ class CommandResource(BaseResource):
             toUpdate['arguments'] = updatedData.pop('arguments')
         if 'status' in updatedData:
             toUpdate['status'] = updatedData.pop('status')
-        # any remaining field is an error 
+        # any remaining field is an error
         if updatedData:
             return Http400("Invalid fields. Updating the following field(s) is not allowed: %s" % (' '.join(updatedData.keys())))
         # send work to the dispatcher
         result = work(self, commandId, toUpdate)
-        
+
         if result is None:
             return Http404('No such command %r' % commandId)
         self.writeCallback(result)
-        
+
     def _findCommand(self, id):
         return self.getDispatchTree().commands[id]
-
-

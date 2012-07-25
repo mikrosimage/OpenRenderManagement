@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 ####################################################################################################
 # @file command.py
-# @package 
-# @author 
+# @package
+# @author
 # @date 2009/01/12
 # @version 0.1
 #
 # @mainpage
-# 
+#
 ####################################################################################################
 
 import os
@@ -16,10 +16,10 @@ import platform
 
 from octopus.core.enums.command import CMD_RUNNING
 
+
 ## This class represents a Command for the worker
 #
 class Command(object):
-
 
     def __init__(self, id, runner, arguments={}, validationExpression="VAL_TRUE", taskName="", relativePathToLogDir="", message="", environment={}):
         self.status = CMD_RUNNING

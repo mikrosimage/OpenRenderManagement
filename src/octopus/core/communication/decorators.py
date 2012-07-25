@@ -2,6 +2,7 @@ from octopus.core.tools import json
 
 from octopus.core.communication.http import Http400, Http405, Http411
 
+
 def allowmethods(*allowed_methods):
     def allowmethods_decorator(func):
         def decorated_func(self, request, *args, **kwargs):
@@ -10,6 +11,7 @@ def allowmethods(*allowed_methods):
             return func(self, request, *args, **kwargs)
         return decorated_func
     return allowmethods_decorator
+
 
 def requireContentLength(func):
     def decorated_func(self, request, *args, **kwargs):
@@ -20,6 +22,7 @@ def requireContentLength(func):
             return Http411()
     decorated_func.func_name = func.func_name
     return decorated_func
+
 
 def JSONContent(func):
     @requireContentLength

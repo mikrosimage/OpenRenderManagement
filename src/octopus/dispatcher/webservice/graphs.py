@@ -7,6 +7,7 @@ from octopus.core.framework import BaseResource, queue
 
 logger = logging.getLogger("dispatcher.webservice")
 
+
 class GraphesResource(BaseResource):
     @queue
     def post(self):
@@ -24,4 +25,3 @@ class GraphesResource(BaseResource):
         self.set_header('Location', 'http://%s:%s/nodes/%d' % (host, port, nodes[0].id))
         self.set_status(201)
         self.writeCallback("Graph created.\nCreated nodes: %s" % (",".join([str(node.id) for node in nodes])))
-

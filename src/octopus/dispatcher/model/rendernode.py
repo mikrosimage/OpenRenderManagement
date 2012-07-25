@@ -1,12 +1,12 @@
 ####################################################################################################
 # @file rendernode.py
 # @package dispatcher.model
-# @author 
+# @author
 # @date 2008/10/29
 # @version 0.1
 #
 # @mainpage
-# 
+#
 ####################################################################################################
 
 import httplib as http
@@ -23,6 +23,7 @@ LOGGER = logging.getLogger('dispatcher.webservice')
 
 # set the status of a render node to RN_UNKNOWN after TIMEOUT secondes have elapsed after last update
 TIMEOUT = settings.RN_TIMEOUT
+
 
 ## This class represents the state of a RenderNode.
 #
@@ -45,10 +46,9 @@ class RenderNode(models.Model):
     isRegistered = models.BooleanField()
     lastAliveTime = models.FloatField()
 
-
     def __init__(self, id, name, coresNumber, speed, ip, port, ramSize, caracteristics=None):
         '''Constructs a new Rendernode.
-        
+
         :parameters:
         - `name`: the name of the rendernode
         - `coresNumber`: the number of processors
@@ -82,13 +82,11 @@ class RenderNode(models.Model):
         if not "softs" in self.caracteristics:
             self.caracteristics["softs"] = []
 
-
     ## Returns True if this render node is available for command assignment.
     #
     def isAvailable(self):
-        return (self.isRegistered and self.status == RN_IDLE)# and self.freeCoresNumber)
+        return (self.isRegistered and self.status == RN_IDLE)  # and self.freeCoresNumber)
 
-  
     def reset(self, paused=False):
         # if paused, set the status to RN_PAUSED, else set it to Finishing, it will be set to IDLE in the next iteration of the dispatcher main loop
         if paused:
@@ -112,12 +110,10 @@ class RenderNode(models.Model):
         self.freeRam = int(self.ramSize)
         self.usedRam = {}
 
-
     ## Returns a human readable representation of this RenderNode.
     #
     def __repr__(self):
         return u'RenderNode(id=%s, name=%s, host=%s, port=%s)' % (repr(self.id), repr(self.name), repr(self.host), repr(self.port))
-
 
     ## Clears all of this rendernode's fields related to the specified assignment.
     #
@@ -135,9 +131,8 @@ class RenderNode(models.Model):
             self.releaseRessources(command)
             self.releaseLicense(command)
 
-
-    ## Add a command assignment 
-    #    
+    ## Add a command assignment
+    #
     def addAssignment(self, command):
         assert not command.id in self.commands
         self.commands[command.id] = command
@@ -152,17 +147,15 @@ class RenderNode(models.Model):
             return True
         return licenseManager.reserveLicenseForRenderNode(lic, self)
 
-
     ## Release licence
-    # 
+    #
     def releaseLicense(self, command):
         lic = command.task.lic
         if lic and self.licenseManager:
             self.licenseManager.releaseLicenseForRenderNode(lic, self)
 
-
     ## Reserve ressource
-    # 
+    #
     def reserveRessources(self, command):
         res = min(self.freeCoresNumber, command.task.maxNbCores) or self.freeCoresNumber
         self.usedCoresNumber[command.id] = res
@@ -173,9 +166,8 @@ class RenderNode(models.Model):
         self.usedRam[command.id] = res
         self.freeRam -= res
 
-
     ## Release ressource
-    # @todo: check
+    #
     def releaseRessources(self, command):
         res = self.usedCoresNumber[command.id]
         self.freeCoresNumber += res
@@ -185,7 +177,6 @@ class RenderNode(models.Model):
         self.freeRam += res
         del self.usedRam[command.id]
 
-
     ## Unassign a finished command
     #
     def unassign(self, command):
@@ -193,7 +184,6 @@ class RenderNode(models.Model):
             raise ValueError("cannot unassign unfinished command %s" % repr(command))
         self.clearAssignment(command)
         self.updateStatus()
-
 
     def remove(self):
         self.fireDestructionEvent(self)
@@ -229,13 +219,13 @@ class RenderNode(models.Model):
             self.status = RN_FINISHING
         elif CMD_ASSIGNED in commandStatus:
             self.status = RN_ASSIGNED
-        elif self.status == RN_UNKNOWN:
-            self.status = RN_IDLE
+        # FIXME: ACS - this is messing up in case of a RN_PAUSED that timeouts but is not offline
+        #elif self.status == RN_UNKNOWN:
+        #    self.status = RN_IDLE
         elif CMD_DONE in commandStatus:
-            self.status = RN_FINISHING # was RN_IDLE // modified by acs : pour resoudre le probleme de priorites des jobs
+            self.status = RN_FINISHING  # do not set the status to IDLE immediately, to ensure that the order of affectation will be respected
         elif self.status not in (RN_IDLE, RN_BOOTING, RN_UNKNOWN, RN_PAUSED):
             LOGGER.error("Unable to compute new status for rendernode %r (status %r, commands %r)", self, self.status, self.commands)
-
 
     ## releases the finishing status of the rendernodes
     #
@@ -250,31 +240,27 @@ class RenderNode(models.Model):
                     cmd.finish()
                     self.unassign(cmd)
             self.status = RN_IDLE
-            #if self.currentpoolshare:
-            #    self.currentpoolshare.allocatedRN -= 1
-            #    self.currentpoolshare = None
+
     ##
     #
     # @warning The returned HTTPConnection is not safe to use from multiple threads
     #
-    def  getHTTPConnection(self):
+    def getHTTPConnection(self):
         return http.HTTPConnection(self.host, self.port)
-#        if (self.httpConnection == None or 
-#            self.httpConnection.port!=self.port or 
+#        if (self.httpConnection == None or
+#            self.httpConnection.port!=self.port or
 #            self.httpConnection.host!=self.host
 #        ):
 #            self.httpConnection = http.HTTPConnection(self.host, self.port)
 #        return self.httpConnection
-
 
     ## An exception class to report a render node http request failure.
     #
     class RequestFailed(Exception):
         pass
 
-
     ## Sends a HTTP request to the render node and returns a (HTTPResponse, data) tuple on success.
-    #        
+    #
     # This method tries to send the request at most settings.RENDERNODE_REQUEST_MAX_RETRY_COUNT times,
     # waiting settings.RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE seconds between each try. It
     # then raises a RenderNode.RequestFailed exception.
@@ -285,8 +271,8 @@ class RenderNode(models.Model):
     # @param body the string body for this request (None by default)
     # @raise RenderNode.RequestFailed if the request fails.
     # @note it is a good idea to specify a Content-Length header when giving a non-empty body.
-    # @see dispatcher.settings the RENDERNODE_REQUEST_MAX_RETRY_COUNT and 
-    #                          RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE settings affect 
+    # @see dispatcher.settings the RENDERNODE_REQUEST_MAX_RETRY_COUNT and
+    #                          RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE settings affect
     #                          the execution of this method.
     #
     def request(self, method, url, body=None, headers={}):
@@ -323,10 +309,9 @@ class RenderNode(models.Model):
         # request failed too many times so report a failure
         raise self.RequestFailed()
 
-
     def canRun(self, command):
         for (requirement, value) in command.task.requirements.items():
-            if requirement.lower() == "softs": # todo
+            if requirement.lower() == "softs":  # todo
                 for soft in value:
                     if not soft in self.caracteristics['softs']:
                         return False

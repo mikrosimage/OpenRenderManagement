@@ -11,6 +11,7 @@ __all__ = []
 
 logger = logging.getLogger('dispatcher.webservice.PoolController')
 
+
 class PoolsResource(BaseResource):
     @queue
     def get(self):
@@ -30,7 +31,7 @@ class PoolResource(BaseResource):
         self.writeCallback({
             'pool': pool.to_json()
         })
-    
+
     @queue
     def post(self, poolName):
         if poolName in self.getDispatchTree().pools:
@@ -44,7 +45,7 @@ class PoolResource(BaseResource):
                 host = "%s:%d" % self.getServerAddress()
             self.set_header('Location', 'http://%s/pools/%s/' % (host, poolName))
             self.writeCallback(json.dumps(tmpPool.to_json()))
-    
+
     @queue
     def delete(self, poolName):
         try:
@@ -57,6 +58,7 @@ class PoolResource(BaseResource):
         except KeyError, e:
             print e
             return Http404('No such pool')
+
 
 class PoolRenderNodesResource(BaseResource):
     @queue

@@ -11,6 +11,7 @@ from octopus.core.framework import BaseResource, queue
 
 __all__ = []
 
+
 class PoolSharesResource(BaseResource):
     @queue
     def get(self):
@@ -18,7 +19,7 @@ class PoolSharesResource(BaseResource):
         self.writeCallback({
             'poolshares': dict(((poolShare.id, poolShare.to_json()) for poolShare in poolShares))
             })
-    
+
     @queue
     def post(self):
         dct = self.getBodyAsJSON()
@@ -41,9 +42,6 @@ class PoolSharesResource(BaseResource):
             poolShare = PoolShare(None, pool, node, maxRN)
             self.getDispatchTree().poolShares[poolShare.id] = poolShare
             # return the response
-#            response = HttpResponse(201)
-#            response['Location'] = '/poolshares/%r/' % poolShare.id
-#            response.writeCallback(json.dumps(poolShare.to_json()))
             self.set_header('Location', '/poolshares/%r/' % poolShare.id)
             self.writeCallback(json.dumps(poolShare.to_json()))
         except PoolShareCreationException:
@@ -74,4 +72,3 @@ class PoolShareResource(BaseResource):
         self.writeCallback({
             'poolshare': poolShare.to_json()
         })
-        

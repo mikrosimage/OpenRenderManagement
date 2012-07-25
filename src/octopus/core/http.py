@@ -1,6 +1,7 @@
 import httplib
 import socket
 
+
 class Request(object):
     '''A class that encapsulates a HTTP request and its execution.
 
@@ -17,13 +18,13 @@ class Request(object):
     GET /nodes/0 ==> 200 OK
     {}
     '''
-    
+
     def __init__(self, method, path, headers={}, body=''):
         self.method = method
         self.path = path
         self.headers = headers
         self.body = body
-        
+
     def call(self, conn, onResponse, onError):
         try:
             conn.request(self.method, self.path, self.body, self.headers)
@@ -36,4 +37,3 @@ class Request(object):
             onResponse(self, response)
             if response.length:
                 response.read()
-

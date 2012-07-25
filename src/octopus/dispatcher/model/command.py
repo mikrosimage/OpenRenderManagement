@@ -1,12 +1,12 @@
 ####################################################################################################
 # @file command.py
-# @package 
-# @author 
+# @package
+# @author
 # @date 2008/10/29
 # @version 0.1
 #
 # @mainpage
-# 
+#
 ####################################################################################################
 
 import time
@@ -16,6 +16,7 @@ from octopus.core.enums.command import *
 from . import models
 
 LOGGER = logging.getLogger('command')
+
 
 class Command(models.Model):
 
@@ -70,25 +71,20 @@ class Command(models.Model):
         # compute the average time by frame
         self.computeAvgTimeByFrame()
 
-
     def __repr__(self):
         return "Command(id=%r, status=%s)" % (self.id, CMD_STATUS_NAME[self.status])
-
 
     def clearAssignment(self):
         self.renderNode = None
         self.startTime = None
         self.updateTime = None
         self.endTime = None
-#        self.completion = 0
         self.status = CMD_READY
-
 
     def assign(self, renderNode):
         self.renderNode = renderNode
         self.startTime = time.time()
         self.status = CMD_ASSIGNED
-
 
     def cancel(self):
         if self.status in (CMD_FINISHING, CMD_DONE, CMD_CANCELED):
@@ -101,28 +97,23 @@ class Command(models.Model):
             self.renderNode.clearAssignment(self)
         self.status = CMD_CANCELED
 
-
     def setReadyAndKill(self):
         if self.renderNode is not None:
             self.renderNode.request("DELETE", "/commands/" + str(self.id) + "/")
-            # test the return value of this request ?
+            # FIXME test the return value of this request ?
             self.renderNode.reset()
         self.setReadyStatusAndClear()
 
-
     def setReadyStatus(self):
         if isRunningStatus(self.status):
-            raise RuntimeError, "Cannot reset a running command."
+            raise RuntimeError("Cannot reset a running command.")
         self.setReadyStatusAndClear()
-        
-        
+
     def setReadyStatusAndClear(self):
         self.status = CMD_READY
-        # added by acs
         self.clearAssignment()
         self.completion = 0.0
         self.message = ""
-
 
     def computeAvgTimeByFrame(self):
         # compute the nbFrames
@@ -142,17 +133,15 @@ class Command(models.Model):
             if self.task:
                 for node in self.task.nodes.values():
                     # if the node has a parent e.g we are in a FolderNode, we set the avgtime on the FolderNode as well
-                    if node.parent and node.parent.id != 1: 
+                    if node.parent and node.parent.id != 1:
                         self.appendAvgTimeByFrameToNode(node.parent)
                     self.appendAvgTimeByFrameToNode(node)
-                    
-    
+
     def appendAvgTimeByFrameToNode(self, node):
         node.averageTimeByFrameList.append(self.avgTimeByFrame)
         node.averageTimeByFrame = sum(node.averageTimeByFrameList) / len(node.averageTimeByFrameList)
         node.minTimeByFrame = min(node.averageTimeByFrameList)
         node.maxTimeByFrame = max(node.averageTimeByFrameList)
-        
 
     def finish(self):
         "Called on a finished command, it sets the endTime for this command and releases the resources on its associated render node"
@@ -161,7 +150,6 @@ class Command(models.Model):
         if self.renderNode is None:
             return
         self.renderNode.unassign(self)
-
 
     def to_json(self):
         jsonRepr = super(Command, self).to_json()

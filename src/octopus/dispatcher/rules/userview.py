@@ -8,6 +8,7 @@ logger = logging.getLogger("userview")
 
 RULENAME = 'UserView'
 
+
 class RuleError(rules.RuleError):
     '''Base class for the UserView related exceptions.'''
     pass
@@ -18,7 +19,6 @@ class UserView(object):
     def __init__(self, dispatchTree, root):
         self.dispatchTree = dispatchTree
         self.root = root
-
 
     def apply(self, task):
         nodeId = None
@@ -40,7 +40,6 @@ class UserView(object):
         else:
             return [node]
 
-
     def getOrCreateParentNode(self, task):
         if task.parent:
             return (task.parent.nodes[RULENAME], False)
@@ -51,10 +50,8 @@ class UserView(object):
         userNode = FolderNode(None, userName, self.root, userName, 1, 1.0, -1, FifoStrategy(), None)
         return (userNode, True)
 
-
     def processDependencies(self, dependencies):
         pass
-
 
     @classmethod
     def register(cls, dispatchTree, userName, rootName):

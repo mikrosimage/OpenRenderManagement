@@ -1,9 +1,9 @@
 def TicketRepresentation(ticket):
     ticketRepr = {
-        'id': ticket.id, # uuid.uuid4() generated
-        'status': ticket.status, # ACCEPTED, DONE, FAILED
-        'message': ticket.message, # 
-        'resultURL': ticket.resultURL, # None or url to the modified resource
+        'id': ticket.id,  # uuid.uuid4() generated
+        'status': ticket.status,  # ACCEPTED, DONE, FAILED
+        'message': ticket.message,
+        'resultURL': ticket.resultURL,  # None or url to the modified resource
     }
     return ticketRepr
 
@@ -30,7 +30,7 @@ def PoolRepresentation(pool):
     }
 
 TASK_ID = "taskId"
-TASK_NAME  = "taskName"
+TASK_NAME = "taskName"
 TASK_USER = "user"
 TASK_PRIORITY = "priority"
 TASK_DISPATCH_KEY = "dispatchKey"
@@ -39,6 +39,7 @@ TASK_JOBTYPE = "runner"
 TASK_ARGUMENTS = "arguments"
 TASK_REQUIREMENTS = "requirements"
 TASK_ENVIRONMENT = "environment"
+
 
 def TaskRepresentation(task):
     return {
@@ -51,5 +52,5 @@ def TaskRepresentation(task):
         TASK_JOBTYPE: task.runner,
         TASK_ARGUMENTS: task.arguments.copy(),
         TASK_REQUIREMENTS: task.requirements.copy(),
-        TASK_ENVIRONMENT: task.environment.copy(),        
+        TASK_ENVIRONMENT: task.environment.copy(),
     }

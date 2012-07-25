@@ -64,9 +64,6 @@ class AsIsStrategy(BaseStrategy):
         return "AsIsStrategy"
 
 
-import collections
-
-
 class FairStrategy(BaseStrategy):
 
     def __init__(self):

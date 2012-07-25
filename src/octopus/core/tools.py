@@ -25,6 +25,7 @@ except ImportError:
 
 from threading import Event
 
+
 class Workload(object):
 
     def __init__(self, job):
@@ -36,7 +37,7 @@ class Workload(object):
     def __call__(self):
         try:
             self.result = self.job()
-        except Exception, e:
+        except Exception:
             self.error = sys.exc_info()
 
     def submit(self):

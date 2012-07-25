@@ -50,9 +50,8 @@ class FilePoolManager(IPoolManager):
                 return pool
         raise PoolNotFoundError(poolName)
 
-
     def listPools(self):
-        id = 1 #FIXME this should be defined in the file
+        id = 1  # FIXME this should be defined in the file
         for name, computers in self.parsePoolDirectory(settings.FILE_BACKEND_POOL_PATH):
             id += 1
             version = None
@@ -69,17 +68,14 @@ class FilePoolManager(IPoolManager):
             self.pools.append(poolDesc)
         return self.pools
 
-
     def getComputer(self, computerName, port):
-        #computerName = socket.getfqdn(computerName)
         for computer in self.computers:
             if computer.name == computerName and int(computer.port) == int(port):
                 return computer
         raise ComputerNotFoundError(computerName)
 
-
     def listComputers(self):
-        id = 0 #FIXME this should be defined in the file
+        id = 0  # FIXME this should be defined in the file
         for desc in self.parseWorkerListFile(settings.FILE_BACKEND_RN_PATH):
             id += 1
             name = desc['hostname']
@@ -96,14 +92,11 @@ class FilePoolManager(IPoolManager):
             self.computers.append(computerDesc)
         return self.computers
 
-
     def listComputersForPool(self, poolName):
         raise PoolNotFoundError(poolName)
 
-
     def setComputerWorkingFlag(self, computer, workingFlag):
         raise ComputerNotFoundError(computer)
-
 
     def parseWorkerListFile(self, filename):
         def enumerateWorkers():
@@ -125,7 +118,6 @@ class FilePoolManager(IPoolManager):
                 yield workerDef
         return list(enumerateWorkers())
 
-
     def parsePoolFile(self, filename):
         def enumerateWorkers():
             for lineno, line in enumerate(file(filename)):
@@ -139,7 +131,6 @@ class FilePoolManager(IPoolManager):
                 workerDef['port'] = int(workerDef['port'])
                 yield(workerDef)
         return list(enumerateWorkers())
-
 
     def parsePoolDirectory(self, pooldirname):
         def enumeratePools():

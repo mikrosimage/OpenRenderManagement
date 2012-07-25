@@ -9,10 +9,11 @@ from tornado.web import Application, RequestHandler
 # /commands/ [GET] { commands: [ { id, status, completion } ] }
 # /commands/ [POST] { id, jobtype, arguments }
 # /commands/{id}/ [GET] { id, status, completion, jobtype, arguments }
-# /commands/{id}/ [DELETE] stops the job 
+# /commands/{id}/ [DELETE] stops the job
 # /online/ [GET] { online }
 # /online/ [SET] { online }
 # /status/ [GET] { status, ncommands, globalcompletion }
+
 
 class WorkerWebService(Application):
 
@@ -30,20 +31,22 @@ class WorkerWebService(Application):
         self.framework = framework
         self.port = port
 
+
 class BaseResource(RequestHandler):
     def initialize(self, framework):
         self.framework = framework
         self.rnId = None
-        
+
     def setRnId(self, request):
         if self.rnId == None and "rnId" in request.headers:
             self.rnId = request.headers['rnId']
-            
+
     def getBodyAsJSON(self):
         try:
             return json.loads(self.request.body)
         except:
             return Http400("The HTTP body is not a valid JSON object")
+
 
 class CommandsResource(BaseResource):
     def get(self):
@@ -55,7 +58,7 @@ class CommandsResource(BaseResource):
             'message': command.message,
         } for command in self.framework.application.commands.values()]
         self.write({'commands': commands})
-    
+
     def post(self):
         # @todo this setRnId call may be just in doOnline necessary
         self.setRnId(self.request)
@@ -67,6 +70,7 @@ class CommandsResource(BaseResource):
         del dct['id']
         self.framework.addOrder(self.framework.application.addCommandApply, **dct)
         self.set_status(202)
+
 
 class CommandResource(BaseResource):
     def put(self, id):
@@ -89,18 +93,20 @@ class CommandResource(BaseResource):
             }
             self.framework.addOrder(self.framework.application.updateCommandValidationApply, **args)
         self.set_status(202)
-    
+
     def delete(self, id):
         dct = {'commandId': int(id)}
         self.framework.addOrder(self.framework.application.stopCommandApply, **dct)
         self.set_status(202)
-        
+
+
 class DebugResource(BaseResource):
     def get(self):
         watchers = self.framework.application.commandWatchers.values()
         content = [{'id': watcher.command.id} for watcher in watchers]
         self.write(content)
-        
+
+
 class WorkerLogResource(RequestHandler):
     def get(self):
         logFilePath = os.path.join(settings.LOGDIR, "worker.log")
@@ -111,7 +117,8 @@ class WorkerLogResource(RequestHandler):
             self.set_header('Content-Type', 'text/plain')
             self.write(logFileContent)
         return Http404('no log file')
-    
+
+
 class CommandLogResource(RequestHandler):
     def get(self, path):
         logFilePath = os.path.join(settings.LOGDIR, path)
@@ -123,8 +130,8 @@ class CommandLogResource(RequestHandler):
             self.write(logFileContent)
         return Http404('no log file')
 
+
 class UpdateSysResource(BaseResource):
     def get(self):
         args = {}
         self.framework.addOrder(self.framework.application.updateSysInfos, **args)
-        

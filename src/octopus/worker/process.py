@@ -11,6 +11,7 @@ import subprocess
 LOGGER = logging.getLogger("process")
 CLOSE_FDS = (os.name != 'nt')
 
+
 def spawnCommandWatcher(pidfile, logfile, args, env):
     '''
     logfile is a file object
@@ -20,7 +21,7 @@ def spawnCommandWatcher(pidfile, logfile, args, env):
     envN = {}
     for key in env:
         envN[str(key)] = str(env[key])
-    # the use of os.setsid is necessary to create a processgroup properly for the commandwatcher 
+    # the use of os.setsid is necessary to create a processgroup properly for the commandwatcher
     # it creates a new session in which the cmdwatcher is the leader of the new process group
     pid = subprocess.Popen(args, bufsize=-1, stdin=devnull, stdout=logfile,
                            stderr=subprocess.STDOUT, close_fds=CLOSE_FDS,
@@ -68,7 +69,7 @@ class CommandWatcherProcess(object):
             try:
                 # attempt to fix a race condition:
                 # if we kill the watcher but the watcher had the time to
-                # create processgroup and start another process in between 
+                # create processgroup and start another process in between
                 # phases 1 and 2, then attempt to kill the processgroup.
                 os.killpg(self.pid, SIGTERM)
             except OSError, e:
@@ -78,4 +79,3 @@ class CommandWatcherProcess(object):
                     raise
         else:
             os.popen("taskkill /PID  %d" % self.pid)
-

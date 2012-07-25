@@ -15,7 +15,8 @@ logger = logging.getLogger("dispatcher.dispatchtree")
 
 
 def splitpath(path):
-    import urllib, posixpath
+    import urllib
+    import posixpath
 
     path = urllib.unquote(path)
     path = path.decode("UTF-8")
@@ -78,7 +79,6 @@ class DispatchTree(object):
         Command.changeListeners.append(self.commandListener)
         PoolShare.changeListeners.append(self.poolShareListener)
 
-
     def destroy(self):
         BaseNode.changeListeners.remove(self.nodeListener)
         Task.changeListeners.remove(self.taskListener)
@@ -111,10 +111,8 @@ class DispatchTree(object):
                 return default
         return node
 
-
     def updateCompletionAndStatus(self):
         self.root.updateCompletionAndStatus()
-
 
     def validateDependencies(self):
         nodes = set()
@@ -133,7 +131,6 @@ class DispatchTree(object):
                         if cmd.status == CMD_READY:
                             cmd.status = CMD_BLOCKED
 
-
     def registerNewGraph(self, graph):
         user = graph['user']
         taskDefs = graph['tasks']
@@ -142,7 +139,7 @@ class DispatchTree(object):
             maxRN = int(graph['maxRN'])
         else:
             maxRN = -1
-        
+
         #
         # Create objects.
         #
@@ -154,7 +151,7 @@ class DispatchTree(object):
                 task = self._createTaskGroupFromJSON(taskDef, user)
             tasks[index] = task
         root = tasks[graph['root']]
-        
+
         # get the pool
         try:
             pool = self.pools[poolName]
@@ -176,11 +173,11 @@ class DispatchTree(object):
         for (taskDef, task) in zip(taskDefs, tasks):
             taskDependencies = {}
             if not isinstance(taskDef['dependencies'], list):
-                raise SyntaxError, "Dependencies must be a list of (taskId, [status-list]), got %r." % taskDef['dependencies']
+                raise SyntaxError("Dependencies must be a list of (taskId, [status-list]), got %r." % taskDef['dependencies'])
             if not all(((isinstance(i, int) and
                          isinstance(sl, list) and
                          all((isinstance(s, int) for s in sl))) for (i, sl) in taskDef['dependencies'])):
-                raise SyntaxError, "Dependencies must be a list of (taskId, [status-list]), got %r." % taskDef['dependencies']
+                raise SyntaxError("Dependencies must be a list of (taskId, [status-list]), got %r." % taskDef['dependencies'])
             for (taskIndex, statusList) in taskDef['dependencies']:
                 taskDependencies[tasks[taskIndex]] = statusList
             dependencies[task] = taskDependencies
@@ -221,7 +218,6 @@ class DispatchTree(object):
 
         return nodes
 
-
     def _createTaskGroupFromJSON(self, taskGroupDefinition, user):
         # name, parent, arguments, environment, priority, dispatchKey, strategy
         id = None
@@ -239,7 +235,6 @@ class DispatchTree(object):
         tags = taskGroupDefinition['tags']
         return TaskGroup(id, name, parent, user, arguments, environment, requirements,
                          maxRN, priority, dispatchKey, strategy, tags=tags)
-
 
     def _createTaskFromJSON(self, taskDefinition, user):
         # id, name, parent, user, priority, dispatchKey, runner, arguments,
@@ -270,14 +265,12 @@ class DispatchTree(object):
 
         return task
 
-
     ## Resets the lists of elements to create or update in the database.
     #
     def resetDbElements(self):
         self.toCreateElements = []
         self.toModifyElements = []
         self.toArchiveElements = []
-
 
     ## Recalculates the max ids of all elements. Generally called after a reload from db.
     #
@@ -288,7 +281,6 @@ class DispatchTree(object):
         self.taskMaxId = max([t.id for t in self.tasks.values()]) if self.tasks else 0
         self.commandMaxId = max([c.id for c in self.commands.values()]) if self.commands else 0
         self.poolShareMaxId = max([ps.id for ps in self.poolShares.values()]) if self.poolShares else 0
-
 
     ## Removes from the dispatchtree the provided element and all its parents and children.
     #
@@ -336,7 +328,6 @@ class DispatchTree(object):
         elif isinstance(element, Command):
             del self.commands[element.id]
             self.toArchiveElements.append(element)
-
 
     ### methods called after interaction with a Task
 
@@ -440,4 +431,3 @@ class DispatchTree(object):
         else:
             self.poolShareMaxId = max(self.poolShareMaxId, poolShare.id)
         self.poolShares[poolShare.id] = poolShare
-

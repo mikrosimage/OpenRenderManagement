@@ -1,7 +1,8 @@
 from .models import (Model, StringField, ModelField, DictField, IntegerField, FloatField,
                      ModelListField, ModelDictField)
-from .enums import NODE_BLOCKED, NODE_CANCELED, NODE_DONE, NODE_ERROR, NODE_PAUSED, NODE_READY, NODE_RUNNING, NODE_READY
+from .enums import NODE_BLOCKED, NODE_CANCELED, NODE_DONE, NODE_ERROR, NODE_PAUSED, NODE_READY, NODE_RUNNING
 from collections import defaultdict
+
 
 class TaskGroup(Model):
 
@@ -48,19 +49,15 @@ class TaskGroup(Model):
         self.updateTime = None
         self.endTime = None
 
-
     def addTask(self, task):
         assert isinstance(task, Task) or isinstance(task, TaskGroup)
         self.tasks.append(task)
 
-
     def removeTask(self, task):
         self.tasks.remove(task)
 
-
     def archive(self):
         self.fireDestructionEvent(self)
-
 
     def updateStatusAndCompletion(self):
         if  not self.tasks:
@@ -90,7 +87,6 @@ class TaskGroup(Model):
                 self.status = NODE_BLOCKED
             else:
                 self.status = NODE_DONE
-
 
     def __iter__(self):
         return iter(self.tasks)
@@ -152,15 +148,12 @@ class Task(Model):
         self.updateTime = None
         self.endTime = None
 
-
     def addValidationExpression(self, validationExpression):
         self.validationExpression = "&".join(self.validationExpression,
                                              validationExpression)
 
-
     def archive(self):
         self.fireDestructionEvent(self)
-
 
     def repr(self):
         return "Task(%r, %r, %r, %r, %r, %r, %r, %r, %r, %r)" % (self.id,
@@ -173,6 +166,7 @@ class Task(Model):
                                                              self.commands,
                                                              self.requirements,
                                                              self.lic)
+
 
 class TaskListener(object):
 

@@ -37,12 +37,10 @@ class Dispatcher(MainLoopApplication):
     instance = None
     init = False
 
-
     def __new__(cls, framework):
         if cls.instance is None:
             cls.instance = super(Dispatcher, cls).__new__(cls, framework)
         return cls.instance
-
 
     def __init__(self, framework):
         if self.init:
@@ -90,7 +88,6 @@ class Dispatcher(MainLoopApplication):
         self.queue = Queue(maxsize=10000)
         if settings.DUMP_HTML_DATA:
             self.dumpToHTML()
-
 
     def initPoolsDataFromBackend(self):
         '''Loads pools and workers from appropriate backend.
@@ -149,7 +146,6 @@ class Dispatcher(MainLoopApplication):
 
         return True
 
-
     def loadRules(self):
         from .rules.graphview import GraphViewBuilder
         graphs = self.dispatchTree.findNodeByPath("/graphs", None)
@@ -169,25 +165,22 @@ class Dispatcher(MainLoopApplication):
                     root = node
                     break
             else:
-                raise RuntimeError, "missing root node for UserView"
+                raise RuntimeError("missing root node for UserView")
             userview = UserView(self.dispatchTree, root)
-
 
     def prepare(self):
         pass
 
-
     def stop(self):
         '''Stops the application part of the dispatcher.'''
         #self.httpRequester.stopAll()
-
+        pass
 
     @property
     def modified(self):
         return bool(self.dispatchTree.toArchiveElements or
                     self.dispatchTree.toCreateElements or
                     self.dispatchTree.toModifyElements)
-
 
     def mainLoop(self):
         '''Dispatcher main loop iteration.'''
@@ -197,7 +190,7 @@ class Dispatcher(MainLoopApplication):
             pass
         else:
             LOGGER.info("finished some network requests")
-            
+
         self.cycle += 1
         self.dispatchTree.updateCompletionAndStatus()
         self.updateRenderNodes()
@@ -218,7 +211,7 @@ class Dispatcher(MainLoopApplication):
         # compute and send command assignments to rendernodes
         assignments = self.computeAssignments()
         self.sendAssignments(assignments)
-        
+
         # call the release finishing status on all rendernodes
         for renderNode in self.dispatchTree.renderNodes.values():
             renderNode.releaseFinishingStatus()
@@ -226,14 +219,12 @@ class Dispatcher(MainLoopApplication):
         for workload in executedRequests:
             workload.submit()
 
-
     def updateDB(self):
         if settings.DB_ENABLE:
             self.pulidb.createElements(self.dispatchTree.toCreateElements)
             self.pulidb.updateElements(self.dispatchTree.toModifyElements)
             self.pulidb.archiveElements(self.dispatchTree.toArchiveElements)
         self.dispatchTree.resetDbElements()
-
 
     def computeAssignments(self):
         '''Computes and returns a list of (rendernode, command) assignments.'''
@@ -245,7 +236,7 @@ class Dispatcher(MainLoopApplication):
         # first create a set of entrypoints that are not done nor cancelled nor blocked nor paused and that have at least one command ready
         entryPoints = set([poolShare.node for poolShare in self.dispatchTree.poolShares.values() if poolShare.node.status not in [NODE_BLOCKED, NODE_DONE, NODE_CANCELED, NODE_PAUSED] and poolShare.node.readyCommandCount > 0])
         # sort by pool for the groupby
-        entryPoints = sorted(entryPoints, key= lambda node: node.poolShares.values()[0].pool)
+        entryPoints = sorted(entryPoints, key=lambda node: node.poolShares.values()[0].pool)
         # don't proceed to the calculation if no rns availables in the requested pools
         rnsBool = False
         for pool, nodesiterator in groupby(entryPoints, lambda x: x.poolShares.values()[0].pool):
@@ -254,7 +245,7 @@ class Dispatcher(MainLoopApplication):
                 rnsBool = True
         if not rnsBool:
             return []
-        
+
         # update the value of the maxrn for the poolshares (parallel dispatching)
         for pool, nodesiterator in groupby(entryPoints, lambda x: x.poolShares.values()[0].pool):
             # we are treating every active node of the pool
@@ -263,7 +254,7 @@ class Dispatcher(MainLoopApplication):
             rnsNotOffline = set([rn for rn in pool.renderNodes if rn.status not in [RN_UNKNOWN, RN_PAUSED]])
             rnsSize = len(rnsNotOffline)
             # if we have a userdefined maxRN for some nodes, remove them from the list and substracts their maxRN from the pool's size
-            l = nodesList[:] # duplicate the list to be safe when removing elements
+            l = nodesList[:]  # duplicate the list to be safe when removing elements
             for node in l:
                 if node.poolShares.values()[0].userDefinedMaxRN:
                     nodesList.remove(node)
@@ -274,9 +265,9 @@ class Dispatcher(MainLoopApplication):
             updatedmaxRN = rnsSize // len(nodesList)
             remainingRN = rnsSize % len(nodesList)
             # sort by id (fifo)
-            nodesList = sorted(nodesList, key= lambda x: x.id)
+            nodesList = sorted(nodesList, key=lambda x: x.id)
             # then sort by dispatchKey (priority)
-            nodesList = sorted(nodesList, key= lambda x: x.dispatchKey, reverse=True)
+            nodesList = sorted(nodesList, key=lambda x: x.dispatchKey, reverse=True)
             for node in nodesList:
                 if node.dispatchKey != 0:
                     node.poolShares.values()[0].maxRN = -1
@@ -286,23 +277,21 @@ class Dispatcher(MainLoopApplication):
                     node.poolShares.values()[0].maxRN += 1
                     remainingRN -= 1
                 #LOGGER.warning("   Node %s has a maxrn of %s" % (node.name, str(node.poolShares.values()[0].maxRN)))
-        
+
         # now, we are treating every nodes
-        # sort by id (fifo)   
-        entryPoints = sorted(entryPoints, key= lambda node: node.id)
+        # sort by id (fifo)
+        entryPoints = sorted(entryPoints, key=lambda node: node.id)
         # then sort by dispatchKey (priority)
-        entryPoints = sorted(entryPoints, key= lambda node: node.dispatchKey, reverse=True)
-        
-        # todo : tant qu'on a des rns availables dans les pools actives et des commandes ready dans les entrypoints, on boucle sur les eps et on procede aux affectations mais 1 rn par ep a la fois
-            
-        ###    
+        entryPoints = sorted(entryPoints, key=lambda node: node.dispatchKey, reverse=True)
+
+        ###
         for entryPoint in entryPoints:
             if any([poolShare.hasRenderNodesAvailable() for poolShare in entryPoint.poolShares.values()]):
                 try:
-                    for (rn,com) in entryPoint.dispatchIterator(lambda: self.queue.qsize() > 0):
-                        assignments.append((rn,com))
+                    for (rn, com) in entryPoint.dispatchIterator(lambda: self.queue.qsize() > 0):
+                        assignments.append((rn, com))
                         # increment the allocatedRN for the poolshare
-                        poolShare.allocatedRN +=1
+                        poolShare.allocatedRN += 1
                         # save the active poolshare of the rendernode
                         rn.currentpoolshare = poolShare
                 except NoRenderNodeAvailable:
@@ -312,11 +301,9 @@ class Dispatcher(MainLoopApplication):
             assignmentDict[rn].append(com)
         return assignmentDict.items()
 
-
     def updateRenderNodes(self):
         for rendernode in self.dispatchTree.renderNodes.values():
             rendernode.updateStatus()
-
 
     def sendAssignments(self, assignmentList):
         '''Processes a list of (rendernode, command) assignments.'''
@@ -336,7 +323,7 @@ class Dispatcher(MainLoopApplication):
                 arguments = {}
                 environment = {
                     'PULI_USER': command.task.user,
-                    'PULI_ALLOCATED_MEMORY': unicode(rendernode.usedRam[command.id]),  
+                    'PULI_ALLOCATED_MEMORY': unicode(rendernode.usedRam[command.id]),
                     'PULI_ALLOCATED_CORES': unicode(rendernode.usedCoresNumber[command.id]),
                 }
                 for ancestor in ancestors:
@@ -393,7 +380,6 @@ class Dispatcher(MainLoopApplication):
         LOGGER.info('Added graph "%s" to the model.' % graph['name'])
         return nodes
 
-
     def updateCommandApply(self, dct):
         commandId = dct['id']
         renderNodeName = dct['renderNodeId']
@@ -401,15 +387,15 @@ class Dispatcher(MainLoopApplication):
         try:
             command = self.dispatchTree.commands[commandId]
         except KeyError:
-            raise KeyError, "Command not found: %d" % commandId
+            raise KeyError("Command not found: %d" % commandId)
 
         if not command.renderNode or command.renderNode.name != renderNodeName:
-            raise KeyError, "Command %d is not running on rendernode %s" % (commandId, renderNodeName)
+            raise KeyError("Command %d is not running on rendernode %s" % (commandId, renderNodeName))
 
         rn = command.renderNode
         rn.lastAliveTime = max(time.time(), rn.lastAliveTime)
 
-        if "status" in dct :
+        if "status" in dct:
             command.status = int(dct['status'])
 
         if "completion" in dct and command.status == enums.CMD_RUNNING:
@@ -566,7 +552,7 @@ body {
 
 .progressT {
     padding: 0px;
-	margin : 0px;
+    margin : 0px;
     width: 100%;
     font-size: 10px;
     text-align: center;
@@ -578,14 +564,14 @@ body {
 }
 
 .tinyCol {
-	width: 5%;
-	text-align: center;
-	padding: 0px :
-	margin : 0px;
+    width: 5%;
+    text-align: center;
+    padding: 0px :
+    margin : 0px;
 }
 
 .largeTable .dep0 {
-	border: 0px;
+    border: 0px;
 }
 
 .largeTable > tbody > tr:hover {
@@ -728,8 +714,6 @@ font-size:10px;
         dependencies = []
         views = self.dispatchTree.root.children
 
-
-
         for view in views:
 
             corpus += "<br>\n<div class =\"zone\">\n"
@@ -774,7 +758,6 @@ font-size:10px;
                 currentId = alias.id
 
                 #currentPos = allNodes.getItem(currentId)
-
 
                 for dep in dependencies:
                     try:
@@ -859,8 +842,6 @@ font-size:10px;
                             zeroLine += "<td class = \"commandsTable\"><span class ='control'>&laquo;</span>&nbsp;<span class ='control'><span class ='stop' style ='background-color:white;'>&nbsp;</span></span></td>"
                         """
 
-
-
                     firstLine += "<tr>"
                     secondLine += "<tr>"
                     zeroLine += "<tr>"
@@ -883,13 +864,8 @@ font-size:10px;
                 arguments += "</table>"
 
                 deps = ""
-                firstCol = True
-
                 #
                 #
-                #
-                #
-
 
                 currentId = alias.id
                 styles = depStyle[currentId]
@@ -916,7 +892,6 @@ font-size:10px;
 </tr>
  """ % (depth, "&#149;" * 3 * depth, alias.name, pools, alias.id, alias.priority, alias.dispatchKey, pctage, alias.completion * 100, deps)
 
-
             corpus += "</table>\n"
             corpus += "</div>\n"
 
@@ -928,7 +903,7 @@ font-size:10px;
             srcFile = "/tmp/dumpDispatch_%03d.html" % self.cycle
             destFile = "/tmp/dumpDispatch.html"
 
-            fileOut = open(srcFile , "w")
+            fileOut = open(srcFile, "w")
             fileOut.write(self.htmlData)
             fileOut.close()
 

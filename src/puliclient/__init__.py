@@ -24,6 +24,7 @@ PAUSED = 6
 
 __all__ += ['BLOCKED', 'READY', 'RUNNING', 'DONE', 'ERROR', 'CANCELED', 'PAUSED']
 
+
 # -- Submission API
 #
 class Error(Exception):
@@ -59,6 +60,7 @@ class HierarchicalDict(dict):
 
 class DependencyCycleError(Error):
     '''Raised when a dependency is detected among the dependency graph.'''
+
 
 class GraphSubmissionError(Error):
     '''Raised on a job submission error.'''
@@ -130,7 +132,6 @@ class Task(object):
         self.lic = lic
         self.tags = tags.copy()
 
-
     def decompose(self):
         if not self.decomposed:
             print "decomposing", self.name
@@ -138,18 +139,14 @@ class Task(object):
             self.decomposed = True
         return self
 
-
     def addCommand(self, name, arguments):
         self.commands.append(Command(name, self, arguments))
-
 
     def dependsOn(self, task, statusList):
         self.dependencies[task] = statusList
 
-
     def setEnv(self, env):
         self.environment = env
-
 
     def __repr__(self):
         return "Task(%r)" % str(self.name)
@@ -170,7 +167,6 @@ class TaskGroup(object):
 
     expander = property(_getExpander, _setExpander)
 
-
     @classmethod
     def createFromTask(cls, task):
         taskGroup = cls(task.name)
@@ -179,7 +175,6 @@ class TaskGroup(object):
         taskGroup.environment = task.environment
         taskGroup.requirements = task.requirements
         return taskGroup
-
 
     def __init__(self, name, expander=None, arguments={}, tags={}, environment={}):
         self.expanderName = expander
@@ -198,10 +193,8 @@ class TaskGroup(object):
         self.taskGroups = []
         self.tags = tags.copy()
 
-
     def dependsOn(self, task, statusList):
         self.dependencies[task] = statusList
-
 
     def addTask(self, task):
         assert isinstance(task, Task)
@@ -210,14 +203,12 @@ class TaskGroup(object):
         task.arguments.parent = self.arguments
         task.environment.parent = self.environment
 
-
     def addTaskGroup(self, taskGroup):
         assert isinstance(taskGroup, TaskGroup)
         assert not taskGroup in self.taskGroups
         self.taskGroups.append(taskGroup)
         taskGroup.arguments.parent = self.arguments
         taskGroup.environment.parent = self.environment
-
 
     def expand(self, hierarchy):
         if not self.expanded:
@@ -236,10 +227,8 @@ class TaskGroup(object):
                 taskGroup.expand(hierarchy)
         return self
 
-
     def setEnv(self, env):
         self.environment = env
-
 
     def __repr__(self):
         return "TaskNode(%r)" % str(self.name)
@@ -259,10 +248,8 @@ class Graph(object):
         else:
             self.user = user
 
-
     def toRepresentation(self):
         return GraphDumper().dumpGraph(self)
-
 
     def submit(self, host, port):
 
@@ -300,17 +287,15 @@ class GraphDumper():
     def __init__(self):
         self.clear()
 
-
     def clear(self):
         self.tasks = []
         self.taskRepresentations = {}
         self.taskMem = {}
 
-
     def checkCycles(self, rootNode):
         cycle = _hasCycles(rootNode, [])
         if cycle:
-            raise DependencyCycleError, 'Detected a cycle in the dependencies of task %r: %s' % (rootNode, " -> ".join([t.name for t in cycle]))
+            raise DependencyCycleError('Detected a cycle in the dependencies of task %r: %s' % (rootNode, " -> ".join([t.name for t in cycle])))
 
     def dumpGraph(self, graph):
         tasks = [graph.root]
@@ -336,13 +321,11 @@ class GraphDumper():
         }
         return repr
 
-
     def getTaskIndex(self, task):
         try:
             return self.taskMem[task]
         except KeyError:
             return self.addTask(task)
-
 
     def addTask(self, task):
         if task in self.taskMem:
@@ -381,8 +364,8 @@ class GraphDumper():
             'maxNbCores': task.maxNbCores,
             'ramUse': task.ramUse,
             'commands': [self.computeCommandRepresentation(command) for command in task.commands],
-            'lic':task.lic,
-            'licence':task.lic,
+            'lic': task.lic,
+            'licence': task.lic,
             'tags': task.tags,
         }
 
@@ -401,6 +384,7 @@ class GraphDumper():
             'tasks': [self.getTaskIndex(task) for task in taskGroup.tasks] + [self.getTaskIndex(subtaskGroup) for subtaskGroup in taskGroup.taskGroups],
             'tags': taskGroup.tags,
         }
+
 
 def cleanEnv(env):
     env = env.copy()

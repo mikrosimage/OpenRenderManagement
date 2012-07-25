@@ -29,6 +29,7 @@ from octopus.dispatcher.strategies import createStrategyInstance
 
 LOGGER = logging.getLogger('dispatcher')
 
+
 class FolderNodes(SQLObject):
     class sqlmeta:
         lazyUpdate = True
@@ -209,8 +210,6 @@ class PuliDB(object):
         LOGGER.info("checking database")
         createTables()
         self.licenseManager = licManager
-#        Tasks._connection.debug = True
-
 
     def dropPoolsAndRnsTables(self):
         Pools.dropTable(ifExists=True)
@@ -218,187 +217,185 @@ class PuliDB(object):
         Pools.createTable(ifNotExists=True)
         RenderNodes.createTable(ifNotExists=True)
 
-
     ## Creates the provided elements in the database.
     # @param elements the elements to create
     #
     def createElements(self, elements):
-#        trans = sqlhub.processConnection.transaction()
         elements.sort(key=lambda element: element.__class__)
         for element in elements:
             # /////////////// Handling of the TaskNode
             if isinstance(element, TaskNode):
                 conn = TaskNodes._connection
-                fields = {TaskNodes.q.id.fieldName:element.id,
-                          TaskNodes.q.name.fieldName:element.name,
-                          TaskNodes.q.parentId.fieldName:element.parent.id,
-                          TaskNodes.q.user.fieldName:element.user,
-                          TaskNodes.q.priority.fieldName:element.priority,
-                          TaskNodes.q.dispatchKey.fieldName:element.dispatchKey,
-                          TaskNodes.q.maxRN.fieldName:element.maxRN,
-                          TaskNodes.q.taskId.fieldName:element.task.id,
-                          TaskNodes.q.creationTime.fieldName:self.getDateFromTimeStamp(element.creationTime),
-                          TaskNodes.q.startTime.fieldName:self.getDateFromTimeStamp(element.startTime),
-                          TaskNodes.q.updateTime.fieldName:self.getDateFromTimeStamp(element.updateTime),
-                          TaskNodes.q.endTime.fieldName:self.getDateFromTimeStamp(element.endTime),
-                          TaskNodes.q.archived.fieldName:False}
+                fields = {TaskNodes.q.id.fieldName: element.id,
+                          TaskNodes.q.name.fieldName: element.name,
+                          TaskNodes.q.parentId.fieldName: element.parent.id,
+                          TaskNodes.q.user.fieldName: element.user,
+                          TaskNodes.q.priority.fieldName: element.priority,
+                          TaskNodes.q.dispatchKey.fieldName: element.dispatchKey,
+                          TaskNodes.q.maxRN.fieldName: element.maxRN,
+                          TaskNodes.q.taskId.fieldName: element.task.id,
+                          TaskNodes.q.creationTime.fieldName: self.getDateFromTimeStamp(element.creationTime),
+                          TaskNodes.q.startTime.fieldName: self.getDateFromTimeStamp(element.startTime),
+                          TaskNodes.q.updateTime.fieldName: self.getDateFromTimeStamp(element.updateTime),
+                          TaskNodes.q.endTime.fieldName: self.getDateFromTimeStamp(element.endTime),
+                          TaskNodes.q.archived.fieldName: False}
                 conn.query(conn.sqlrepr(Insert(TaskNodes.q, values=fields)))
                 conn.cache.clear()
                 if element.dependencies:
                     conn = Dependencies._connection
                     for (toNode, statusList) in element.dependencies:
                         statusStringList = [str(i) for i in statusList]
-                        fields = {Dependencies.q.toNodeId.fieldName:toNode.id,
-                                  Dependencies.q.statusList.fieldName:','.join(statusStringList),
-                                  Dependencies.q.taskNodes.fieldName:element.id,
-                                  Dependencies.q.folderNodes.fieldName:None,
-                                  Dependencies.q.archived.fieldName:False}
+                        fields = {Dependencies.q.toNodeId.fieldName: toNode.id,
+                                  Dependencies.q.statusList.fieldName: ','.join(statusStringList),
+                                  Dependencies.q.taskNodes.fieldName: element.id,
+                                  Dependencies.q.folderNodes.fieldName: None,
+                                  Dependencies.q.archived.fieldName: False}
                         conn.query(conn.sqlrepr(Insert(Dependencies.q, values=fields)))
                         conn.cache.clear()
-                        
+
             # /////////////// Handling of the FolderNode
             elif isinstance(element, FolderNode):
                 conn = FolderNodes._connection
-                fields = {FolderNodes.q.id.fieldName:element.id,
-                          FolderNodes.q.name.fieldName:element.name,
-                          FolderNodes.q.parentId.fieldName:element.parent.id,
-                          FolderNodes.q.user.fieldName:element.user,
-                          FolderNodes.q.priority.fieldName:element.priority,
-                          FolderNodes.q.dispatchKey.fieldName:element.dispatchKey,
-                          FolderNodes.q.maxRN.fieldName:element.maxRN,
-                          FolderNodes.q.taskGroupId.fieldName:element.taskGroup.id if element.taskGroup else None,
-                          FolderNodes.q.strategy.fieldName:element.strategy.getClassName(),
-                          FolderNodes.q.creationTime.fieldName:self.getDateFromTimeStamp(element.creationTime),
-                          FolderNodes.q.startTime.fieldName:self.getDateFromTimeStamp(element.startTime),
-                          FolderNodes.q.updateTime.fieldName:self.getDateFromTimeStamp(element.updateTime),
-                          FolderNodes.q.endTime.fieldName:self.getDateFromTimeStamp(element.endTime),
-                          FolderNodes.q.archived.fieldName:False}
+                fields = {FolderNodes.q.id.fieldName: element.id,
+                          FolderNodes.q.name.fieldName: element.name,
+                          FolderNodes.q.parentId.fieldName: element.parent.id,
+                          FolderNodes.q.user.fieldName: element.user,
+                          FolderNodes.q.priority.fieldName: element.priority,
+                          FolderNodes.q.dispatchKey.fieldName: element.dispatchKey,
+                          FolderNodes.q.maxRN.fieldName: element.maxRN,
+                          FolderNodes.q.taskGroupId.fieldName: element.taskGroup.id if element.taskGroup else None,
+                          FolderNodes.q.strategy.fieldName: element.strategy.getClassName(),
+                          FolderNodes.q.creationTime.fieldName: self.getDateFromTimeStamp(element.creationTime),
+                          FolderNodes.q.startTime.fieldName: self.getDateFromTimeStamp(element.startTime),
+                          FolderNodes.q.updateTime.fieldName: self.getDateFromTimeStamp(element.updateTime),
+                          FolderNodes.q.endTime.fieldName: self.getDateFromTimeStamp(element.endTime),
+                          FolderNodes.q.archived.fieldName: False}
                 conn.query(conn.sqlrepr(Insert(FolderNodes.q, values=fields)))
                 conn.cache.clear()
                 if element.dependencies:
                     conn = Dependencies._connection
                     for (toNode, statusList) in element.dependencies:
                         statusStringList = [str(i) for i in statusList]
-                        fields = {Dependencies.q.toNodeId.fieldName:toNode.id,
-                                  Dependencies.q.statusList.fieldName:','.join(statusStringList),
-                                  Dependencies.q.taskNodes.fieldName:None,
-                                  Dependencies.q.folderNodes.fieldName:element.id,
-                                  Dependencies.q.archived.fieldName:False}
+                        fields = {Dependencies.q.toNodeId.fieldName: toNode.id,
+                                  Dependencies.q.statusList.fieldName: ','.join(statusStringList),
+                                  Dependencies.q.taskNodes.fieldName: None,
+                                  Dependencies.q.folderNodes.fieldName: element.id,
+                                  Dependencies.q.archived.fieldName: False}
                         conn.query(conn.sqlrepr(Insert(Dependencies.q, values=fields)))
                         conn.cache.clear()
+
             # /////////////// Handling of the TaskGroup
             elif isinstance(element, TaskGroup):
                 for (rule, node) in element.nodes.iteritems():
                     conn = Rules._connection
-                    fields = {Rules.q.name.fieldName:rule,
-                              Rules.q.taskNodeId.fieldName:None,
-                              Rules.q.folderNodeId.fieldName:node.id}
+                    fields = {Rules.q.name.fieldName: rule,
+                              Rules.q.taskNodeId.fieldName: None,
+                              Rules.q.folderNodeId.fieldName: node.id}
                     conn.query(conn.sqlrepr(Insert(Rules.q, values=fields)))
                     conn.cache.clear()
                 conn = TaskGroups._connection
-                fields = {TaskGroups.q.id.fieldName:element.id,
-                          TaskGroups.q.name.fieldName:element.name,
-                          TaskGroups.q.parentId.fieldName:element.parent.id if element.parent else None,
-                          TaskGroups.q.user.fieldName:element.user,
-                          TaskGroups.q.priority.fieldName:element.priority,
-                          TaskGroups.q.dispatchKey.fieldName:element.dispatchKey,
-                          TaskGroups.q.maxRN.fieldName:element.maxRN,
-                          TaskGroups.q.environment.fieldName:json.dumps(element.environment),
-                          TaskGroups.q.requirements.fieldName:json.dumps(element.requirements),
-                          TaskGroups.q.tags.fieldName:json.dumps(element.tags),
-                          TaskGroups.q.strategy.fieldName:element.strategy.getClassName(),
-                          TaskGroups.q.archived.fieldName:False,
-                          TaskGroups.q.args.fieldName:str(element.arguments)}
+                fields = {TaskGroups.q.id.fieldName: element.id,
+                          TaskGroups.q.name.fieldName: element.name,
+                          TaskGroups.q.parentId.fieldName: element.parent.id if element.parent else None,
+                          TaskGroups.q.user.fieldName: element.user,
+                          TaskGroups.q.priority.fieldName: element.priority,
+                          TaskGroups.q.dispatchKey.fieldName: element.dispatchKey,
+                          TaskGroups.q.maxRN.fieldName: element.maxRN,
+                          TaskGroups.q.environment.fieldName: json.dumps(element.environment),
+                          TaskGroups.q.requirements.fieldName: json.dumps(element.requirements),
+                          TaskGroups.q.tags.fieldName: json.dumps(element.tags),
+                          TaskGroups.q.strategy.fieldName: element.strategy.getClassName(),
+                          TaskGroups.q.archived.fieldName: False,
+                          TaskGroups.q.args.fieldName: str(element.arguments)}
                 conn.query(conn.sqlrepr(Insert(TaskGroups.q, values=fields)))
                 conn.cache.clear()
-                    
+
             # /////////////// Handling of the Task
             elif isinstance(element, Task):
                 for (rule, node) in element.nodes.iteritems():
                     conn = Rules._connection
-                    fields = {Rules.q.name.fieldName:rule,
-                              Rules.q.taskNodeId.fieldName:node.id,
-                              Rules.q.folderNodeId.fieldName:None}
+                    fields = {Rules.q.name.fieldName: rule,
+                              Rules.q.taskNodeId.fieldName: node.id,
+                              Rules.q.folderNodeId.fieldName: None}
                     conn.query(conn.sqlrepr(Insert(Rules.q, values=fields)))
                     conn.cache.clear()
                 conn = Tasks._connection
-                fields = {Tasks.q.id.fieldName:element.id,
-                          Tasks.q.name.fieldName:element.name,
-                          Tasks.q.parentId.fieldName:element.parent.id if element.parent else None,
-                          Tasks.q.user.fieldName:element.user,
-                          Tasks.q.priority.fieldName:element.priority,
-                          Tasks.q.dispatchKey.fieldName:element.dispatchKey,
-                          Tasks.q.maxRN.fieldName:element.maxRN,
-                          Tasks.q.runner.fieldName:element.runner,
-                          Tasks.q.environment.fieldName:json.dumps(element.environment),
-                          Tasks.q.requirements.fieldName:json.dumps(element.requirements),
-                          Tasks.q.minNbCores.fieldName:element.minNbCores,
-                          Tasks.q.maxNbCores.fieldName:element.maxNbCores,
-                          Tasks.q.ramUse.fieldName:element.ramUse,
-                          Tasks.q.licence.fieldName:element.lic,
-                          Tasks.q.tags.fieldName:json.dumps(element.tags),
-                          Tasks.q.validationExpression.fieldName:element.validationExpression,
-                          Tasks.q.archived.fieldName:False,
-                          Tasks.q.args.fieldName:str(element.arguments)}
+                fields = {Tasks.q.id.fieldName: element.id,
+                          Tasks.q.name.fieldName: element.name,
+                          Tasks.q.parentId.fieldName: element.parent.id if element.parent else None,
+                          Tasks.q.user.fieldName: element.user,
+                          Tasks.q.priority.fieldName: element.priority,
+                          Tasks.q.dispatchKey.fieldName: element.dispatchKey,
+                          Tasks.q.maxRN.fieldName: element.maxRN,
+                          Tasks.q.runner.fieldName: element.runner,
+                          Tasks.q.environment.fieldName: json.dumps(element.environment),
+                          Tasks.q.requirements.fieldName: json.dumps(element.requirements),
+                          Tasks.q.minNbCores.fieldName: element.minNbCores,
+                          Tasks.q.maxNbCores.fieldName: element.maxNbCores,
+                          Tasks.q.ramUse.fieldName: element.ramUse,
+                          Tasks.q.licence.fieldName: element.lic,
+                          Tasks.q.tags.fieldName: json.dumps(element.tags),
+                          Tasks.q.validationExpression.fieldName: element.validationExpression,
+                          Tasks.q.archived.fieldName: False,
+                          Tasks.q.args.fieldName: str(element.arguments)}
                 conn.query(conn.sqlrepr(Insert(Tasks.q, values=fields)))
                 conn.cache.clear()
-                    
+
             # /////////////// Handling of the Command
             elif isinstance(element, Command):
                 conn = Commands._connection
-                fields = {Commands.q.id.fieldName:element.id,
-                          Commands.q.description.fieldName:element.description,
-                          Commands.q.taskId.fieldName:element.task.id,
-                          Commands.q.status.fieldName:element.status,
-                          Commands.q.completion.fieldName:element.completion,
-                          Commands.q.creationTime.fieldName:self.getDateFromTimeStamp(element.creationTime),
-                          Commands.q.startTime.fieldName:self.getDateFromTimeStamp(element.startTime),
-                          Commands.q.updateTime.fieldName:self.getDateFromTimeStamp(element.updateTime),
-                          Commands.q.endTime.fieldName:self.getDateFromTimeStamp(element.endTime),
-                          Commands.q.assignedRNId.fieldName:element.renderNode.id if element.renderNode else None,
-                          Commands.q.message.fieldName:element.message,
-                          Commands.q.archived.fieldName:False,
-                          Commands.q.args.fieldName:str(element.arguments)}
+                fields = {Commands.q.id.fieldName: element.id,
+                          Commands.q.description.fieldName: element.description,
+                          Commands.q.taskId.fieldName: element.task.id,
+                          Commands.q.status.fieldName: element.status,
+                          Commands.q.completion.fieldName: element.completion,
+                          Commands.q.creationTime.fieldName: self.getDateFromTimeStamp(element.creationTime),
+                          Commands.q.startTime.fieldName: self.getDateFromTimeStamp(element.startTime),
+                          Commands.q.updateTime.fieldName: self.getDateFromTimeStamp(element.updateTime),
+                          Commands.q.endTime.fieldName: self.getDateFromTimeStamp(element.endTime),
+                          Commands.q.assignedRNId.fieldName: element.renderNode.id if element.renderNode else None,
+                          Commands.q.message.fieldName: element.message,
+                          Commands.q.archived.fieldName: False,
+                          Commands.q.args.fieldName: str(element.arguments)}
                 conn.query(conn.sqlrepr(Insert(Commands.q, values=fields)))
                 conn.cache.clear()
-                    
+
             # /////////////// Handling of the RenderNode
             elif isinstance(element, RenderNode):
                 conn = RenderNodes._connection
-                fields = {RenderNodes.q.id.fieldName:element.id,
-                          RenderNodes.q.name.fieldName:element.name,
-                          RenderNodes.q.coresNumber.fieldName:element.coresNumber,
-                          RenderNodes.q.speed.fieldName:element.speed,
-                          RenderNodes.q.ip.fieldName:element.host,
-                          RenderNodes.q.port.fieldName:element.port,
-                          RenderNodes.q.ramSize.fieldName:element.ramSize,
-                          RenderNodes.q.caracteristics.fieldName:json.dumps(element.caracteristics)}
+                fields = {RenderNodes.q.id.fieldName: element.id,
+                          RenderNodes.q.name.fieldName: element.name,
+                          RenderNodes.q.coresNumber.fieldName: element.coresNumber,
+                          RenderNodes.q.speed.fieldName: element.speed,
+                          RenderNodes.q.ip.fieldName: element.host,
+                          RenderNodes.q.port.fieldName: element.port,
+                          RenderNodes.q.ramSize.fieldName: element.ramSize,
+                          RenderNodes.q.caracteristics.fieldName: json.dumps(element.caracteristics)}
                 conn.query(conn.sqlrepr(Insert(RenderNodes.q, values=fields)))
                 conn.cache.clear()
-                
+
             # /////////////// Handling of the Pool
             elif isinstance(element, Pool):
                 conn = Pools._connection
-                fields = {Pools.q.id.fieldName:element.id,
-                          Pools.q.name.fieldName:element.name,
-                          Pools.q.archived.fieldName:False}
+                fields = {Pools.q.id.fieldName: element.id,
+                          Pools.q.name.fieldName: element.name,
+                          Pools.q.archived.fieldName: False}
                 conn.query(conn.sqlrepr(Insert(Pools.q, values=fields)))
                 conn.cache.clear()
                 for renderNode in element.renderNodes:
-                    conn.query(conn.sqlrepr(Insert('pools_render_nodes', values={'pools_id':element.id, 'render_nodes_id':renderNode.id})))
+                    conn.query(conn.sqlrepr(Insert('pools_render_nodes', values={'pools_id': element.id, 'render_nodes_id': renderNode.id})))
                     conn.cache.clear()
 
             # /////////////// Handling of the PoolShare
             elif isinstance(element, PoolShare):
                 conn = PoolShares._connection
-                fields = {PoolShares.q.id.fieldName:element.id,
-                          PoolShares.q.poolId.fieldName:element.pool.id,
-                          PoolShares.q.nodeId.fieldName:element.node.id,
-                          PoolShares.q.maxRN.fieldName:element.maxRN,
-                          PoolShares.q.archived.fieldName:False}
+                fields = {PoolShares.q.id.fieldName: element.id,
+                          PoolShares.q.poolId.fieldName: element.pool.id,
+                          PoolShares.q.nodeId.fieldName: element.node.id,
+                          PoolShares.q.maxRN.fieldName: element.maxRN,
+                          PoolShares.q.archived.fieldName: False}
                 conn.query(conn.sqlrepr(Insert(PoolShares.q, values=fields)))
                 conn.cache.clear()
-
 
     ## Updates the provided elements to the database.
     # @param elements the elements to update
@@ -409,41 +406,41 @@ class PuliDB(object):
                 startTime = self.getDateFromTimeStamp(element.startTime)
                 endTime = self.getDateFromTimeStamp(element.endTime)
                 updateTime = self.getDateFromTimeStamp(element.updateTime)
-                
+
             # /////////////// Handling of the Command
             if isinstance(element, Command):
                 if element.id:
                     conn = Commands._connection
-                    fields = {Commands.q.status.fieldName:element.status,
-                              Commands.q.completion.fieldName:element.completion,
-                              Commands.q.startTime.fieldName:startTime,
-                              Commands.q.updateTime.fieldName:updateTime,
-                              Commands.q.endTime.fieldName:endTime}
+                    fields = {Commands.q.status.fieldName: element.status,
+                              Commands.q.completion.fieldName: element.completion,
+                              Commands.q.startTime.fieldName: startTime,
+                              Commands.q.updateTime.fieldName: updateTime,
+                              Commands.q.endTime.fieldName: endTime}
                     if element.renderNode:
                         fields[Commands.q.assignedRNId.fieldName] = element.renderNode.id
                     conn.query(conn.sqlrepr(Update(Commands.q, values=fields, where=(Commands.q.id == element.id))))
                     conn.cache.clear()
-                    
+
             # /////////////// Handling of the TaskNode
             elif isinstance(element, TaskNode):
                 if element.id:
                     conn = TaskNodes._connection
-                    fields = {TaskNodes.q.startTime.fieldName:startTime,
-                              TaskNodes.q.updateTime.fieldName:updateTime,
-                              TaskNodes.q.endTime.fieldName:endTime}
+                    fields = {TaskNodes.q.startTime.fieldName: startTime,
+                              TaskNodes.q.updateTime.fieldName: updateTime,
+                              TaskNodes.q.endTime.fieldName: endTime}
                     conn.query(conn.sqlrepr(Update(TaskNodes.q, values=fields, where=(TaskNodes.q.id == element.id))))
                     conn.cache.clear()
-                    
+
             # /////////////// Handling of the FolderNode
             elif isinstance(element, FolderNode):
                 if element.id:
                     conn = FolderNodes._connection
-                    fields = {FolderNodes.q.startTime.fieldName:startTime,
-                              FolderNodes.q.updateTime.fieldName:updateTime,
-                              FolderNodes.q.endTime.fieldName:endTime}
+                    fields = {FolderNodes.q.startTime.fieldName: startTime,
+                              FolderNodes.q.updateTime.fieldName: updateTime,
+                              FolderNodes.q.endTime.fieldName: endTime}
                     conn.query(conn.sqlrepr(Update(FolderNodes.q, values=fields, where=(FolderNodes.q.id == element.id))))
                     conn.cache.clear()
-                    
+
             # /////////////// Handling of the Pool
             elif isinstance(element, Pool):
                 # TODO use sqlbuilder
@@ -453,21 +450,20 @@ class PuliDB(object):
                     newids = [rn.id for rn in element.renderNodes]
                     for rn in dbPool.renderNodes:
                         if rn.id not in newids:
-                            dbPool.removeRenderNodes(rn) # pylint: disable-msg=E1103
+                            dbPool.removeRenderNodes(rn)  # pylint: disable-msg=E1103
                     for rn in element.renderNodes:
                         if rn.id not in oldids:
-                            dbPool.addRenderNodes(rn) # pylint: disable-msg=E1103
-                            
+                            dbPool.addRenderNodes(rn)  # pylint: disable-msg=E1103
+
             # /////////////// Handling of the RenderNode
             elif isinstance(element, RenderNode):
                 if element.id:
                     conn = RenderNodes._connection
-                    fields = {RenderNodes.q.speed.fieldName:element.speed,
-                              RenderNodes.q.coresNumber.fieldName:element.coresNumber,
-                              RenderNodes.q.ramSize.fieldName:element.ramSize}
+                    fields = {RenderNodes.q.speed.fieldName: element.speed,
+                              RenderNodes.q.coresNumber.fieldName: element.coresNumber,
+                              RenderNodes.q.ramSize.fieldName: element.ramSize}
                     conn.query(conn.sqlrepr(Update(RenderNodes.q, values=fields, where=(RenderNodes.q.id == element.id))))
                     conn.cache.clear()
-
 
     ## Mark the provided elements as archived.
     # @param elements the elements to archive
@@ -500,52 +496,52 @@ class PuliDB(object):
                 poolsharesList.append(element.id)
             elif isinstance(element, RenderNode):
                 rendernodesList.append(element.id)
-                
+
         # /////////////// Handling of the Tasks
         if len(tasksList):
             conn = Tasks._connection
-            sqlrepr = conn.sqlrepr(Update(Tasks.q, values={Tasks.q.archived.fieldName:True}, where=IN(Tasks.q.id, tasksList)))
+            sqlrepr = conn.sqlrepr(Update(Tasks.q, values={Tasks.q.archived.fieldName: True}, where=IN(Tasks.q.id, tasksList)))
             conn.query(sqlrepr)
             conn.cache.clear()
         # /////////////// Handling of the TaskGroups
         if len(taskgroupsList):
             conn = TaskGroups._connection
-            conn.query(conn.sqlrepr(Update(TaskGroups.q, values={TaskGroups.q.archived.fieldName:True}, where=IN(TaskGroups.q.id, taskgroupsList))))
+            conn.query(conn.sqlrepr(Update(TaskGroups.q, values={TaskGroups.q.archived.fieldName: True}, where=IN(TaskGroups.q.id, taskgroupsList))))
             conn.cache.clear()
         # /////////////// Handling of the Commands
         if len(commandsList):
             conn = Commands._connection
-            conn.query(conn.sqlrepr(Update(Commands.q, values={Commands.q.archived.fieldName:True}, where=IN(Commands.q.id, commandsList))))
+            conn.query(conn.sqlrepr(Update(Commands.q, values={Commands.q.archived.fieldName: True}, where=IN(Commands.q.id, commandsList))))
             conn.cache.clear()
         # /////////////// Handling of the TaskNodes
         if len(taskNodesList):
             conn = TaskNodes._connection
-            sqlrepr = conn.sqlrepr(Update(TaskNodes.q, values={TaskNodes.q.archived.fieldName:True}, where=IN(TaskNodes.q.id, taskNodesList)))
+            sqlrepr = conn.sqlrepr(Update(TaskNodes.q, values={TaskNodes.q.archived.fieldName: True}, where=IN(TaskNodes.q.id, taskNodesList)))
             conn.query(sqlrepr)
             conn.cache.clear()
             conn = PoolShares._connection
-            conn.query(conn.sqlrepr(Update(PoolShares.q, values={PoolShares.q.archived.fieldName:True}, where=IN(PoolShares.q.nodeId, taskNodesList))))
+            conn.query(conn.sqlrepr(Update(PoolShares.q, values={PoolShares.q.archived.fieldName: True}, where=IN(PoolShares.q.nodeId, taskNodesList))))
             conn.cache.clear()
         # /////////////// Handling of the FolderNodes
         if len(folderNodesList):
             conn = FolderNodes._connection
-            conn.query(conn.sqlrepr(Update(FolderNodes.q, values={FolderNodes.q.archived.fieldName:True}, where=IN(FolderNodes.q.id, folderNodesList))))
+            conn.query(conn.sqlrepr(Update(FolderNodes.q, values={FolderNodes.q.archived.fieldName: True}, where=IN(FolderNodes.q.id, folderNodesList))))
             conn.cache.clear()
             conn = PoolShares._connection
-            conn.query(conn.sqlrepr(Update(PoolShares.q, values={PoolShares.q.archived.fieldName:True}, where=IN(PoolShares.q.nodeId, folderNodesList))))
+            conn.query(conn.sqlrepr(Update(PoolShares.q, values={PoolShares.q.archived.fieldName: True}, where=IN(PoolShares.q.nodeId, folderNodesList))))
             conn.cache.clear()
         # /////////////// Handling of the Pools
         if len(poolsList):
             conn = Pools._connection
-            conn.query(conn.sqlrepr(Update(Pools.q, values={Pools.q.archived.fieldName:True}, where=IN(Pools.q.id, poolsList))))
+            conn.query(conn.sqlrepr(Update(Pools.q, values={Pools.q.archived.fieldName: True}, where=IN(Pools.q.id, poolsList))))
             conn.cache.clear()
             conn = PoolShares._connection
-            conn.query(conn.sqlrepr(Update(PoolShares.q, values={PoolShares.q.archived.fieldName:True}, where=IN(PoolShares.q.poolId, poolsList))))
+            conn.query(conn.sqlrepr(Update(PoolShares.q, values={PoolShares.q.archived.fieldName: True}, where=IN(PoolShares.q.poolId, poolsList))))
             conn.cache.clear()
         # /////////////// Handling of the PoolShares
         if len(poolsharesList):
             conn = PoolShares._connection
-            sqlrepr = conn.sqlrepr(Update(PoolShares.q, values={PoolShares.q.archived.fieldName:True}, where=IN(PoolShares.q.id, poolsharesList)))
+            sqlrepr = conn.sqlrepr(Update(PoolShares.q, values={PoolShares.q.archived.fieldName: True}, where=IN(PoolShares.q.id, poolsharesList)))
             conn.query(sqlrepr)
             conn.cache.clear()
         # /////////////// Handling of the RenderNodes
@@ -553,15 +549,12 @@ class PuliDB(object):
             conn = RenderNodes._connection
             conn.query(conn.sqlrepr(Delete(RenderNodes.q, where=IN(RenderNodes.q.id, rendernodesList))))
             conn.cache.clear()
-            
-            
+
     def getDateFromTimeStamp(self, timeStamp):
         return datetime.datetime.fromtimestamp(timeStamp) if timeStamp else None
 
-
     def getTimeStampFromDate(self, date):
         return time.mktime(date.timetuple()) if date else None
-
 
     ## Restores the state of the dispatcher from the database.
     # @var tree the DispatchTree instance.
@@ -604,10 +597,10 @@ class PuliDB(object):
                                             port,
                                             ramSize,
                                             json.loads(caracteristics))
-                # get the pools of the rendernode 
+                # get the pools of the rendernode
                 prn = Table('pools_render_nodes')
                 join = INNERJOINOn(None, Pools, Pools.q.id == prn.pools_id)
-                dbPools = poolConn.queryAll(poolConn.sqlrepr(Select(poolFields, join=join, where=AND(prn.render_nodes_id==id, Pools.q.archived == False))))
+                dbPools = poolConn.queryAll(poolConn.sqlrepr(Select(poolFields, join=join, where=AND(prn.render_nodes_id == id, Pools.q.archived == False))))
                 for num, dbPool in enumerate(dbPools):
                     id, name = dbPool
                     poolsById[id].renderNodes.append(realRenderNode)
@@ -626,7 +619,7 @@ class PuliDB(object):
                 poolsById[pool.id] = pool
             for rn in tree.renderNodes.values():
                 rnById[rn.id] = rn
-                
+
         print "%s -- rendernodes complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
         ####### recreate the folder nodes with the correct ids
         nodesById = {}
@@ -730,6 +723,8 @@ class PuliDB(object):
             for num, dbDependency in enumerate(dependencies):
                 toNodeId, statusList = dbDependency
                 statusIntList = [int(i) for i in statusList.split(",")]
+                #FIXME temp
+                #if toNodeId in nodesById.keys():
                 nodesById[id].addDependency(nodesById[toNodeId], statusIntList)
 
         print "%s -- add loop complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
@@ -743,10 +738,12 @@ class PuliDB(object):
         poolShares = conn.queryAll(conn.sqlrepr(Select(fields, where=(PoolShares.q.archived == False))))
         for num, dbPoolShare in enumerate(poolShares):
             id, poolId, nodeId, maxRN, archived = dbPoolShare
+            #FIXME temp
+            #if nodeId in nodesById.keys():
             realPoolShare = PoolShare(id,
-                                      poolsById[poolId],
-                                      nodesById[nodeId],
-                                      maxRN)
+                                  poolsById[poolId],
+                                  nodesById[nodeId],
+                                  maxRN)
             tree.poolShares[realPoolShare.id] = realPoolShare
 
         print "%s -- poolshares complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
@@ -768,7 +765,7 @@ class PuliDB(object):
                   Commands.q.archived,
                   Commands.q.args]
         commands = conn.queryAll(conn.sqlrepr(Select(fields, where=(Commands.q.archived == False))))
-        
+
         print "%s -- req for cmd complete %s --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)), len(commands))
         for num, dbCmd in enumerate(commands):
             id, description, taskId, status, completion, creationTime, startTime, updateTime, endTime, assignedRNId, message, archived, args = dbCmd
@@ -789,9 +786,9 @@ class PuliDB(object):
             assert not(status in [2, 3, 4] and realCmd.renderNode == None)
             cmdTaskIdList[taskId].append(realCmd)
             cmdDict[realCmd.id] = realCmd
-            
+
         print "%s -- commands complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
-        
+
         ### recreate the tasks
         realTasksList = {}
         conn = Tasks._connection
@@ -884,7 +881,7 @@ class PuliDB(object):
                                       eval(args),
                                       json.loads(environment),
                                       json.loads(requirements),
-                                      maxRN, 
+                                      maxRN,
                                       priority,
                                       dispatchKey,
                                       createStrategyInstance(str(strategy)),
@@ -904,6 +901,8 @@ class PuliDB(object):
         for num, dbTask in enumerate(tasks):
             id, name, parentId, user, priority, dispatchKey, maxRN, runner, environment, requirements, minNbCores, maxNbCores, ramUse, licence, tags, validationExpression, archived, args = dbTask
             if parentId:
+                #FIXME temp
+                #if int(parentId) in realTaskGroupsList.keys():
                 realTaskGroupsList[int(parentId)].addTask(realTasksList[int(id)])
                 realTasksList[int(id)].parent = realTaskGroupsList[int(parentId)]
 
@@ -939,6 +938,8 @@ class PuliDB(object):
             id, name, parentId, user, priority, dispatchKey, maxRN, taskGroupId, strategy, creationTime, startTime, updateTime, endTime, archived = dbFolderNode
             if taskGroupId:
                 tgId = int(taskGroupId)
+                #FIXME temp
+                #if tgId in tree.tasks.keys():
                 nodesById[int(id)].taskGroup = tree.tasks[tgId]
                 tree.tasks[tgId].nodes[realRulesForFolderNodes[int(id)]] = nodesById[int(id)]
             tree.nodes[int(id)] = nodesById[int(id)]
@@ -963,5 +964,3 @@ class PuliDB(object):
         tree.poolShareMaxId = int(PoolShares.select().max(PoolShares.q.id))
 
         tree.toCreateElements = []
-        
-

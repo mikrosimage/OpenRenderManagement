@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 ####################################################################################################
-# @file cmdwatcher.py
-# @package 
+# @file commandwatcher.py
+# @package
 # @author acs, bud, jb
 # @date 2009/01/12
 # @version 0.1
 #
 # @mainpage
-# 
+#
 ####################################################################################################
 
 from threading import Thread
@@ -32,6 +32,7 @@ COMMAND_STOPPED = 1
 COMMAND_CRASHED = 2
 COMMAND_FAILED = 3
 
+
 ## This class is used to thread a command.
 #
 class CmdThreader(Thread):
@@ -54,7 +55,6 @@ class CmdThreader(Thread):
         self.updateCompletion = updateCompletion
         self.updateMessage = updateMessage
 
-
     ## Runs the specified method of the command.
     #
     def run(self):
@@ -68,8 +68,6 @@ class CmdThreader(Thread):
         except Exception, e:
             self.errorInfo = (str(e) + "\n" + str(traceback.format_exc()))
             self.stopped = COMMAND_CRASHED
-
-
 
     ## Stops the thread.
     #
@@ -94,11 +92,6 @@ class CommandWatcher(object):
     # @param arguments the arguments of the command
     #
     def __init__(self, workerPort, id, runner, validationExpression, arguments):
-        import socket
-        #logger.info("starting command %r on rendernode %r", id, socket.gethostname())
-        #logger.info("jobtype is %r", runner)
-        #logger.info("validation expression is %r" % validationExpression)
-        #logger.info("argument list is %r" % arguments)
 
         self.id = id
         self.requestManager = RequestManager("127.0.0.1", workerPort)
@@ -140,7 +133,7 @@ class CommandWatcher(object):
 
         try:
             self.job.validate(self.arguments)
-        except Exception, e:
+        except Exception:
             self.logger.exception("Caught some unexpected exception while validating command %d." % (self.id))
             self.finalState = CMD_ERROR
             self.updateCommandStatusAndCompletion(self.finalState, True)
@@ -148,32 +141,13 @@ class CommandWatcher(object):
 
         try:
             self.executeScript()
-        except Exception, e:
+        except Exception:
             self.logger.exception("Caught some unexpected exception (%s) while executing command %d." % (self.id))
             self.finalState = CMD_ERROR
             self.updateCommandStatusAndCompletion(self.finalState, True)
             return
-        
 
         self.execScriptChecker()
-        
-
-#        self.logger.info("Trying to validate")
-#        self.logger.info("Validation expression is :" + self.commandValidationExpression)
-#            
-#        ValidationManager().check(self.job, self.commandValidationExpression)
-#        self.logger.info("validatorMessage is : " + self.job.validatorMessage)
-#        self.logger.info("errorsInfos is : " + str(self.job.errorsInfos))
-#        
-#        if self.runnerErrorInExec:
-#            self.job.validatorMessage = "An error in jobtype execution has occured:\n" + self.runnerErrorInExec + self.job.validatorMessage
-#            
-#        if self.runnerErrorInPostExec:
-#            self.job.validatorMessage = "An error in jobtype post-execution has occured:\n" + self.runnerErrorInPostExec + self.job.validatorMessage
-#            
-#        if self.job.validatorMessage:
-#            self.updateValidatorResult(self.job.validatorMessage, self.job.errorsInfos)
-
 
     ## Creates a thread for the script corresponding to the provided action name.
     # @param action the name of the action to thread (jobtype script method)
@@ -185,7 +159,6 @@ class CommandWatcher(object):
         self.threadList[action] = tmpThread
         # launch it
         tmpThread.start()
-
 
     ## Updates the status of the command.
     # @param status
@@ -244,7 +217,6 @@ class CommandWatcher(object):
             time.sleep(delay)
             delay = max(2.0 * delay, 30.0)
 
-
     ## Updates the completion of the command.
     #
     def updateCommandCompletion(self):
@@ -260,13 +232,11 @@ class CommandWatcher(object):
         except http.BadStatusLine:
             self.logger.debug('Updating completion has failed with a BadStatusLine error')
 
-
     ## Threads the post execution of the corresponding runner.
     #
     def executeScript(self):
         logger.debug("Starting execution...")
         self.threadAction(EXEC)
-
 
     ## Controls the execution of the main command.
     #
@@ -307,25 +277,21 @@ class CommandWatcher(object):
 
         self.updateCommandStatusAndCompletion(self.finalState, True)
 
-
     ## Kills all processes launched by the command.
     #
     def killCommand(self):
         # FIXME: maybe we ought to provide a way to ask the command to stop itself
         self.threadList[EXEC].stop()
 
-
     def updateCompletionCallback(self, completion):
         self.completion = completion
-
 
     def updateMessageCallback(self, message):
         self.message = message
 
-
-if os.name == 'posix':
-    def closeFileDescriptors():
-        '''Close all the file descriptors inherited from the parent except for stdin, stdout and stderr.'''
+def closeFileDescriptors():
+    '''Close all the file descriptors inherited from the parent except for stdin, stdout and stderr.'''
+    if os.name == 'posix':
         import resource
         MAXFILENO = resource.getrlimit(resource.RLIMIT_NOFILE)
         for fd in xrange(3, MAXFILENO[0]):
@@ -333,12 +299,11 @@ if os.name == 'posix':
                 os.close(fd)
             except OSError:
                 pass
-else:
-    def closeFileDescriptors():
+    else:
         pass
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     try:
         logFile = sys.argv[1]
         workerPort = sys.argv[2]
@@ -347,10 +312,10 @@ if __name__ == "__main__":
         validationExpression = sys.argv[5]
         rawArguments = sys.argv[6:]
         argumentsDict = {}
-        for argument in rawArguments: 
+        for argument in rawArguments:
             arglist = argument.split("=")
             key = arglist[0]
-            value ='='.join(arglist[1:])
+            value = '='.join(arglist[1:])
             #key, value = argument.split("=")
             argumentsDict[key] = value
     except:
@@ -358,10 +323,6 @@ if __name__ == "__main__":
         raise
 
     closeFileDescriptors()
-
-    #if os.name == 'posix':
-        # FIXME maybe use setsid instead?
-    #    os.setpgid(0, 0)
 
     logger = logging.getLogger()
     logger.setLevel(logging.ERROR)

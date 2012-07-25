@@ -5,7 +5,7 @@ PROFILE = False
 
 if PROFILE:
     records = collections.defaultdict(lambda: collections.defaultdict(int))
-    
+
     def profile(name):
         def decorator(func):
             def instrumented_func(*args, **kwargs):
@@ -17,10 +17,10 @@ if PROFILE:
                 return result
             return instrumented_func
         return decorator
-    
+
     def reset():
         records.clear()
-    
+
     def printRecords():
         for record in records:
             r = records[record]
@@ -31,10 +31,10 @@ if PROFILE:
 else:
     def profile(name):
         return lambda func: func
-    
+
     def reset():
         pass
-    
+
     def printRecords():
         pass
 
@@ -52,4 +52,3 @@ if __name__ == '__main__':
 
     f()
     print records
-

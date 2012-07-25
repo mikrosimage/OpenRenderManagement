@@ -1,20 +1,21 @@
 #!/usr/bin/env python
 ####################################################################################################
 # @file http.py
-# @package 
+# @package
 # @author bud
 # @date 2009/01/12
 # @version 0.1
 #
 # @mainpage
-# 
+#
 ####################################################################################################
 
 from tornado.web import HTTPError
 import StringIO
 
+
 class HttpResponse(dict):
-    
+
     def __init__(self, status=200, message='OK', content='', contenttype='application/json'):
         super(HttpResponse, self).__init__()
         self.content = StringIO.StringIO(content)
@@ -24,7 +25,7 @@ class HttpResponse(dict):
 
     def write(self, *args, **kwargs):
         return self.content.write(*args, **kwargs)
-    
+
     def send(self, handler):
         content = self.content.getvalue()
         if content and 'Content-Length' not in self:
@@ -37,18 +38,19 @@ class HttpResponse(dict):
 
 
 class JSONResponse(HttpResponse):
-    
+
     def __init__(self, status, message, data):
         from octopus.core.tools import json
         content = json.dumps(data)
         HttpResponse.__init__(self, status, message, content=content)
         #json.dump(data, self.content)
 
+
 ## A basic HttpResponse for error 400 (Bad request)
 #
 class Http400(HTTPError):
     """A basic HttpResponse for error 400 (Bad request)"""
-    
+
     def __init__(self, msg="Bad request", **kwargs):
         super(Http400, self).__init__(400, msg)
 
@@ -57,7 +59,7 @@ class Http400(HTTPError):
 #
 class Http405(HTTPError):
     """A basic HttpResponse for error 405 (Method not allowed)"""
-    
+
     def __init__(self, allowed, **kwargs):
         super(Http405, self).__init__(405, "Method not allowed")
         self['Allow'] = ', '.join(allowed)
@@ -103,7 +105,6 @@ class Http411(HTTPError):
 #
 class Http500(HTTPError):
     """A basic HttpResponse for error 500 (Internal server error)"""
-    
+
     def __init__(self):
         super(Http500, self).__init__(500, "Internal server error")
-

@@ -28,7 +28,6 @@ class CommandRunnerParameter(object):
             self.hasDefault = False
             self.defaultValue = None
 
-
     def validate(self, arguments):
         if not self.name in arguments and self.hasDefault:
             arguments[self.name] = self.defaultValue
@@ -42,17 +41,20 @@ class StringParameter(CommandRunnerParameter):
         if arguments[self.name]:
             arguments[self.name] = str(arguments[self.name])
 
+
 class StringListParameter(CommandRunnerParameter):
 
     def validate(self, arguments):
         super(StringListParameter, self).validate(arguments)
         arguments[self.name] = [str(v) for v in arguments[self.name]]
 
+
 class BooleanParameter(CommandRunnerParameter):
 
     def validate(self, arguments):
         super(BooleanParameter, self).validate(arguments)
         arguments[self.name] = bool(arguments[self.name])
+
 
 class IntegerParameter(CommandRunnerParameter):
     '''A command runner parameter class that converts the argument value to an integer value.'''
@@ -85,10 +87,8 @@ class CommandRunner(object):
     scriptTimeOut = None
     parameters = []
 
-
     def execute(self, arguments, updateCompletion, updateMessage):
         raise NotImplementedError
-
 
     def validate(self, arguments):
         for parameter in self.parameters:

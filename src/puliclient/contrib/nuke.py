@@ -172,10 +172,11 @@ class NukeRunner(CommandRunner):
         dstNukeFile.write(contentStr)
 
         outImagesPadding = outImages.count("#")
-        outStrPadding = "%0" + str(outImagesPadding) + "d"
-        inStrPadding = ""
-        inStrPadding = inStrPadding.rjust(outImagesPadding, "#")
-        outImages = outImages.replace(inStrPadding, outStrPadding)
+        if outImagesPadding :
+            outStrPadding = "%0" + str(outImagesPadding) + "d"
+            inStrPadding = ""
+            inStrPadding = inStrPadding.rjust(outImagesPadding, "#")
+            outImages = outImages.replace(inStrPadding, outStrPadding)
 
         dstNukeFile.write("\n#### ADDED BY PULI : " + dateStr + " ###\n")
 

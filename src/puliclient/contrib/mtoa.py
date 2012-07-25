@@ -81,6 +81,7 @@ MAKE_SCANLINED = "makescanlined"
 #</arguments>
 
 #<generic>
+PROD = "prod"
 PROJECT = "proj"
 START = "s"
 END = "e"
@@ -200,7 +201,8 @@ class MtoaRunner(CommandRunner):
         helper = PuliActionHelper(cleanTemp = True)
         
         # convert the paths
-        prodPath = helper.mapPath(arguments[PROJECT])
+        projPath = helper.mapPath(arguments[PROJECT])
+        prodPath = helper.mapPath(arguments[PROD])
         arguments[OUTPUT_ASS_FILE] = helper.mapPath(arguments[OUTPUT_ASS_FILE])
         arguments[RENDER_DIR] = helper.mapPath(arguments[RENDER_DIR])
         arguments[SCENE] = helper.mapPath(arguments[SCENE])
@@ -275,7 +277,7 @@ class MtoaRunner(CommandRunner):
         outputsFile = '/datas/tmp/filestocheck_' + datetime.datetime.now().strftime('%y%m%d_%H%M%S')
         arguments['ifo'] = outputsFile
         
-        cmdArgs = helper.buildMayaCommand("MikserActionMtoARender", arguments, [prodPath, arguments[SCENE]], env)
+        cmdArgs = helper.buildMayaCommand("MikserActionMtoARender", arguments, [projPath, arguments[SCENE]], env)
         
         # Execute the command line that will export the ass
         print '\nLaunch export command "%s"' % cmdArgs

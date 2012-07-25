@@ -1,12 +1,12 @@
 ####################################################################################################
 # @file pool.py
-# @package 
-# @author 
+# @package
+# @author
 # @date 2008/10/29
 # @version 0.1
 #
 # @mainpage
-# 
+#
 ####################################################################################################
 
 from weakref import WeakKeyDictionary
@@ -61,7 +61,6 @@ class PoolShare(models.Model):
         else:
             self.userDefinedMaxRN = False
 
-
     def hasRenderNodesAvailable(self):
         if self.maxRN > 0 and self.allocatedRN >= self.maxRN:
             return False
@@ -69,6 +68,7 @@ class PoolShare(models.Model):
 
     def __repr__(self):
         return "PoolShare(%r, %r, %r, %r)" % (self.id, self.pool.name if self.pool else None, self.node, self.maxRN)
+
 
 ## This class represents a Pool.
 #
@@ -84,13 +84,13 @@ class Pool(models.Model):
     #
     def __init__(self, id, name):
         self.id = int(id) if id else None
-        self.name = name
+        self.name = name if name else ""
         self.renderNodes = []
         self.poolShares = WeakKeyDictionary()
 
     def archive(self):
         self.fireDestructionEvent(self)
-        
+
     ## Adds a render node to the pool.
     # @param rendernode the rendernode to add
     #
@@ -103,7 +103,7 @@ class Pool(models.Model):
 
     ## Removes a render node from the pool.
     # @param rendernode the  rendernode to remove
-    # 
+    #
     def removeRenderNode(self, rendernode):
         if self in rendernode.pools:
             rendernode.pools.remove(self)
@@ -128,4 +128,3 @@ class Pool(models.Model):
     #
     def __str__(self):
         return u"Pool(id=%s, name=%s)" % (repr(self.id), repr(self.name))
-

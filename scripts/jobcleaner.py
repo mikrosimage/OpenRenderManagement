@@ -2,23 +2,24 @@
 # coding: utf-8
 
 from optparse import OptionParser
-from sqlobject import SQLObject, UnicodeCol, IntCol, FloatCol, DateTimeCol, BoolCol, sqlhub, connectionForURI
+from sqlobject import sqlhub, connectionForURI
 from sqlobject.sqlbuilder import *
 import json
 try:
     import http.client as httplib
 except ImportError:
     import httplib
-    
+
 VERSION = "1.0"
 DISPATCHER = "localhost"
-    
+
+
 class PuliJobCleaner(object):
-    
+
     def __init__(self, delay):
         self.delay = delay
         sqlhub.processConnection = connectionForURI("mysql://puliuser:0ct0pus@127.0.0.1/pulidb")
-    
+
     def processFolderNodes(self):
         taskGroupsResult = sqlhub.processConnection.queryAll("select task_group_id from folder_nodes where end_time < DATE_SUB(current_date, interval %s day) and archived = 0" % self.delay)
         taskgroupsIds = ""
@@ -27,16 +28,16 @@ class PuliJobCleaner(object):
                 taskgroupsIds += str(taskId[0]) + ","
         print "archiving taskgroups older than %s days" % self.delay
         return self.clean(taskgroupsIds)
-    
+
     def processTaskNodes(self):
-        tasksResult = sqlhub.processConnection.queryAll("select task_id from task_nodes where end_time < DATE_SUB(current_date, interval %s day) and archived = 0" % self.delay)
+        tasksResult = sqlhub.processConnection.queryAll("select task_id from task_nodes where end_time < DATE_SUB(current_date, interval %s day) and archived = 0 and parent_id = 1" % self.delay)
         tasksIds = ""
         for taskId in tasksResult:
             if taskId[0] is not None:
                 tasksIds += str(taskId[0]) + ","
         print "archiving tasks older than %s days" % self.delay
         return self.clean(tasksIds)
-    
+
     def clean(self, tasksIds):
         if len(tasksIds):
             print "ids :" + tasksIds
@@ -62,7 +63,7 @@ class PuliJobCleaner(object):
                     print "A problem occured : %s" % response.msg
                     raise Exception()
         return False
-    
+
     def finish(self):
         sqlhub.processConnection.close()
 

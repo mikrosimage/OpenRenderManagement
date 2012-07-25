@@ -23,15 +23,15 @@ import env.templates.nukeVar as nukeVar
 NUKE_VERSION = "nuke"
 ENV_MAYA_LOCATION = "MAYA_LOCATION"
 
+
 class PuliActionHelper(object):
     MikrosEnv = mikrosEnv.MikrosEnv()
-    
-    def __init__(self, cleanTemp = False):
+
+    def __init__(self, cleanTemp=False):
         # first of all, call the clean temp dir function
         if cleanTemp:
             cleanLib.cleanTempDir()
         self.mikUtils = mikrosEnv.MikrosEnv()
-
 
     def decompose(self, start, end, packetSize, callback, framesList=""):
         if len(framesList) != 0:
@@ -46,11 +46,11 @@ class PuliActionHelper(object):
             start = int(start)
             end = int(end)
             packetSize = int(packetSize)
-    
+
             length = end - start + 1
             fullPacketCount, lastPacketCount = divmod(length, packetSize)
-    
-            if length < packetSize :
+
+            if length < packetSize:
                 callback.addCommand(start, end)
             else:
                 for i in range(fullPacketCount):
@@ -61,30 +61,28 @@ class PuliActionHelper(object):
                     packetStart = start + (i + 1) * packetSize
                     callback.addCommand(packetStart, end)
 
-
     def mapPath(self, path):
         return self.mikUtils.mapPath(path)
-        
 
     def getEnv(self, am_version="", maya_version="", shave_version="", crowd_version="", home="", job="", jobdrive="", applis="", use_shave=0, nuke_rep=""):
         if nuke_rep == "":
             if use_shave:
-                env = mayaVar.shaveCreateEnvDict(am_version=am_version, 
-                                    maya_version=maya_version, 
-                                    shave_version=shave_version, 
+                env = mayaVar.shaveCreateEnvDict(am_version=am_version,
+                                    maya_version=maya_version,
+                                    shave_version=shave_version,
                                     crowd_version=crowd_version,
-                                    home=home, 
-                                    job=job, 
-                                    jobdrive=jobdrive, 
+                                    home=home,
+                                    job=job,
+                                    jobdrive=jobdrive,
                                     applis=applis)
             else:
-                env = mayaVar.createEnvDict(am_version=am_version, 
-                                    maya_version=maya_version, 
-                                    shave_version=shave_version, 
+                env = mayaVar.createEnvDict(am_version=am_version,
+                                    maya_version=maya_version,
+                                    shave_version=shave_version,
                                     crowd_version=crowd_version,
-                                    home=home, 
-                                    job=job, 
-                                    jobdrive=jobdrive, 
+                                    home=home,
+                                    job=job,
+                                    jobdrive=jobdrive,
                                     applis=applis)
 
             # this is necessary for the python-bin of maya to work properly
@@ -99,11 +97,11 @@ class PuliActionHelper(object):
                 pass
         else:
             env = nukeVar.createEnvDict(nuke_rep=nuke_rep,
-                                    home=home, 
-                                    job=job, 
-                                    jobdrive=jobdrive, 
+                                    home=home,
+                                    job=job,
+                                    jobdrive=jobdrive,
                                     applis=applis)
-            
+
         # regularize the env
         for envVar in sorted(env):
             if platform.system() == 'Linux':
@@ -111,7 +109,7 @@ class PuliActionHelper(object):
             else:
                 if envVar != "MAYA_HELP_URL":
                     env[envVar] = env[envVar].replace("/", "\\")
-        
+
         # normalize the env (windows does not understand unicode)
         envN = {}
         for key in env:
@@ -128,10 +126,8 @@ class PuliActionHelper(object):
 
         return envN
 
-    
     def isLinux(self):
         return platform.system() == 'Linux'
-
 
     def printStartLog(self, name, version):
         date = datetime.datetime.now()
@@ -141,7 +137,6 @@ class PuliActionHelper(object):
         print " Running on %s" % socket.gethostname()
         print " Start time : %s" % dateStr
         print "========================================================"
-
 
     def checkExistenceOrCreateDir(self, path, name):
         if not os.path.exists(path):
@@ -157,11 +152,10 @@ class PuliActionHelper(object):
         else:
             print "%s already exists" % (name)
 
-
     def execute(self, cmdArgs, env):
         out = subprocess.Popen(cmdArgs, env=env)
         return out.wait()
-        
+
     def buildMayaCommand(self, mikserActionScript, arguments, additionalArguments, env):
         if self.isLinux():
             cmdArgs = ["%s/bin/python-bin" % env["MAYA_LOCATION"]]
@@ -182,17 +176,17 @@ class PuliActionHelper(object):
             for arg in additionalArguments:
                 cmdArgs.append(arg)
         return cmdArgs
-    
+
     def buildNukeCommand(self, arguments, localNukeScene):
         # set the path for the nuke Executable
         p = re.compile("\.")
         version_array = p.split(arguments[NUKE_VERSION])
         nukeExeVersion = version_array[0][-1] + "." + version_array[1][0]
         if self.isLinux():
-            cmdArgs = ["/s/apps/lin/nuke/Nuke%s/Nuke%s" % (arguments[NUKE_VERSION],nukeExeVersion)]
+            cmdArgs = ["/s/apps/lin/nuke/Nuke%s/Nuke%s" % (arguments[NUKE_VERSION], nukeExeVersion)]
         else:
-            cmdArgs = ["S:/Nuke/Nuke%s/Nuke%s" % (arguments[NUKE_VERSION],nukeExeVersion)]
-        
+            cmdArgs = ["S:/Nuke/Nuke%s/Nuke%s" % (arguments[NUKE_VERSION], nukeExeVersion)]
+
         if "nukex"in arguments and arguments["nukex"] == "1":
             cmdArgs.append("--nukex")
         cmdArgs.append("-t")
@@ -203,6 +197,16 @@ class PuliActionHelper(object):
         cmdArgs.append(arguments["writeNode"])
         cmdArgs.append(localNukeScene)
         cmdArgs.append("%s,%s,%s" % (arguments["start"], arguments["end"], arguments["step"]))
-        
         return cmdArgs
-    
+
+    def sendMail(self, dest, jobname):
+        import smtplib
+        from email.mime.text import MIMEText
+        frommail = "puli@puliserver"
+        msg = MIMEText("Your job %s is now complete" % jobname)
+        msg['Subject'] = "Render %s done" % jobname
+        msg['From'] = frommail
+        msg['To'] = dest
+        s = smtplib.SMTP('aspmx.l.google.com')
+        s.sendmail(frommail, [dest], msg.as_string())
+        s.quit()

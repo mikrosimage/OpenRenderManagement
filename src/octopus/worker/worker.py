@@ -4,12 +4,13 @@ import os
 import sys
 import time
 import platform
+import json
+import httplib
 
 from octopus.core.framework.mainloopapplication import MainLoopApplication
 from octopus.core.communication.requestmanager import RequestManager
 from octopus.core.enums import command as COMMAND
 from octopus.core.enums import rendernode
-from octopus.core.tools import json, httplib
 from octopus.worker import settings
 from octopus.worker.model.command import Command
 from octopus.worker.process import spawnCommandWatcher

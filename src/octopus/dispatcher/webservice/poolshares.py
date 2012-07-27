@@ -3,11 +3,11 @@ Created on Dec 16, 2009
 
 @author: acs
 '''
-from octopus.core.communication.http import Http404, Http400, HttpConflict
-from octopus.dispatcher.model.pool import PoolShare, PoolShareCreationException
-from octopus.core.tools import json
+import json
 
+from octopus.core.communication.http import Http404, Http400, HttpConflict
 from octopus.core.framework import BaseResource, queue
+from octopus.dispatcher.model.pool import PoolShare, PoolShareCreationException
 
 __all__ = []
 

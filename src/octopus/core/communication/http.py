@@ -40,10 +40,9 @@ class HttpResponse(dict):
 class JSONResponse(HttpResponse):
 
     def __init__(self, status, message, data):
-        from octopus.core.tools import json
+        import json
         content = json.dumps(data)
         HttpResponse.__init__(self, status, message, content=content)
-        #json.dump(data, self.content)
 
 
 ## A basic HttpResponse for error 400 (Bad request)

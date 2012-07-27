@@ -1,4 +1,5 @@
-#name number rendernodeMode(=0 by default)
+#name number 
 
-mtoa 50
-
+maya 50
+shave 30
+nuke 30

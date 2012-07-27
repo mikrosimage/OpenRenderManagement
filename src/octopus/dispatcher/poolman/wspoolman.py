@@ -7,7 +7,7 @@ Created on Oct 7, 2009
 import socket
 
 from octopus.core.communication.requestmanager import RequestManager
-from octopus.core.tools import json
+import json
 from octopus.dispatcher import settings
 from octopus.dispatcher.poolman import IPoolManager, PoolDescription, ComputerDescription, ComputerNotFoundError, PoolManagerError, PoolNotFoundError
 

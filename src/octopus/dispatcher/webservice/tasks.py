@@ -1,13 +1,13 @@
 from __future__ import with_statement
 
 import logging
+import json
 
 logger = logging.getLogger('dispatcher.webservice.TaskController')
 
 from tornado.web import HTTPError
 from octopus.core.framework import ResourceNotFoundError, BaseResource, queue
 from octopus.core.enums.node import *
-from octopus.core.tools import json
 from octopus.dispatcher.model import TaskGroup
 
 ALLOWED_STATUS_VALUES = (NODE_DONE, NODE_CANCELED)

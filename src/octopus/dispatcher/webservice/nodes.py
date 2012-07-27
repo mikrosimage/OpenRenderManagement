@@ -7,10 +7,10 @@ from octopus.core.enums.command import CMD_READY, CMD_RUNNING
 
 import logging
 import time
+import json
 
 logger = logging.getLogger("dispatcher.webservice.NodeController")
 
-from octopus.core.tools import json
 from octopus.core.communication import *
 from octopus.core.framework import ResourceNotFoundError, ControllerError,\
     BaseResource, queue

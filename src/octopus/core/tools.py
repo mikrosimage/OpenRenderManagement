@@ -1,28 +1,5 @@
 import tornado
-__all__ = []
-
 import sys
-
-# JSON library
-# ------------
-#
-# Python 2.6+ comes with a json module.
-# Older versions will use simplejson.
-#
-try:
-    import json
-except ImportError:
-    import simplejson as json
-
-# HTTP client library
-#
-# Python 3.0+ moved httplib into http.client
-#
-try:
-    import http.client as httplib
-except ImportError:
-    import httplib
-
 from threading import Event
 
 

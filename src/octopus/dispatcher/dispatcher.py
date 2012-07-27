@@ -8,8 +8,8 @@ import time
 from Queue import Queue
 from itertools import groupby
 import collections
+import json
 
-from octopus.core.tools import json
 from octopus.core.threadpool import ThreadPool, makeRequests, NoResultsPending
 from octopus.dispatcher.model import (DispatchTree, FolderNode, RenderNode,
                                       Pool, PoolShare, enums)

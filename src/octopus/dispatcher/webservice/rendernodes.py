@@ -1,17 +1,16 @@
 from __future__ import with_statement
 
 import time
-
+import json
+import logging
 from tornado.web import HTTPError
+
 from octopus.core.communication import Http400, Http404, Http403, HttpConflict
 from octopus.core.enums.rendernode import RN_PAUSED, RN_IDLE, RN_UNKNOWN, RN_BOOTING, RN_ASSIGNED
 from octopus.core import enums
-from octopus.core.tools import json
-
 from octopus.dispatcher.model import RenderNode
 from octopus.core.framework import BaseResource, queue
 
-import logging
 
 logger = logging.getLogger("dispatcher.webservice.RenderNodesResource")
 

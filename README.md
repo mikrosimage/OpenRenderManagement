@@ -13,18 +13,18 @@ SYSTEM PREREQUISITES
 
 Currently, Puli is only supported on Linux (32 or 64 bits).
 
-** Linux packages :**
+##### Linux packages :
 
    * mysql-devel
    * python-devel (for your version of python)
 
-** Python 2.6+ with following modules :**
+##### Python 2.6+ with following modules :
 
    * MySQL-python
    * python-sqlobject
    * python-tornado
 
-** MySQL server 5.0+**
+##### MySQL server 5.0+
 
 
 INSTALLATION
@@ -50,7 +50,7 @@ Please check the following settings:
 
 * CONFDIR = /opt/puli/conf
 * LOGDIR = /opt/puli/logs
-* POOLS_BACKEND_TYPE = “file”
+* POOLS_BACKEND_TYPE = "file"
 * DB_ENABLE = True
 * DB_CLEAN_DATA = True
 
@@ -64,11 +64,11 @@ Upon the first execution, Puli will create the appropriate tables in the databas
 
 For the following executions, you may set these parameters in the settings file:
 
-* POOLS_BACKEND_TYPE = “db”
+* POOLS_BACKEND_TYPE = "db"
 * DB_ENABLE = True
 * DB_CLEAN_DATA = False
 
-These will tell Puli to init itself with the database that was previously created. 
+These will tell Puli to init itself with the database that was previously created, and it will enable the persistence of the jobs.
 
 If you want to erase the database in order to have a clean start, reset these parameters to the values in the installation section.
 
@@ -80,7 +80,10 @@ RELEASE NOTES
 KNOWN ISSUES
 ------------
 
-These will be addressed in a future release.
+The model needs a bit of a refactoring. It has been designed several years ago to address some use-cases that are no longer relevant.
+It can be more simple and straightforward than it is now.
+
+Several aspects of the worker can be optimized (like the handling of status and completion update, and the interaction between the cmdwatcher and the process)
 
 
 LICENSING

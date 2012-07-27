@@ -18,10 +18,10 @@ import os
 import time
 import traceback
 import httplib as http
+import json
 
 from octopus.core.http import Request
 from octopus.core.communication.requestmanager import RequestManager
-from octopus.core.tools import json
 
 from octopus.core.enums.command import *
 

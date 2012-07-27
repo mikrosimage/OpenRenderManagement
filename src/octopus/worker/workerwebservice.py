@@ -1,7 +1,7 @@
 import os
 from Queue import Queue
+import json
 
-from octopus.core.tools import json
 from octopus.core.communication.http import Http400, Http404
 from octopus.worker import settings
 from tornado.web import Application, RequestHandler

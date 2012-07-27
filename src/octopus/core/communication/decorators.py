@@ -1,4 +1,4 @@
-from octopus.core.tools import json
+import json
 
 from octopus.core.communication.http import Http400, Http405, Http411
 

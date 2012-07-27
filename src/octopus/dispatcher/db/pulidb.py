@@ -18,8 +18,8 @@ from collections import defaultdict
 import datetime
 import logging
 import time
+import json
 
-from octopus.core.tools import json
 from octopus.dispatcher.model.node import FolderNode, TaskNode
 from octopus.dispatcher.model.task import Task, TaskGroup
 from octopus.dispatcher.model.command import Command

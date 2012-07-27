@@ -1,6 +1,7 @@
 
 
-from octopus.core.tools import json
+import json
+
 from octopus.core.enums.command import *
 from octopus.core.framework import BaseResource, queue
 from octopus.core.communication.http import Http404, Http400

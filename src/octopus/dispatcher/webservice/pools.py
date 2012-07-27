@@ -1,9 +1,9 @@
 
+import json
 import logging
 
 from octopus.dispatcher.model.pool import Pool
 from octopus.core.communication.http import Http404, Http400, HttpConflict
-from octopus.core.tools import json
 
 from octopus.core.framework import BaseResource, queue
 

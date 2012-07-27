@@ -26,7 +26,8 @@ class LicenseManager:
             return False
 
         def release(self):
-            self.used -= 1
+            if self.used > 0:
+                self.used -= 1
 
         def setMaxNumber(self, maxNumber):
             self.maximum = maxNumber

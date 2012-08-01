@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>octopus</name>
+	<name>OpenDispatcher</name>
 	<comment></comment>
-	<projects>
-		<project>octopus_core</project>
-	</projects>
 	<buildSpec>
 		<buildCommand>
 			<name>org.python.pydev.PyDevBuilder</name>

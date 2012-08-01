@@ -1,9 +1,11 @@
 from distutils.core import setup
-import sys, os
+import os
+
 
 def is_package(path):
-    return (os.path.isdir(path) and 
+    return (os.path.isdir(path) and
             os.path.isfile(os.path.join(path, '__init__.py')))
+
 
 def find_packages(path, base=''):
     packages = {}
@@ -31,14 +33,15 @@ DATA_FILES = [
 
 if __name__ == '__main__':
     setup(
-        name='DispatcherHD3D',
-        version='0.3',
-        description='HD3D Dispatcher',
-        author='HD3D/Dispatcher Team',
-        author_email='lotd@hd3d.fr',
+        name='OpenDispatcher',
+        version='1.0',
+        description='OpenDispatcher aka Puli',
+        license='Modified BSD',
+        author='Mikros Image',
+        author_email='dev@mikrosimage.eu',
+        url='https://github.com/mikrosimage/puli',
         package_dir=PACKAGE_DIR,
         packages=PACKAGES,
         scripts=SCRIPTS,
         data_files=DATA_FILES,
     )
-

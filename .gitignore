@@ -1,3 +1,14 @@
 .settings
 logs/
 *.pyc
+*.pyo
+gwt-unitCache/
+war/
+.installed.cfg
+.codeintel/
+parts/
+develop-eggs/
+bin/
+eggs/
+downloads/
+src/*.egg-info

@@ -29,7 +29,7 @@ RUN_AS = None
 #LOGDIR = "/opt/puli/logs"
 LOGDIR = "/tmp/puli/logs"
 #CONFDIR = "/opt/puli/conf"
-CONFDIR = "/Users/red/workspace3.6/Puli/etc/puli"
+CONFDIR = "/Users/red/workspace3.6/Puli/OpenDispatcher/etc/puli"
 PIDFILE = "dispatcher.pid"
 
 RENDERNODE_REQUEST_MAX_RETRY_COUNT = 10

@@ -1,5 +1,4 @@
-"""HD3D/Dispatcher
-"""
+
 from __future__ import with_statement
 
 import logging
@@ -29,7 +28,7 @@ ASSIGNMENT_COMPUTATION_TIMEOUT = 0.5
 class Dispatcher(MainLoopApplication):
     '''The Dispatcher class is the core of the dispatcher application.
 
-    It computers the assignments of commands to workers according to a
+    It computes the assignments of commands to workers according to a
     DispatchTree and handles all the communications with the workers and
     clients.
     '''
@@ -83,7 +82,6 @@ class Dispatcher(MainLoopApplication):
         self.defaultPool = self.dispatchTree.pools['default']
         LOGGER.info("loading dispatch rules")
         self.loadRules()
-        #self.event = threading.Event()
         # it should be better to have a maxsize
         self.queue = Queue(maxsize=10000)
         if settings.DUMP_HTML_DATA:

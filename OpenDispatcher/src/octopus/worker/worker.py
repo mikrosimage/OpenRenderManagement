@@ -397,10 +397,11 @@ class Worker(MainLoopApplication):
                     commandWatcher.finished = True
 
     def addCommandApply(self, ticket, commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment):
-        newCommand = Command(commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment=environment)
-        self.commands[commandId] = newCommand
-        self.addCommandWatcher(newCommand)
-        LOGGER.info("Added command %d {runner: %s, arguments: %s}", commandId, runner, repr(arguments))
+        if not self.isPaused:
+            newCommand = Command(commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment=environment)
+            self.commands[commandId] = newCommand
+            self.addCommandWatcher(newCommand)
+            LOGGER.info("Added command %d {runner: %s, arguments: %s}", commandId, runner, repr(arguments))
 
     ##
     #

@@ -1,48 +1,54 @@
 #! /usr/bin/env python
 '''
-Created on Jul 19, 2010
+Created on Aug 10, 2009
 
-@author: dev
+@author: bud
 '''
 
-
 import logging
+import logging.handlers
 import optparse
 import os
 import sys
 import atexit
+import signal
 
 from octopus.worker import make_worker, settings
 
-def daemonize (stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'):
-    # Perform first fork.
-    try:
-        pid = os.fork( )
-        if pid > 0:
-            sys.exit(0) # Exit first parent.
-    except OSError, e:
-        sys.stderr.write("fork #1 failed: (%d) %sn" % (e.errno, e.strerror))
-        sys.exit(1)
-    # Decouple from parent environment.
+def daemonize(username=""):
+    if os.fork() != 0:
+        os._exit(0)
+    os.setsid()
+    if os.name != 'nt':
+        import pwd
+        if username:
+            uid = pwd.getpwnam(username)[2]
+            os.setuid(uid)
+    if os.fork() != 0:
+        os._exit(0)
+    # create the pidfile
+    pidfile = file(settings.PIDFILE, "w")
+    pidfile.write("%d\n" % os.getpid())
+    pidfile.close()
+    # register a cleanup callback
+    pidfile = os.path.abspath(settings.PIDFILE)
+    def delpidfile():
+        os.remove(pidfile)
+    atexit.register(delpidfile)
+    def delpidfileonSIGTERM(a, b):
+        sys.exit()
+    signal.signal(signal.SIGTERM, delpidfileonSIGTERM)
+    #
     os.chdir("/")
-    os.umask(0)
-    os.setsid( )
-    # Perform second fork.
-    try:
-        pid = os.fork( )
-        if pid > 0:
-            sys.exit(0) # Exit second parent.
-    except OSError, e:
-        sys.stderr.write("fork #2 failed: (%d) %sn" % (e.errno, e.strerror))
-        sys.exit(1)
-    # The process is now daemonized, redirect standard file descriptors.
-    for f in sys.stdout, sys.stderr: f.flush( )
-    si = file(stdin, 'r')
-    so = file(stdout, 'a+')
-    se = file(stderr, 'a+', 0)
-    os.dup2(si.fileno( ), sys.stdin.fileno( ))
-    os.dup2(so.fileno( ), sys.stdout.fileno( ))
-    os.dup2(se.fileno( ), sys.stderr.fileno( ))
+    f = os.open(os.devnull, os.O_RDONLY)
+    os.dup2(f, sys.stdin.fileno())
+    os.close(f)
+    f = os.open(os.devnull, os.O_WRONLY)
+    os.dup2(f, sys.stdout.fileno())
+    os.close(f)
+    f = os.open(os.devnull, os.O_WRONLY)
+    os.dup2(f, sys.stderr.fileno())
+    os.close(f)
 
 
 def process_args():
@@ -68,9 +74,10 @@ def setup_logging(options):
     if not os.path.exists(settings.LOGDIR):
         os.makedirs(settings.LOGDIR, 0755)
     
-    logFile = os.path.join(settings.LOGDIR, "worker_%s_%d.log" % (settings.ADDRESS, settings.PORT))
+    logFile = os.path.join(settings.LOGDIR, "worker.log")
     
-    fileHandler = logging.FileHandler(logFile, "w", "UTF-8")
+#    fileHandler = logging.FileHandler(logFile, "w", "UTF-8")
+    fileHandler = logging.handlers.RotatingFileHandler(logFile, 'w', 1048576, 1, "UTF-8")
     fileHandler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
     logger = logging.getLogger() 
     logger.addHandler(fileHandler)
@@ -92,7 +99,7 @@ def main():
     setup_logging(options)
     workerApplication = make_worker()
     if options.DAEMONIZE:
-        daemonize()
+        daemonize(settings.RUN_AS)
     workerApplication.mainLoop()
 
 if __name__ == '__main__':

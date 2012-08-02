@@ -11,4 +11,5 @@ develop-eggs/
 bin/
 eggs/
 downloads/
+tests/
 src/*.egg-info

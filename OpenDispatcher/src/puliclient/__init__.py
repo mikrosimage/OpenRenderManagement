@@ -1,13 +1,9 @@
-__author__ = "Olivier Derpierre <oderpierre@quintaindustries.com>"
+__author__ = "Olivier Derpierre "
 __date__ = "Jan 11, 2010"
 __version__ = (0, 2, 0)
 
-import sys
 import httplib
-try:
-    import json
-except ImportError:
-    import simplejson as json
+import json
 from puliclient import jobs
 
 __all__ = ['jobs', 'Error', 'GraphSubmissionError', 'TaskAlreadyDecomposedError', 'Task', 'Graph', 'TaskGroup', 'Command']

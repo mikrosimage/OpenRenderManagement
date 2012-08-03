@@ -1,7 +1,7 @@
 ####################################################################################################
 # @file enums.py
 # @package dispatcher.model
-# @author bud <oderpierre@quintaindustries.com>
+# @author bud
 # @date 2009/04/29
 # @version 0.1
 #

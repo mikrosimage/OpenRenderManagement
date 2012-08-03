@@ -52,7 +52,4 @@ DB_URL = "mysql://red:0ct0pus@127.0.0.1/pulidb"
 #DB_URL = "mysql://puliuser:0ct0pus@127.0.0.1/pulidb"
 #DB_URL = "sqlite:///path/to/my/database/file.db"
 
-IMAGES_BASE_URL = "http://localhost/~bud/images"
-DUMP_HTML_DATA = False
-
 RN_TIMEOUT = 60.0

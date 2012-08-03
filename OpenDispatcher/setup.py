@@ -39,7 +39,7 @@ if __name__ == '__main__':
         license='Modified BSD',
         author='Mikros Image',
         author_email='dev@mikrosimage.eu',
-        url='https://github.com/mikrosimage/puli',
+        url='http://github.com/mikrosimage/puli',
         package_dir=PACKAGE_DIR,
         packages=PACKAGES,
         scripts=SCRIPTS,

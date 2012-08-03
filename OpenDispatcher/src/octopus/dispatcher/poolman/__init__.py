@@ -1,7 +1,7 @@
 '''
 Created on Aug 17, 2009
 
-@author: bud <oderpierre@quintaindustries.com>
+@author: bud
 '''
 
 import socket

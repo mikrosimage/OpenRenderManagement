@@ -5,9 +5,11 @@ README for Puli
 DESCRIPTION
 -----------
 
-Puli is an open-source dispatcher entirely written in python.
-The Core project is called OpenDispatcher.
-PuliUI is a GWT project that provides a simple web interface for OpenDispatcher.
+Puli is an open-source dispatcher project.
+
+The Core project is called `OpenDispatcher` and is entirely written in python.
+
+`PuliUI` is a GWT project that provides a simple web interface for OpenDispatcher.
 
 
 LICENSING

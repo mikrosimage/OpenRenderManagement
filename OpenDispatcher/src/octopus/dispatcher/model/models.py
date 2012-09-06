@@ -1,7 +1,7 @@
 '''
 Created on Nov 2, 2009
 
-@author: bud
+@author: Olivier Derpierre
 '''
 
 

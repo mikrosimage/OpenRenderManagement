@@ -2,7 +2,7 @@
 ####################################################################################################
 # @file pulidb.py
 # @package octopus.dispatcher.db
-# @author acs
+# @author Arnaud Chassagne
 # @date 2010/10/20
 # @version 2.0
 #

@@ -1,7 +1,7 @@
 '''
 Created on Apr 27, 2012
 
-@author: acs
+@author: Arnaud Chassagne
 '''
 
 from octopus.core.framework import ResourceNotFoundError, BaseResource, queue

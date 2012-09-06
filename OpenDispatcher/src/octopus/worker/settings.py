@@ -23,18 +23,11 @@ computername, domain = socket.getfqdn(socket.gethostname()).split(".", 1)
 computername = computername.lower()
 ADDRESS = computername
 
-#import tempfile
-#PID_DIR = os.path.join(tempfile.gettempdir(), "workers", ADDRESS, str(PORT), "run")
-
 PIDFILE = "/tmp/worker.pid"
 KILLFILE = "/tmp/render/killfile"
 
 DISPATCHER_PORT = 8004
 DISPATCHER_ADDRESS = "puliserver"
-#DISPATCHER_ADDRESS = "pbookdev01"
 
 RUN_AS = ""
-#LOGDIR = os.path.join("/", "s", "apps", "lin", "puli", "logs", "workers")
-#LOGDIR = os.path.join("/", "tmp", "puli", "logs")
-#LOGDIR = os.path.abspath(LOGDIR)
 LOGDIR = "/tmp/puli/logs"

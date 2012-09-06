@@ -1,7 +1,7 @@
 '''
 Created on Dec 16, 2009
 
-@author: acs
+@author: Arnaud Chassagne
 '''
 import json
 

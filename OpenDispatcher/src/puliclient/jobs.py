@@ -1,7 +1,7 @@
 '''
 Created on Jan 11, 2010
 
-@author: bud
+@author: Olivier Derpierre
 '''
 
 import sys

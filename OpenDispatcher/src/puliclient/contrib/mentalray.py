@@ -1,7 +1,7 @@
 '''
 Created on Jan 12, 2010
 
-@author: acs
+@author: Arnaud Chassagne
 '''
 from puliclient.jobs import TaskDecomposer, CommandRunner
 from puliclient.contrib.helper.helper import PuliActionHelper
@@ -47,7 +47,7 @@ class MentalrayDecomposer(TaskDecomposer):
     def __init__(self, task):
         self.task = task
         task.runner = "puliclient.contrib.mentalray.MentalrayRunner"
-        
+
         # FIXME temporary fix
         if FRAMES_LIST not in task.arguments:
             task.arguments[FRAMES_LIST] = ""
@@ -71,26 +71,26 @@ class MentalrayRunner(CommandRunner):
     def execute(self, arguments, updateCompletion, updateMessage):
         # init the helper
         helper = PuliActionHelper(cleanTemp = True)
-        
+
         start = int(arguments[START])
         end = int(arguments[END])
         padding = int(arguments[PADDING])
         prefix = str(arguments[OUTPUT_IMAGE])
-        
+
         # convert the paths
         prodPath = helper.mapPath(arguments[PROJECT])
         arguments[RENDER_DIR] = helper.mapPath(arguments[RENDER_DIR])
         arguments[SCENE] = helper.mapPath(arguments[SCENE])
-        
+
         # set the env
-        env = helper.getEnv(am_version=arguments[ARNOLD_VERSION], 
-                            maya_version=arguments[MAYA_VERSION], 
-                            shave_version=arguments[SHAVE_VERSION], 
-                            home=os.environ["HOME"], 
-                            job=os.path.basename(prodPath), 
-                            jobdrive=os.path.dirname(prodPath), 
+        env = helper.getEnv(am_version=arguments[ARNOLD_VERSION],
+                            maya_version=arguments[MAYA_VERSION],
+                            shave_version=arguments[SHAVE_VERSION],
+                            home=os.environ["HOME"],
+                            job=os.path.basename(prodPath),
+                            jobdrive=os.path.dirname(prodPath),
                             applis=helper.mapPath("/s/apps/lin"))
-        
+
         helper.printStartLog("MentalRayRunner", "v1.1")
         cmdArgs = helper.buildMayaCommand("MikserActionMentalRayRender", arguments, [prodPath, arguments[SCENE]], env)
         print "Executing command : %s" % str(cmdArgs)
@@ -99,7 +99,7 @@ class MentalrayRunner(CommandRunner):
         ret = helper.execute(cmdArgs, env)
         if ret != 0:
             raise Exception("A problem occured in the render script, see log")
-        
+
         # check images
         layer2Render = []
         if RENDER_LAYERS in arguments:
@@ -115,7 +115,7 @@ class MentalrayRunner(CommandRunner):
                     else:
                         layerfolder = layer
                     renderdir = str(arguments[RENDER_DIR]) + "/" + layerfolder + "/"
-                    filename = renderdir + prefix + "-" + layer + "." + frameStr + "." + str(arguments[FORMAT]) 
+                    filename = renderdir + prefix + "-" + layer + "." + frameStr + "." + str(arguments[FORMAT])
                     print "Checking \"%s\"..." % filename
                     if not os.path.isfile(filename):
                         raise Exception("File does not exist")
@@ -125,12 +125,12 @@ class MentalrayRunner(CommandRunner):
             for frameInt in range(start, end+1):
                 frameStr = str(frameInt).rjust(padding, "0")
             # check the file
-            filename = str(arguments[RENDER_DIR]) + "/" + prefix + "." + frameStr + "." + str(arguments[FORMAT]) 
+            filename = str(arguments[RENDER_DIR]) + "/" + prefix + "." + frameStr + "." + str(arguments[FORMAT])
             print "Checking \"%s\"..." % filename
             if not os.path.isfile(filename):
                 raise Exception("File does not exist")
             else:
                 print "OK."
-        
+
         updateCompletion(1)
         print "\nrender done."

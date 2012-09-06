@@ -133,8 +133,11 @@ class Worker(MainLoopApplication):
                 f = open('/etc/mik-release', 'r')
                 for line in f.readlines():
                     if 'openSUSE' in line:
-                        self.distrib = line
-                    elif 'MIK-VERSION' in line:
+                        if '=' in line:
+                            self.distrib = line.split('=')[1].strip()
+                        else:
+                            self.distrib = line
+                    elif 'MIK-VERSION' in line or 'MIK-RELEASE' in line:
                         self.mikdistrib = line.split('=')[1].strip()
                         break
                 f.close()
@@ -317,7 +320,7 @@ class Worker(MainLoopApplication):
             # that are not flagged as modified.
             #
             for commandWatcher in self.commandWatchers.values():
-                # add the test on running state because a non running command can not timeout (bud 17/11/10)
+                # add the test on running state because a non running command can not timeout (Olivier Derpierre 17/11/10)
                 if commandWatcher.timeOut and commandWatcher.command.status == COMMAND.CMD_RUNNING:
                     responding = (now - commandWatcher.startTime) <= commandWatcher.timeOut
                     if not responding:

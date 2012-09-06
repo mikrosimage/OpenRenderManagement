@@ -1,7 +1,7 @@
 '''
 Created on Jan 12, 2010
 
-@author: acs
+@author: Arnaud Chassagne
 '''
 
 from puliclient.jobs import TaskDecomposer, CommandRunner
@@ -42,6 +42,7 @@ LOCAL_NUKE_SCENE = "localNukeScene"
 FRAME_WRITE_PATTERN = r"^Writing .* took .* seconds"
 #</runner>
 
+
 class NukeDecomposer(TaskDecomposer):
 
     def __init__(self, task):
@@ -55,28 +56,28 @@ class NukeDecomposer(TaskDecomposer):
         cmdArgs[END] = packetEnd
         cmdName = "%s_%s_%s" % (self.task.name, str(packetStart), str(packetEnd))
         self.task.addCommand(cmdName, cmdArgs)
-        
-        
+
+
 class NukeRunner(CommandRunner):
     def execute(self, arguments, updateCompletion, updateMessage):
         # init the helper
-        self.helper = PuliActionHelper(cleanTemp = True)
+        self.helper = PuliActionHelper(cleanTemp=True)
 
         # convert the paths
         prodPath = self.helper.mapPath(arguments[PROJECT])
         arguments[NUKE_SCENE] = self.helper.mapPath(arguments[NUKE_SCENE])
         outImages = self.helper.mapPath(arguments[OUTPUT_IMAGES])
-        
+
         # set the env
-        env = self.helper.getEnv(nuke_rep=arguments[NUKE_VERSION],  
-                                 home=os.environ["HOME"], 
-                                 job=os.path.basename(prodPath), 
-                                 jobdrive=os.path.dirname(prodPath), 
+        env = self.helper.getEnv(nuke_rep=arguments[NUKE_VERSION],
+                                 home=os.environ["HOME"],
+                                 job=os.path.basename(prodPath),
+                                 jobdrive=os.path.dirname(prodPath),
                                  applis=self.helper.mapPath("/s/apps/lin"))
-        
+
         # init log
         self.helper.printStartLog("NukeRunner", "1.2")
-        
+
         # replace the local nuke scene argument in the argslist
         if outImages != "":
             localNukeScene = self.updateOutputFiles(arguments[NUKE_SCENE], outImages, arguments[WRITE_NODE])
@@ -87,7 +88,7 @@ class NukeRunner(CommandRunner):
         updateMessage("Executing command %s" % cmdArgs)
         print "\nExecuting command : %s\n" % cmdArgs
         sys.stdout.flush()
-        
+
         out = subprocess.Popen(cmdArgs, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=0, env=env)
         begintime = time.time()
         completedFrames = 0
@@ -113,8 +114,7 @@ class NukeRunner(CommandRunner):
                 break
         out.terminate()
         if completedFrames != totalFrames:
-            raise Exception, "Incomplete job: %d/%d images rendered" % (completedFrames, totalFrames)
-
+            raise Exception("Incomplete job: %d/%d images rendered" % (completedFrames, totalFrames))
 
     def updateOutputFiles(self, srcNukeFilePath, outImages, writeNode):
         if self.helper.isLinux():
@@ -130,17 +130,17 @@ class NukeRunner(CommandRunner):
         ## Creating render images dir
         outFolder = os.path.dirname(outImages)
         if "%v" in outFolder or "%V" in outFolder:
-            ## test parsing views        
+            ## test parsing views
             srcNukeFile = open(srcNukeFilePath, 'r')
             lines = srcNukeFile.readlines()
             srcNukeFile.close()
             lines.reverse()
-            
+
             index = lines.index(" name " + writeNode + "\n")
-            
+
             onlyLeft = False
             onlyRight = False
-            
+
             for i in range(index, len(lines)):
                 if 'views {' in lines[i]:
                     if 'left' in lines[i]:
@@ -159,7 +159,7 @@ class NukeRunner(CommandRunner):
                     self.helper.checkExistenceOrCreateDir(outFolder.replace('%V', 'left'), "render dir left")
                 if not onlyLeft:
                     self.helper.checkExistenceOrCreateDir(outFolder.replace('%V', 'right'), "render dir right")
-        else:    
+        else:
             self.helper.checkExistenceOrCreateDir(outFolder, 'render dir')
 
         srcNukeFile = open(srcNukeFilePath, 'r')
@@ -172,7 +172,7 @@ class NukeRunner(CommandRunner):
         dstNukeFile.write(contentStr)
 
         outImagesPadding = outImages.count("#")
-        if outImagesPadding :
+        if outImagesPadding:
             outStrPadding = "%0" + str(outImagesPadding) + "d"
             inStrPadding = ""
             inStrPadding = inStrPadding.rjust(outImagesPadding, "#")
@@ -191,5 +191,5 @@ class NukeRunner(CommandRunner):
 
         print "\nLocal Nuke scene created : '" + localNukeScene + "'."
         dstNukeFile.close()
-        
+
         return localNukeScene

@@ -2,7 +2,7 @@
 ####################################################################################################
 # @file commandwatcher.py
 # @package
-# @author acs, bud, jb
+# @author Arnaud Chassagne, Olivier Derpierre, Jean-Baptiste Spieser
 # @date 2009/01/12
 # @version 0.1
 #

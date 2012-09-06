@@ -2,7 +2,7 @@
 '''
 Created on Jan 22, 2012
 
-@author: acs, lcl, mgi
+@author: Arnaud Chassagne, lcl, mgi
 '''
 
 import subprocess

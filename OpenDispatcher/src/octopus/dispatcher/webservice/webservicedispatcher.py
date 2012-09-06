@@ -1,7 +1,7 @@
 ####################################################################################################
 # @file webservicedispatcher.py
 # @package octopus.dispatcher.webservice
-# @author acs, jbs, bud
+# @author Arnaud Chassagne, Jean-Baptiste Spieser, Olivier Derpierre
 # @date 2008/12/01
 # @version 0.1
 #

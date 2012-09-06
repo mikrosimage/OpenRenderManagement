@@ -1,7 +1,7 @@
 '''
 Created on Aug 17, 2009
 
-@author: bud
+@author: Olivier Derpierre
 '''
 import logging
 import re

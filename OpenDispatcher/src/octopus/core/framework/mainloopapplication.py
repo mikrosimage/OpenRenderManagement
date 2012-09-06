@@ -2,7 +2,7 @@
 ####################################################################################################
 # @file mainloopapplication.py
 # @package
-# @author acs, jbs
+# @author Arnaud Chassagne, Jean-Baptiste Spieser
 # @date 2008/12/01
 # @version 0.1
 #

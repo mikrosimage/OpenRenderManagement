@@ -1,7 +1,7 @@
 '''
 Created on Mar 5, 2012
 
-@author: acs
+@author: Arnaud Chassagne
 '''
 import os
 import subprocess
@@ -25,24 +25,24 @@ PADDING = "pad"
 #</generic>
 
 class ExrmakescanlinedDecomposer(TaskDecomposer):
-    
+
     def __init__(self, task):
         self.task = task
         self.task.runner = "puliclient.contrib.exrmakescanlined.ExrmakescanlinedRunner"
         PuliActionHelper().decompose(task.arguments[START], task.arguments[END], task.arguments[PACKET_SIZE], self)
 
-   
+
     def addCommand(self, packetStart, packetEnd):
         cmdArgs = self.task.arguments.copy()
         cmdArgs[START] = packetStart
         cmdArgs[END] = packetEnd
-        
+
         cmdName = "%s_%s_%s" % (self.task.name, str(packetStart), str(packetEnd))
         self.task.addCommand(cmdName, cmdArgs)
-        
+
 
 class ExrmakescanlinedRunner(CommandRunner):
-    
+
     def execute(self, arguments, updateCompletion, updateMessage):
         # init the helper
         helper = PuliActionHelper()
@@ -62,8 +62,8 @@ class ExrmakescanlinedRunner(CommandRunner):
         if not os.path.isdir(self.tmpDir):
             os.mkdir(self.tmpDir)
         os.path.walk(parentDir, self.visit, "")
-        
-        
+
+
     def visit(self, arg, dirname, names):
         for name in names:
             subname = os.path.join(dirname, name)
@@ -74,10 +74,10 @@ class ExrmakescanlinedRunner(CommandRunner):
                     # constructs the command arguments
                     argList = [self.cmd, "-v"]
                     argList.append(subname)
-                    
-                    destination = os.path.join(self.tmpDir, name) 
+
+                    destination = os.path.join(self.tmpDir, name)
                     argList.append(destination)
-                    
+
                     # launch the process
                     output, error = subprocess.Popen(argList, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
                     print output

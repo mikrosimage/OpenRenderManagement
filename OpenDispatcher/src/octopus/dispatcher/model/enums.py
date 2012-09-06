@@ -1,7 +1,7 @@
 ####################################################################################################
 # @file enums.py
 # @package dispatcher.model
-# @author bud
+# @author Olivier Derpierre
 # @date 2009/04/29
 # @version 0.1
 #

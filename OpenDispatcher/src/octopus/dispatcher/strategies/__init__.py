@@ -1,7 +1,7 @@
 ####################################################################################################
 # @file __init__.py
 # @package puli.dispatcher.strategies
-# @author bud
+# @author Olivier Derpierre
 # @date 2009/04/28
 # @version 0.1
 #

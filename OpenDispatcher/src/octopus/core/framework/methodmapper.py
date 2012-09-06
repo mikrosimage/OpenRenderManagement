@@ -2,7 +2,7 @@
 ####################################################################################################
 # @file methodmapper.py
 # @package octopus.core.framework
-# @author bud
+# @author Olivier Derpierre
 # @date 2008/21/01
 # @version 0.1
 #

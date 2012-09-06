@@ -1,7 +1,7 @@
 '''
 Created on Oct 7, 2009
 
-@author: acs
+@author: Arnaud Chassagne
 '''
 
 import socket

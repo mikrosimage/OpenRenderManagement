@@ -1,7 +1,7 @@
 '''
 Created on Jan 12, 2010
 
-@author: acs
+@author: Arnaud Chassagne
 '''
 import subprocess
 

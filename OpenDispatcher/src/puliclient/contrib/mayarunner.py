@@ -1,7 +1,7 @@
 '''
 Created on Jan 23, 2012
 
-@author: acs
+@author: Arnaud Chassagne
 '''
 from puliclient.jobs import CommandRunner
 import sys

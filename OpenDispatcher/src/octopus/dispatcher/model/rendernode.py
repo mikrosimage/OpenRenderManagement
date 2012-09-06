@@ -219,9 +219,6 @@ class RenderNode(models.Model):
             self.status = RN_FINISHING
         elif CMD_ASSIGNED in commandStatus:
             self.status = RN_ASSIGNED
-        # FIXME: ACS - this is messing up in case of a RN_PAUSED that timeouts but is not offline
-        #elif self.status == RN_UNKNOWN:
-        #    self.status = RN_IDLE
         elif CMD_DONE in commandStatus:
             self.status = RN_FINISHING  # do not set the status to IDLE immediately, to ensure that the order of affectation will be respected
         elif self.status not in (RN_IDLE, RN_BOOTING, RN_UNKNOWN, RN_PAUSED):

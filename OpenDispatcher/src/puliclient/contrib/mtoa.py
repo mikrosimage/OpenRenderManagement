@@ -1,12 +1,15 @@
 '''
 Created on Nov 23, 2010
 
-@author: acs
+@author: Arnaud Chassagne
 '''
 import subprocess
 import os
+import re
+import sys
 import shutil
 import datetime
+import time
 from puliclient.jobs import CommandRunner, TaskDecomposer
 from puliclient.contrib.helper.helper import PuliActionHelper
 
@@ -96,38 +99,38 @@ PADDING = "pad"
 FRAMES_LIST = "framesList"
 #</generic>
 
+
 class MtoaDecomposer(TaskDecomposer):
 
     def __init__(self, task):
         self.task = task
         self.task.runner = "puliclient.contrib.mtoa.MtoaRunner"
-        
+
         # initializes the maps for translating arguments
-        self.formatsMap = {'jpg':1, 'tif': 2, 'exr':3, 'png':4}
-        
-        self.pixelFilterTypeMap = {'Box':0, 'Disk':1, 'Triangle':2,
-                                   'Cone':3, 'Cubic':4, 'Catmull-Rom':5,
-                                   'catmull-rom2d':6, 'Cook':7, 'Mitchell-Netravali':8,
-                                   'Video':9, 'Gaussian':10, 'Sinc':11, 
-                                   'Farthest':12, 'Variance':13, 'Closest':14}
-        
-        self.transparencyModeMap = {'Always':0, 'Shadow Only':1, 'Never':2}
-        
-        self.bucketScanMap = {'Bottom-Up':1, 'Top-Down':2, 'Left-To-Right':3, 
-                              'Right-To-Left':4, 'Random':5, 'Woven':6,
-                              'Spiral':7, 'Hilbert':8}
-        
-        self.bucketSizeMap = {'4':0, '8':1, '16':2, '32':3, '64':4, '128':5}
-        
-        self.verboseLevelMap = {'Error':0, 'Warning':1, 'Message':2,
-                                'Info':3, 'Debug':4, 'Fine Debug':5,
-                                'Full Debug':6}
+        self.formatsMap = {'jpg': 1, 'tif':  2, 'exr': 3, 'png': 4}
+
+        self.pixelFilterTypeMap = {'Box': 0, 'Disk': 1, 'Triangle': 2,
+                                   'Cone': 3, 'Cubic': 4, 'Catmull-Rom': 5,
+                                   'catmull-rom2d': 6, 'Cook': 7, 'Mitchell-Netravali': 8,
+                                   'Video': 9, 'Gaussian': 10, 'Sinc': 11,
+                                   'Farthest': 12, 'Variance': 13, 'Closest': 14}
+
+        self.transparencyModeMap = {'Always': 0, 'Shadow Only': 1, 'Never': 2}
+
+        self.bucketScanMap = {'Bottom-Up': 1, 'Top-Down': 2, 'Left-To-Right': 3,
+                              'Right-To-Left': 4, 'Random': 5, 'Woven': 6,
+                              'Spiral': 7, 'Hilbert': 8}
+
+        self.bucketSizeMap = {'4': 0, '8': 1, '16': 2, '32': 3, '64': 4, '128': 5}
+
+        self.verboseLevelMap = {'Error': 0, 'Warning': 1, 'Message': 2,
+                                'Info': 3, 'Debug': 4, 'Fine Debug': 5,
+                                'Full Debug': 6}
 
         # FIXME temporary fix
         if FRAMES_LIST not in task.arguments:
             task.arguments[FRAMES_LIST] = ""
         PuliActionHelper().decompose(task.arguments[START], task.arguments[END], task.arguments[PACKET_SIZE], self, task.arguments[FRAMES_LIST])
-
 
     def addCommand(self, packetStart, packetEnd):
         cmdArgs = self.task.arguments.copy()
@@ -159,7 +162,7 @@ class MtoaDecomposer(TaskDecomposer):
                 # handle the verbose level argument
                 cmdArgs[VERBOSE_LEVEL] = self.verboseLevelMap[value]
                 continue
-        
+
         # Default values
         keys = self.task.arguments.keys()
         # mtoa version test
@@ -185,7 +188,7 @@ class MtoaDecomposer(TaskDecomposer):
             cmdArgs[MAKE_SCANLINED] = "1"
         if VERBOSE_LEVEL not in keys:
             cmdArgs[VERBOSE_LEVEL] = "2"
-         
+
         # always add the ass and assf arguments
         cmdArgs[GENERATE_ASS_FILE] = 1
         cmdArgs[OUTPUT_ASS_FILE] = "/datas/tmp/assfiles"
@@ -197,16 +200,18 @@ class MtoaDecomposer(TaskDecomposer):
 class MtoaRunner(CommandRunner):
 
     def execute(self, arguments, updateCompletion, updateMessage):
+        frameCompletionPattern = re.compile("\| (.*)% done .* rays/pixel")
+
         # init the helper
-        helper = PuliActionHelper(cleanTemp = True)
-        
+        helper = PuliActionHelper(cleanTemp=True)
+
         # convert the paths
         projPath = helper.mapPath(arguments[PROJECT])
         prodPath = helper.mapPath(arguments[PROD])
         arguments[OUTPUT_ASS_FILE] = helper.mapPath(arguments[OUTPUT_ASS_FILE])
         arguments[RENDER_DIR] = helper.mapPath(arguments[RENDER_DIR])
         arguments[SCENE] = helper.mapPath(arguments[SCENE])
-            
+
         # set the env
         use_shave = 0
         if MTOA_EXTENSIONS in arguments.keys() and SHAVE_VERSION in arguments[MTOA_EXTENSIONS]:
@@ -214,16 +219,16 @@ class MtoaRunner(CommandRunner):
         crowd_version = ""
         if CROWD_VERSION in arguments.keys():
             crowd_version = arguments[CROWD_VERSION]
-        env = helper.getEnv(am_version=arguments[ARNOLD_VERSION], 
-                            maya_version=arguments[MAYA_VERSION], 
+        env = helper.getEnv(am_version=arguments[ARNOLD_VERSION],
+                            maya_version=arguments[MAYA_VERSION],
                             shave_version=arguments[SHAVE_VERSION],
                             crowd_version=crowd_version,
-                            home=os.environ["HOME"], 
-                            job=os.path.basename(prodPath), 
-                            jobdrive=os.path.dirname(prodPath), 
+                            home=os.environ["HOME"],
+                            job=os.path.basename(prodPath),
+                            jobdrive=os.path.dirname(prodPath),
                             applis=helper.mapPath("/s/apps/lin"),
                             use_shave=use_shave)
-        
+
         # init log
         helper.printStartLog("mtoarunner", "v2.1")
 
@@ -252,7 +257,7 @@ class MtoaRunner(CommandRunner):
                                 print " [ %s ]" % (extfile)
                                 arguments['le'] = extfile
                                 if os.path.isdir(os.path.join(addonPath, extfile, "nodes")):
-                                    extensionsNodesSearchPath += [ "-l", os.path.join(addonPath, extfile, "nodes") ]
+                                    extensionsNodesSearchPath += ["-l", os.path.join(addonPath, extfile, "nodes")]
                                 if nb == 0:
                                     extStr = extfile
                                 else:
@@ -270,29 +275,30 @@ class MtoaRunner(CommandRunner):
                     if extName:
                         print "Will force load of MtoA Extension : [ %s ]" % (extName)
                         if os.path.isdir(os.path.join(addonPath, extName, "nodes")):
-                            extensionsNodesSearchPath += [ "-l", os.path.join(addonPath, extName, "nodes") ]
+                            extensionsNodesSearchPath += ["-l", os.path.join(addonPath, extName, "nodes")]
                 arguments['le'] = xtensions
-        
+
         # Add arg to write outputs image files list
         outputsFile = '/datas/tmp/filestocheck_' + datetime.datetime.now().strftime('%y%m%d_%H%M%S')
         arguments['ifo'] = outputsFile
-        
+
         cmdArgs = helper.buildMayaCommand("MikserActionMtoARender", arguments, [projPath, arguments[SCENE]], env)
-        
+
         # Execute the command line that will export the ass
         print '\nLaunch export command "%s"' % cmdArgs
-        updateCompletion(0)
+        comp = 0.0
+        updateCompletion(comp)
         ret = helper.execute(cmdArgs, env=env)
         print '===================================================='
         print '  MikserActionMtoARender returns with code %d' % (ret)
         print '===================================================='
         if ret != 0:
             print '  Export failed, exiting...'
-            raise Exception, '  Export failed, exiting...'
+            raise Exception('  Export failed, exiting...')
 
         # update the completion
-        comp = 0.3
-        updateCompletion(comp)
+        #comp = 0.3
+        #updateCompletion(comp)
 
         # Extra kick flags
         extraKickFlags = []
@@ -305,6 +311,7 @@ class MtoaRunner(CommandRunner):
         # kick -nstdin -dp -i /datas/tmp/assfiles/RE-sq14sh20-all_z-v002.1019.ass
         start = int(arguments[START])
         end = int(arguments[END])
+        totalFrames = end - start + 1
 
         tiledDestination = arguments[RENDER_DIR] + "_Tiled"
         helper.checkExistenceOrCreateDir(tiledDestination, "tiled directory")
@@ -340,29 +347,49 @@ class MtoaRunner(CommandRunner):
                 argList += ["-t", str(arguments[NUMBER_OF_THREADS])]
             # Extra kick flags
             argList += extraKickFlags
-            
+
             # kick the command
             print "\nKicking command : " + " ".join(argList)
-            kickret = helper.execute(argList, env=env)
+
+            #kickret = helper.execute(argList, env=env)
+
+            out = subprocess.Popen(argList, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=0, env=env)
+            rc = None
+            while rc is None:
+                line = out.stdout.readline()
+                if not line:
+                    break
+                print line,
+                sys.stdout.flush()
+                fcp = frameCompletionPattern.search(line)
+                if fcp:
+                    framecomp = float(fcp.group(1).strip())
+                    fc = float(framecomp / 100) / float(totalFrames)
+                    updateCompletion(comp + fc)
+                rc = out.poll()
+
+            out.communicate()
+            rc = out.poll()
             print '===================================================='
-            print '  kick command returns with code %d' % (kickret)
+            print '  kick command returns with code %d' % rc
             print '===================================================='
-            if kickret != 0:
+            if rc != 0:
                 print '  Kick command failed...'
-                raise Exception, '  Kick command failed...'  
-            
+                raise Exception('  Kick command failed...')
+            comp += 1.0 / float(totalFrames)
+
             # suppression of ass files
             if not int(arguments[LEAVE_ASS_FILES]):
                 try:
                     os.remove(assFilePath)
                 except OSError:
-                    print "\nFailed to remove '"+assFilePath+"'\n"
+                    print "\nFailed to remove '" + assFilePath + "'\n"
             else:
-                print "\nLeaving Ass extfile on disk : '"+assFilePath+"'\n"
-            
+                print "\nLeaving Ass extfile on disk : '" + assFilePath + "'\n"
+
             # Check the output image files by reading outputs extfile
             # Make them scanlined if in exr format
-            self.invertedFormatsMap = {'1':'jpg',  '2':'tif', '3':'exr', '4':'png'}
+            self.invertedFormatsMap = {'1': 'jpg',  '2': 'tif', '3': 'exr', '4': 'png'}
             print "\nCheck render outputs :"
             outputsByFrame = outputsFile + '.' + frameStr
             lines = []
@@ -372,8 +399,8 @@ class MtoaRunner(CommandRunner):
                 outputsFileHdl.close()
             except IOError:
                 filename = arguments[RENDER_DIR] + "/" + arguments[OUTPUT_IMAGE] + "." + frameStr + "." + self.invertedFormatsMap[str(arguments[FORMAT])]
-                lines = [ filename ]
-            
+                lines = [filename]
+
             for line in lines:
                 # Check
                 filename = line.rstrip()
@@ -381,7 +408,7 @@ class MtoaRunner(CommandRunner):
                 if not os.path.exists(filename):
                     raise Exception("file does not exist!")
                 print "  OK."
-                
+
                 # exrmakescanlined
                 make_scanlined = 1
                 if MAKE_SCANLINED in arguments:
@@ -421,16 +448,24 @@ class MtoaRunner(CommandRunner):
                                 print "       idiff : Tiled and Scanlined images match, removing Tiled version..."
                                 os.remove(oldy)
                                 print "         Tiled version removed."
-            
+                            # FIXME check permissions
+                            import stat
+                            st = os.stat(filename)
+                            if not bool(st.st_mode & stat.S_IRGRP) or not bool(st.st_mode & stat.S_IWGRP):
+                                logtemp = open("/s/apps/lin/puli/tmplog.csv", 'a')
+                                import socket
+                                logtemp.write("%s\t%s\t%s\tmtoa\t%s\t%s\n" % (filename, socket.gethostname(), os.path.basename(prodPath), oct(stat.S_IMODE(st.st_mode)), time.strftime('%H:%M', time.localtime())))
+                                logtemp.close()
+
             # Suppress image outputs list
             try:
                 os.remove(outputsByFrame)
             except OSError:
-                print "\nFailed to remove "+outputsByFrame+"\n"
-            
+                print "\nFailed to remove %s\n" % outputsByFrame
+
             # update completion
-            comp += 0.7 / (end - start + 1)
-            updateCompletion(comp)
+            #comp += 0.7 / totalFrames
+            #updateCompletion(comp)
         updateCompletion(1)
         print "\nrender done."
 
@@ -440,19 +475,19 @@ class MtoaRunner(CommandRunner):
         temp = argsStr.split()
         rags = []
         i = 0
-        while i<len(temp):
-            if temp[i][:1]=='"':
+        while i < len(temp):
+            if temp[i][:1] == '"':
                 recompose = temp[i]
-                if temp[i][-1]!='"':
+                if temp[i][-1] != '"':
                     i += 1
-                    while (i<len(temp) and temp[i][-1]!='"'):
+                    while (i < len(temp) and temp[i][-1] != '"'):
                         recompose = recompose + " " + temp[i]
                         i += 1
-                    if i<len(temp):
+                    if i < len(temp):
                         recompose = recompose + " " + temp[i]
                     else:
                         print "Error in extra kick flags"
-                recompose = recompose[1:len(recompose)-1]
+                recompose = recompose[1:len(recompose) - 1]
                 rags.append(recompose)
             else:
                 rags.append(temp[i])

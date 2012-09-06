@@ -2,7 +2,7 @@
 ####################################################################################################
 # @file ticket.py
 # @package octopus.core.framework
-# @author bud
+# @author Olivier Derpierre
 # @date 2009/02/05
 # @version 0.1
 #

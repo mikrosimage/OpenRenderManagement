@@ -5,7 +5,7 @@ README for Puli
 DESCRIPTION
 -----------
 
-Puli is an open-source dispatcher project.
+Puli is an open-source render management project.
 
 The Core project is called `OpenDispatcher` and is entirely written in python.
 

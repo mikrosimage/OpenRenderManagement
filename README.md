@@ -1,13 +1,13 @@
-README for Puli
-===============
+README for OpenRenderManagement
+===============================
 
 
 DESCRIPTION
 -----------
 
-Puli is an open-source render management project.
+OpenRenderManagement is an open-source render management project.
 
-The Core project is called `OpenDispatcher` and is entirely written in python.
+The Core project is called `Puli` and is entirely written in python.
 
 `PuliUI` is a GWT project that provides a simple web interface for OpenDispatcher.
 
@@ -15,8 +15,8 @@ The Core project is called `OpenDispatcher` and is entirely written in python.
 LICENSING
 ---------
 
-Puli is distributed using the modified BSD license. Please read the "LICENSE" file for the legal wording.
+OpenRenderManagement is distributed using the modified BSD license. Please read the "LICENSE" file for the legal wording.
 
-To put it in a nutshell, Puli is free, as well as freely modifiable and redistributable.
+To put it in a nutshell, OpenRenderManagement is free, as well as freely modifiable and redistributable.
 
 You may use part or all of it in your own applications, whether proprietary or open, free or commercial or not.

@@ -1,18 +1,18 @@
-README for OpenDispatcher
-=========================
+README for Puli
+===============
 
 
 DESCRIPTION
 -----------
 
-OpenDispatcher consists of the core of the Puli Project.
+Puli consists of the core of the Puli Project.
 It contains both the dispatcher and the worker code.
 
 
 SYSTEM PREREQUISITES
 --------------------
 
-Currently, OpenDispatcher is only supported on Linux (32 or 64 bits).
+Currently, Puli is only supported on Linux (32 or 64 bits).
 
 ##### Linux packages :
 
@@ -61,7 +61,7 @@ To launch the dispatcher, execute the following command in a shell:
 
     python /opt/puli/scripts/dispatcherd.py -D -C
 
-Upon the first execution, OpenDispatcher will create the appropriate tables in the database.
+Upon the first execution, Puli will create the appropriate tables in the database.
 
 For the following executions, you may set these parameters in the settings file:
 
@@ -69,7 +69,7 @@ For the following executions, you may set these parameters in the settings file:
 * DB_ENABLE = True
 * DB_CLEAN_DATA = False
 
-These will tell OpenDispatcher to init itself with the database that was previously created, and it will enable the persistence of the jobs.
+These will tell Puli to init itself with the database that was previously created, and it will enable the persistence of the jobs.
 
 If you want to erase the database in order to have a clean start, reset these parameters to the values in the installation section.
 
@@ -90,8 +90,8 @@ Several aspects of the worker can be optimized (like the handling of status and 
 LICENSING
 ---------
 
-OpenDispatcher is distributed using the modified BSD license. Please read the "LICENSE" file for the legal wording.
+Puli is distributed using the modified BSD license. Please read the "LICENSE" file for the legal wording.
 
-Long story short, OpenDispatcher is free, as well as freely modifiable and redistributable.
+Long story short, Puli is free, as well as freely modifiable and redistributable.
 
 You may use part or all of it in your own applications, whether proprietary or open, free or commercial or not.

@@ -159,8 +159,8 @@ class NukexRunner(CommandRunner):
                     self.helper.checkExistenceOrCreateDir(outFolder.replace('%V', 'left'), "render dir left")
                 if not onlyLeft:
                     self.helper.checkExistenceOrCreateDir(outFolder.replace('%V', 'right'), "render dir right")
-        else:
-            self.helper.checkExistenceOrCreateDir(outFolder, 'render dir')
+        #else:
+            #self.helper.checkExistenceOrCreateDir(outFolder, 'render dir')
 
         srcNukeFile = open(srcNukeFilePath, 'r')
         ## Creating nuke tmp out file in tempDir
@@ -172,7 +172,7 @@ class NukexRunner(CommandRunner):
         dstNukeFile.write(contentStr)
 
         outImagesPadding = outImages.count("#")
-        if outImagesPadding :
+        if outImagesPadding:
             outStrPadding = "%0" + str(outImagesPadding) + "d"
             inStrPadding = ""
             inStrPadding = inStrPadding.rjust(outImagesPadding, "#")

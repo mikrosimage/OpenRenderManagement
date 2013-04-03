@@ -133,7 +133,8 @@ class MtoaDecomposer(TaskDecomposer):
         PuliActionHelper().decompose(task.arguments[START], task.arguments[END], task.arguments[PACKET_SIZE], self, task.arguments[FRAMES_LIST])
 
     def addCommand(self, packetStart, packetEnd):
-        cmdArgs = self.task.arguments.copy()
+        #cmdArgs = self.task.arguments.copy()
+        cmdArgs = {}
         cmdArgs[START] = packetStart
         cmdArgs[END] = packetEnd
         # translate the arguments
@@ -167,7 +168,7 @@ class MtoaDecomposer(TaskDecomposer):
         keys = self.task.arguments.keys()
         # mtoa version test
         if ARNOLD_VERSION in keys:
-            version = cmdArgs[ARNOLD_VERSION]
+            version = self.task.arguments[ARNOLD_VERSION]
             ver = version.split("_")
             v = float(ver[1][0:ver[1].rfind(".")])
             if v >= 1.6:
@@ -352,7 +353,7 @@ class MtoaRunner(CommandRunner):
             print "\nKicking command : " + " ".join(argList)
 
             #kickret = helper.execute(argList, env=env)
-
+            os.umask(2)
             out = subprocess.Popen(argList, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=0, env=env)
             rc = None
             while rc is None:
@@ -437,7 +438,7 @@ class MtoaRunner(CommandRunner):
                             shutil.move(filename, oldy)
                             shutil.move(dest, filename)
                             # idiff comparison
-                            idiffcmd = ["/s/apps/lin/bin/idiff"]
+                            idiffcmd = ["/s/apps/lin/bin/idiff-1.1.7"]
                             idiffcmd.append(filename)
                             idiffcmd.append(oldy)
                             devnull = open('/dev/null', 'w')
@@ -448,6 +449,8 @@ class MtoaRunner(CommandRunner):
                                 print "       idiff : Tiled and Scanlined images match, removing Tiled version..."
                                 os.remove(oldy)
                                 print "         Tiled version removed."
+                            else:
+                                print "       idiff : Can't remove Tiled version : images not match !!!"
                             # FIXME check permissions
                             import stat
                             st = os.stat(filename)

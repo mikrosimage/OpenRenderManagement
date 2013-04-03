@@ -84,11 +84,11 @@ class NukeRunner(CommandRunner):
 
         cmdArgs = self.helper.buildNukeCommand(arguments, localNukeScene)
 
-        updateCompletion(0.1)
         updateMessage("Executing command %s" % cmdArgs)
         print "\nExecuting command : %s\n" % cmdArgs
         sys.stdout.flush()
 
+        os.umask(2)
         out = subprocess.Popen(cmdArgs, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=0, env=env)
         begintime = time.time()
         completedFrames = 0
@@ -159,8 +159,8 @@ class NukeRunner(CommandRunner):
                     self.helper.checkExistenceOrCreateDir(outFolder.replace('%V', 'left'), "render dir left")
                 if not onlyLeft:
                     self.helper.checkExistenceOrCreateDir(outFolder.replace('%V', 'right'), "render dir right")
-        else:
-            self.helper.checkExistenceOrCreateDir(outFolder, 'render dir')
+        #else:
+            #self.helper.checkExistenceOrCreateDir(outFolder, 'render dir')
 
         srcNukeFile = open(srcNukeFilePath, 'r')
         ## Creating nuke tmp out file in tempDir

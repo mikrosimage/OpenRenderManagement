@@ -34,18 +34,33 @@ class PuliActionHelper(object):
         self.mikUtils = mikrosEnv.MikrosEnv()
 
     def decompose(self, start, end, packetSize, callback, framesList=""):
+        packetSize = int(packetSize)
         if len(framesList) != 0:
             frames = framesList.split(",")
             for frame in frames:
                 if "-" in frame:
                     frameList = frame.split("-")
-                    callback.addCommand(int(frameList[0]), int(frameList[1]))
+                    start = int(frameList[0])
+                    end = int(frameList[1])
+
+                    length = end - start + 1
+                    fullPacketCount, lastPacketCount = divmod(length, packetSize)
+
+                    if length < packetSize:
+                        callback.addCommand(start, end)
+                    else:
+                        for i in range(fullPacketCount):
+                            packetStart = start + i * packetSize
+                            packetEnd = packetStart + packetSize - 1
+                            callback.addCommand(packetStart, packetEnd)
+                        if lastPacketCount:
+                            packetStart = start + (i + 1) * packetSize
+                            callback.addCommand(packetStart, end)
                 else:
                     callback.addCommand(int(frame), int(frame))
         else:
             start = int(start)
             end = int(end)
-            packetSize = int(packetSize)
 
             length = end - start + 1
             fullPacketCount, lastPacketCount = divmod(length, packetSize)
@@ -140,19 +155,20 @@ class PuliActionHelper(object):
 
     def checkExistenceOrCreateDir(self, path, name):
         if not os.path.exists(path):
-            print "\nCreating %s..." % (name)
-            os.umask(0)
+            print "\nCreating %s..." % name
+            #os.umask(0)
             try:
                 os.makedirs(path, 0775)
             except OSError:
                 if os.path.isdir(path):
                     pass
                 else:
-                    raise Exception
+                    raise Exception("Could not create or access dir : %s" % path)
         else:
-            print "%s already exists" % (name)
+            print "%s already exists" % name
 
     def execute(self, cmdArgs, env):
+        os.umask(2)
         out = subprocess.Popen(cmdArgs, env=env)
         return out.wait()
 

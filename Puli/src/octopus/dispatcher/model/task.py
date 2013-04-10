@@ -60,7 +60,7 @@ class TaskGroup(Model):
         self.fireDestructionEvent(self)
 
     def updateStatusAndCompletion(self):
-        if  not self.tasks:
+        if not self.tasks:
             self.completion = 1.0
             self.status = NODE_DONE
         else:
@@ -77,13 +77,13 @@ class TaskGroup(Model):
                 self.status = NODE_PAUSED
             elif NODE_RUNNING in status:
                 self.status = NODE_RUNNING
-            elif NODE_ERROR in  status:
+            elif NODE_ERROR in status:
                 self.status = NODE_ERROR
             elif NODE_CANCELED in status:
                 self.status = NODE_CANCELED
             elif NODE_READY in status or self.completion != 1.0:
                 self.status = NODE_READY
-            elif NODE_BLOCKED  in status:
+            elif NODE_BLOCKED in status:
                 self.status = NODE_BLOCKED
             else:
                 self.status = NODE_DONE

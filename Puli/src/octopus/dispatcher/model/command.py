@@ -53,9 +53,9 @@ class Command(models.Model):
             self.endTime = None
         else:
             # id exists, so we'll assume that status, completion and creationTime exist as well
-            assert status != None
-            assert completion != None
-            assert creationTime != None
+            assert status is not None
+            assert completion is not None
+            assert creationTime is not None
             self.id = int(id)
             self.description = str(description)
             self.task = task
@@ -90,9 +90,12 @@ class Command(models.Model):
         if self.status in (CMD_FINISHING, CMD_DONE, CMD_CANCELED):
             return
         elif self.status == CMD_RUNNING:
-            self.renderNode.request("DELETE", "/commands/" + str(self.id) + "/")
-            # FIXME test the return value of this request ?
-            self.renderNode.clearAssignment(self)
+            try:
+                self.renderNode.clearAssignment(self)
+                self.renderNode.request("DELETE", "/commands/" + str(self.id) + "/")
+            except Exception:
+                # if request has failed, it means the rendernode is unreachable
+                self.status = CMD_CANCELED
         elif self.status == CMD_ASSIGNED:
             self.renderNode.clearAssignment(self)
         self.status = CMD_CANCELED

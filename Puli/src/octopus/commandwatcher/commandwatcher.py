@@ -289,6 +289,7 @@ class CommandWatcher(object):
     def updateMessageCallback(self, message):
         self.message = message
 
+
 def closeFileDescriptors():
     '''Close all the file descriptors inherited from the parent except for stdin, stdout and stderr.'''
     if os.name == 'posix':

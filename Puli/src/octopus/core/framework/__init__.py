@@ -32,7 +32,7 @@ class ResourceNotFoundError(ControllerError):
     """
     def __init__(self, *args, **kwargs):
         Exception.__init__(self, *args)
-        for name, value in  kwargs.items():
+        for name, value in kwargs.items():
             setattr(self, name, value)
 
 

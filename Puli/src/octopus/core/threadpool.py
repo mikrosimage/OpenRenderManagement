@@ -265,8 +265,7 @@ class ThreadPool:
 
         """
         for i in range(num_workers):
-            self.workers.append(WorkerThread(self._requests_queue,
-                self._results_queue, poll_timeout=poll_timeout))
+            self.workers.append(WorkerThread(self._requests_queue, self._results_queue, poll_timeout=poll_timeout))
 
     def dismissWorkers(self, num_workers, do_join=False):
         """Tell num_workers worker threads to quit after their current task."""
@@ -313,8 +312,7 @@ class ThreadPool:
                 if request.exception and request.exc_callback:
                     request.exc_callback(request, result)
                 # hand results to callback, if any
-                if request.callback and not \
-                       (request.exception and request.exc_callback):
+                if request.callback and not (request.exception and request.exc_callback):
                     request.callback(request, result)
                 del self.workRequests[request.requestID]
             except Queue.Empty:

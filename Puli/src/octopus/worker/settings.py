@@ -11,7 +11,7 @@ def loadSettingsFile(filename):
     g = {}
     l = {}
     execfile(filename, g, l)
-    settings = [(name, value) for name, value in l.items() if name.isupper() and  name in globals()]
+    settings = [(name, value) for name, value in l.items() if name.isupper() and name in globals()]
     globals().update(settings)
 
 ## SETTINGS ###########################################################
@@ -19,7 +19,11 @@ def loadSettingsFile(filename):
 DEBUG = True
 
 PORT = 8000
-computername, domain = socket.getfqdn(socket.gethostname()).split(".", 1)
+fqdn = socket.getfqdn(socket.gethostname())
+if "." in fqdn:
+    computername, domain = fqdn.split(".", 1)
+else:
+    computername = fqdn
 computername = computername.lower()
 ADDRESS = computername
 

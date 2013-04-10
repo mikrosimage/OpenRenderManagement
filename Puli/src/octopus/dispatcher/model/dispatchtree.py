@@ -261,7 +261,10 @@ class DispatchTree(object):
         for commandDef in taskDefinition['commands']:
             description = commandDef['description']
             arguments = commandDef['arguments']
-            task.commands.append(Command(None, description, task, arguments))
+            cmd = Command(None, description, task, arguments)
+            task.commands.append(cmd)
+            # import sys
+            # logger.warning("cmd creation : %s" % str(sys.getrefcount(cmd)))
 
         return task
 
@@ -308,6 +311,9 @@ class DispatchTree(object):
                 element.parent.removeChild(element)
             if element.poolShares:
                 for poolShare in element.poolShares.values():
+                    del poolShare.pool.poolShares[poolShare.node]
+                    del self.poolShares[poolShare.id]
+                    # print poolShare.pool.poolShares
                     self.toArchiveElements.append(poolShare)
             del self.nodes[element.id]
             self.toArchiveElements.append(element)
@@ -319,6 +325,8 @@ class DispatchTree(object):
                 element.parent.removeChild(element)
             if element.poolShares:
                 for poolShare in element.poolShares.values():
+                    del poolShare.pool.poolShares[poolShare.node]
+                    del self.poolShares[poolShare.id]
                     self.toArchiveElements.append(poolShare)
             del self.nodes[element.id]
             self.toArchiveElements.append(element)
@@ -418,8 +426,9 @@ class DispatchTree(object):
 
     def onCommandChange(self, command, field, oldvalue, newvalue):
         self.toModifyElements.append(command)
-        for node in command.task.nodes.values():
-            node.invalidate()
+        if command.task is not None:
+            for node in command.task.nodes.values():
+                node.invalidate()
 
     ### methods called after interaction with a Pool
 

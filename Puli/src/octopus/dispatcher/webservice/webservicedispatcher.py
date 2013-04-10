@@ -7,6 +7,8 @@
 #
 ####################################################################################################
 from tornado.web import Application
+import tornado.web as web
+from tornado.httpserver import HTTPServer
 from octopus.dispatcher.webservice import commands, rendernodes, graphs, nodes,\
     tasks, poolshares, pools, licenses
 from octopus.core.enums.command import *
@@ -27,6 +29,7 @@ class WebServiceDispatcher(Application):
             (r'/commands/(\d+)/?$', commands.CommandResource, dict(framework=framework)),
 
             (r'/rendernodes/?$', rendernodes.RenderNodesResource, dict(framework=framework)),
+            (r'/rendernodes/performance/?$', rendernodes.RenderNodesPerfResource, dict(framework=framework)),
             (r'/rendernodes/((?:\d+)|(?:[\w.-]+:\d+))/?$', rendernodes.RenderNodeResource, dict(framework=framework)),
             (r'/rendernodes/((?:\d+)|(?:[\w.-]+:\d+))/commands/(\d+)/?$', rendernodes.RenderNodeCommandsResource, dict(framework=framework)),
             (r'/rendernodes/((?:\d+)|(?:[\w.-]+:\d+))/sysinfos/?$', rendernodes.RenderNodeSysInfosResource, dict(framework=framework)),
@@ -46,14 +49,18 @@ class WebServiceDispatcher(Application):
             (r'^/nodes/(\d+)/maxRN/?$', nodes.NodeMaxRNResource, dict(framework=framework)),
             (r'^/nodes/(\d+)/strategy/?$', nodes.NodeStrategyResource, dict(framework=framework)),
             (r'^/nodes/(\d+)/children/?$', nodes.NodeChildrenResource, dict(framework=framework)),
+            (r'^/nodes/(\d+)/user/?$', nodes.NodeUserResource, dict(framework=framework)),
+            (r'^/nodes/(\d+)/prod/?$', nodes.NodeProdResource, dict(framework=framework)),
 
             (r'^/tasks/?$', tasks.TasksResource, dict(framework=framework)),
+            (r'^/tasks/delete/?$', tasks.DeleteTasksResource, dict(framework=framework)),
             (r'^/tasks/(\d+)/?$', tasks.TaskResource, dict(framework=framework)),
             (r'^/tasks/(\d+)/env/?$', tasks.TaskEnvResource, dict(framework=framework)),
             (r'^/tasks/(\d+)/arguments/?$', tasks.TaskArgumentResource, dict(framework=framework)),
             (r'^/tasks/(\d+)/commands/?$', tasks.TaskCommandResource, dict(framework=framework)),
             (r'^/tasks/(\d+)/tree/?$', tasks.TaskTreeResource, dict(framework=framework)),
             (r'^/tasks/(\d+)/comment/?$', tasks.TaskCommentResource, dict(framework=framework)),
+            (r'^/tasks/(\d+)/user/?$', tasks.TaskUserResource, dict(framework=framework)),
 
             (r'^/poolshares/?$', poolshares.PoolSharesResource, dict(framework=framework)),
             (r'^/poolshares/(\d+)/?$', poolshares.PoolShareResource, dict(framework=framework)),

@@ -34,8 +34,10 @@ class TasksResource(BaseResource):
         body = json.dumps(data)
         self.writeCallback(body)
 
+
+class DeleteTasksResource(BaseResource):
     @queue
-    def delete(self):
+    def post(self):
         data = self.getBodyAsJSON()
         try:
             taskids = data['taskids']
@@ -89,6 +91,24 @@ class TaskCommentResource(TaskResource):
             taskId = int(taskId)
             task = self._findTask(taskId)
             task.tags["comment"] = comment
+            self.dispatcher.dispatchTree.toModifyElements.append(task)
+
+
+class TaskUserResource(TaskResource):
+    @queue
+    def put(self, taskId):
+        '''
+        Sets the user of a task.
+        '''
+        data = self.getBodyAsJSON()
+        try:
+            user = data['user']
+        except:
+            return HTTPError(400, 'Missing entry: "user".')
+        else:
+            taskId = int(taskId)
+            task = self._findTask(taskId)
+            task.user = str(user)
             self.dispatcher.dispatchTree.toModifyElements.append(task)
 
 

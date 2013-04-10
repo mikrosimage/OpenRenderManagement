@@ -105,7 +105,6 @@ class NodeStatusResource(NodesResource):
             nodeId = int(nodeId)
             node = self._findNode(nodeId)
             # TODO handle the case when there is no node with nodeId
-
             # handles the case of retry all commands on error
             if "cmdStatus" in arguments.keys() and nodeStatus == NODE_READY:
                 filterfunc = lambda command: command.status in [int(s) for s in arguments['cmdStatus']]
@@ -255,6 +254,39 @@ class NodeStrategyResource(NodesResource):
         self.writeCallback(message)
 
 
+class NodeUserResource(NodesResource):
+    @queue
+    def put(self, nodeId):
+        '''
+        Sets the user of a node.
+        '''
+        data = self.getBodyAsJSON()
+        try:
+            user = data['user']
+        except:
+            return HTTPError(400, 'Missing entry: "user".')
+        else:
+            nodeId = int(nodeId)
+            node = self._findNode(nodeId)
+            node.user = str(user)
+            self.dispatcher.dispatchTree.toModifyElements.append(node)
+
+
+class NodeProdResource(NodesResource):
+    @queue
+    def put(self, nodeId):
+        data = self.getBodyAsJSON()
+        try:
+            prod = data['prod']
+        except:
+            return HTTPError(400, 'Missing entry: "prod".')
+        else:
+            nodeId = int(nodeId)
+            node = self._findNode(nodeId)
+            node.tags["prod"] = str(prod)
+            self.dispatcher.dispatchTree.toModifyElements.append(node)
+
+
 class NodeChildrenResource(NodesResource):
     @queue
     def get(self, nodeId):
@@ -338,6 +370,6 @@ class NodeChildrenResource(NodesResource):
         #
         children = [childNode.to_json() for childNode in children]
         odict['children'] = children
-        body = json.dumps(odict)
+        body = json.dumps(odict, separators=(',', ':'))
         self.set_status(200)
         self.writeCallback(body)

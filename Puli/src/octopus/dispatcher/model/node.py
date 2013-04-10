@@ -284,13 +284,13 @@ class FolderNode(BaseNode):
 
             if NODE_PAUSED in status:
                 self.status = NODE_PAUSED
-            elif NODE_ERROR in  status:
+            elif NODE_ERROR in status:
                 self.status = NODE_ERROR
             elif NODE_RUNNING in status:
                 self.status = NODE_RUNNING
             elif NODE_READY in status:
                 self.status = NODE_READY
-            elif NODE_BLOCKED  in status:
+            elif NODE_BLOCKED in status:
                 self.status = NODE_BLOCKED
             elif NODE_CANCELED in status:
                 self.status = NODE_CANCELED
@@ -405,7 +405,9 @@ class TaskNode(BaseNode):
         if ep == None:
             ep = self
         for poolshare in [poolShare for poolShare in ep.poolShares.values() if poolShare.hasRenderNodesAvailable()]:
-            for rendernode in  poolshare.pool.renderNodes:
+            # first, sort the rendernodes according their performance value
+            rnList = sorted(poolshare.pool.renderNodes, key=lambda rn: rn.performance, reverse=True)
+            for rendernode in rnList:
                 if rendernode.isAvailable() and rendernode.canRun(command):
                     if rendernode.reserveLicense(command, self.dispatcher.licenseManager):
                         rendernode.addAssignment(command)

@@ -5,14 +5,14 @@ import json
 import logging
 from tornado.web import HTTPError
 
-from octopus.core.communication import Http400, Http404, Http403, HttpConflict
+from octopus.core.communication import HttpResponse, Http400, Http404, Http403, HttpConflict
 from octopus.core.enums.rendernode import RN_PAUSED, RN_IDLE, RN_UNKNOWN, RN_BOOTING, RN_ASSIGNED
 from octopus.core import enums
 from octopus.dispatcher.model import RenderNode
 from octopus.core.framework import BaseResource, queue
 
 
-logger = logging.getLogger("dispatcher.webservice.RenderNodesResource")
+logger = logging.getLogger("dispatcher")
 
 
 class RenderNodesResource(BaseResource):
@@ -56,9 +56,10 @@ class RenderNodeResource(BaseResource):
             if 'commands' in dct:
                 for cmdId in dct['commands']:
                     self.getDispatchTree().renderNodes[computerName].commands[cmdId] = self.getDispatchTree().commands[cmdId]
-            return HttpConflict("RenderNode already registered.")
+            if 'status' in dct:
+                self.getDispatchTree().renderNodes[computerName].status = int(dct['status'])
+            return HttpResponse(304, "RenderNode already registered.")
         else:
-            logger.info("received" + repr(dct))
             for key in ('name', 'port', 'status', 'cores', 'speed', 'ram', 'pools', 'caracteristics'):
                 if not key in dct:
                     return Http400("Missing key %r" % key, content="Missing key %r" % key)
@@ -138,33 +139,35 @@ class RenderNodeCommandsResource(BaseResource):
         Returns "200 OK" on success, or "400 Bad Request" if the provided json data is not valid.
         '''
         computerName = computerName.lower()
-        try:
-            updateDict = self.sanitizeUpdateDict(self.getBodyAsJSON())
-        except TypeError, e:
-            return Http400(repr(e.args))
-        updateDict['renderNodeId'] = computerName
+        # try:
+        #     updateDict = self.sanitizeUpdateDict(self.getBodyAsJSON())
+        # except TypeError, e:
+        #     return Http400(repr(e.args))
+        updateDict = self.getBodyAsJSON()
+        #
+        updateDict['renderNodeName'] = computerName
         try:
             self.framework.application.updateCommandApply(updateDict)
         except KeyError, e:
             return Http404(str(e))
         self.writeCallback("Command updated")
 
-    def sanitizeUpdateDict(self, dct):
-        res = {}
-        values = (('id', lambda val: isinstance(val, int)),
-                  ('status', lambda val: isinstance(val, int)),
-                  ('message', lambda val: isinstance(val, basestring)),
-                  ('completion', lambda val: isinstance(val, int) or isinstance(val, float)),
-                  ('validatorMessage', lambda val: isinstance(val, basestring)),
-                  ('errorInfos', lambda val: isinstance(val, dict)),
-                  )
-        for name, valuetype in values:
-            if name in dct:
-                value = dct[name]
-                if not valuetype(value):
-                    raise TypeError(name, value)
-                res[name] = value
-        return res
+    # def sanitizeUpdateDict(self, dct):
+    #     res = {}
+    #     values = (('id', lambda val: isinstance(val, int)),
+    #               ('status', lambda val: isinstance(val, int)),
+    #               ('message', lambda val: isinstance(val, basestring)),
+    #               ('completion', lambda val: isinstance(val, int) or isinstance(val, float)),
+    #               ('validatorMessage', lambda val: isinstance(val, basestring)),
+    #               ('errorInfos', lambda val: isinstance(val, dict)),
+    #               )
+    #     for name, valuetype in values:
+    #         if name in dct:
+    #             value = dct[name]
+    #             if not valuetype(value):
+    #                 raise TypeError(name, value)
+    #             res[name] = value
+    #     return res
 
     @queue
     def delete(self, computerName, commandId):
@@ -212,18 +215,26 @@ class RenderNodeSysInfosResource(BaseResource):
             renderNode.ram = int(dct["ram"])
         if "speed" in dct:
             renderNode.speed = float(dct["speed"])
+        if "performance" in dct:
+            renderNode.performance = float(dct["performance"])
         if "status" in dct:
             if renderNode.status == RN_UNKNOWN:
-                logger.warning("Worker was timeout...")
                 if int(dct["status"]) == RN_PAUSED:
-                    logger.warning("... is now paused")
                     renderNode.status = RN_PAUSED
                 else:
-                    logger.warning("... is now idle")
                     renderNode.status = RN_IDLE
-
         renderNode.lastAliveTime = time.time()
         renderNode.isRegistered = True
+
+
+class RenderNodesPerfResource(BaseResource):
+    @queue
+    def put(self):
+        dct = self.getBodyAsJSON()
+        for computerName, perf in dct.items():
+            renderNode = self.getDispatchTree().renderNodes[computerName]
+            renderNode.performance = float(perf)
+        self.writeCallback("Performance indexes have been set.")
 
 
 class RenderNodeResetResource(BaseResource):

@@ -45,8 +45,9 @@ class RenderNode(models.Model):
     caracteristics = models.DictField()
     isRegistered = models.BooleanField()
     lastAliveTime = models.FloatField()
+    performance = models.FloatField()
 
-    def __init__(self, id, name, coresNumber, speed, ip, port, ramSize, caracteristics=None):
+    def __init__(self, id, name, coresNumber, speed, ip, port, ramSize, caracteristics=None, performance=0.0):
         '''Constructs a new Rendernode.
 
         :parameters:
@@ -78,6 +79,7 @@ class RenderNode(models.Model):
         self.httpConnection = None
         self.caracteristics = caracteristics if caracteristics else {}
         self.currentpoolshare = None
+        self.performance = float(performance)
 
         if not "softs" in self.caracteristics:
             self.caracteristics["softs"] = []
@@ -85,7 +87,7 @@ class RenderNode(models.Model):
     ## Returns True if this render node is available for command assignment.
     #
     def isAvailable(self):
-        return (self.isRegistered and self.status == RN_IDLE)  # and self.freeCoresNumber)
+        return (self.isRegistered and self.status == RN_IDLE)
 
     def reset(self, paused=False):
         # if paused, set the status to RN_PAUSED, else set it to Finishing, it will be set to IDLE in the next iteration of the dispatcher main loop
@@ -169,13 +171,15 @@ class RenderNode(models.Model):
     ## Release ressource
     #
     def releaseRessources(self, command):
-        res = self.usedCoresNumber[command.id]
-        self.freeCoresNumber += res
-        del self.usedCoresNumber[command.id]
+        #res = self.usedCoresNumber[command.id]
+        self.freeCoresNumber = self.coresNumber
+        if command.id in self.usedCoresNumber:
+            del self.usedCoresNumber[command.id]
 
-        res = self.usedRam[command.id]
-        self.freeRam += res
-        del self.usedRam[command.id]
+        #res = self.usedRam[command.id]
+        self.freeRam = self.ramSize
+        if command.id in self.usedRam:
+            del self.usedRam[command.id]
 
     ## Unassign a finished command
     #
@@ -228,7 +232,7 @@ class RenderNode(models.Model):
     #
     def releaseFinishingStatus(self):
         if self.status is RN_FINISHING:
-            LOGGER.warning("Trying to release Finishing status for : %s, %s" % (self.name, self.status))
+            #LOGGER.warning("Trying to release Finishing status for : %s, %s" % (self.name, self.status))
             # remove the commands that are in a final status
             for cmd in self.commands.values():
                 if isFinalStatus(cmd.status):
@@ -303,7 +307,8 @@ class RenderNode(models.Model):
                 LOGGER.exception("rendernode.request failed")
             # request failed so let's sleep for a while
             time.sleep(settings.RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE)
-        # request failed too many times so report a failure
+        # request failed too many times so pause the RN and report a failure
+        self.reset(paused=True)
         raise self.RequestFailed()
 
     def canRun(self, command):

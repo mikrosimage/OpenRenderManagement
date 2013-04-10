@@ -169,6 +169,7 @@ class RenderNodes(SQLObject):
     ramSize = IntCol()
     caracteristics = UnicodeCol()
     pools = RelatedJoin('Pools')
+    performance = FloatCol()
 
 
 def createTables():
@@ -370,7 +371,8 @@ class PuliDB(object):
                           RenderNodes.q.ip.fieldName: element.host,
                           RenderNodes.q.port.fieldName: element.port,
                           RenderNodes.q.ramSize.fieldName: element.ramSize,
-                          RenderNodes.q.caracteristics.fieldName: json.dumps(element.caracteristics)}
+                          RenderNodes.q.caracteristics.fieldName: json.dumps(element.caracteristics),
+                          RenderNodes.q.performance.fieldName: element.performance}
                 conn.query(conn.sqlrepr(Insert(RenderNodes.q, values=fields)))
                 conn.cache.clear()
 
@@ -461,7 +463,9 @@ class PuliDB(object):
                     conn = RenderNodes._connection
                     fields = {RenderNodes.q.speed.fieldName: element.speed,
                               RenderNodes.q.coresNumber.fieldName: element.coresNumber,
-                              RenderNodes.q.ramSize.fieldName: element.ramSize}
+                              RenderNodes.q.ramSize.fieldName: element.ramSize,
+                              RenderNodes.q.caracteristics.fieldName: json.dumps(element.caracteristics),
+                              RenderNodes.q.performance.fieldName: element.performance}
                     conn.query(conn.sqlrepr(Update(RenderNodes.q, values=fields, where=(RenderNodes.q.id == element.id))))
                     conn.cache.clear()
 
@@ -486,6 +490,9 @@ class PuliDB(object):
                 taskgroupsList.append(element.id)
             elif isinstance(element, Command):
                 commandsList.append(element.id)
+                # import gc
+                # gc.collect()
+                # LOGGER.warning("referrers of %s : %s" % (str(type(element)), str(gc.get_referrers(element))))
             elif isinstance(element, TaskNode):
                 taskNodesList.append(element.id)
             elif isinstance(element, FolderNode):
@@ -496,6 +503,7 @@ class PuliDB(object):
                 poolsharesList.append(element.id)
             elif isinstance(element, RenderNode):
                 rendernodesList.append(element.id)
+        # del elements
 
         # /////////////// Handling of the Tasks
         if len(tasksList):
@@ -567,7 +575,7 @@ class PuliDB(object):
             poolsById = {}
             poolConn = Pools._connection
             poolFields = [Pools.q.id,
-                      Pools.q.name]
+                          Pools.q.name]
             pools = poolConn.queryAll(poolConn.sqlrepr(Select(poolFields, where=(Pools.q.archived == False))))
             for num, dbPool in enumerate(pools):
                 id, name = dbPool
@@ -585,10 +593,11 @@ class PuliDB(object):
                       RenderNodes.q.ip,
                       RenderNodes.q.port,
                       RenderNodes.q.ramSize,
-                      RenderNodes.q.caracteristics]
+                      RenderNodes.q.caracteristics,
+                      RenderNodes.q.performance]
             renderNodes = conn.queryAll(conn.sqlrepr(Select(fields)))
             for num, dbRenderNode in enumerate(renderNodes):
-                id, name, coresNumber, speed, ip, port, ramSize, caracteristics = dbRenderNode
+                id, name, coresNumber, speed, ip, port, ramSize, caracteristics, performance = dbRenderNode
                 realRenderNode = RenderNode(id,
                                             name,
                                             coresNumber,
@@ -596,7 +605,8 @@ class PuliDB(object):
                                             ip,
                                             port,
                                             ramSize,
-                                            json.loads(caracteristics))
+                                            json.loads(caracteristics),
+                                            performance)
                 # get the pools of the rendernode
                 prn = Table('pools_render_nodes')
                 join = INNERJOINOn(None, Pools, Pools.q.id == prn.pools_id)
@@ -741,9 +751,9 @@ class PuliDB(object):
             #FIXME temp
             #if nodeId in nodesById.keys():
             realPoolShare = PoolShare(id,
-                                  poolsById[poolId],
-                                  nodesById[nodeId],
-                                  maxRN)
+                                      poolsById[poolId],
+                                      nodesById[nodeId],
+                                      maxRN)
             tree.poolShares[realPoolShare.id] = realPoolShare
 
         print "%s -- poolshares complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))

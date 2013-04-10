@@ -21,6 +21,7 @@ from octopus.dispatcher.poolman.wspoolman import WebServicePoolManager
 from octopus.dispatcher.licenses.licensemanager import LicenseManager
 from octopus.dispatcher.model.enums import *
 
+
 LOGGER = logging.getLogger('dispatcher')
 
 
@@ -185,7 +186,6 @@ class Dispatcher(MainLoopApplication):
             pass
         else:
             LOGGER.info("finished some network requests")
-
         self.cycle += 1
         self.dispatchTree.updateCompletionAndStatus()
         self.updateRenderNodes()
@@ -194,11 +194,15 @@ class Dispatcher(MainLoopApplication):
 
         executedRequests = []
         first = True
+        # beginTime = time.time()
+        # cpt = 0
         while first or not self.queue.empty():
+            # cpt += 1
             workload = self.queue.get()
             workload()
             executedRequests.append(workload)
             first = False
+        # LOGGER.info("queue took %s to treat %s" % (str(time.time() - beginTime), str(cpt)))
 
         # update db
         self.updateDB()
@@ -227,11 +231,11 @@ class Dispatcher(MainLoopApplication):
         # if no rendernodes available, return
         if not any(rn.isAvailable() for rn in self.dispatchTree.renderNodes.values()):
             return []
+
         assignments = []
+
         # first create a set of entrypoints that are not done nor cancelled nor blocked nor paused and that have at least one command ready
         entryPoints = set([poolShare.node for poolShare in self.dispatchTree.poolShares.values() if poolShare.node.status not in [NODE_BLOCKED, NODE_DONE, NODE_CANCELED, NODE_PAUSED] and poolShare.node.readyCommandCount > 0])
-        # sort by pool for the groupby
-        entryPoints = sorted(entryPoints, key=lambda node: node.poolShares.values()[0].pool)
         # don't proceed to the calculation if no rns availables in the requested pools
         rnsBool = False
         for pool, nodesiterator in groupby(entryPoints, lambda x: x.poolShares.values()[0].pool):
@@ -241,6 +245,9 @@ class Dispatcher(MainLoopApplication):
         if not rnsBool:
             return []
 
+        # sort by pool for the groupby
+        entryPoints = sorted(entryPoints, key=lambda node: node.poolShares.values()[0].pool)
+
         # update the value of the maxrn for the poolshares (parallel dispatching)
         for pool, nodesiterator in groupby(entryPoints, lambda x: x.poolShares.values()[0].pool):
             # we are treating every active node of the pool
@@ -248,30 +255,46 @@ class Dispatcher(MainLoopApplication):
             # the new maxRN value is calculated based on the number of active jobs of the pool, and the number of online rendernodes of the pool
             rnsNotOffline = set([rn for rn in pool.renderNodes if rn.status not in [RN_UNKNOWN, RN_PAUSED]])
             rnsSize = len(rnsNotOffline)
+
             # if we have a userdefined maxRN for some nodes, remove them from the list and substracts their maxRN from the pool's size
             l = nodesList[:]  # duplicate the list to be safe when removing elements
             for node in l:
                 if node.poolShares.values()[0].userDefinedMaxRN:
                     nodesList.remove(node)
                     rnsSize -= node.poolShares.values()[0].maxRN
-            #LOGGER.warning("Pool %s has a size of %s rns and %s nodes" % (pool.name, str(rnsSize), str(len(nodesList))))
+
             if len(nodesList) == 0:
                 break
             updatedmaxRN = rnsSize // len(nodesList)
             remainingRN = rnsSize % len(nodesList)
+
             # sort by id (fifo)
             nodesList = sorted(nodesList, key=lambda x: x.id)
+
             # then sort by dispatchKey (priority)
             nodesList = sorted(nodesList, key=lambda x: x.dispatchKey, reverse=True)
-            for node in nodesList:
-                if node.dispatchKey != 0:
-                    node.poolShares.values()[0].maxRN = -1
+
+            for dk, nodeIterator in groupby(nodesList, lambda x: x.dispatchKey):
+                nodes = [node for node in nodeIterator]
+                # for each priority, if there is only one node, set the maxRN to -1
+                if len(nodes) == 1:
+                    nodes[0].poolShares.values()[0].maxRN = -1
                     continue
-                node.poolShares.values()[0].maxRN = updatedmaxRN
-                if remainingRN > 0:
-                    node.poolShares.values()[0].maxRN += 1
-                    remainingRN -= 1
-                #LOGGER.warning("   Node %s has a maxrn of %s" % (node.name, str(node.poolShares.values()[0].maxRN)))
+                # else, if a priority has been set, divide the available RNs between the nodes (parallel dispatching)
+                elif dk != 0:
+                    newmaxRN = rnsSize // len(nodes)
+                    newremainingRN = rnsSize % len(nodes)
+                    for node in nodes:
+                        node.poolShares.values()[0].maxRN = newmaxRN
+                        if newremainingRN > 0:
+                            node.poolShares.values()[0].maxRN += 1
+                            newremainingRN -= 1
+                else:
+                    for node in nodes:
+                        node.poolShares.values()[0].maxRN = updatedmaxRN
+                        if remainingRN > 0:
+                            node.poolShares.values()[0].maxRN += 1
+                            remainingRN -= 1
 
         # now, we are treating every nodes
         # sort by id (fifo)
@@ -279,7 +302,12 @@ class Dispatcher(MainLoopApplication):
         # then sort by dispatchKey (priority)
         entryPoints = sorted(entryPoints, key=lambda node: node.dispatchKey, reverse=True)
 
-        ###
+        ####
+        #for entryPoint in entryPoints:
+        #    if any([poolShare.hasRenderNodesAvailable() for poolShare in entryPoint.poolShares.values()]):
+        #        try:
+        #            (rn, cmd) = entryPoint.dispatchIterator()
+        ####
         for entryPoint in entryPoints:
             if any([poolShare.hasRenderNodesAvailable() for poolShare in entryPoint.poolShares.values()]):
                 try:
@@ -377,7 +405,7 @@ class Dispatcher(MainLoopApplication):
 
     def updateCommandApply(self, dct):
         commandId = dct['id']
-        renderNodeName = dct['renderNodeId']
+        renderNodeName = dct['renderNodeName']
 
         try:
             command = self.dispatchTree.commands[commandId]

@@ -1,6 +1,10 @@
 import os
 from Queue import Queue
-import json
+try:
+    import simplejson as json
+except ImportError:
+    import json
+import logging
 
 from octopus.core.communication.http import Http400, Http404
 from octopus.worker import settings
@@ -14,6 +18,8 @@ from tornado.web import Application, RequestHandler
 # /online/ [SET] { online }
 # /status/ [GET] { status, ncommands, globalcompletion }
 
+LOGGER = logging.getLogger("workerws")
+
 
 class WorkerWebService(Application):
 
@@ -24,7 +30,8 @@ class WorkerWebService(Application):
             (r'/debug/?$', DebugResource, dict(framework=framework)),
             (r'/log/?$', WorkerLogResource),
             (r'/log/command/(?P<path>\S+)', CommandLogResource),
-            (r'/updatesysinfos/?$', UpdateSysResource, dict(framework=framework))
+            (r'/updatesysinfos/?$', UpdateSysResource, dict(framework=framework)),
+            (r'/pause/?$', PauseResource, dict(framework=framework))
         ])
         self.queue = Queue()
         self.listen(port, "0.0.0.0")
@@ -46,6 +53,29 @@ class BaseResource(RequestHandler):
             return json.loads(self.request.body)
         except:
             return Http400("The HTTP body is not a valid JSON object")
+
+
+class PauseResource(BaseResource):
+    def post(self):
+        self.setRnId(self.request)
+        data = self.getBodyAsJSON()
+        #LOGGER.warning(data)
+        content = data["content"]
+        killfile = settings.KILLFILE
+        if os.path.isfile(killfile):
+            os.remove(killfile)
+        # if 0, unpause the worker
+        if content != "0":
+            if not os.path.isdir(os.path.dirname(killfile)):
+                os.makedirs(os.path.dirname(killfile))
+            f = open(killfile, 'w')
+            # if -1, kill all current rendering processes
+            # if -2, schedule the worker for a restart
+            # if -3, kill all and schedule for restart
+            if content in ["-1", "-2", "-3"]:
+                f.write(content)
+            f.close()
+        self.set_status(202)
 
 
 class CommandsResource(BaseResource):

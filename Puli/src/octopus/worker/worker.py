@@ -4,7 +4,10 @@ import os
 import sys
 import time
 import platform
-import json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 import httplib
 
 from octopus.core.framework.mainloopapplication import MainLoopApplication
@@ -71,10 +74,12 @@ class Worker(MainLoopApplication):
         self.status = rendernode.RN_BOOTING
         self.updateSys = False
         self.isPaused = False
+        self.toberestarted = False
         self.speed = 1.0
         self.cpuName = ""
         self.distrib = ""
         self.mikdistrib = ""
+        self.openglversion = ""
 
     def prepare(self):
         for name in (name for name in dir(settings) if name.isupper()):
@@ -82,19 +87,8 @@ class Worker(MainLoopApplication):
         self.registerWorker()
 
     def getNbCores(self):
-        nb = 1
-        if os.path.isfile('/proc/stat'):
-            try:
-                # get nb cores
-                f = open('/proc/stat', 'r')
-                for line in f.readlines():
-                    if line.startswith("cpu"):
-                        nb = nb + 1
-                f.close()
-                nb = nb - 2
-            except:
-                pass
-        return nb
+        import multiprocessing
+        return multiprocessing.cpu_count()
 
     def getTotalMemory(self):
         memTotal = 1024
@@ -118,7 +112,7 @@ class Worker(MainLoopApplication):
                 f = open('/proc/cpuinfo', 'r')
                 for line in f.readlines():
                     if 'model name' in line:
-                        self.cpuName = line.split(':')[1]
+                        self.cpuName = line.split(':')[1].strip()
                     elif 'MHz' in line:
                         speedStr = line.split(':')[1].strip()
                         self.speed = "%.1f" % (float(speedStr) / 1000)
@@ -132,17 +126,31 @@ class Worker(MainLoopApplication):
             try:
                 f = open('/etc/mik-release', 'r')
                 for line in f.readlines():
-                    if 'openSUSE' in line:
+                    if 'MIK-VERSION' in line or 'MIK-RELEASE' in line:
+                        self.mikdistrib = line.split()[1]
+                    elif 'openSUSE' in line:
                         if '=' in line:
                             self.distrib = line.split('=')[1].strip()
                         else:
                             self.distrib = line
-                    elif 'MIK-VERSION' in line or 'MIK-RELEASE' in line:
-                        self.mikdistrib = line.split('=')[1].strip()
                         break
                 f.close()
             except:
                 pass
+
+    def getOpenglVersion(self):
+        import subprocess
+        import re
+        p = subprocess.Popen("glxinfo", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output, errors = p.communicate()
+        outputList = output.split("\n")
+        for line in outputList:
+            if "OpenGL version string" in line:
+                LOGGER.info("found : %s" % line)
+                oglpattern = re.compile("(\d.\d.\d)")
+                res = oglpattern.search(line)
+                self.openglversion = res.group()
+                break
 
     def updateSysInfos(self, ticket):
         self.updateSys = True
@@ -152,24 +160,51 @@ class Worker(MainLoopApplication):
         if self.updateSys:
             self.getCpuInfo()
             self.getDistribName()
+            self.getOpenglVersion()
             infos['cores'] = self.getNbCores()
             infos['ram'] = self.getTotalMemory()
             self.updateSys = False
+            # system info values:
+            infos['caracteristics'] = {"os": platform.system().lower(),
+                                        "softs": [],
+                                        "cpuname": self.cpuName,
+                                        "distribname": self.distrib,
+                                        "mikdistrib": self.mikdistrib,
+                                        "openglversion": self.openglversion}
         infos['name'] = self.computerName
         infos['port'] = self.port
         infos['status'] = self.status
-        # system info values:
-        infos['caracteristics'] = {"os": platform.system().lower(), "softs": [], "cpuname": self.cpuName, "distribname": self.distrib, "mikdistrib": self.mikdistrib}
         infos['pools'] = []
         infos['speed'] = float(self.speed)
         return infos
+
+    def setPerformanceIndex(self, ticket, performance):
+        LOGGER.warning("set perf idx")
+        dct = json.dumps({'performance': performance})
+        headers = {}
+        headers['content-length'] = len(dct)
+
+        LOGGER.warning(dct)
+
+        try:
+            self.requestManager.put("/rendernodes/%s/sysinfos" % self.computerName, dct, headers)
+        except RequestManager.RequestError, err:
+            if err.status == 404:
+                # the dispatcher doesn't know the worker
+                # it may have been launched before the dispatcher itself
+                # and not be mentioned in the tree.description file
+                self.registerWorker()
+            else:
+                raise
+        except httplib.BadStatusLine:
+            LOGGER.exception('Sending sys infos has failed with a BadStatusLine error')
 
     def registerWorker(self):
         '''Register the worker in the dispatcher.'''
         self.updateSys = True
         infos = self.fetchSysInfos()
         dct = json.dumps(infos)
-        # if a command is currently running on this worker, notify the dispatcher
+        # FIXME if a command is currently running on this worker, notify the dispatcher
         if len(self.commands.items()):
             dct['commands'] = self.commands.items()
         headers = {}
@@ -194,19 +229,26 @@ class Worker(MainLoopApplication):
                 else:
                     LOGGER.info("Boot process... worker registered")
                     break
-            time.sleep(1.0)
+            # try to register to dispatcher every 10 seconds
+            time.sleep(10)
+
+        # once the worker is registered, ensure the RN status is correct according to the killfile presence
+        if os.path.isfile(settings.KILLFILE):
+            self.pauseWorker(True, False)
+        else:
+            self.pauseWorker(False, False)
 
         self.sendSysInfosMessage()
 
     def buildUpdateDict(self, command):
         dct = {}
-        if command.completion != None:
+        if command.completion is not None:
             dct["completion"] = command.completion
-        if command.status != None:
+        if command.status is not None:
             dct["status"] = command.status
-        if command.validatorMessage != None:
+        if command.validatorMessage is not None:
             dct["validatorMessage"] = command.validatorMessage
-        if command.errorInfos != None:
+        if command.errorInfos is not None:
             dct["errorInfos"] = command.errorInfos
         dct['message'] = command.message
         dct['id'] = command.id
@@ -269,82 +311,103 @@ class Worker(MainLoopApplication):
             finally:
                 self.httpconn.close()
 
+    def killCommandWatchers(self):
+        for commandWatcher in self.commandWatchers.values():
+            LOGGER.warning("Aborting command %d", commandWatcher.commandId)
+            commandWatcher.processObj.kill()
+            commandWatcher.finished = True
+
     def mainLoop(self):
+        # try:
+        now = time.time()
+
+        # check if the killfile is present
+        #
+        if os.path.isfile(settings.KILLFILE):
+            if not self.isPaused:
+                with open(settings.KILLFILE, 'r') as f:
+                    data = f.read()
+                if len(data) != 0:
+                    data = int(data)
+                LOGGER.warning("Killfile detected, pausing worker")
+                # kill cmd watchers, if the flag in the killfile is set to -1
+                killproc = False
+                if data == -1:
+                    LOGGER.warning("Flag -1 detected in killfile, killing render")
+                    killproc = True
+                    self.killCommandWatchers()
+                if data == -2:
+                    LOGGER.warning("Flag -2 detected in killfile, schedule restart")
+                    self.toberestarted = True
+                if data == -3:
+                    LOGGER.warning("Flag -3 detected in killfile, killing render and schedule restart")
+                    killproc = True
+                    self.toberestarted = True
+                    self.killCommandWatchers()
+                self.pauseWorker(True, killproc)
+        else:
+            self.toberestarted = False
+            # if no killfile present and worker is paused, unpause it
+            if self.isPaused:
+                self.pauseWorker(False, False)
+
+        # if the worker is paused and marked to be restarted, create restartfile
+        if self.isPaused and self.toberestarted:
+            LOGGER.warning("Restarting...")
+            rf = open("/tmp/render/restartfile", 'w')
+            rf.close()
+
+        # Waits for any child process, non-blocking (this is necessary to clean up finished process properly)
+        #
         try:
-            now = time.time()
-            # check if the killfile is present
-            #
-            if os.path.isfile(settings.KILLFILE):
-                if not self.isPaused:
-                    with open(settings.KILLFILE, 'r') as f:
-                        data = f.read()
-                    if len(data) != 0:
-                        data = int(data)
-                    LOGGER.warning("Killfile detected, pausing worker")
-                    # kill cmd watchers, if the flag in the killfile is set to -1
-                    killproc = False
-                    if data == -1:
-                        LOGGER.warning("Flag -1 detected in killfile")
-                        killproc = True
-                        for commandWatcher in self.commandWatchers.values():
-                            LOGGER.warning("Aborting command %d", commandWatcher.commandId)
-                            commandWatcher.processObj.kill()
-                            commandWatcher.finished = True
-                    self.pauseWorker(True, killproc)
-            else:
-                # if no killfile present and worker is paused, unpause it
-                if self.isPaused:
-                    self.pauseWorker(False, False)
+            pid, stat = os.waitpid(-1, os.WNOHANG)
+            if pid:
+                LOGGER.warning("Cleaned process %s" % str(pid))
+        except OSError:
+            pass
 
-            # Waits for any child process, non-blocking (this is necessary to clean up finished process properly)
-            #
-            try:
-                pid, stat = os.waitpid(-1, os.WNOHANG)
-                if pid:
-                    LOGGER.warning("Cleaned process %s" % str(pid))
-            except OSError:
-                pass
+        # Send updates for every modified command watcher.
+        #
+        for commandWatcher in self.modifiedCommandWatchers:
+            self.updateCommandWatcher(commandWatcher)
 
-            # Send updates for every modified command watcher.
-            #
-            for commandWatcher in self.modifiedCommandWatchers:
-                self.updateCommandWatcher(commandWatcher)
+        # Attempt to remove finished command watchers
+        #
+        for commandWatcher in self.finishedCommandWatchers:
+            LOGGER.info("Removing command watcher %d (status=%r, finished=%r, modified=%r)", commandWatcher.command.id, commandWatcher.command.status, commandWatcher.finished, commandWatcher.modified)
+            self.removeCommandWatcher(commandWatcher)
 
-            # Attempt to remove finished command watchers
-            #
-            for commandWatcher in self.finishedCommandWatchers:
-                LOGGER.info("Removing command watcher %d (status=%r, finished=%r, modified=%r)", commandWatcher.command.id, commandWatcher.command.status, commandWatcher.finished, commandWatcher.modified)
-                self.removeCommandWatcher(commandWatcher)
+        # Kill watchers that timeout and remove dead command watchers
+        # that are not flagged as modified.
+        #
+        for commandWatcher in self.commandWatchers.values():
+            # add the test on running state because a non running command can not timeout (Olivier Derpierre 17/11/10)
+            if commandWatcher.timeOut and commandWatcher.command.status == COMMAND.CMD_RUNNING:
+                responding = (now - commandWatcher.startTime) <= commandWatcher.timeOut
+                if not responding:
+                    # time out has been reached
+                    LOGGER.warning("Timeout on command %d", commandWatcher.commandId)
+                    commandWatcher.processObj.kill()
+                    commandWatcher.finished = True
+                    self.updateCompletionAndStatus(commandWatcher.commandId, None, COMMAND.CMD_CANCELED, None)
 
-            # Kill watchers that timeout and remove dead command watchers
-            # that are not flagged as modified.
-            #
-            for commandWatcher in self.commandWatchers.values():
-                # add the test on running state because a non running command can not timeout (Olivier Derpierre 17/11/10)
-                if commandWatcher.timeOut and commandWatcher.command.status == COMMAND.CMD_RUNNING:
-                    responding = (now - commandWatcher.startTime) <= commandWatcher.timeOut
-                    if not responding:
-                        # time out has been reached
-                        LOGGER.warning("Timeout on command %d", commandWatcher.commandId)
-                        commandWatcher.processObj.kill()
-                        commandWatcher.finished = True
-                        self.updateCompletionAndStatus(commandWatcher.commandId, None, COMMAND.CMD_CANCELED, None)
+        # time resync
+        now = time.time()
+        if (now - self.lastSysInfosMessageTime) > self.sysInfosMessagePeriod:
+            self.sendSysInfosMessage()
+            self.lastSysInfosMessageTime = now
 
-            # time resync
-            now = time.time()
-            if (now - self.lastSysInfosMessageTime) > self.sysInfosMessagePeriod:
-                self.sendSysInfosMessage()
-                self.lastSysInfosMessageTime = now
+        self.httpconn.close()
 
-            self.httpconn.close()
-
-            # let's be CPU friendly
-            time.sleep(0.05)
-        except:
-            LOGGER.error("A problem occured : " + repr(sys.exc_info()))
+        # let's be CPU friendly
+        time.sleep(0.05)
+        # except:
+        #     LOGGER.error("A problem occured : " + repr(sys.exc_info()))
 
     def sendSysInfosMessage(self):
-        infos = self.fetchSysInfos()
+        # we don't need to send the whole dict of sysinfos
+        #infos = self.fetchSysInfos()
+        infos = {}
         infos['status'] = self.status
         dct = json.dumps(infos)
         headers = {}

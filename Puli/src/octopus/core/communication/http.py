@@ -12,6 +12,10 @@
 
 from tornado.web import HTTPError
 import StringIO
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 
 class HttpResponse(dict):
@@ -40,7 +44,6 @@ class HttpResponse(dict):
 class JSONResponse(HttpResponse):
 
     def __init__(self, status, message, data):
-        import json
         content = json.dumps(data)
         HttpResponse.__init__(self, status, message, content=content)
 

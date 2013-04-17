@@ -1,5 +1,8 @@
 
-import json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 import logging
 
 from octopus.dispatcher.model.pool import Pool

@@ -1,7 +1,10 @@
 from __future__ import with_statement
 
 import time
-import json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 import logging
 from tornado.web import HTTPError
 

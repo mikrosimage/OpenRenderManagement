@@ -1,6 +1,9 @@
 
 
-import json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 from octopus.core.enums.command import *
 from octopus.core.framework import BaseResource, queue

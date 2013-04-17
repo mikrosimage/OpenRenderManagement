@@ -3,7 +3,10 @@ Created on Dec 16, 2009
 
 @author: Arnaud Chassagne
 '''
-import json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 from octopus.core.communication.http import Http404, Http400, HttpConflict
 from octopus.core.framework import BaseResource, queue

@@ -7,7 +7,10 @@ from octopus.core.enums.command import CMD_READY, CMD_RUNNING
 
 import logging
 import time
-import json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 logger = logging.getLogger("dispatcher.webservice.NodeController")
 

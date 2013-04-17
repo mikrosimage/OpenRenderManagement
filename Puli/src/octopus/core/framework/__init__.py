@@ -2,7 +2,10 @@ from octopus.core.framework.wsappframework import WSAppFramework, MainLoopApplic
 from octopus.core.framework.webservice import MappingSet
 import tornado
 import httplib
-import json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 from octopus.core.communication.http import Http400
 from octopus.core.tools import Workload
 from tornado.web import RequestHandler

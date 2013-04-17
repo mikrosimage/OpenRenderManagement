@@ -1,4 +1,7 @@
-import json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 from octopus.core.communication.http import Http400, Http405, Http411
 

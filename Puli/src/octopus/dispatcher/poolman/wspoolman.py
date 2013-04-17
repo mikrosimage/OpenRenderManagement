@@ -7,7 +7,10 @@ Created on Oct 7, 2009
 import socket
 
 from octopus.core.communication.requestmanager import RequestManager
-import json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 from octopus.dispatcher import settings
 from octopus.dispatcher.poolman import IPoolManager, PoolDescription, ComputerDescription, ComputerNotFoundError, PoolManagerError, PoolNotFoundError
 

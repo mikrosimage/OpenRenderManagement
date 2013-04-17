@@ -1,7 +1,10 @@
 from __future__ import with_statement
 
 import logging
-import json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 logger = logging.getLogger('dispatcher.webservice.TaskController')
 

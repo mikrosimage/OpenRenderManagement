@@ -18,7 +18,10 @@ from collections import defaultdict
 import datetime
 import logging
 import time
-import json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 from octopus.dispatcher.model.node import FolderNode, TaskNode
 from octopus.dispatcher.model.task import Task, TaskGroup
@@ -447,6 +450,7 @@ class PuliDB(object):
             elif isinstance(element, Pool):
                 # TODO use sqlbuilder
                 if element.id:
+                    LOGGER.warning(element.id)
                     dbPool = Pools.get(element.id)
                     oldids = [rn.id for rn in dbPool.renderNodes]
                     newids = [rn.id for rn in element.renderNodes]
@@ -458,16 +462,16 @@ class PuliDB(object):
                             dbPool.addRenderNodes(rn)  # pylint: disable-msg=E1103
 
             # /////////////// Handling of the RenderNode
-            elif isinstance(element, RenderNode):
-                if element.id:
-                    conn = RenderNodes._connection
-                    fields = {RenderNodes.q.speed.fieldName: element.speed,
-                              RenderNodes.q.coresNumber.fieldName: element.coresNumber,
-                              RenderNodes.q.ramSize.fieldName: element.ramSize,
-                              RenderNodes.q.caracteristics.fieldName: json.dumps(element.caracteristics),
-                              RenderNodes.q.performance.fieldName: element.performance}
-                    conn.query(conn.sqlrepr(Update(RenderNodes.q, values=fields, where=(RenderNodes.q.id == element.id))))
-                    conn.cache.clear()
+            # elif isinstance(element, RenderNode):
+            #     if element.id:
+            #         conn = RenderNodes._connection
+            #         fields = {RenderNodes.q.speed.fieldName: element.speed,
+            #                   RenderNodes.q.coresNumber.fieldName: element.coresNumber,
+            #                   RenderNodes.q.ramSize.fieldName: element.ramSize}
+            #                   # RenderNodes.q.caracteristics.fieldName: json.dumps(element.caracteristics),
+            #                   # RenderNodes.q.performance.fieldName: element.performance}
+            #         conn.query(conn.sqlrepr(Update(RenderNodes.q, values=fields, where=(RenderNodes.q.id == element.id))))
+            #         conn.cache.clear()
 
     ## Mark the provided elements as archived.
     # @param elements the elements to archive

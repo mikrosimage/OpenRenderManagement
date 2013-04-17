@@ -224,8 +224,8 @@ class RenderNodeSysInfosResource(BaseResource):
             if renderNode.status == RN_UNKNOWN:
                 if int(dct["status"]) == RN_PAUSED:
                     renderNode.status = RN_PAUSED
-                else:
-                    renderNode.status = RN_IDLE
+                # else:
+                #     renderNode.status = RN_IDLE
         renderNode.lastAliveTime = time.time()
         renderNode.isRegistered = True
 

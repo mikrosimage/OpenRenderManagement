@@ -138,6 +138,8 @@ class RenderNode(models.Model):
     def addAssignment(self, command):
         assert not command.id in self.commands
         self.commands[command.id] = command
+        # FIXME the assignment of the cmd should be done here and not in the dispatchIterator func
+        command.assign(self)
         self.updateStatus()
 
     ## Reserve license

@@ -377,7 +377,7 @@ class TaskNode(BaseNode):
         self.paused = paused
 
     def dispatchIterator(self, stopFunc, ep=None):
-        if ep == None:
+        if ep is None:
             ep = self
         if self.readyCommandCount == 0:
             return
@@ -390,19 +390,19 @@ class TaskNode(BaseNode):
                 continue
             renderNode = self.reserve_rendernode(command, ep)
             if renderNode:
-                command.assignment_date = time()
-                command.status = CMD_ASSIGNED
+                # command.assignment_date = time()
+                # command.status = CMD_ASSIGNED
                 self.readyCommandCount -= 1
                 while ep:
                     ep.readyCommandCount -= 1
                     ep = ep.parent
-                command.renderNode = renderNode
+                # command.renderNode = renderNode
                 yield (renderNode, command)
             else:
                 return
 
     def reserve_rendernode(self, command, ep):
-        if ep == None:
+        if ep is None:
             ep = self
         for poolshare in [poolShare for poolShare in ep.poolShares.values() if poolShare.hasRenderNodesAvailable()]:
             # first, sort the rendernodes according their performance value

@@ -2,7 +2,7 @@
 # coding: utf-8
 
 from optparse import OptionParser
-from sqlobject import sqlhub, connectionForURI
+from sqlobject import SQLObject, UnicodeCol, IntCol, FloatCol, DateTimeCol, BoolCol, sqlhub, connectionForURI
 from sqlobject.sqlbuilder import *
 import json
 try:
@@ -15,7 +15,6 @@ DISPATCHER = "localhost"
 
 
 class PuliJobCleaner(object):
-
     def __init__(self, delay):
         self.delay = delay
         sqlhub.processConnection = connectionForURI("mysql://puliuser:0ct0pus@127.0.0.1/pulidb")
@@ -41,14 +40,14 @@ class PuliJobCleaner(object):
     def clean(self, tasksIds):
         if len(tasksIds):
             print "ids :" + tasksIds
-            url = "/tasks/"
+            url = "/tasks/delete/"
             dct = {}
             dct['taskids'] = tasksIds
             body = json.dumps(dct)
             headers = {'Content-Length': len(body)}
             try:
                 httpconn = httplib.HTTPConnection(DISPATCHER, 8004)
-                httpconn.request('DELETE', url, body, headers)
+                httpconn.request('POST', url, body, headers)
                 response = httpconn.getresponse()
                 httpconn.close()
             except httplib.HTTPException, e:

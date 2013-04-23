@@ -19,9 +19,17 @@ class PoolSharesResource(BaseResource):
     @queue
     def get(self):
         poolShares = self.getDispatchTree().poolShares.values()
-        self.writeCallback({
-            'poolshares': dict(((poolShare.id, poolShare.to_json()) for poolShare in poolShares))
-            })
+        self.writeCallback({'poolshares': dict(((poolShare.id, poolShare.to_json()) for poolShare in poolShares))})
+
+    @queue
+    def put(self):
+        dct = self.getBodyAsJSON()
+        if "pslist" in dct:
+            pslist = dct['pslist']
+            poolShares = []
+            for psId in pslist:
+                poolShares.append(self.getDispatchTree().poolShares[int(psId)])
+            self.writeCallback({'poolshares': dict(((poolShare.node.id, poolShare.to_json()) for poolShare in poolShares))})
 
     @queue
     def post(self):

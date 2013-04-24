@@ -53,7 +53,7 @@ class DeleteTasksResource(BaseResource):
                 try:
                     task = self.getDispatchTree().tasks[taskId]
                 except KeyError:
-                    logger.warning("a pb occured with task %s" % str(taskId))
+                    logger.warning("Trying to archive task %s that no longer exists." % str(taskId))
                     raise TaskNotFoundError(taskId)
                 if task.nodes.values()[0].status not in ALLOWED_STATUS_VALUES:
                     logger.warning("bad status for task %s" % str(taskId))

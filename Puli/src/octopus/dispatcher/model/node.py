@@ -242,7 +242,7 @@ class FolderNode(BaseNode):
     # @return yields (node, command) tuples
     #
     def dispatchIterator(self, stopFunc, ep=None):
-        if ep == None:
+        if ep is None:
             ep = self
         while True:
             if self.readyCommandCount == 0:
@@ -411,7 +411,7 @@ class TaskNode(BaseNode):
                 if rendernode.isAvailable() and rendernode.canRun(command):
                     if rendernode.reserveLicense(command, self.dispatcher.licenseManager):
                         rendernode.addAssignment(command)
-                        rendernode.reserveRessources(command)
+                        #rendernode.reserveRessources(command)
                         return rendernode
         if not [poolShare for poolShare in ep.poolShares.values() if poolShare.hasRenderNodesAvailable()]:
             raise NoRenderNodeAvailable

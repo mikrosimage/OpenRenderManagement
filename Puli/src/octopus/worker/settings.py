@@ -34,4 +34,4 @@ DISPATCHER_PORT = 8004
 DISPATCHER_ADDRESS = "puliserver"
 
 RUN_AS = ""
-LOGDIR = "/tmp/puli/logs"
+LOGDIR = "/var/log/puli"

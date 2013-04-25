@@ -139,7 +139,8 @@ class DebugResource(BaseResource):
 
 class WorkerLogResource(RequestHandler):
     def get(self):
-        logFilePath = os.path.join(settings.LOGDIR, "worker.log")
+        logFileName = "worker%d.log" % settings.PORT
+        logFilePath = os.path.join(settings.LOGDIR, logFileName)
         if os.path.isfile(logFilePath):
             logFile = open(logFilePath, 'r')
             logFileContent = logFile.read()

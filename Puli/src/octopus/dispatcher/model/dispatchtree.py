@@ -204,7 +204,10 @@ class DispatchTree(object):
         # create the poolshare, if any, and affect it to the node
         if pool:
             # FIXME nodes[0] may not be the root node of the graph...
-            PoolShare(None, pool, nodes[0], maxRN)
+            ps = PoolShare(None, pool, nodes[0], maxRN)
+            # if maxRN is not -1 (e.g not default) set the userDefinedMaxRN to true
+            if maxRN != -1:
+                ps.userDefinedMaxRN = True
 
         #
         # Process dependencies

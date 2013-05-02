@@ -21,8 +21,8 @@ def getport():
     return int(os.getenv('PULIPORT', 8004))
 
 
-def submit(job, poolName=None):
-    g = Graph(job.name, job, username(), poolName)
+def submit(job, poolName=None, maxRN=-1):
+    g = Graph(job.name, job, username(), poolName, maxRN)
     print g.submit(gethost(), getport())
 
 

@@ -211,11 +211,14 @@ class RenderNode(models.Model):
             return
         # This is necessary in case of a cancel command or a mylawn -k
         if not self.commands:
-            if self.status not in (RN_PAUSED, RN_BOOTING):
+            if self.status is RN_WORKING:
+                # cancel the command that is running on this RN because it's no longer registered in the model
+                LOGGER.warning("rendernode %s is reported as working but has no registered command" % self.name)
+            elif self.status not in (RN_PAUSED, RN_BOOTING):
                 self.status = RN_IDLE
-            if self.currentpoolshare:
-                self.currentpoolshare.allocatedRN -= 1
-                self.currentpoolshare = None
+                if self.currentpoolshare:
+                    self.currentpoolshare.allocatedRN -= 1
+                    self.currentpoolshare = None
             return
         commandStatus = [command.status for command in self.commands.values()]
         if CMD_RUNNING in commandStatus:

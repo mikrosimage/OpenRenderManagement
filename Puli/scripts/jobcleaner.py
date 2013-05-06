@@ -41,14 +41,14 @@ class PuliJobCleaner(object):
     def clean(self, tasksIds):
         if len(tasksIds):
             print "ids :" + tasksIds
-            url = "/tasks/"
+            url = "/tasks/delete"
             dct = {}
             dct['taskids'] = tasksIds
             body = json.dumps(dct)
             headers = {'Content-Length': len(body)}
             try:
                 httpconn = httplib.HTTPConnection(DISPATCHER, 8004)
-                httpconn.request('DELETE', url, body, headers)
+                httpconn.request('POST', url, body, headers)
                 response = httpconn.getresponse()
                 httpconn.close()
             except httplib.HTTPException, e:

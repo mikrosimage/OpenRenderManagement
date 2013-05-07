@@ -450,7 +450,6 @@ class PuliDB(object):
             elif isinstance(element, Pool):
                 # TODO use sqlbuilder
                 if element.id:
-                    LOGGER.warning(element.id)
                     dbPool = Pools.get(element.id)
                     oldids = [rn.id for rn in dbPool.renderNodes]
                     newids = [rn.id for rn in element.renderNodes]

@@ -222,10 +222,11 @@ class RenderNodeSysInfosResource(BaseResource):
             renderNode.performance = float(dct["performance"])
         if "status" in dct:
             if renderNode.status == RN_UNKNOWN:
-                if int(dct["status"]) == RN_PAUSED:
-                    renderNode.status = RN_PAUSED
-                else:
-                    renderNode.status = RN_IDLE
+                # if int(dct["status"]) == RN_PAUSED:
+                #     renderNode.status = RN_PAUSED
+                # else:
+                    #renderNode.status = RN_IDLE
+                renderNode.status = int(dct["status"])
         renderNode.lastAliveTime = time.time()
         renderNode.isRegistered = True
 

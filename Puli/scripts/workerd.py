@@ -78,7 +78,8 @@ def setup_logging(options):
     if not os.path.exists(settings.LOGDIR):
         os.makedirs(settings.LOGDIR, 0755)
 
-    logFile = os.path.join(settings.LOGDIR, "worker.log")
+    logFileName = "worker%d.log" % settings.PORT
+    logFile = os.path.join(settings.LOGDIR, logFileName)
 
     fileHandler = logging.handlers.RotatingFileHandler(logFile, 'w', 1048576, 1, "UTF-8")
     fileHandler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))

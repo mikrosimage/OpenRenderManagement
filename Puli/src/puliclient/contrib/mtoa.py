@@ -133,8 +133,7 @@ class MtoaDecomposer(TaskDecomposer):
         PuliActionHelper().decompose(task.arguments[START], task.arguments[END], task.arguments[PACKET_SIZE], self, task.arguments[FRAMES_LIST])
 
     def addCommand(self, packetStart, packetEnd):
-        #cmdArgs = self.task.arguments.copy()
-        cmdArgs = {}
+        cmdArgs = self.task.arguments.copy()
         cmdArgs[START] = packetStart
         cmdArgs[END] = packetEnd
         # translate the arguments
@@ -314,9 +313,6 @@ class MtoaRunner(CommandRunner):
         end = int(arguments[END])
         totalFrames = end - start + 1
 
-        tiledDestination = arguments[RENDER_DIR] + "_Tiled"
-        helper.checkExistenceOrCreateDir(tiledDestination, "tiled directory")
-
         for frameInt in range(start, end + 1):
             argList = [env["ARNOLD_LOCATION"] + "/bin/kick"]
             frameStr = str(frameInt).rjust(int(arguments[PADDING]), "0")
@@ -417,40 +413,39 @@ class MtoaRunner(CommandRunner):
                 if make_scanlined:
                     extension = os.path.splitext(filename)[1][1:]
                     if extension == 'exr':
+                        import tempfile
                         print "  Make exr scanlined..."
-                        exrscanlinedCmdArgs = ["/s/apps/lin/bin/exrmakescanlined"]
-                        exrscanlinedCmdArgs.append("-v")
+                        exrscanlinedCmdArgs = ["/s/apps/lin/bin/exrmakescanlined-test"]
                         exrscanlinedCmdArgs.append(filename)
-                        dest = '/tmp/' + os.path.basename(filename)
+                        tf = tempfile.NamedTemporaryFile(prefix='/tmp/')
+                        dest = tf.name
+                        tf.close()
                         exrscanlinedCmdArgs.append(dest)
-                        output, error = subprocess.Popen(exrscanlinedCmdArgs, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+                        subp = subprocess.Popen(exrscanlinedCmdArgs, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        output, error = subp.communicate()
                         #print output
-                        if "nothing to do" in output:
-                            print "    Nothing to do."
+                        if subp.returncode == 1:
+                            print "    Nothing to do, the file is already scanlined"
                         elif error:
                             print output
                             print error
-                        else:
-                            # move the extfile in a tiled dir and replace it with the new extfile
-                            oldy = filename.replace(arguments[RENDER_DIR], tiledDestination)
-                            print '    Replace image by scanlined version and move it to : '
-                            print '      ' + oldy
-                            shutil.move(filename, oldy)
-                            shutil.move(dest, filename)
+                        elif subp.returncode == 0:
                             # idiff comparison
-                            idiffcmd = ["/s/apps/lin/bin/idiff-1.1.7"]
+                            idiffcmd = ["/s/apps/lin/bin/idiff"]
                             idiffcmd.append(filename)
-                            idiffcmd.append(oldy)
+                            idiffcmd.append(dest)
                             devnull = open('/dev/null', 'w')
                             idiffret = subprocess.Popen(idiffcmd, env=os.environ, stdout=devnull).wait()
                             #idiffret = helper.execute(idiffcmd, env=os.environ)
                             # if no difference, delete the tiled version
                             if idiffret == 0:
-                                print "       idiff : Tiled and Scanlined images match, removing Tiled version..."
-                                os.remove(oldy)
-                                print "         Tiled version removed."
+                                print "       idiff : Tiled and Scanlined images match, overwritting Tiled version..."
+                                shutil.move(dest, filename+".tmp")
+                                os.rename(filename+".tmp", filename)
+                                print "         Tiled version overwritten."
                             else:
-                                print "       idiff : Can't remove Tiled version : images not match !!!"
+                                print "an error has occured, keeping the tiled version"
+                                os.remove(dest)
                             # FIXME check permissions
                             import stat
                             st = os.stat(filename)
@@ -459,6 +454,8 @@ class MtoaRunner(CommandRunner):
                                 import socket
                                 logtemp.write("%s\t%s\t%s\tmtoa\t%s\t%s\n" % (filename, socket.gethostname(), os.path.basename(prodPath), oct(stat.S_IMODE(st.st_mode)), time.strftime('%H:%M', time.localtime())))
                                 logtemp.close()
+                        else:
+                            print "an error has occured, keeping the tiled version"
 
             # Suppress image outputs list
             try:

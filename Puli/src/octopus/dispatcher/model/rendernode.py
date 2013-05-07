@@ -21,7 +21,7 @@ from . import models
 
 LOGGER = logging.getLogger('dispatcher.webservice')
 
-# set the status of a render node to RN_UNKNOWN after TIMEOUT secondes have elapsed after last update
+# set the status of a render node to RN_UNKNOWN after TIMEOUT seconds have elapsed since last update
 TIMEOUT = settings.RN_TIMEOUT
 
 
@@ -138,6 +138,9 @@ class RenderNode(models.Model):
     def addAssignment(self, command):
         assert not command.id in self.commands
         self.commands[command.id] = command
+        self.reserveRessources(command)
+        # FIXME the assignment of the cmd should be done here and not in the dispatchIterator func
+        command.assign(self)
         self.updateStatus()
 
     ## Reserve license
@@ -208,11 +211,14 @@ class RenderNode(models.Model):
             return
         # This is necessary in case of a cancel command or a mylawn -k
         if not self.commands:
-            if self.status not in (RN_PAUSED, RN_BOOTING):
+            if self.status is RN_WORKING:
+                # cancel the command that is running on this RN because it's no longer registered in the model
+                LOGGER.warning("rendernode %s is reported as working but has no registered command" % self.name)
+            elif self.status not in (RN_PAUSED, RN_BOOTING):
                 self.status = RN_IDLE
-            if self.currentpoolshare:
-                self.currentpoolshare.allocatedRN -= 1
-                self.currentpoolshare = None
+                if self.currentpoolshare:
+                    self.currentpoolshare.allocatedRN -= 1
+                    self.currentpoolshare = None
             return
         commandStatus = [command.status for command in self.commands.values()]
         if CMD_RUNNING in commandStatus:

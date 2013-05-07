@@ -197,15 +197,11 @@ class Dispatcher(MainLoopApplication):
 
         executedRequests = []
         first = True
-        # beginTime = time.time()
-        # cpt = 0
         while first or not self.queue.empty():
-            # cpt += 1
             workload = self.queue.get()
             workload()
             executedRequests.append(workload)
             first = False
-        # LOGGER.info("queue took %s to treat %s" % (str(time.time() - beginTime), str(cpt)))
 
         # update db
         self.updateDB()
@@ -422,15 +418,16 @@ class Dispatcher(MainLoopApplication):
             # rn = command.renderNode
             # rn.clearAssignment(command)
             # rn.request("DELETE", "/commands/" + str(commandId) + "/")
-            raise KeyError("Command %d was running on a different rendernode (%s) than the one in puli's model (%s)." % (commandId, renderNodeName, rn.name))
+            raise KeyError("Command %d is running on a different rendernode (%s) than the one in puli's model (%s)." % (commandId, renderNodeName, rn.name))
 
         rn = command.renderNode
         rn.lastAliveTime = max(time.time(), rn.lastAliveTime)
 
-        # if command is no more in the rn's list, it means the rn was reported as timeout
-        # if commandId not in rn.commands:
-        #     # in this case, re-add the command to the list of the rendernode
-        #     rn.addAssignment(command)
+        #if command is no more in the rn's list, it means the rn was reported as timeout
+        if commandId not in rn.commands:
+            # in this case, re-add the command to the list of the rendernode
+            #rn.addAssignment(command)
+            rn.commands[commandId] = command
 
         if "status" in dct:
             command.status = int(dct['status'])

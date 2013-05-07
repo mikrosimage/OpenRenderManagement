@@ -197,15 +197,11 @@ class Dispatcher(MainLoopApplication):
 
         executedRequests = []
         first = True
-        # beginTime = time.time()
-        # cpt = 0
         while first or not self.queue.empty():
-            # cpt += 1
             workload = self.queue.get()
             workload()
             executedRequests.append(workload)
             first = False
-        # LOGGER.info("queue took %s to treat %s" % (str(time.time() - beginTime), str(cpt)))
 
         # update db
         self.updateDB()

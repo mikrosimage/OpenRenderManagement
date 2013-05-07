@@ -21,7 +21,7 @@ from . import models
 
 LOGGER = logging.getLogger('dispatcher.webservice')
 
-# set the status of a render node to RN_UNKNOWN after TIMEOUT secondes have elapsed after last update
+# set the status of a render node to RN_UNKNOWN after TIMEOUT seconds have elapsed since last update
 TIMEOUT = settings.RN_TIMEOUT
 
 

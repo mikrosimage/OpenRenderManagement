@@ -29,6 +29,7 @@ __version__ = '0.2'
 import os
 import subprocess
 import time
+import logging
 
 # Default daemon parameters.
 # File mode creation mask of the daemon.
@@ -209,15 +210,20 @@ def createDaemon():
 
 
 def pollRestartFile():
+    logging.basicConfig(filename="/var/log/puli/respawner.log", level=logging.DEBUG)
+
     restartfile = "/tmp/render/restartfile"
     if os.path.isfile(restartfile):
         # stop the worker
-        subprocess.call(["/etc/init.d/puliworker", "stop"])
+        logging.info("Stopping the worker")
+        subprocess.call(["/usr/bin/sudo", "/etc/init.d/puliworker", "stop"])
         # remove killfile and restartfile
+        logging.info("Cleaning files")
         os.remove(restartfile)
         os.remove("/tmp/render/killfile")
         # start the worker
-        subprocess.call(["/etc/init.d/puliworker", "start"])
+        logging.info("Starting the worker")
+        subprocess.call(["/usr/bin/sudo", "/etc/init.d/puliworker", "start"])
 
 if __name__ == '__main__':
 

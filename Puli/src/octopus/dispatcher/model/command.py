@@ -96,7 +96,8 @@ class Command(models.Model):
             except Exception:
                 # if request has failed, it means the rendernode is unreachable
                 self.status = CMD_CANCELED
-        elif self.status == CMD_ASSIGNED:
+        #elif self.status == CMD_ASSIGNED:
+        else:
             self.renderNode.clearAssignment(self)
         self.status = CMD_CANCELED
 

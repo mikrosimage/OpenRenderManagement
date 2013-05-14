@@ -215,7 +215,7 @@ class RenderNode(models.Model):
             #     # cancel the command that is running on this RN because it's no longer registered in the model
             #     LOGGER.warning("rendernode %s is reported as working but has no registered command" % self.name)
             if self.status not in (RN_IDLE, RN_PAUSED, RN_BOOTING):
-                LOGGER.warning("rendernode %s was %d and is now IDLE." % (self.name, self.status))
+                #LOGGER.warning("rendernode %s was %d and is now IDLE." % (self.name, self.status))
                 self.status = RN_IDLE
                 if self.currentpoolshare:
                     self.currentpoolshare.allocatedRN -= 1

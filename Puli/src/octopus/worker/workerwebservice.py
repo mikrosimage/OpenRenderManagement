@@ -75,6 +75,7 @@ class PauseResource(BaseResource):
             if content in ["-1", "-2", "-3"]:
                 f.write(content)
             f.close()
+            os.chmod(killfile, 0666)
         self.set_status(202)
 
 

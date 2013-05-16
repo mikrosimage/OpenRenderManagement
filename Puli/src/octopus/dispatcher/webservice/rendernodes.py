@@ -227,6 +227,7 @@ class RenderNodeSysInfosResource(BaseResource):
                 # else:
                     #renderNode.status = RN_IDLE
                 renderNode.status = int(dct["status"])
+                logger.info("status reported is %d" % renderNode.status)
         renderNode.lastAliveTime = time.time()
         renderNode.isRegistered = True
 

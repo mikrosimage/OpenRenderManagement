@@ -87,7 +87,7 @@ class RenderNode(models.Model):
     ## Returns True if this render node is available for command assignment.
     #
     def isAvailable(self):
-        return (self.isRegistered and self.status == RN_IDLE)
+        return (self.isRegistered and self.status == RN_IDLE and not self.commands)
 
     def reset(self, paused=False):
         # if paused, set the status to RN_PAUSED, else set it to Finishing, it will be set to IDLE in the next iteration of the dispatcher main loop
@@ -136,12 +136,12 @@ class RenderNode(models.Model):
     ## Add a command assignment
     #
     def addAssignment(self, command):
-        assert not command.id in self.commands
-        self.commands[command.id] = command
-        self.reserveRessources(command)
-        # FIXME the assignment of the cmd should be done here and not in the dispatchIterator func
-        command.assign(self)
-        self.updateStatus()
+        if not command.id in self.commands:
+            self.commands[command.id] = command
+            self.reserveRessources(command)
+            # FIXME the assignment of the cmd should be done here and not in the dispatchIterator func
+            command.assign(self)
+            self.updateStatus()
 
     ## Reserve license
     #
@@ -199,6 +199,7 @@ class RenderNode(models.Model):
     #  status is not changed if no info is brought by the commands
     #
     def updateStatus(self):
+        # self.status is not RN_PAUSED and
         if time.time() > (self.lastAliveTime + TIMEOUT):
             # timeout the commands running on this node
             if RN_UNKNOWN != self.status:
@@ -232,6 +233,11 @@ class RenderNode(models.Model):
             self.status = RN_ASSIGNED
         elif CMD_DONE in commandStatus:
             self.status = RN_FINISHING  # do not set the status to IDLE immediately, to ensure that the order of affectation will be respected
+        elif CMD_CANCELED in commandStatus:
+            for cmd in self.commands.values():
+                # this should not happened, but if it does, ensure the command is no more registered to the rn
+                if cmd.status is CMD_CANCELED:
+                    self.clearAssignment(cmd)
         elif self.status not in (RN_IDLE, RN_BOOTING, RN_UNKNOWN, RN_PAUSED):
             LOGGER.error("Unable to compute new status for rendernode %r (status %r, commands %r)", self, self.status, self.commands)
 

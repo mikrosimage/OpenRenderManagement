@@ -425,9 +425,15 @@ class Dispatcher(MainLoopApplication):
 
         #if command is no more in the rn's list, it means the rn was reported as timeout
         if commandId not in rn.commands:
-            # in this case, re-add the command to the list of the rendernode
-            #rn.addAssignment(command)
-            rn.commands[commandId] = command
+            if len(rn.commands) == 0:
+                # in this case, re-add the command to the list of the rendernode
+                #rn.addAssignment(command)
+                rn.commands[commandId] = command
+                LOGGER.warning("%s was TIMEOUT, re-assigning command %d" % (rn.name, commandId))
+            else:
+                # reset the command
+                LOGGER.warning("%s was TIMEOUT but has now another command assigned" % rn.name)
+                pass
 
         if "status" in dct:
             command.status = int(dct['status'])

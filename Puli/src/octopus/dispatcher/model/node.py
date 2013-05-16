@@ -392,11 +392,11 @@ class TaskNode(BaseNode):
             if renderNode:
                 # command.assignment_date = time()
                 # command.status = CMD_ASSIGNED
+                # command.renderNode = renderNode
                 self.readyCommandCount -= 1
                 while ep:
                     ep.readyCommandCount -= 1
                     ep = ep.parent
-                # command.renderNode = renderNode
                 yield (renderNode, command)
             else:
                 return

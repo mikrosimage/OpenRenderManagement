@@ -71,8 +71,7 @@ class Worker2(object):
         # pid directory handling
         self.PID_DIR = os.path.dirname(settings.PIDFILE)
         if not os.path.isdir(self.PID_DIR):
-            LOGGER.warning('Worker pid directory doesn t exist, creating...'
-                           )
+            LOGGER.warning('Worker pid directory does not exist, creating...')
             try:
                 os.makedirs(self.PID_DIR, 0777)
                 LOGGER.info('Worker pid directory created.')
@@ -361,18 +360,19 @@ class Worker2(object):
             LOGGER.warning("(%d) %s" % (r.status_code, r.text))
 
     def sendSysInfosMessage(self):
-        infos = {}
-        infos['status'] = self.status
-        try:
-            r = requests.put(self.url + "/rendernodes/%s/sysinfos"
-                             % self.computerName,
-                             data=json.dumps(infos),
-                             stream=False)
-            if r.status_code != requests.codes.ok:
-                LOGGER.warning("Could not send sysinfos :")
-                LOGGER.warning("(%d) %s" % (r.status_code, r.text))
-        except requests.ConnectionError, e:
-            LOGGER.exception("An exception occured : %s" % e)
+        if self.status is not rendernode.RN_PAUSED:
+            infos = {}
+            infos['status'] = self.status
+            try:
+                r = requests.put(self.url + "/rendernodes/%s/sysinfos"
+                                 % self.computerName,
+                                 data=json.dumps(infos),
+                                 stream=False)
+                if r.status_code != requests.codes.ok:
+                    LOGGER.warning("Could not send sysinfos :")
+                    LOGGER.warning("(%d) %s" % (r.status_code, r.text))
+            except requests.ConnectionError, e:
+                LOGGER.exception("An exception occured : %s" % e)
 
     def updateSysInfos(self, ticket):
         infos = self.fetchSysInfos()

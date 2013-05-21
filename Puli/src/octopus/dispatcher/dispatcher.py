@@ -425,13 +425,13 @@ class Dispatcher(MainLoopApplication):
 
         #if command is no more in the rn's list, it means the rn was reported as timeout
         if commandId not in rn.commands:
-            if len(rn.commands) == 0:
+            if len(rn.commands) == 0 and command.status is not enums.CMD_CANCELED:
                 # in this case, re-add the command to the list of the rendernode
                 #rn.addAssignment(command)
                 rn.commands[commandId] = command
                 LOGGER.warning("%s was TIMEOUT, re-assigning command %d" % (rn.name, commandId))
             else:
-                # reset the command
+                # cancel the command on rn?
                 LOGGER.warning("%s was TIMEOUT but has now another command assigned" % rn.name)
                 pass
 

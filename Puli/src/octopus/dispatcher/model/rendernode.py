@@ -16,6 +16,7 @@ import errno
 
 from octopus.dispatcher.model.enums import *
 from octopus.dispatcher import settings
+from threading import Thread
 
 from . import models
 
@@ -125,13 +126,12 @@ class RenderNode(models.Model):
         if self.currentpoolshare:
             self.currentpoolshare.allocatedRN -= 1
             self.currentpoolshare = None
-        try:
+        if command.id in self.commands:
             del self.commands[command.id]
-        except KeyError:
-            LOGGER.debug('attempt to clear assignment of not assigned command %d on worker %s', command.id, self.name)
-        else:
-            self.releaseRessources(command)
-            self.releaseLicense(command)
+        # except KeyError:
+        #     LOGGER.debug('attempt to clear assignment of not assigned command %d on worker %s', command.id, self.name)
+        self.releaseRessources(command)
+        self.releaseLicense(command)
 
     ## Add a command assignment
     #
@@ -290,8 +290,10 @@ class RenderNode(models.Model):
     #                          the execution of this method.
     #
     def request(self, method, url, body=None, headers={}):
-        from octopus.dispatcher import settings
+        t = Thread(target=self.do_req, args=(method, url, body, headers))
+        t.start()
 
+    def do_req(self, method, url, body=None, headers={}):
         conn = self.getHTTPConnection()
         # try to process the request at most RENDERNODE_REQUEST_MAX_RETRY_COUNT times.
         for i in xrange(settings.RENDERNODE_REQUEST_MAX_RETRY_COUNT):

@@ -187,8 +187,8 @@ class Dispatcher(MainLoopApplication):
             self.threadPool.poll()
         except NoResultsPending:
             pass
-        else:
-            LOGGER.info("finished some network requests")
+        # else:
+        #     LOGGER.info("finished some network requests")
         self.cycle += 1
         self.dispatchTree.updateCompletionAndStatus()
         self.updateRenderNodes()
@@ -345,8 +345,8 @@ class Dispatcher(MainLoopApplication):
                 arguments = {}
                 environment = {
                     'PULI_USER': command.task.user,
-                    'PULI_ALLOCATED_MEMORY': unicode(rendernode.usedRam[command.id]),
-                    'PULI_ALLOCATED_CORES': unicode(rendernode.usedCoresNumber[command.id]),
+                    # 'PULI_ALLOCATED_MEMORY': unicode(rendernode.usedRam[command.id]),
+                    # 'PULI_ALLOCATED_CORES': unicode(rendernode.usedCoresNumber[command.id]),
                 }
                 for ancestor in ancestors:
                     arguments.update(ancestor.arguments)
@@ -366,12 +366,13 @@ class Dispatcher(MainLoopApplication):
                 headers["Content-Type"] = "application/json"
 
                 try:
-                    resp, data = rendernode.request("POST", "/commands/", body, headers)
-                    if not resp.status == 202:
-                        LOGGER.error("Assignment request failed: command %d on worker %s", command.id, rendernode.name)
-                        failures.append((rendernode, command))
-                    else:
-                        LOGGER.info("Sent assignment of command %d to worker %s", command.id, rendernode.name)
+                    #resp, data =
+                    rendernode.request("POST", "/commands/", body, headers)
+                    # if not resp.status == 202:
+                    #     LOGGER.error("Assignment request failed: command %d on worker %s", command.id, rendernode.name)
+                    #     failures.append((rendernode, command))
+                    # else:
+                    #     LOGGER.info("Sent assignment of command %d to worker %s", command.id, rendernode.name)
                 except rendernode.RequestFailed, e:
                     LOGGER.exception("Assignment of command %d to worker %s failed: %r", command.id, rendernode.name, e)
                     failures.append((rendernode, command))

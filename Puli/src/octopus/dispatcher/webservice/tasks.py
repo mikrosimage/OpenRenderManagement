@@ -11,7 +11,7 @@ logger = logging.getLogger('dispatcher.webservice.TaskController')
 from tornado.web import HTTPError
 from octopus.core.framework import ResourceNotFoundError, BaseResource, queue
 from octopus.core.enums.node import *
-from octopus.dispatcher.model import TaskGroup
+from octopus.dispatcher.model import TaskGroup, Task
 
 ALLOWED_STATUS_VALUES = (NODE_DONE, NODE_CANCELED)
 
@@ -114,6 +114,25 @@ class TaskUserResource(TaskResource):
             task = self._findTask(taskId)
             task.user = str(user)
             self.dispatcher.dispatchTree.toModifyElements.append(task)
+
+
+class TaskRamResource(TaskResource):
+    @queue
+    def put(self, taskId):
+        '''
+        Sets the min ram required for a task.
+        '''
+        data = self.getBodyAsJSON()
+        try:
+            ramUse = data['ramUse']
+        except:
+            return HTTPError(400, 'Missing entry: "ramUse".')
+        else:
+            taskId = int(taskId)
+            task = self._findTask(taskId)
+            if isinstance(task, Task):
+                task.ramUse = int(ramUse)
+                self.dispatcher.dispatchTree.toModifyElements.append(task)
 
 
 class TaskEnvResource(TaskResource):

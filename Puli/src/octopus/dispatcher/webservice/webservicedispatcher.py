@@ -61,6 +61,7 @@ class WebServiceDispatcher(Application):
             (r'^/tasks/(\d+)/tree/?$', tasks.TaskTreeResource, dict(framework=framework)),
             (r'^/tasks/(\d+)/comment/?$', tasks.TaskCommentResource, dict(framework=framework)),
             (r'^/tasks/(\d+)/user/?$', tasks.TaskUserResource, dict(framework=framework)),
+            (r'^/tasks/(\d+)/ram/?$', tasks.TaskRamResource, dict(framework=framework)),
 
             (r'^/poolshares/?$', poolshares.PoolSharesResource, dict(framework=framework)),
             (r'^/poolshares/(\d+)/?$', poolshares.PoolShareResource, dict(framework=framework)),

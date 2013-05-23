@@ -13,6 +13,7 @@ import httplib as http
 import time
 import logging
 import errno
+import requests
 
 from octopus.dispatcher.model.enums import *
 from octopus.dispatcher import settings
@@ -361,7 +362,19 @@ class RenderNode(models.Model):
             if self.freeCoresNumber != self.coresNumber:
                 return False
 
-        if self.freeRam < command.task.ramUse:
+        freeRam = self.ramSize
+        # if needed, ask the rendernode how much ram is currently in use
+        # to check whether we can launch the command or not
+        if command.task.ramUse != 0:
+            try:
+                r = requests.get("http://%s/ramInUse" % self.name, timeout=2)
+                freeRam = freeRam - float(r.text)
+            except requests.exceptions.Timeout:
+                LOGGER.warning("Timeout occured while trying to get ram in use on %s" % self.name)
+                return False
+
+        if freeRam < command.task.ramUse:
+            LOGGER.warning("Not enough ram on %s. %d needed, %d avail." % (self.name, int(command.task.ramUse), int(freeRam)))
             return False
 
         return True

@@ -21,6 +21,7 @@ from octopus.dispatcher import settings
 from . import models
 
 LOGGER = logging.getLogger('dispatcher.webservice')
+logging.getLogger('requests.packages.urllib3.connectionpool').setLevel(logging.WARNING)
 
 # set the status of a render node to RN_UNKNOWN after TIMEOUT seconds have elapsed since last update
 TIMEOUT = settings.RN_TIMEOUT
@@ -130,9 +131,9 @@ class RenderNode(models.Model):
             del self.commands[command.id]
         except KeyError:
             LOGGER.debug('attempt to clear assignment of not assigned command %d on worker %s', command.id, self.name)
-        else:
-            self.releaseRessources(command)
-            self.releaseLicense(command)
+        #else:
+        self.releaseRessources(command)
+        self.releaseLicense(command)
 
     ## Add a command assignment
     #
@@ -368,7 +369,8 @@ class RenderNode(models.Model):
         if command.task.ramUse != 0:
             try:
                 r = requests.get("http://%s/ramInUse" % self.name, timeout=2)
-                freeRam = freeRam - float(r.text)
+                if r.status_code == requests.codes.ok:
+                    freeRam = freeRam - float(r.text)
             except requests.exceptions.Timeout:
                 LOGGER.warning("Timeout occured while trying to get ram in use on %s" % self.name)
                 return False

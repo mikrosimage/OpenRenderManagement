@@ -434,6 +434,7 @@ class Dispatcher(MainLoopApplication):
                 LOGGER.warning("re-assigning command %d on %s. (TIMEOUT?)" % (commandId, rn.name))
             else:
                 # cancel the command on rn?
+                # rn.request("DELETE", "/commands/" + str(commandId) + "/")
                 LOGGER.warning("Status update from %d on %s but %d currently assigned." % (commandId, rn.name, rn.commands.keys()[0]))
                 pass
 

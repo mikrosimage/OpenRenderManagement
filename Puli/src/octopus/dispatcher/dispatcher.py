@@ -429,10 +429,12 @@ class Dispatcher(MainLoopApplication):
                 # in this case, re-add the command to the list of the rendernode
                 #rn.addAssignment(command)
                 rn.commands[commandId] = command
-                LOGGER.warning("%s was TIMEOUT, re-assigning command %d" % (rn.name, commandId))
+                # we should re-reserve the lic
+                rn.reserveLicense(command, self.licenseManager)
+                LOGGER.warning("re-assigning command %d on %s. (TIMEOUT?)" % (commandId, rn.name))
             else:
                 # cancel the command on rn?
-                LOGGER.warning("%s was TIMEOUT but has now another command assigned" % rn.name)
+                LOGGER.warning("Status update from %d on %s but %d currently assigned." % (commandId, rn.name, rn.commands.keys()[0]))
                 pass
 
         if "status" in dct:

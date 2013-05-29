@@ -434,7 +434,7 @@ class Dispatcher(MainLoopApplication):
             else:
                 # cancel the command on rn?
                 # rn.request("DELETE", "/commands/" + str(commandId) + "/")
-                LOGGER.warning("Status update from %d on %s but %d currently assigned." % (commandId, rn.name, rn.commands.keys()[0]))
+                LOGGER.warning("Status update from %d (%d) on %s but %d currently assigned." % (commandId, int(dct['status']), rn.name, rn.commands.keys()[0]))
                 pass
 
         if "status" in dct:

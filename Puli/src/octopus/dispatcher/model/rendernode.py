@@ -131,9 +131,9 @@ class RenderNode(models.Model):
             del self.commands[command.id]
         except KeyError:
             LOGGER.debug('attempt to clear assignment of not assigned command %d on worker %s', command.id, self.name)
-        #else:
-        self.releaseRessources(command)
-        self.releaseLicense(command)
+        else:
+            self.releaseRessources(command)
+            self.releaseLicense(command)
 
     ## Add a command assignment
     #

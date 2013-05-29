@@ -427,7 +427,6 @@ class Dispatcher(MainLoopApplication):
         if commandId not in rn.commands:
             if len(rn.commands) == 0 and command.status is not enums.CMD_CANCELED:
                 # in this case, re-add the command to the list of the rendernode
-                #rn.addAssignment(command)
                 rn.commands[commandId] = command
                 # we should re-reserve the lic
                 rn.reserveLicense(command, self.licenseManager)

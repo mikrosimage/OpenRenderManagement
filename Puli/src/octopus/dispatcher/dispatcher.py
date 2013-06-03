@@ -258,7 +258,7 @@ class Dispatcher(MainLoopApplication):
             # if we have a userdefined maxRN for some nodes, remove them from the list and substracts their maxRN from the pool's size
             l = nodesList[:]  # duplicate the list to be safe when removing elements
             for node in l:
-                if node.poolShares.values()[0].userDefinedMaxRN:
+                if node.poolShares.values()[0].userDefinedMaxRN and node.poolShares.values()[0].userDefinedMaxRN != -1:
                     nodesList.remove(node)
                     rnsSize -= node.poolShares.values()[0].maxRN
 
@@ -412,7 +412,8 @@ class Dispatcher(MainLoopApplication):
             raise KeyError("Command not found: %d" % commandId)
 
         if not command.renderNode:
-            raise KeyError("Command %d was not reported as running on rendernode %s" % (commandId, renderNodeName))
+            # souldn't we reassign the command to the rn??
+            raise KeyError("Command %d (%d) is no longer registered on rendernode %s" % (commandId, int(dct['status']), renderNodeName))
         elif command.renderNode.name != renderNodeName:
             # in this case, kill the command running on command.renderNode.name
             # rn = command.renderNode

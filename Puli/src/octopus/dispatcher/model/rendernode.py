@@ -262,7 +262,7 @@ class RenderNode(models.Model):
     # @warning The returned HTTPConnection is not safe to use from multiple threads
     #
     def getHTTPConnection(self):
-        return http.HTTPConnection(self.host, self.port)
+        return http.HTTPConnection(self.host, self.port, timeout=20)
 #        if (self.httpConnection == None or
 #            self.httpConnection.port!=self.port or
 #            self.httpConnection.host!=self.host

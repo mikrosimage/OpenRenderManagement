@@ -9,6 +9,7 @@ import time
 VERSION = "1.0"
 KILLFILE = "/tmp/render/killfile"
 
+
 class MyLawn(object):
     def process_args(self):
         parser = OptionParser("MyLawn v%s - Commandline to allow or forbid local renders" % VERSION)
@@ -16,7 +17,7 @@ class MyLawn(object):
         parser.add_option("-c", "--check", action="store_true", dest="checkstatusonly", help="only check server status and killfile presence", default=False)
         parser.add_option("-s", "--status", action="store", type="int", dest="status", help="'mylawn 0' to enable rendering (deletes killfile)\n'mylawn 1' to disable rendering (creates killfile)")
         return parser.parse_args()
-    
+
     def setRender(self, activate, killproc=False):
         if activate or killproc:
             if os.path.isfile(KILLFILE):
@@ -34,7 +35,7 @@ class MyLawn(object):
         else:
             os.remove(KILLFILE)
             print "\t--- killfile deleted! Render is now ENABLED ---\n"
-    
+
     def checkProcess(self, process, login=""):
         cmdline = "ps aux | "
         if len(login):
@@ -44,11 +45,11 @@ class MyLawn(object):
         if len(pidSearch):
             return True
         return False
-    
+
     def killProcess(self, process):
         os.system("sudo pkill -U render %s*" % process)
-        
-    
+
+
 if __name__ == '__main__':
     ml = MyLawn()
     options, args = ml.process_args()
@@ -67,18 +68,18 @@ if __name__ == '__main__':
     #    print "\nAlfred service :\tUP"
     #else:
     #    print "\nAlfred service :\tDOWN"
-        
+
     if ml.checkProcess("workerd.py"):
         print "Puli service :\t\tUP"
     else:
         print "Puli service :\t\tDOWN"
-    
+
     ### print current status
     if os.path.isfile(KILLFILE):
         print "\n\t--- Render currently DISABLED ---"
     else:
         print "\n\t--- Render currently ENABLED ---"
-        
+
     ### check of rendering processes
     processes = ["MtoaRunner", "NukeRunner", "MentalrayRunner"]
     rendering = False
@@ -94,7 +95,7 @@ if __name__ == '__main__':
     ### end process if check only
     if options.checkstatusonly:
         sys.exit()
-        
+
     #### create or remove killfile
     if status is not None or options.killproc:
         print "Setting killfile status..."
@@ -110,5 +111,4 @@ if __name__ == '__main__':
         ## on le met deux fois car la commande ne tue que le premier proccess qu'elle trouve
     #    ml.killProcess("maya")
     #    print "Kill commands have been sent."
-    
-    
+

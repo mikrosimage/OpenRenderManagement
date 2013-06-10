@@ -263,7 +263,7 @@ class Dispatcher(MainLoopApplication):
                     rnsSize -= node.poolShares.values()[0].maxRN
 
             if len(nodesList) == 0:
-                break
+                continue
             updatedmaxRN = rnsSize // len(nodesList)
             remainingRN = rnsSize % len(nodesList)
 

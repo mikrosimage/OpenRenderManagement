@@ -254,7 +254,7 @@ class RenderNode(models.Model):
                     if CMD_DONE == cmd.status:
                         cmd.completion = 1.0
                     cmd.finish()
-                    #self.unassign(cmd)
+                    self.unassign(cmd)
             self.status = RN_IDLE
 
     ##

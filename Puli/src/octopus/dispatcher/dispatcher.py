@@ -258,7 +258,7 @@ class Dispatcher(MainLoopApplication):
             # if we have a userdefined maxRN for some nodes, remove them from the list and substracts their maxRN from the pool's size
             l = nodesList[:]  # duplicate the list to be safe when removing elements
             for node in l:
-                if node.poolShares.values()[0].userDefinedMaxRN and node.poolShares.values()[0].userDefinedMaxRN != -1:
+                if node.poolShares.values()[0].userDefinedMaxRN and node.poolShares.values()[0].maxRN not in [-1, 0]:
                     nodesList.remove(node)
                     rnsSize -= node.poolShares.values()[0].maxRN
 

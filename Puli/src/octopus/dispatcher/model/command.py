@@ -14,6 +14,7 @@ import logging
 
 from octopus.core.enums.command import *
 from . import models
+from octopus.dispatcher import settings
 
 LOGGER = logging.getLogger('command')
 
@@ -33,6 +34,8 @@ class Command(models.Model):
     endTime = models.FloatField(allow_null=True)
     nbFrames = models.IntegerField(allow_null=True)
     avgTimeByFrame = models.FloatField(allow_null=True)
+    retryCount = models.IntegerField()
+    retryRnList = models.ListField()
 
     def __init__(self, id, description, task, arguments, status=CMD_READY, completion=None, renderNode=None, creationTime=None, startTime=None, updateTime=None, endTime=None, message=""):
         from octopus.dispatcher.model import Task
@@ -70,6 +73,8 @@ class Command(models.Model):
         self.message = str(message)
         # compute the average time by frame
         self.computeAvgTimeByFrame()
+        self.retryCount = 0
+        self.retryRnList = []
 
     def __repr__(self):
         return "Command(id=%r, status=%s)" % (self.id, CMD_STATUS_NAME[self.status])
@@ -186,7 +191,15 @@ class CommandDatesUpdater(object):
         if cmd.status is CMD_DONE:
             cmd.endTime = cmd.updateTime
             cmd.computeAvgTimeByFrame()
-        if cmd.status is CMD_ASSIGNED:
+        # autoretry
+        elif cmd.status is CMD_ERROR:
+            if cmd.retryCount < settings.MAX_RETRY_CMD_COUNT:
+                rn = cmd.renderNode
+                cmd.retryRnList.append(rn.name)
+                cmd.setReadyStatusAndClear()
+                rn.clearAssignment(cmd)
+                cmd.retryCount += 1
+        elif cmd.status is CMD_ASSIGNED:
             cmd.startTime = cmd.updateTime
         elif cmd.status < CMD_ASSIGNED:
             cmd.startTime = None

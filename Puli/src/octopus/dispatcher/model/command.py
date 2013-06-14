@@ -13,6 +13,7 @@ import time
 import logging
 
 from octopus.core.enums.command import *
+from octopus.core.enums.rendernode import RN_FINISHING
 from . import models
 from octopus.dispatcher import settings
 
@@ -193,11 +194,14 @@ class CommandDatesUpdater(object):
             cmd.computeAvgTimeByFrame()
         # autoretry
         elif cmd.status is CMD_ERROR:
-            if cmd.retryCount < settings.MAX_RETRY_CMD_COUNT:
+            if cmd.retryCount == settings.MAX_RETRY_CMD_COUNT:
+                cmd.retryRnList.append(cmd.renderNode.name)
+            elif cmd.retryCount < settings.MAX_RETRY_CMD_COUNT:
                 rn = cmd.renderNode
                 cmd.retryRnList.append(rn.name)
                 cmd.setReadyStatusAndClear()
                 rn.clearAssignment(cmd)
+                rn.status = RN_FINISHING
                 cmd.retryCount += 1
         elif cmd.status is CMD_ASSIGNED:
             cmd.startTime = cmd.updateTime

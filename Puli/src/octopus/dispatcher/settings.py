@@ -53,4 +53,4 @@ DB_URL = "mysql://red:0ct0pus@127.0.0.1/pulidb"
 #DB_URL = "sqlite:///path/to/my/database/file.db"
 
 RN_TIMEOUT = 1200.0
-MAX_RETRY_CMD_COUNT = 3
+MAX_RETRY_CMD_COUNT = 2

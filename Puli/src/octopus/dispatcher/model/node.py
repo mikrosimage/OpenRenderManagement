@@ -433,7 +433,9 @@ class TaskNode(BaseNode):
         else:
             self.completion = 1.0
 
-        if self.paused:
+        if CMD_CANCELED in status:
+            self.status = NODE_CANCELED
+        elif self.paused:
             self.status = NODE_PAUSED
         elif CMD_ERROR in status:
             self.status = NODE_ERROR
@@ -449,8 +451,6 @@ class TaskNode(BaseNode):
             self.status = NODE_READY
         elif CMD_BLOCKED in status:
             self.status = NODE_BLOCKED
-        elif CMD_CANCELED in status:
-            self.status = NODE_CANCELED
         else:
             # all commands are DONE, ensure the completion is at 1.0 (in case of failed completion update from some workers)
             self.completion = 1.0

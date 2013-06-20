@@ -7,9 +7,20 @@ Created on Sep 16, 2009
 import logging
 import os
 import subprocess
+import resource
+from octopus.worker import settings
 
 LOGGER = logging.getLogger("process")
 CLOSE_FDS = (os.name != 'nt')
+
+
+def setlimits():
+    # the use of os.setsid is necessary to create a processgroup properly for the commandwatcher
+    # it creates a new session in which the cmdwatcher is the leader of the new process group
+    os.setsid()
+    # set the limit of open files for ddd
+    soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+    resource.setrlimit(resource.RLIMIT_NOFILE, (settings.LIMIT_OPEN_FILES, hard))
 
 
 def spawnCommandWatcher(pidfile, logfile, args, env):
@@ -21,11 +32,9 @@ def spawnCommandWatcher(pidfile, logfile, args, env):
     envN = {}
     for key in env:
         envN[str(key)] = str(env[key])
-    # the use of os.setsid is necessary to create a processgroup properly for the commandwatcher
-    # it creates a new session in which the cmdwatcher is the leader of the new process group
     pid = subprocess.Popen(args, bufsize=-1, stdin=devnull, stdout=logfile,
                            stderr=subprocess.STDOUT, close_fds=CLOSE_FDS,
-                           preexec_fn=os.setsid, env=envN).pid
+                           preexec_fn=setlimits, env=envN).pid
     file(pidfile, "w").write(str(pid))
     return CommandWatcherProcess(pidfile, pid)
 

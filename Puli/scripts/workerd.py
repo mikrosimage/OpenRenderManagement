@@ -12,11 +12,17 @@ import os
 import sys
 import atexit
 import signal
+import resource
 
 from octopus.worker import make_worker, settings
 
 
 def daemonize(username=""):
+    # set the limit of open files for ddd
+    soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+    if settings.LIMIT_OPEN_FILES <= hard:
+        resource.setrlimit(resource.RLIMIT_NOFILE, (settings.LIMIT_OPEN_FILES, hard))
+    #
     if os.fork() != 0:
         os._exit(0)
     os.setsid()

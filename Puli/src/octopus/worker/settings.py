@@ -35,3 +35,5 @@ DISPATCHER_ADDRESS = "puliserver"
 
 RUN_AS = ""
 LOGDIR = "/var/log/puli"
+
+LIMIT_OPEN_FILES = 32768

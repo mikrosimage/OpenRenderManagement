@@ -170,8 +170,7 @@ class NodePauseKillResource(NodesResource):
         nodeId = int(nodeId)
         node = self._findNode(nodeId)
         if hasattr(node, "taskGroup"):
-            for task in node.taskGroup.tasks:
-                self.pauseandkill(task)
+            self.pauseandkill(node.taskGroup)
         else:
             self.pauseandkill(node.task)
         for poolShare in node.poolShares:
@@ -179,9 +178,13 @@ class NodePauseKillResource(NodesResource):
         node.setPaused(True)
 
     def pauseandkill(self, task):
-        for command in task.commands:
-            if command.status is CMD_RUNNING:
-                command.setReadyAndKill()
+        if isinstance(task, TaskGroup):
+            for tsk in task.tasks:
+                self.pauseandkill(tsk)
+        else:
+            for command in task.commands:
+                if command.status is CMD_RUNNING:
+                    command.setReadyAndKill()
 
 
 class NodePriorityResource(NodesResource):

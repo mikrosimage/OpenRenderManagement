@@ -236,8 +236,11 @@ class DispatchTree(object):
         strategy = loadStrategyClass(strategy.encode())
         strategy = strategy()
         tags = taskGroupDefinition['tags']
+        timer = None
+        if 'timer' in taskGroupDefinition.keys():
+            timer = taskGroupDefinition['timer']
         return TaskGroup(id, name, parent, user, arguments, environment, requirements,
-                         maxRN, priority, dispatchKey, strategy, tags=tags)
+                         maxRN, priority, dispatchKey, strategy, tags=tags, timer=timer)
 
     def _createTaskFromJSON(self, taskDefinition, user):
         # id, name, parent, user, priority, dispatchKey, runner, arguments,
@@ -257,9 +260,12 @@ class DispatchTree(object):
         ramUse = taskDefinition['ramUse']
         lic = taskDefinition['lic']
         tags = taskDefinition['tags']
+        timer = None
+        if 'timer' in taskDefinition.keys():
+            timer = taskDefinition['timer']
         task = Task(None, name, None, user, maxRN, priority, dispatchKey, runner,
                     arguments, validationExpression, [], requirements, minNbCores,
-                    maxNbCores, ramUse, environment, lic=lic, tags=tags)
+                    maxNbCores, ramUse, environment, lic=lic, tags=tags, timer=timer)
 
         for commandDef in taskDefinition['commands']:
             description = commandDef['description']

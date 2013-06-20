@@ -135,6 +135,28 @@ class TaskRamResource(TaskResource):
                 self.dispatcher.dispatchTree.toModifyElements.append(task)
 
 
+class TaskTimerResource(TaskResource):
+    @queue
+    def put(self, taskId):
+        '''
+        Sets the timer for a task.
+        '''
+        data = self.getBodyAsJSON()
+        try:
+            timer = data['timer']
+        except:
+            return HTTPError(400, 'Missing entry: "timer".')
+        else:
+            taskId = int(taskId)
+            task = self._findTask(taskId)
+            task.setTimer(timer)
+            # set the timer on the parent node of the task as well
+            node = task.nodes.values()[0]
+            node.timer = timer
+            self.dispatcher.dispatchTree.toModifyElements.append(task)
+            self.dispatcher.dispatchTree.toModifyElements.append(node)
+
+
 class TaskEnvResource(TaskResource):
     @queue
     def post(self, taskId):

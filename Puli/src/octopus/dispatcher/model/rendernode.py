@@ -11,6 +11,7 @@
 
 import httplib as http
 import time
+import datetime
 import logging
 import errno
 import requests
@@ -378,5 +379,12 @@ class RenderNode(models.Model):
         if freeRam < command.task.ramUse:
             LOGGER.warning("Not enough ram on %s. %d needed, %d avail." % (self.name, int(command.task.ramUse), int(freeRam)))
             return False
+
+        # timer requirements
+        if command.task.timer is not None:
+            LOGGER.warning("Command has a timer : %s" % (datetime.datetime.fromtimestamp(command.task.timer)))
+            if time.time() < command.task.timer:
+                LOGGER.warning("Prevented execution of command %d because of timer present (%s)" % (command.id, datetime.datetime.fromtimestamp(command.task.timer)))
+                return False
 
         return True

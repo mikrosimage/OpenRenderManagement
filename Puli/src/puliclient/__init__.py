@@ -105,7 +105,8 @@ class Task(object):
                  requirements={},
                  lic="",
                  decomposer='puliclient.jobs.DefaultTaskDecomposer',
-                 tags={}):
+                 tags={},
+                 timer=None):
         self.parent = None
         self.decomposerName = decomposer
         self.decomposer = decomposer
@@ -127,6 +128,7 @@ class Task(object):
         self.commands = []
         self.lic = lic
         self.tags = tags.copy()
+        self.timer = timer
 
     def decompose(self):
         if not self.decomposed:
@@ -172,7 +174,7 @@ class TaskGroup(object):
         taskGroup.requirements = task.requirements
         return taskGroup
 
-    def __init__(self, name, expander=None, arguments={}, tags={}, environment={}):
+    def __init__(self, name, expander=None, arguments={}, tags={}, environment={}, timer=None):
         self.expanderName = expander
         self.expander = expander
         self.expanded = False
@@ -188,6 +190,7 @@ class TaskGroup(object):
         self.tasks = []
         self.taskGroups = []
         self.tags = tags.copy()
+        self.timer = timer
 
     def dependsOn(self, task, statusList):
         self.dependencies[task] = statusList
@@ -363,6 +366,7 @@ class GraphDumper():
             'lic': task.lic,
             'licence': task.lic,
             'tags': task.tags,
+            'timer': task.timer,
         }
 
     def computeTaskGroupRepresentation(self, taskGroup):
@@ -379,6 +383,7 @@ class GraphDumper():
             'strategy': taskGroup.strategy,
             'tasks': [self.getTaskIndex(task) for task in taskGroup.tasks] + [self.getTaskIndex(subtaskGroup) for subtaskGroup in taskGroup.taskGroups],
             'tags': taskGroup.tags,
+            'timer': taskGroup.timer,
         }
 
 

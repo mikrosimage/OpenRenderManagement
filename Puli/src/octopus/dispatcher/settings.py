@@ -42,7 +42,7 @@ POOLS_BACKEND_TYPE = "db"
 FILE_BACKEND_RN_PATH = os.path.join(CONFDIR, "workers.lst")
 FILE_BACKEND_LICENCES_PATH = os.path.join(CONFDIR, "licences.lst")
 FILE_BACKEND_POOL_PATH = os.path.join(CONFDIR, "pools")
-WS_BACKEND_URL = "dev.hd3d.fr"
+WS_BACKEND_URL = ""
 WS_BACKEND_PORT = 11800
 
 DB_ENABLE = True
@@ -54,3 +54,4 @@ DB_URL = "mysql://red:0ct0pus@127.0.0.1/pulidb"
 
 RN_TIMEOUT = 1200.0
 MAX_RETRY_CMD_COUNT = 2
+DELAY_BEFORE_AUTORETRY = 20.0

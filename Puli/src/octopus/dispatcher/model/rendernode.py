@@ -15,6 +15,7 @@ import datetime
 import logging
 import errno
 import requests
+from collections import deque
 
 from octopus.dispatcher.model.enums import *
 from octopus.dispatcher import settings
@@ -49,6 +50,7 @@ class RenderNode(models.Model):
     isRegistered = models.BooleanField()
     lastAliveTime = models.FloatField()
     performance = models.FloatField()
+    excluded = models.BooleanField()
 
     def __init__(self, id, name, coresNumber, speed, ip, port, ramSize, caracteristics=None, performance=0.0):
         '''Constructs a new Rendernode.
@@ -83,6 +85,8 @@ class RenderNode(models.Model):
         self.caracteristics = caracteristics if caracteristics else {}
         self.currentpoolshare = None
         self.performance = float(performance)
+        self.history = deque(maxlen=5)
+        self.excluded = False
 
         if not "softs" in self.caracteristics:
             self.caracteristics["softs"] = []
@@ -325,9 +329,17 @@ class RenderNode(models.Model):
             time.sleep(settings.RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE)
         # request failed too many times so pause the RN and report a failure
         self.reset(paused=True)
+        self.excluded = True
         raise self.RequestFailed()
 
     def canRun(self, command):
+        # check if this rendernode has made too much errors in its last commands
+        if self.history.count(CMD_ERROR) == 5:
+            LOGGER.warning("RenderNode %s had errors on last 5 commands, pausing..." % self.name)
+            self.reset(paused=True)
+            self.excluded = True
+            self.history.clear()
+            return False
         for (requirement, value) in command.task.requirements.items():
             if requirement.lower() == "softs":  # todo
                 for soft in value:
@@ -381,6 +393,7 @@ class RenderNode(models.Model):
             return False
 
         # timer requirements
+        # the timer is on the task and is the same for all commands
         if command.task.timer is not None:
             LOGGER.warning("Command has a timer : %s" % (datetime.datetime.fromtimestamp(command.task.timer)))
             if time.time() < command.task.timer:

@@ -260,8 +260,8 @@ class RenderNodePausedResource(BaseResource):
     @queue
     def put(self, computerName):
         dct = self.getBodyAsJSON()
-        paused = dct['paused']
-        killproc = dct['killproc']
+        paused = eval(dct['paused'])
+        killproc = eval(dct['killproc'])
         computerName = computerName.lower()
         rns = self.getDispatchTree().renderNodes
         if not computerName in rns:
@@ -274,3 +274,4 @@ class RenderNodePausedResource(BaseResource):
         else:
             # FIXME maybe set this to RN_FINISHING ?
             renderNode.status = RN_IDLE
+            renderNode.excluded = False

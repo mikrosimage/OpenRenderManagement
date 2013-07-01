@@ -30,6 +30,7 @@ class WebServiceDispatcher(Application):
 
             (r'/rendernodes/?$', rendernodes.RenderNodesResource, dict(framework=framework)),
             (r'/rendernodes/performance/?$', rendernodes.RenderNodesPerfResource, dict(framework=framework)),
+            (r'/rendernodes/quarantine/?$', rendernodes.RenderNodeQuarantineResource, dict(framework=framework)),
             (r'/rendernodes/((?:\d+)|(?:[\w.-]+:\d+))/?$', rendernodes.RenderNodeResource, dict(framework=framework)),
             (r'/rendernodes/((?:\d+)|(?:[\w.-]+:\d+))/commands/(\d+)/?$', rendernodes.RenderNodeCommandsResource, dict(framework=framework)),
             (r'/rendernodes/((?:\d+)|(?:[\w.-]+:\d+))/sysinfos/?$', rendernodes.RenderNodeSysInfosResource, dict(framework=framework)),

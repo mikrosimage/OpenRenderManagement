@@ -256,12 +256,28 @@ class RenderNodeResetResource(BaseResource):
             renderNode.reset()
 
 
+class RenderNodeQuarantineResource(BaseResource):
+    @queue
+    def put(self):
+        dct = self.getBodyAsJSON()
+        quarantine = dct["quarantine"]
+        logger.warning(quarantine)
+        for computerName in dct["rns"]:
+            renderNode = self.getDispatchTree().renderNodes[computerName]
+            logger.warning(renderNode.name)
+            renderNode.excluded = quarantine
+            if not quarantine:
+                renderNode.history.clear()
+                renderNode.tasksHistory.clear()
+        self.writeCallback("Quarantine attributes set.")
+
+
 class RenderNodePausedResource(BaseResource):
     @queue
     def put(self, computerName):
         dct = self.getBodyAsJSON()
-        paused = eval(dct['paused'])
-        killproc = eval(dct['killproc'])
+        paused = dct['paused']
+        killproc = dct['killproc']
         computerName = computerName.lower()
         rns = self.getDispatchTree().renderNodes
         if not computerName in rns:

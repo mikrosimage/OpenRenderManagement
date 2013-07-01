@@ -16,6 +16,7 @@ import logging
 import errno
 import requests
 from collections import deque
+import simplejson as json
 
 from octopus.dispatcher.model.enums import *
 from octopus.dispatcher import settings
@@ -85,7 +86,8 @@ class RenderNode(models.Model):
         self.caracteristics = caracteristics if caracteristics else {}
         self.currentpoolshare = None
         self.performance = float(performance)
-        self.history = deque(maxlen=5)
+        self.history = deque(maxlen=settings.RN_NB_ERRORS_TOLERANCE)
+        self.tasksHistory = deque(maxlen=15)
         self.excluded = False
 
         if not "softs" in self.caracteristics:
@@ -135,7 +137,8 @@ class RenderNode(models.Model):
         try:
             del self.commands[command.id]
         except KeyError:
-            LOGGER.debug('attempt to clear assignment of not assigned command %d on worker %s', command.id, self.name)
+            pass
+            #LOGGER.debug('attempt to clear assignment of not assigned command %d on worker %s', command.id, self.name)
         else:
             self.releaseRessources(command)
             self.releaseLicense(command)
@@ -334,11 +337,11 @@ class RenderNode(models.Model):
 
     def canRun(self, command):
         # check if this rendernode has made too much errors in its last commands
-        if self.history.count(CMD_ERROR) == 5:
-            LOGGER.warning("RenderNode %s had errors on last 5 commands, pausing..." % self.name)
-            self.reset(paused=True)
+        if self.history.count(CMD_ERROR) == self.history.maxlen:
+            LOGGER.warning("RenderNode %s had only errors in its commands history, excluding..." % self.name)
             self.excluded = True
-            self.history.clear()
+            return False
+        if self.excluded:
             return False
         for (requirement, value) in command.task.requirements.items():
             if requirement.lower() == "softs":  # todo
@@ -386,6 +389,9 @@ class RenderNode(models.Model):
                     freeRam = freeRam - float(r.text)
             except requests.exceptions.Timeout:
                 LOGGER.warning("Timeout occured while trying to get ram in use on %s" % self.name)
+                return False
+            except requests.exceptions.ConnectionError:
+                LOGGER.warning("Connection error while trying to get ram in use on %s" % self.name)
                 return False
 
         if freeRam < command.task.ramUse:

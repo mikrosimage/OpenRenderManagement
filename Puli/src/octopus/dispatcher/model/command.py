@@ -190,8 +190,12 @@ class CommandDatesUpdater(object):
 
     def onStatusUpdate(self, cmd):
         cmd.updateTime = time.time()
+        # append the command's status to the rendernode's history
         if isFinalStatus(cmd.status):
-            cmd.renderNode.history.append(cmd.status)
+            # only if we don't already have a command for this task
+            if cmd.task.id not in cmd.renderNode.tasksHistory:
+                cmd.renderNode.tasksHistory.append(cmd.task.id)
+                cmd.renderNode.history.append(cmd.status)
         if cmd.status is CMD_DONE:
             cmd.endTime = cmd.updateTime
             cmd.computeAvgTimeByFrame()

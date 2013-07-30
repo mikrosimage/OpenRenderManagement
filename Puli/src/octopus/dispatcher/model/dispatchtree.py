@@ -401,7 +401,8 @@ class DispatchTree(object):
         self.toArchiveElements.append(rendernode)
 
     def onRenderNodeChange(self, rendernode, field, oldvalue, newvalue):
-        self.toModifyElements.append(rendernode)
+        if field == "performance":
+            self.toModifyElements.append(rendernode)
 
     ### methods called after interaction with a Pool
 

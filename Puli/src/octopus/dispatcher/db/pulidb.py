@@ -461,16 +461,16 @@ class PuliDB(object):
                             dbPool.addRenderNodes(rn)  # pylint: disable-msg=E1103
 
             # /////////////// Handling of the RenderNode
-            # elif isinstance(element, RenderNode):
-            #     if element.id:
-            #         conn = RenderNodes._connection
-            #         fields = {RenderNodes.q.speed.fieldName: element.speed,
-            #                   RenderNodes.q.coresNumber.fieldName: element.coresNumber,
-            #                   RenderNodes.q.ramSize.fieldName: element.ramSize}
-            #                   # RenderNodes.q.caracteristics.fieldName: json.dumps(element.caracteristics),
-            #                   # RenderNodes.q.performance.fieldName: element.performance}
-            #         conn.query(conn.sqlrepr(Update(RenderNodes.q, values=fields, where=(RenderNodes.q.id == element.id))))
-            #         conn.cache.clear()
+            elif isinstance(element, RenderNode):
+                if element.id:
+                    conn = RenderNodes._connection
+                    # fields = {RenderNodes.q.speed.fieldName: element.speed,
+                              # RenderNodes.q.coresNumber.fieldName: element.coresNumber,
+                              # RenderNodes.q.ramSize.fieldName: element.ramSize}
+                              # RenderNodes.q.caracteristics.fieldName: json.dumps(element.caracteristics),
+                    fields = {RenderNodes.q.performance.fieldName: element.performance}
+                    conn.query(conn.sqlrepr(Update(RenderNodes.q, values=fields, where=(RenderNodes.q.id == element.id))))
+                    conn.cache.clear()
 
     ## Mark the provided elements as archived.
     # @param elements the elements to archive
@@ -796,7 +796,7 @@ class PuliDB(object):
                               self.getTimeStampFromDate(updateTime),
                               self.getTimeStampFromDate(endTime),
                               message)
-            assert not(status in [2, 3, 4] and realCmd.renderNode == None)
+            assert not(status in [2, 3, 4] and realCmd.renderNode is None)
             cmdTaskIdList[taskId].append(realCmd)
             cmdDict[realCmd.id] = realCmd
 

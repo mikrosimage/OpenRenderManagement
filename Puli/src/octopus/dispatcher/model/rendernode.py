@@ -235,12 +235,12 @@ class RenderNode(models.Model):
         commandStatus = [command.status for command in self.commands.values()]
         if CMD_RUNNING in commandStatus:
             self.status = RN_WORKING
+        elif CMD_ASSIGNED in commandStatus:
+            self.status = RN_ASSIGNED
         elif CMD_ERROR in commandStatus:
             self.status = RN_FINISHING
         elif CMD_FINISHING in commandStatus:
             self.status = RN_FINISHING
-        elif CMD_ASSIGNED in commandStatus:
-            self.status = RN_ASSIGNED
         elif CMD_DONE in commandStatus:
             self.status = RN_FINISHING  # do not set the status to IDLE immediately, to ensure that the order of affectation will be respected
         elif CMD_CANCELED in commandStatus:
@@ -255,14 +255,13 @@ class RenderNode(models.Model):
     #
     def releaseFinishingStatus(self):
         if self.status is RN_FINISHING:
-            #LOGGER.warning("Trying to release Finishing status for : %s, %s" % (self.name, self.status))
             # remove the commands that are in a final status
             for cmd in self.commands.values():
                 if isFinalStatus(cmd.status):
+                    self.unassign(cmd)
                     if CMD_DONE == cmd.status:
                         cmd.completion = 1.0
                     cmd.finish()
-                    self.unassign(cmd)
             self.status = RN_IDLE
 
     ##
@@ -337,7 +336,11 @@ class RenderNode(models.Model):
 
     def canRun(self, command):
         # check if this rendernode has made too much errors in its last commands
-        if self.history.count(CMD_ERROR) == self.history.maxlen:
+        cpt = 0
+        for i in self.history:
+            if i == CMD_ERROR:
+                cpt += 1
+        if cpt == settings.RN_NB_ERRORS_TOLERANCE:
             LOGGER.warning("RenderNode %s had only errors in its commands history, excluding..." % self.name)
             self.excluded = True
             return False

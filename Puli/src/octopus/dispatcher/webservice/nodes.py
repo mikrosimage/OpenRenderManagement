@@ -127,12 +127,13 @@ class NodeStatusResource(NodesResource):
                         commands += [c for c in task.commands if filterfunc(c)]
                 # reset the completion of the commands and mark them as ready
                 for cmd in commands:
-                    cmd.completion = 0
-                    cmd.status = CMD_READY
+                    # cmd.completion = 0
+                    # cmd.status = CMD_READY
+                    cmd.setReadyStatusAndClear()
                 if commands:
                     msg = "Restarted commands %s" % ", ".join([str(cmd.id) for cmd in commands])
                 else:
-                    msg = "No command were restarted."
+                    msg = "No commands were restarted."
                 self.writeCallback("Done. %s" % msg)
             # handles the 'general' setStatus
             else:

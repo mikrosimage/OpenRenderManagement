@@ -13,6 +13,7 @@ import httplib as http
 import time
 import logging
 import errno
+import requests
 
 from octopus.dispatcher.model.enums import *
 from octopus.dispatcher import settings
@@ -20,6 +21,7 @@ from octopus.dispatcher import settings
 from . import models
 
 LOGGER = logging.getLogger('dispatcher.webservice')
+logging.getLogger('requests.packages.urllib3.connectionpool').setLevel(logging.WARNING)
 
 # set the status of a render node to RN_UNKNOWN after TIMEOUT seconds have elapsed since last update
 TIMEOUT = settings.RN_TIMEOUT
@@ -87,7 +89,7 @@ class RenderNode(models.Model):
     ## Returns True if this render node is available for command assignment.
     #
     def isAvailable(self):
-        return (self.isRegistered and self.status == RN_IDLE)
+        return (self.isRegistered and self.status == RN_IDLE and not self.commands)
 
     def reset(self, paused=False):
         # if paused, set the status to RN_PAUSED, else set it to Finishing, it will be set to IDLE in the next iteration of the dispatcher main loop
@@ -136,12 +138,12 @@ class RenderNode(models.Model):
     ## Add a command assignment
     #
     def addAssignment(self, command):
-        assert not command.id in self.commands
-        self.commands[command.id] = command
-        self.reserveRessources(command)
-        # FIXME the assignment of the cmd should be done here and not in the dispatchIterator func
-        command.assign(self)
-        self.updateStatus()
+        if not command.id in self.commands:
+            self.commands[command.id] = command
+            self.reserveRessources(command)
+            # FIXME the assignment of the cmd should be done here and not in the dispatchIterator func
+            command.assign(self)
+            self.updateStatus()
 
     ## Reserve license
     #
@@ -199,6 +201,7 @@ class RenderNode(models.Model):
     #  status is not changed if no info is brought by the commands
     #
     def updateStatus(self):
+        # self.status is not RN_PAUSED and
         if time.time() > (self.lastAliveTime + TIMEOUT):
             # timeout the commands running on this node
             if RN_UNKNOWN != self.status:
@@ -211,10 +214,11 @@ class RenderNode(models.Model):
             return
         # This is necessary in case of a cancel command or a mylawn -k
         if not self.commands:
-            if self.status is RN_WORKING:
-                # cancel the command that is running on this RN because it's no longer registered in the model
-                LOGGER.warning("rendernode %s is reported as working but has no registered command" % self.name)
-            elif self.status not in (RN_PAUSED, RN_BOOTING):
+            # if self.status is RN_WORKING:
+            #     # cancel the command that is running on this RN because it's no longer registered in the model
+            #     LOGGER.warning("rendernode %s is reported as working but has no registered command" % self.name)
+            if self.status not in (RN_IDLE, RN_PAUSED, RN_BOOTING):
+                #LOGGER.warning("rendernode %s was %d and is now IDLE." % (self.name, self.status))
                 self.status = RN_IDLE
                 if self.currentpoolshare:
                     self.currentpoolshare.allocatedRN -= 1
@@ -231,6 +235,11 @@ class RenderNode(models.Model):
             self.status = RN_ASSIGNED
         elif CMD_DONE in commandStatus:
             self.status = RN_FINISHING  # do not set the status to IDLE immediately, to ensure that the order of affectation will be respected
+        elif CMD_CANCELED in commandStatus:
+            for cmd in self.commands.values():
+                # this should not happened, but if it does, ensure the command is no more registered to the rn
+                if cmd.status is CMD_CANCELED:
+                    self.clearAssignment(cmd)
         elif self.status not in (RN_IDLE, RN_BOOTING, RN_UNKNOWN, RN_PAUSED):
             LOGGER.error("Unable to compute new status for rendernode %r (status %r, commands %r)", self, self.status, self.commands)
 
@@ -253,7 +262,7 @@ class RenderNode(models.Model):
     # @warning The returned HTTPConnection is not safe to use from multiple threads
     #
     def getHTTPConnection(self):
-        return http.HTTPConnection(self.host, self.port)
+        return http.HTTPConnection(self.host, self.port, timeout=20)
 #        if (self.httpConnection == None or
 #            self.httpConnection.port!=self.port or
 #            self.httpConnection.host!=self.host
@@ -354,7 +363,20 @@ class RenderNode(models.Model):
             if self.freeCoresNumber != self.coresNumber:
                 return False
 
-        if self.freeRam < command.task.ramUse:
+        freeRam = self.ramSize
+        # if needed, ask the rendernode how much ram is currently in use
+        # to check whether we can launch the command or not
+        if command.task.ramUse != 0:
+            try:
+                r = requests.get("http://%s/ramInUse" % self.name, timeout=2)
+                if r.status_code == requests.codes.ok:
+                    freeRam = freeRam - float(r.text)
+            except requests.exceptions.Timeout:
+                LOGGER.warning("Timeout occured while trying to get ram in use on %s" % self.name)
+                return False
+
+        if freeRam < command.task.ramUse:
+            LOGGER.warning("Not enough ram on %s. %d needed, %d avail." % (self.name, int(command.task.ramUse), int(freeRam)))
             return False
 
         return True

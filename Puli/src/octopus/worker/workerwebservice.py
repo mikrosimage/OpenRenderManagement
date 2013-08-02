@@ -5,6 +5,7 @@ try:
 except ImportError:
     import json
 import logging
+import subprocess
 
 from octopus.core.communication.http import Http400, Http404
 from octopus.worker import settings
@@ -31,7 +32,8 @@ class WorkerWebService(Application):
             (r'/log/?$', WorkerLogResource),
             (r'/log/command/(?P<path>\S+)', CommandLogResource),
             (r'/updatesysinfos/?$', UpdateSysResource, dict(framework=framework)),
-            (r'/pause/?$', PauseResource, dict(framework=framework))
+            (r'/pause/?$', PauseResource, dict(framework=framework)),
+            (r'/ramInUse/?$', RamInUseResource, dict(framework=framework))
         ])
         self.queue = Queue()
         self.listen(port, "0.0.0.0")
@@ -75,7 +77,17 @@ class PauseResource(BaseResource):
             if content in ["-1", "-2", "-3"]:
                 f.write(content)
             f.close()
+            os.chmod(killfile, 0666)
         self.set_status(202)
+
+
+class RamInUseResource(BaseResource):
+    def get(self):
+        process = subprocess.Popen("ps -e -o rss | awk '{sum+=$1} END {print sum/1024}'",
+                                   shell=True,
+                                   stdout=subprocess.PIPE)
+        stdout_list = process.communicate()[0].split('\n')
+        self.write(stdout_list[0])
 
 
 class CommandsResource(BaseResource):

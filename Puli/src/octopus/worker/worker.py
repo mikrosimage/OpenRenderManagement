@@ -1,6 +1,7 @@
 import logging
 import socket
 import os
+import signal
 import sys
 import time
 import platform
@@ -316,6 +317,23 @@ class Worker(MainLoopApplication):
             LOGGER.warning("Aborting command %d", commandWatcher.commandId)
             commandWatcher.processObj.kill()
             commandWatcher.finished = True
+        self.ensureNoMoreRender()
+
+    def ensureNoMoreRender(self):
+        # ensure we don't have anymore rendering process
+        renderProcessList = os.popen("pgrep -u render -l").read().split('\n')
+        processToKill = []
+        for processItem in renderProcessList:
+            items = processItem.split(' ')
+            if len(items) == 2 and items[1] not in ['python', 'bash', 'sshd', 'respawner.py']:
+                processToKill.append(items[0])
+                LOGGER.info("Found ghost process %s %s" % (items[0], items[1]))
+        if len(processToKill) != 0:
+            for pid in processToKill:
+                try:
+                    os.kill(int(pid), signal.SIGKILL)
+                except OSError:
+                    continue
 
     def mainLoop(self):
         # try:

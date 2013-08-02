@@ -258,12 +258,12 @@ class Dispatcher(MainLoopApplication):
             # if we have a userdefined maxRN for some nodes, remove them from the list and substracts their maxRN from the pool's size
             l = nodesList[:]  # duplicate the list to be safe when removing elements
             for node in l:
-                if node.poolShares.values()[0].userDefinedMaxRN:
+                if node.poolShares.values()[0].userDefinedMaxRN and node.poolShares.values()[0].maxRN not in [-1, 0]:
                     nodesList.remove(node)
                     rnsSize -= node.poolShares.values()[0].maxRN
 
             if len(nodesList) == 0:
-                break
+                continue
             updatedmaxRN = rnsSize // len(nodesList)
             remainingRN = rnsSize % len(nodesList)
 
@@ -412,7 +412,8 @@ class Dispatcher(MainLoopApplication):
             raise KeyError("Command not found: %d" % commandId)
 
         if not command.renderNode:
-            raise KeyError("Command %d was not reported as running on rendernode %s" % (commandId, renderNodeName))
+            # souldn't we reassign the command to the rn??
+            raise KeyError("Command %d (%d) is no longer registered on rendernode %s" % (commandId, int(dct['status']), renderNodeName))
         elif command.renderNode.name != renderNodeName:
             # in this case, kill the command running on command.renderNode.name
             # rn = command.renderNode
@@ -425,9 +426,17 @@ class Dispatcher(MainLoopApplication):
 
         #if command is no more in the rn's list, it means the rn was reported as timeout
         if commandId not in rn.commands:
-            # in this case, re-add the command to the list of the rendernode
-            #rn.addAssignment(command)
-            rn.commands[commandId] = command
+            if len(rn.commands) == 0 and command.status is not enums.CMD_CANCELED:
+                # in this case, re-add the command to the list of the rendernode
+                rn.commands[commandId] = command
+                # we should re-reserve the lic
+                rn.reserveLicense(command, self.licenseManager)
+                LOGGER.warning("re-assigning command %d on %s. (TIMEOUT?)" % (commandId, rn.name))
+            else:
+                # cancel the command on rn?
+                # rn.request("DELETE", "/commands/" + str(commandId) + "/")
+                LOGGER.warning("Status update from %d (%d) on %s but %d currently assigned." % (commandId, int(dct['status']), rn.name, rn.commands.keys()[0]))
+                pass
 
         if "status" in dct:
             command.status = int(dct['status'])

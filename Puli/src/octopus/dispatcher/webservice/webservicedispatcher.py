@@ -61,6 +61,7 @@ class WebServiceDispatcher(Application):
             (r'^/tasks/(\d+)/tree/?$', tasks.TaskTreeResource, dict(framework=framework)),
             (r'^/tasks/(\d+)/comment/?$', tasks.TaskCommentResource, dict(framework=framework)),
             (r'^/tasks/(\d+)/user/?$', tasks.TaskUserResource, dict(framework=framework)),
+            (r'^/tasks/(\d+)/ram/?$', tasks.TaskRamResource, dict(framework=framework)),
 
             (r'^/poolshares/?$', poolshares.PoolSharesResource, dict(framework=framework)),
             (r'^/poolshares/(\d+)/?$', poolshares.PoolShareResource, dict(framework=framework)),
@@ -70,6 +71,7 @@ class WebServiceDispatcher(Application):
             (r'^/pools/([\w.-]+)/rendernodes/?$', pools.PoolRenderNodesResource, dict(framework=framework)),
 
             (r'^/system/?$', SystemResource, dict(framework=framework)),
+            (r'^/mobile/?$', MobileResource, dict(framework=framework)),
         ])
         self.listen(port, "0.0.0.0")
         self.framework = framework
@@ -103,6 +105,68 @@ class StatsResource(BaseResource):
             'licenses': repr(self.dispatcher.licenseManager)
         }
         self.writeCallback(stats)
+
+
+class MobileResource(BaseResource):
+    def get(self):
+        from octopus.core.enums.rendernode import RN_STATUS_NAMES
+        html = "<meta name = \"viewport\" content = \"width = device-width\">\n<meta name = \"viewport\" content = \"width = 320\">"
+        tree = self.getDispatchTree()
+        commandsByStatus = {}
+        for name in CMD_STATUS_NAME:
+            commandsByStatus[name] = 0
+        for command in tree.commands.values():
+            status = CMD_STATUS_NAME[command.status]
+            commandsByStatus[status] += 1
+        del commandsByStatus["FINISHING"]
+        commandsByStatus['TOTAL'] = len(tree.commands)
+
+        colors = {'BLOCKED': "white",
+                  'IDLE': "rgb(190,186,138)",
+                  'READY': "rgb(190,186,138)",
+                  'ASSIGNED': "white",
+                  'WORKING': "green",
+                  'RUNNING': "green",
+                  'FINISHING': "white",
+                  'DONE': "lightgray",
+                  'BOOTING': "white",
+                  'TIMEOUT': "rgb(217,37,38)",
+                  'ERROR': "rgb(217,37,38)",
+                  'UNKNOWN': "rgb(217,37,38)",
+                  'PAUSED': "rgb(242,195,64)",
+                  'ASSIGNED': "lightblue",
+                  'CANCELED': "lightgray",
+                  'TOTAL': "white"}
+
+        html += "<div><div style=\"width:160px; float:left; display:inline-block;\">"
+        html += "<b>Commands Status</b><br><br><table border=1 style=\"border-collapse:collapse;text-align:center;\">"
+        for key, value in commandsByStatus.items():
+            html += "<tr style=\"background-color:" + colors[key] + "\"><td>" + key + "</td><td>" + str(value) + "</td></tr>"
+        html += "</table>"
+        html += "</div>"
+
+        html += "<div style=\"margin-left:160px;\">"
+        html += "<b>Workers Status</b><br><br><table border=1 style=\"border-collapse:collapse;text-align:center;\">"
+        renderNodeByStatus = dict(((status, 0) for status in RN_STATUS_NAMES))
+        renderNodeByStatus['TOTAL'] = len(tree.renderNodes.values())
+        for node in tree.renderNodes.values():
+            renderNodeByStatus[RN_STATUS_NAMES[node.status]] += 1
+        for key, value in renderNodeByStatus.items():
+            html += "<tr style=\"background-color:" + colors[key.upper()] + "\"><td>" + key.upper() + "</td><td>" + str(value) + "</td></tr>"
+        html += "</table>"
+        html += "</div></div><br>"
+
+        html += "<div style=\"width:100%;\">"
+        html += "<br><b>Licenses</b><br><br><table border=1 style=\"width:100%;border-collapse:collapse;text-align:center;\"><tr>"
+        for lic in self.dispatcher.licenseManager.licenses.values():
+            html += "<td>" + lic.name + "</td>"
+        html += "</tr><tr>"
+        for lic in self.dispatcher.licenseManager.licenses.values():
+            html += "<td>" + str(lic.used) + " / " + str(lic.maximum) + "</td>"
+        html += "</tr></table>"
+        html += "</div>"
+
+        self.writeCallback(html)
 
 
 class SystemResource(BaseResource):

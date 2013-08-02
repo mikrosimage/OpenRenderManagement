@@ -20,7 +20,7 @@ class LicenseResource(BaseResource):
         try:
             lic = self.dispatcher.licenseManager.licenses[licenseName]
             licenseRepr = "{'max':%s, 'used':%s, 'rns':[" % (str(lic.maximum), str(lic.used))
-            for rn in lic.currentUsingRenderNodes:
+            for rn in sorted(lic.currentUsingRenderNodes):
                 licenseRepr += "\"%s\"," % rn.name
             licenseRepr += "]}"
             self.writeCallback(licenseRepr)

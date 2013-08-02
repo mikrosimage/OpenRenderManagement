@@ -174,7 +174,7 @@ class TaskGroup(object):
         taskGroup.requirements = task.requirements
         return taskGroup
 
-    def __init__(self, name, expander=None, arguments={}, tags={}, environment={}, timer=None, dispatchKey=0):
+    def __init__(self, name, expander=None, arguments={}, tags={}, environment={}, timer=None, priority=0, dispatchKey=0):
         self.expanderName = expander
         self.expander = expander
         self.expanded = False
@@ -184,7 +184,7 @@ class TaskGroup(object):
         self.requirements = {}
         self.dependencies = {}
         self.maxRN = 0
-        self.priority = 0
+        self.priority = priority
         self.dispatchKey = dispatchKey
         self.strategy = 'octopus.dispatcher.strategies.FifoStrategy'
         self.tasks = []

@@ -341,7 +341,7 @@ class RenderNode(models.Model):
             if i == CMD_ERROR:
                 cpt += 1
         if cpt == settings.RN_NB_ERRORS_TOLERANCE:
-            LOGGER.warning("RenderNode %s had only errors in its commands history, excluding..." % self.name)
+            #LOGGER.warning("RenderNode %s had only errors in its commands history, excluding..." % self.name)
             self.excluded = True
             return False
         if self.excluded:
@@ -398,15 +398,15 @@ class RenderNode(models.Model):
                 return False
 
         if freeRam < command.task.ramUse:
-            LOGGER.warning("Not enough ram on %s. %d needed, %d avail." % (self.name, int(command.task.ramUse), int(freeRam)))
+            #LOGGER.warning("Not enough ram on %s. %d needed, %d avail." % (self.name, int(command.task.ramUse), int(freeRam)))
             return False
 
         # timer requirements
         # the timer is on the task and is the same for all commands
         if command.task.timer is not None:
-            LOGGER.warning("Command has a timer : %s" % (datetime.datetime.fromtimestamp(command.task.timer)))
+            #LOGGER.warning("Command has a timer : %s" % (datetime.datetime.fromtimestamp(command.task.timer)))
             if time.time() < command.task.timer:
-                LOGGER.warning("Prevented execution of command %d because of timer present (%s)" % (command.id, datetime.datetime.fromtimestamp(command.task.timer)))
+                #LOGGER.warning("Prevented execution of command %d because of timer present (%s)" % (command.id, datetime.datetime.fromtimestamp(command.task.timer)))
                 return False
 
         return True

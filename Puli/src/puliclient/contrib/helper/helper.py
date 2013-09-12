@@ -157,7 +157,7 @@ class PuliActionHelper(object):
     def checkExistenceOrCreateDir(self, path, name):
         if not os.path.exists(path):
             print "\nCreating %s..." % name
-            #os.umask(0)
+            os.umask(2)
             try:
                 os.makedirs(path, 0775)
             except OSError:

@@ -88,13 +88,13 @@ def setup_logging(options):
     logFile = os.path.join(settings.LOGDIR, logFileName)
 
     fileHandler = logging.handlers.RotatingFileHandler(logFile, 'w', 1048576, 1, "UTF-8")
-    fileHandler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+    fileHandler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)6s - %(message)s"))
     logger = logging.getLogger()
     logger.addHandler(fileHandler)
 
     if options.CONSOLE:
         consoleHandler = logging.StreamHandler()
-        consoleHandler.setFormatter(logging.Formatter("%(levelname)6s [%(name)s] %(message)s"))
+        consoleHandler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)6s [%(name)s] %(message)s"))
         consoleHandler.setLevel(logging.DEBUG)
         logger.setLevel(logging.DEBUG)
         logger.addHandler(consoleHandler)

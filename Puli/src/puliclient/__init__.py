@@ -264,7 +264,8 @@ class Graph(object):
         conn = httplib.HTTPConnection(host, port)
         conn.request('POST', '/graphs/', jsonRepr, {'Content-Length': len(jsonRepr)})
         response = conn.getresponse()
-        if response.status == 201:
+
+        if response.status in (200, 201):
             return response.getheader('Location'), response.read()
         else:
             raise GraphSubmissionError((response.status, response.reason))

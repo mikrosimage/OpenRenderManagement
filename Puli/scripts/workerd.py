@@ -63,6 +63,7 @@ def daemonize(username=""):
 def process_args():
     parser = optparse.OptionParser()
     parser.add_option("-P", "--pid-file", action="store", dest="PIDFILE", help="change the pid file")
+    parser.add_option("-K", "--kill-file", action="store", dest="KILLFILE", help="change the kill file")
     parser.add_option("-W", "--commandwatchers-pid-dir", action="store", dest="PID_DIR", help="change the directory where pid files for command watchers are stored")
     parser.add_option("-d", "--daemon", action="store_true", dest="DAEMONIZE", default=False, help="daemonize the dispatcher")
     parser.add_option("-b", "--bind", action="store", type="string", dest="ADDRESS", metavar="HOST", help="change the HOST the web service is bound on")
@@ -108,7 +109,6 @@ def setup_logging(options):
 
 
 def main():
-    import pudb;pu.db
     options = process_args()
     setup_logging(options)
     workerApplication = make_worker()

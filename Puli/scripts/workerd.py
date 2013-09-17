@@ -70,6 +70,8 @@ def process_args():
     parser.add_option("-u", "--run-as", action="store", type="string", dest="RUN_AS", metavar="USER", help="run the dispatcher as USER")
     parser.add_option("-D", "--debug", action="store_true", dest="DEBUG", help="changes the default log level to DEBUG")
     parser.add_option("-C", "--console", action="store_true", dest="CONSOLE", default=False, help="output logs to the console")
+    parser.add_option("-s", "--server", action="store", dest="DISPATCHER_ADDRESS", help="Sets the Puli server hostname")
+    parser.add_option("-i", "--serverport", action="store", dest="DISPATCHER_PORT", help="Sets the Puli server port")
     options, args = parser.parse_args()
     if args:
         settings.loadSettingsFile(args[0])
@@ -106,6 +108,7 @@ def setup_logging(options):
 
 
 def main():
+    import pudb;pu.db
     options = process_args()
     setup_logging(options)
     workerApplication = make_worker()

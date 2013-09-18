@@ -24,6 +24,7 @@ from octopus.dispatcher.poolman.wspoolman import WebServicePoolManager
 from octopus.dispatcher.licenses.licensemanager import LicenseManager
 from octopus.dispatcher.model.enums import *
 
+from tornado import ioloop
 
 LOGGER = logging.getLogger('dispatcher')
 
@@ -153,19 +154,19 @@ class Dispatcher(MainLoopApplication):
             self.stop()
         self.dispatchTree.rules.append(GraphViewBuilder(self.dispatchTree, graphs))
 
-        from .rules.userview import UserView
-        if self.cleanDB or not self.enablePuliDB:
-            userview = UserView.register(self.dispatchTree, "root", "users")
-#            self.dispatchTree.toCreateElements.append(userview.root)
-            self.dispatchTree.nodes[userview.root.id] = userview.root
-        else:
-            for node in self.dispatchTree.root.children:
-                if node.name == "users":
-                    root = node
-                    break
-            else:
-                raise RuntimeError("missing root node for UserView")
-            userview = UserView(self.dispatchTree, root)
+        # from .rules.userview import UserView
+        # if self.cleanDB or not self.enablePuliDB:
+        #     userview = UserView.register(self.dispatchTree, "root", "users")
+        #     self.dispatchTree.toCreateElements.append(userview.root)
+        #     self.dispatchTree.nodes[userview.root.id] = userview.root
+        # else:
+        #     for node in self.dispatchTree.root.children:
+        #         if node.name == "users":
+        #             root = node
+        #             break
+        #     else:
+        #         raise RuntimeError("missing root node for UserView")
+        #     userview = UserView(self.dispatchTree, root)
 
     def prepare(self):
         pass
@@ -183,39 +184,96 @@ class Dispatcher(MainLoopApplication):
 
     def mainLoop(self):
         '''Dispatcher main loop iteration.'''
+        
+        # JSA DEBUG
+        LOGGER.info("")
+        LOGGER.info("Entering main loop...")
+        loopStartTime = time.time()
+        prevTimer = time.time()
+
+        # JSA: Check if requests are finished (necessaire ?)
         try:
             self.threadPool.poll()
         except NoResultsPending:
             pass
         else:
             LOGGER.info("finished some network requests")
+
+        # JSA DEBUG
+        # LOGGER.info("retrieve threads = %.2f ms." % ( (time.time() - prevTimer)*1000 ) )
+        # prevTimer = time.time()
+
         self.cycle += 1
+
         self.dispatchTree.updateCompletionAndStatus()
+        # # JSA DEBUG
+        # LOGGER.info("update completion status = %.2f ms." % ( (time.time() - prevTimer)*1000 ) )
+        # prevTimer = time.time()
+
+
         self.updateRenderNodes()
+        # # JSA DEBUG
+        # LOGGER.info("update rendernodes status = %.2f ms." % ( (time.time() - prevTimer)*1000 ) )
+        # prevTimer = time.time()
+
 
         self.dispatchTree.validateDependencies()
+        # # JSA DEBUG
+        # LOGGER.info("validate dependencies = %.2f ms." % ( (time.time() - prevTimer)*1000 ) )
+        # prevTimer = time.time()
 
-        executedRequests = []
-        first = True
-        while first or not self.queue.empty():
-            workload = self.queue.get()
-            workload()
-            executedRequests.append(workload)
-            first = False
+
+        # import pudb;pu.db
+        # executedRequests = []
+        # first = True
+        # while first or not self.queue.empty():
+        #     workload = self.queue.get()
+        #     workload()
+        #     executedRequests.append(workload)
+        #     first = False
+
+        # # JSA DEBUG
+        # LOGGER.info("workload = %.2f ms." % ( (time.time() - prevTimer)*1000 ) )
+        # prevTimer = time.time()
 
         # update db
         self.updateDB()
+
+        # JSA DEBUG
+        LOGGER.info("update DB = %.2f ms." % ( (time.time() - prevTimer)*1000 ) )
+        prevTimer = time.time()
 
         # compute and send command assignments to rendernodes
         assignments = self.computeAssignments()
         self.sendAssignments(assignments)
 
+        # JSA DEBUG
+        LOGGER.info("compute and send assignments = %.2f ms." % ( (time.time() - prevTimer)*1000 ) )
+        prevTimer = time.time()
+
         # call the release finishing status on all rendernodes
         for renderNode in self.dispatchTree.renderNodes.values():
             renderNode.releaseFinishingStatus()
 
-        for workload in executedRequests:
-            workload.submit()
+        # # JSA DEBUG
+        # LOGGER.info("release finishing status = %.2f ms." % ( (time.time() - prevTimer)*1000 ) )
+        # prevTimer = time.time()
+
+        # for workload in executedRequests:
+        #     workload.submit()
+
+        # # JSA DEBUG
+        # LOGGER.info("submit workload = %.2f ms." % ( (time.time() - prevTimer)*1000 ) )
+        # prevTimer = time.time()
+
+
+        # JSA DEBUG
+        loopDuration = (time.time() - loopStartTime)*1000
+        LOGGER.info( "##### TOTAL TIME IN LOOP = %.2f ms" % loopDuration )
+
+        # set min interval before next loop call
+        # ioloop.IOLoop.instance().add_timeout(100)
+        time.sleep(5.0)
 
     def updateDB(self):
         if settings.DB_ENABLE:

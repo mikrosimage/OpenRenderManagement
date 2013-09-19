@@ -13,6 +13,7 @@ import pwd
 import sys
 import atexit
 import signal
+import tornado
 
 from octopus.dispatcher import make_dispatcher, settings
 
@@ -99,7 +100,8 @@ def main():
     if options.DAEMONIZE:
         daemonize(settings.RUN_AS)
     dispatcherApplication = make_dispatcher()
-    dispatcherApplication.mainLoop()
+    # dispatcherApplication.mainLoop()
+    tornado.ioloop.IOLoop.instance().start()
 
 if __name__ == '__main__':
     main()

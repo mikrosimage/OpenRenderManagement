@@ -23,7 +23,7 @@ class CommandsResource(BaseResource):
 
 
 class CommandResource(BaseResource):
-    @queue
+    #@queue
     def get(self, commandId):
         try:
             id = int(commandId)
@@ -34,7 +34,7 @@ class CommandResource(BaseResource):
         body = json.dumps(rep)
         self.writeCallback(body)
 
-    @queue
+    #@queue
     def put(self, commandId):
         def work(self, commandId, toUpdate):
             commands = self.getDispatchTree().commands

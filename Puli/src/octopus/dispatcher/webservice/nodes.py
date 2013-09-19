@@ -48,7 +48,7 @@ if __name__ == '__main__':
 
 
 class NodesResource(BaseResource):
-    @queue
+    ##@queue
     def get(self):
         self.writeCallback(self.getNode(0))
 
@@ -71,13 +71,13 @@ class NodesResource(BaseResource):
 
 
 class NodeResource(NodesResource):
-    @queue
+    ##@queue
     def get(self, nodeId):
         self.writeCallback(self.getNode(nodeId))
 
 
 class NodeNameResource(NodesResource):
-    @queue
+    ##@queue
     def put(self, nodeId):
         '''
         Pushes an order to change the name of the given node.
@@ -92,7 +92,7 @@ class NodeNameResource(NodesResource):
 
 
 class NodeStatusResource(NodesResource):
-    @queue
+    ##@queue
     def put(self, nodeId):
         '''
         Pushes an order to change the status of the given node.
@@ -150,7 +150,7 @@ class NodeStatusResource(NodesResource):
 
 
 class NodePausedResource(NodesResource):
-    @queue
+    ##@queue
     def put(self, nodeId):
         data = self.getBodyAsJSON()
         try:
@@ -165,7 +165,7 @@ class NodePausedResource(NodesResource):
 
 
 class NodePauseKillResource(NodesResource):
-    @queue
+    ##@queue
     def put(self, nodeId):
         nodeId = int(nodeId)
         node = self._findNode(nodeId)
@@ -188,7 +188,7 @@ class NodePauseKillResource(NodesResource):
 
 
 class NodePriorityResource(NodesResource):
-    @queue
+    ##@queue
     def put(self, nodeId):
         '''
         Pushes an order to change the priority of the given node.
@@ -205,7 +205,7 @@ class NodePriorityResource(NodesResource):
 
 
 class NodeDispatchKeyResource(NodesResource):
-    @queue
+    ##@queue
     def put(self, nodeId):
         '''
         Pushes an order to change the dispatch key of the given node.
@@ -222,7 +222,7 @@ class NodeDispatchKeyResource(NodesResource):
 
 
 class NodeMaxRNResource(NodesResource):
-    @queue
+    ##@queue
     def put(self, nodeId):
         '''
         Pushes an order to change the maxRN of the given node.
@@ -239,7 +239,7 @@ class NodeMaxRNResource(NodesResource):
 
 
 class NodeStrategyResource(NodesResource):
-    @queue
+    ##@queue
     def put(self, nodeId):
         '''
         Pushes an order to change the strategy of the given node.
@@ -262,7 +262,7 @@ class NodeStrategyResource(NodesResource):
 
 
 class NodeUserResource(NodesResource):
-    @queue
+    ##@queue
     def put(self, nodeId):
         '''
         Sets the user of a node.
@@ -280,7 +280,7 @@ class NodeUserResource(NodesResource):
 
 
 class NodeProdResource(NodesResource):
-    @queue
+    ##@queue
     def put(self, nodeId):
         data = self.getBodyAsJSON()
         try:
@@ -295,7 +295,7 @@ class NodeProdResource(NodesResource):
 
 
 class NodeChildrenResource(NodesResource):
-    @queue
+    #@queue
     def get(self, nodeId):
         '''
         Returns a HTTP response containing the list of the children of node `nodeId`.
@@ -315,6 +315,11 @@ class NodeChildrenResource(NodesResource):
             data = self.request.arguments
         except Http400:
             data = {}
+
+        # time.sleep(2)
+        # for i in xrange(1,999999):
+        #     i *= i
+        # logger.info("fin de la pause")
 
         #
         # --- filtering

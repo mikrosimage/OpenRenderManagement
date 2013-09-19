@@ -28,10 +28,10 @@ computername = computername.lower()
 ADDRESS = computername
 
 PIDFILE = "/tmp/worker.pid"
-KILLFILE = "/tmp/render/killfile"
+KILLFILE = "/tmp/render/killfile_test"
 
 DISPATCHER_PORT = 8004
-DISPATCHER_ADDRESS = "puliserver"
+DISPATCHER_ADDRESS = "localhost"
 
 RUN_AS = ""
 LOGDIR = "/var/log/puli"

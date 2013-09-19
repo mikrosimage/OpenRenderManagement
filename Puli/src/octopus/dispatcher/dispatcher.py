@@ -50,6 +50,8 @@ class Dispatcher(MainLoopApplication):
             return
         self.init = True
         self.nextCycle = time.time()
+        # self.loopTimer = time.time()
+
 
         MainLoopApplication.__init__(self, framework)
 
@@ -185,75 +187,83 @@ class Dispatcher(MainLoopApplication):
     def mainLoop(self):
         '''Dispatcher main loop iteration.'''
         
-        # JSA DEBUG
-        LOGGER.info("")
-        LOGGER.info("Entering main loop...")
-        loopStartTime = time.time()
-        prevTimer = time.time()
 
-        # JSA: Check if requests are finished (necessaire ?)
-        try:
-            self.threadPool.poll()
-        except NoResultsPending:
-            pass
-        else:
-            LOGGER.info("finished some network requests")
+        delayAfterLastIter = time.time() - self.nextCycle
 
-        # JSA DEBUG
-        # LOGGER.info("retrieve threads = %.2f ms." % ( (time.time() - prevTimer)*1000 ) )
-        # prevTimer = time.time()
+        if delayAfterLastIter > 2 :
+            self.nextCycle = time.time()
+            # print "It's time ! %s" % delayAfterLastIter
 
-        self.cycle += 1
+            # JSA: Check if requests are finished (necessaire ?)
+            try:
+                self.threadPool.poll()
+            except NoResultsPending:
+                pass
+            else:
+                LOGGER.info("finished some network requests")
 
-        self.dispatchTree.updateCompletionAndStatus()
-        # # JSA DEBUG
-        # LOGGER.info("update completion status = %.2f ms." % ( (time.time() - prevTimer)*1000 ) )
-        # prevTimer = time.time()
+            self.cycle += 1
+
+            self.dispatchTree.updateCompletionAndStatus()
+            # # JSA DEBUG
+            # LOGGER.info("update completion status = %.2f ms." % ( (time.time() - prevTimer)*1000 ) )
+            # prevTimer = time.time()
 
 
-        self.updateRenderNodes()
-        # # JSA DEBUG
-        # LOGGER.info("update rendernodes status = %.2f ms." % ( (time.time() - prevTimer)*1000 ) )
-        # prevTimer = time.time()
+            self.updateRenderNodes()
+            # # JSA DEBUG
+            # LOGGER.info("update rendernodes status = %.2f ms." % ( (time.time() - prevTimer)*1000 ) )
+            # prevTimer = time.time()
 
 
-        self.dispatchTree.validateDependencies()
-        # # JSA DEBUG
-        # LOGGER.info("validate dependencies = %.2f ms." % ( (time.time() - prevTimer)*1000 ) )
-        # prevTimer = time.time()
+            self.dispatchTree.validateDependencies()
+            # # JSA DEBUG
+            # LOGGER.info("validate dependencies = %.2f ms." % ( (time.time() - prevTimer)*1000 ) )
+            # prevTimer = time.time()
 
 
-        # import pudb;pu.db
-        # executedRequests = []
-        # first = True
-        # while first or not self.queue.empty():
-        #     workload = self.queue.get()
-        #     workload()
-        #     executedRequests.append(workload)
-        #     first = False
+            # import pudb;pu.db
+            # executedRequests = []
+            # first = True
+            # while first or not self.queue.empty():
+            #     workload = self.queue.get()
+            #     LOGGER.info("WORK")
+            #     workload()
+            #     executedRequests.append(workload)
+            #     first = False
 
-        # # JSA DEBUG
-        # LOGGER.info("workload = %.2f ms." % ( (time.time() - prevTimer)*1000 ) )
-        # prevTimer = time.time()
+            # JSA DEBUG
+            # LOGGER.info("")
+            # LOGGER.info("Workload done...")
+            loopStartTime = time.time()
+            prevTimer = loopStartTime
 
-        # update db
-        self.updateDB()
+            # # JSA DEBUG
+            # LOGGER.info("workload = %.2f ms." % ( (time.time() - prevTimer)*1000 ) )
+            # prevTimer = time.time()
 
-        # JSA DEBUG
-        LOGGER.info("update DB = %.2f ms." % ( (time.time() - prevTimer)*1000 ) )
-        prevTimer = time.time()
+            # update db
+            self.updateDB()
 
-        # compute and send command assignments to rendernodes
-        assignments = self.computeAssignments()
-        self.sendAssignments(assignments)
+            # JSA DEBUG
+            LOGGER.info("update DB = %.2f ms." % ( (time.time() - prevTimer)*1000 ) )
+            prevTimer = time.time()
 
-        # JSA DEBUG
-        LOGGER.info("compute and send assignments = %.2f ms." % ( (time.time() - prevTimer)*1000 ) )
-        prevTimer = time.time()
+            # compute and send command assignments to rendernodes
+            assignments = self.computeAssignments()
+            self.sendAssignments(assignments)
 
-        # call the release finishing status on all rendernodes
-        for renderNode in self.dispatchTree.renderNodes.values():
-            renderNode.releaseFinishingStatus()
+            # JSA DEBUG
+            LOGGER.info("compute and send assignments = %.2f ms." % ( (time.time() - prevTimer)*1000 ) )
+            prevTimer = time.time()
+
+            # call the release finishing status on all rendernodes
+            for renderNode in self.dispatchTree.renderNodes.values():
+                renderNode.releaseFinishingStatus()
+
+            # JSA DEBUG
+            loopDuration = (time.time() - loopStartTime)*1000
+            LOGGER.info( "##### TOTAL TIME IN LOOP = %.2f ms" % loopDuration )
 
         # # JSA DEBUG
         # LOGGER.info("release finishing status = %.2f ms." % ( (time.time() - prevTimer)*1000 ) )
@@ -262,18 +272,11 @@ class Dispatcher(MainLoopApplication):
         # for workload in executedRequests:
         #     workload.submit()
 
-        # # JSA DEBUG
-        # LOGGER.info("submit workload = %.2f ms." % ( (time.time() - prevTimer)*1000 ) )
-        # prevTimer = time.time()
+            # # JSA DEBUG
+            # LOGGER.info("submit workload = %.2f ms." % ( (time.time() - prevTimer)*1000 ) )
+            # prevTimer = time.time()
 
 
-        # JSA DEBUG
-        loopDuration = (time.time() - loopStartTime)*1000
-        LOGGER.info( "##### TOTAL TIME IN LOOP = %.2f ms" % loopDuration )
-
-        # set min interval before next loop call
-        # ioloop.IOLoop.instance().add_timeout(100)
-        time.sleep(5.0)
 
     def updateDB(self):
         if settings.DB_ENABLE:

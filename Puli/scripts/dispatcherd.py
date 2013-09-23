@@ -14,6 +14,7 @@ import sys
 import atexit
 import signal
 import tornado
+import time
 
 from octopus.dispatcher import make_dispatcher, settings
 
@@ -101,7 +102,13 @@ def main():
         daemonize(settings.RUN_AS)
     dispatcherApplication = make_dispatcher()
     # dispatcherApplication.mainLoop()
-    tornado.ioloop.IOLoop.instance().start()
+
+    periodic = tornado.ioloop.PeriodicCallback( dispatcherApplication.loop, settings.MASTER_UPDATE_INTERVAL)
+    periodic.start()
+    try:
+        tornado.ioloop.IOLoop.instance().start()
+    except KeyboardInterrupt, SystemExit:
+        logging.getLogger('dispatcher').info("Exit event caught: closing dispatcher...")
 
 if __name__ == '__main__':
     main()

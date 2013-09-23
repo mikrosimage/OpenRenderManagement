@@ -153,19 +153,19 @@ class Dispatcher(MainLoopApplication):
             self.stop()
         self.dispatchTree.rules.append(GraphViewBuilder(self.dispatchTree, graphs))
 
-        from .rules.userview import UserView
-        if self.cleanDB or not self.enablePuliDB:
-            userview = UserView.register(self.dispatchTree, "root", "users")
-#            self.dispatchTree.toCreateElements.append(userview.root)
-            self.dispatchTree.nodes[userview.root.id] = userview.root
-        else:
-            for node in self.dispatchTree.root.children:
-                if node.name == "users":
-                    root = node
-                    break
-            else:
-                raise RuntimeError("missing root node for UserView")
-            userview = UserView(self.dispatchTree, root)
+#         from .rules.userview import UserView
+#         if self.cleanDB or not self.enablePuliDB:
+#             userview = UserView.register(self.dispatchTree, "root", "users")
+#             self.dispatchTree.toCreateElements.append(userview.root)
+#             self.dispatchTree.nodes[userview.root.id] = userview.root
+#         else:
+#             for node in self.dispatchTree.root.children:
+#                 if node.name == "users":
+#                     root = node
+#                     break
+#             else:
+#                 raise RuntimeError("missing root node for UserView")
+#             userview = UserView(self.dispatchTree, root)
 
     def prepare(self):
         pass

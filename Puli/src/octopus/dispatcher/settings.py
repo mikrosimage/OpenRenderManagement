@@ -29,7 +29,7 @@ RUN_AS = None
 #LOGDIR = "/opt/puli/logs"
 LOGDIR = "/tmp/puli/logs"
 #CONFDIR = "/opt/puli/conf"
-CONFDIR = "/Users/red/workspace3.6/Puli/Puli/etc/puli"
+CONFDIR = "/datas/puli/Puli/etc/puli"
 PIDFILE = "dispatcher.pid"
 
 RENDERNODE_REQUEST_MAX_RETRY_COUNT = 10
@@ -48,8 +48,8 @@ WS_BACKEND_PORT = 11800
 DB_ENABLE = True
 DB_CLEAN_DATA = False
 
-DB_URL = "mysql://red:0ct0pus@127.0.0.1/pulidb"
-#DB_URL = "mysql://puliuser:0ct0pus@127.0.0.1/pulidb"
+# DB_URL = "mysql://red:0ct0pus@127.0.0.1/pulidb"
+DB_URL = "mysql://puliuser:0ct0pus@127.0.0.1/pulidb"
 #DB_URL = "sqlite:///path/to/my/database/file.db"
 
 RN_TIMEOUT = 1200.0

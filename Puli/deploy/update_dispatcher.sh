@@ -104,14 +104,31 @@ fi
 if [ ${OPTION_D} -eq 1 ]
 then
    echo "Start deploing puli"
-   
-   ssh ${PULISERVER} rm -rf ${OCTOPUSSERVER_PATH}/*
 
-   scp -r ${WORKSPACE} ${PULISERVER}:${PULISERVER_PATH}/
+   BKP_FOLDER="${PULISERVER_PATH}_bkp_`date +'%Y-%m-%d_%Hh%Mm%Ss_%N'`"
 
-   scp tmp/settings.py ${PULISERVER}:${OCTOPUSSERVER_PATH}/dispatcher/settings.py
+   echo ""
+   echo " - preparing backup"
+   ssh  ${PULISERVER} mv ${PULISERVER_PATH} ${BKP_FOLDER}
+   echo " - backup previous install in "${BKP_FOLDER}" -- done."
+
+   echo ""
+   echo " - preparing program install"
+   rsync -vurLP --exclude "*.pyc" --exclude ".git" ${WORKSPACE} ${PULISERVER}:${PULISERVER_PATH}/
+   echo " - install sources in ${PULISERVER}:${PULISERVER_PATH} -- done."
+
+   echo ""
+   echo " - restoring previous environment prefs"
+   ssh  ${PULISERVER} mv ${BKP_FOLDER}/octopus/dispatcher/settings.py ${PULISERVER_PATH}/octopus/dispatcher/settings.py
+   echo " - install sources in ${PULISERVER}:${PULISERVER_PATH} -- done."
+
+   # ssh ${PULISERVER} rm -rf ${OCTOPUSSERVER_PATH}/*
+
+   # scp -r ${WORKSPACE} ${PULISERVER}:${PULISERVER_PATH}/
+
+   # scp tmp/settings.py ${PULISERVER}:${OCTOPUSSERVER_PATH}/dispatcher/settings.py
    
-   ssh ${PULISERVER} rm ${OCTOPUSSERVER_PATH}/dispatcher/settings.pyc
+   # ssh ${PULISERVER} rm ${OCTOPUSSERVER_PATH}/dispatcher/settings.pyc
    
-   ssh ${PULISERVER} rm -rf ${OCTOPUSSERVER_PATH}/*.svn
+   # ssh ${PULISERVER} rm -rf ${OCTOPUSSERVER_PATH}/*.svn
 fi

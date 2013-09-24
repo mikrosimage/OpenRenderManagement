@@ -250,6 +250,8 @@ class Dispatcher(MainLoopApplication):
 
     def updateDB(self):
 
+        # TODO: Study how to change the DB subsystem to a simple file dump (json or pickle)
+
         # data1 = {'a': [1, 2.0, 3, 4],
         #          'b': ('string', u'Unicode string'),
         #          'c': None}
@@ -261,7 +263,6 @@ class Dispatcher(MainLoopApplication):
         # d = shelve.open('/datas/puli/Puli/data.pkl')
         # d['test'] = self.dispatchTree
         # d.close()
-
 
         if settings.DB_ENABLE:
             self.pulidb.createElements(self.dispatchTree.toCreateElements)

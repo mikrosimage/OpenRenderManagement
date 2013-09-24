@@ -86,7 +86,7 @@ def setup_logging(options):
 
     if options.CONSOLE and not options.DAEMONIZE:
         consoleHandler = logging.StreamHandler()
-        consoleHandler.setFormatter(logging.Formatter("%(asctime)s %(name)10s %(levelname)6s %(message)s", '%H:%M:%S'))
+        consoleHandler.setFormatter(logging.Formatter("%(asctime)s %(name)10s %(levelname)6s %(message)s", '%Y-%m-%d %H:%M:%S'))
         consoleHandler.setLevel(debugLevel)
         logger.addHandler(consoleHandler)
 

@@ -193,7 +193,7 @@ class CommandDatesUpdater(object):
         # append the command's status to the rendernode's history
         if isFinalStatus(cmd.status):
             # only if we don't already have a command for this task
-            if cmd.task.id not in cmd.renderNode.tasksHistory:
+            if hasattr(cmd.renderNode, 'tasksHistory') and cmd.task.id not in cmd.renderNode.tasksHistory:
                 cmd.renderNode.tasksHistory.append(cmd.task.id)
                 cmd.renderNode.history.append(cmd.status)
         if cmd.status is CMD_DONE:

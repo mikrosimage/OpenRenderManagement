@@ -183,6 +183,10 @@ class Dispatcher(MainLoopApplication):
 
     def mainLoop(self):
         '''Dispatcher main loop iteration.'''
+        # profiling mainloop
+        prevTimer = time.time()
+        LOGGER.info("")
+
         try:
             self.threadPool.poll()
         except NoResultsPending:
@@ -191,9 +195,16 @@ class Dispatcher(MainLoopApplication):
             LOGGER.info("finished some network requests")
         self.cycle += 1
         self.dispatchTree.updateCompletionAndStatus()
+        LOGGER.info("%8.2f ms --> update completion status" % ( (time.time() - prevTimer)*1000 ) )
+        prevTimer = time.time()
+
         self.updateRenderNodes()
+        LOGGER.info("%8.2f ms --> update rendernodes" % ( (time.time() - prevTimer)*1000 ) )
+        prevTimer = time.time()
 
         self.dispatchTree.validateDependencies()
+        LOGGER.info("%8.2f ms --> validate dependencies" % ( (time.time() - prevTimer)*1000 ) )
+        prevTimer = time.time()
 
         executedRequests = []
         first = True
@@ -203,19 +214,36 @@ class Dispatcher(MainLoopApplication):
             executedRequests.append(workload)
             first = False
 
+        # reinit profiling because of old inappropriate queue lock
+        loopStartTime = time.time()
+        prevTimer = loopStartTime
+
         # update db
         self.updateDB()
+        LOGGER.info("%8.2f ms --> update DB" % ( (time.time() - prevTimer)*1000 ) )
+        prevTimer = time.time()
 
         # compute and send command assignments to rendernodes
         assignments = self.computeAssignments()
+        LOGGER.info("%8.2f ms --> compute assignments" % ( (time.time() - prevTimer)*1000 ) )
+        prevTimer = time.time()
+
         self.sendAssignments(assignments)
+        LOGGER.info("%8.2f ms --> send assignments" % ( (time.time() - prevTimer)*1000 ) )
+        prevTimer = time.time()
+
 
         # call the release finishing status on all rendernodes
         for renderNode in self.dispatchTree.renderNodes.values():
             renderNode.releaseFinishingStatus()
+        LOGGER.info("%8.2f ms --> rendernodes release finishing status" % ( (time.time() - prevTimer)*1000 ) )
+        prevTimer = time.time()
 
         for workload in executedRequests:
             workload.submit()
+
+        loopDuration = (time.time() - loopStartTime)*1000
+        LOGGER.info( "%8.2f ms --> TOTAL " % loopDuration )
 
     def updateDB(self):
         if settings.DB_ENABLE:

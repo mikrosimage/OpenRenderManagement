@@ -184,6 +184,7 @@ class Dispatcher(MainLoopApplication):
     def mainLoop(self):
         '''Dispatcher main loop iteration.'''
         # profiling mainloop
+        loopStartTime = time.time()
         prevTimer = time.time()
         LOGGER.info("")
 
@@ -195,8 +196,11 @@ class Dispatcher(MainLoopApplication):
             LOGGER.info("finished some network requests")
         self.cycle += 1
         self.dispatchTree.updateCompletionAndStatus()
-        LOGGER.info("%8.2f ms --> update completion status" % ( (time.time() - prevTimer)*1000 ) )
+
+        durationCompletion = (time.time() - prevTimer)*1000
+        LOGGER.info("%8.2f ms --> update completion status" % durationCompletion )
         prevTimer = time.time()
+
 
         self.updateRenderNodes()
         LOGGER.info("%8.2f ms --> update rendernodes" % ( (time.time() - prevTimer)*1000 ) )
@@ -205,6 +209,9 @@ class Dispatcher(MainLoopApplication):
         self.dispatchTree.validateDependencies()
         LOGGER.info("%8.2f ms --> validate dependencies" % ( (time.time() - prevTimer)*1000 ) )
         prevTimer = time.time()
+
+        # save profiling because of old inappropriate queue lock
+        loopDuration=(time.time() - loopStartTime)*1000
 
         executedRequests = []
         first = True
@@ -220,12 +227,16 @@ class Dispatcher(MainLoopApplication):
 
         # update db
         self.updateDB()
-        LOGGER.info("%8.2f ms --> update DB" % ( (time.time() - prevTimer)*1000 ) )
+
+        durationDB = (time.time() - prevTimer)*1000
+        LOGGER.info("%8.2f ms --> update DB" % durationDB )
         prevTimer = time.time()
 
         # compute and send command assignments to rendernodes
         assignments = self.computeAssignments()
-        LOGGER.info("%8.2f ms --> compute assignments" % ( (time.time() - prevTimer)*1000 ) )
+
+        durationCompute = (time.time() - prevTimer)*1000
+        LOGGER.info("%8.2f ms --> compute assignments" % durationCompute )
         prevTimer = time.time()
 
         self.sendAssignments(assignments)
@@ -241,9 +252,12 @@ class Dispatcher(MainLoopApplication):
 
         for workload in executedRequests:
             workload.submit()
+        LOGGER.info("%8.2f ms --> workload" % ( (time.time() - prevTimer)*1000 ) )
+        prevTimer = time.time()
 
-        loopDuration = (time.time() - loopStartTime)*1000
-        LOGGER.info( "%8.2f ms --> TOTAL " % loopDuration )
+        loopDuration += (time.time() - loopStartTime)*1000
+        LOGGER.info( "%8.2f ms --> TOTAL -- LOG: time=%.f db=%.2f complet=%.2f compute=%.2f" % ( time.time(), loopDuration, durationDB, durationCompletion, durationCompute ) )
+
 
     def updateDB(self):
         if settings.DB_ENABLE:

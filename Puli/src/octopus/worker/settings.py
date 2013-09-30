@@ -18,18 +18,21 @@ def loadSettingsFile(filename):
 
 DEBUG = True
 
-PORT = 8000
 fqdn = socket.getfqdn(socket.gethostname())
 if "." in fqdn:
     computername, domain = fqdn.split(".", 1)
 else:
     computername = fqdn
 computername = computername.lower()
-ADDRESS = computername
 
 PIDFILE = "/tmp/worker.pid"
 KILLFILE = "/tmp/render/killfile_test"
 
+# Worker webservice access
+PORT = 8000
+ADDRESS = computername
+
+# Remote server webservice access
 DISPATCHER_PORT = 8004
 DISPATCHER_ADDRESS = "localhost"
 

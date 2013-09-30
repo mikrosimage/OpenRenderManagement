@@ -966,17 +966,34 @@ class PuliDB(object):
             cmd.computeAvgTimeByFrame()
 
         ### calculate the correct max ids for all elements, get them from db in case of archived elements that would not appear in the dispatchtree
-        tree.nodeMaxId = int(max([FolderNodes.select().max(FolderNodes.q.id), TaskNodes.select().max(TaskNodes.q.id)]))
-        tree.poolMaxId = int(Pools.select().max(Pools.q.id))
-        tree.renderNodeMaxId = int(RenderNodes.select().max(RenderNodes.q.id))
+        try:
+            tree.nodeMaxId = int(max([FolderNodes.select().max(FolderNodes.q.id), TaskNodes.select().max(TaskNodes.q.id)]))
+        except:
+            tree.nodeMaxId = 0
+
+        try:            
+            tree.poolMaxId = int(Pools.select().max(Pools.q.id))
+        except:
+            tree.poolMaxId = 0
+            
+        try:
+            tree.renderNodeMaxId = int(RenderNodes.select().max(RenderNodes.q.id))
+        except:
+            tree.renderNodeMaxId = 0
+
         try:
             tree.taskMaxId = int(Tasks.select().max(Tasks.q.id))
         except:
             tree.taskMaxId = 0
+
         try:
             tree.commandMaxId = int(Commands.select().max(Commands.q.id))
         except:
             tree.commandMaxId = 0
-        tree.poolShareMaxId = int(PoolShares.select().max(PoolShares.q.id))
+
+        try:
+            tree.poolShareMaxId = int(PoolShares.select().max(PoolShares.q.id))
+        except:
+            tree.poolShareMaxId =0
 
         tree.toCreateElements = []

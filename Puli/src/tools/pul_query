@@ -2,14 +2,17 @@
 # -*- coding: utf8 -*-
 
 """
-pul_query.py: Utilitaire d'interrogation de puli
+name: pul_query
+
+Job query utility for puli server
+It processes HTTP request to the server to present information about the state of the job queue
 Permet de lancer des requetes http au serveur pour recuperer certaines informations utiles.
 
-Requetes: "query?attr=id&attr=user"
+Request example: "query?attr=id&attr=user"
 
-attr: permet de choisir les attributs à récupérer sur chaque tâche [id user prod name ...]
-format: long/csv
-constraint:
+attr: allow to choose which attribute will be retrieved for each job [id user prod name ...]
+format: specify the representation of the result set: a table, json or csv raw data
+constraint: custom set of filters
 
 """
 __author__      = "Jérôme Samson"
@@ -165,8 +168,8 @@ def process_args():
     desc="""Displays information about the server render queue.
 To restrict the display to jobs of interest, a list of zero or more restriction options may be supplied. Each restriction may be one of:
     - a user matches all jobs owned by the specified owner
-    - (TODO) a job id matches the specified job
-    - (TODO)a date matches all jobs created after the given date
+    - a job id matches the specified job
+    - a date matches all jobs created after the given creation date
     - a constraint expression which matches all jobs that satisfy the specified expressions: FILTER="VALUE"
         user=jsa
         status=1 (value is a number corresponding to the states: "Blocked", "Ready", "Running", "Done", "Error", "Cancel", "Pause")
@@ -330,20 +333,3 @@ if __name__ == '__main__':
     http_client.fetch( _request, handle_request )
 
     ioloop.IOLoop.instance().start()
-
-    ################
-    # Methode secondaire pour interroger le serveur: verifier si httplib est bloquant ou async
-    #
-    # from octopus.core.http import Request
-    # import httplib
-    # conn = httplib.HTTPConnection(Settings.hostname, Settings.port)
-
-    # def onResponse(request, response):
-    #     print "%s %s ==> %d %s" % (request.method, request.path, response.status, response.reason)
-    #     print response.read()
-
-    # def onError(request, error):
-    #     print "%s %s ==> %s" % (request.method, request.path, error)
-
-    # r = Request("GET", "/"+_query, {"Accept": "application/json"}, "")
-    # r.call(conn, onResponse, onError)

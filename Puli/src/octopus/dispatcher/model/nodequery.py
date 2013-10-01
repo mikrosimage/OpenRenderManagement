@@ -26,18 +26,19 @@ class IQueryNode:
 
     def filterNodes( self, pFilterArgs, pNodes ):
         """
-        Permet de retourner une liste reduite de noeud en fonction des criteres de filtrage passés en argument (pFilterArgs)
-        Le filtrage prend en compte des attributs direct de chaque noeud: status,user,name,creationtime, ainsi que certains
-        attributs optionnels du noeud, stockes dans le dictionnaire "tags": prod, shot
+        Returns a reduced list of nodes according to the given filter arguments (pFilterArgs)
+        Filtering works on direct attributes of every nodes: status, user, name, creationtime
+        It also works on few optionnals attributes (stored in "tags" dict): prod, shot
 
-        Pour un attribut donne, si plusieurs valeurs possibles sont definies, la liste resultantes est l'union des noeuds correspondant a chaque valeurs.
-        En revanche chaque nouvel attribut "restreint" la liste des resultats, i.e. cela induit l'intersection des attributs entre eux.
-
-        par exemple avec les filtres:
+        For a single attribute, if several values are given, the resulting list represents the union of every value for this attribute
+        However each seperate attribute will "restrict" the result list i.e. it means we operate the intersection between attributes.
+        
+        For instance, regarding the following filter:
           - constraint_user=['jsa','render']
-          - constraint_status=['1']
-          La liste de resultat contiendra tous les jobs de 'jsa' et de 'render' qui ont le status 1
-          soit: (user == jsa OR user == render) AND (status == 1)
+          - constraint_status=['1','2']
+
+          The resulting list will contain all jobs from user 'jsa' or 'render', having the status '1' or '2'
+          i.e.: (user == jsa OR user == render) AND (status == 1 OR status == 2)
         """
 
         if 'constraint_id' in pFilterArgs:
@@ -74,7 +75,6 @@ class IQueryNode:
                 logger.info( "More than one date specified, first occurence is used: %s" % str(pFilterArgs['constraint_creationtime'][0]) )
             try:
                 filterTimestamp = datetime.strptime( pFilterArgs['constraint_creationtime'][0], "%Y-%m-%d %H:%M:%S" ).strftime('%s')
-                # logger.info( "Filtered date: %s (e.g. timestamp=%d)", str(pFilterArgs['constraint_creationtime'][0]), int(filterTimestamp) )
 
                 logger.info( "-- Filtering on date %s (e.g. timestamp=%d), nb remaining nodes: %d", pFilterArgs['constraint_creationtime'][0], 
                     int(filterTimestamp), len(pNodes) )

@@ -61,12 +61,13 @@ class QueryResource(BaseResource, IQueryNode):
                      'status', 'completion', 'priority', \
                      'startTime', 'creationTime', 'endTime', 'updateTime']
 
-    @queue
+    # @queue
     def get(self):
         """
         """
         args = self.request.arguments
 
+        # import pudb; pu.db
         try:
             start_time = time.time()
             resultData = []
@@ -84,7 +85,7 @@ class QueryResource(BaseResource, IQueryNode):
                                 'totalInDispatcher':0, \
                                 'requestTime':time.time() - start_time, \
                                 'requestDate':time.ctime() }, \
-                            'tasks':resultTasks }
+                            'tasks':resultData }
             
                 self.writeCallback( json.dumps(content) )
                 return
@@ -148,6 +149,6 @@ class QueryResource(BaseResource, IQueryNode):
             return Http404('Error unknown key')
         
         except Exception:
-            logger.warning('Impossible to retrieve result for query: %s', query)
+            logger.warning('Impossible to retrieve result for query: %s', self.request.uri)
             return Http500()
 

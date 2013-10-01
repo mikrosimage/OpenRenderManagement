@@ -12,6 +12,7 @@ except ImportError:
 
 import logging
 import time
+import re
 from datetime import datetime
 
 from octopus.dispatcher.model import FolderNode
@@ -39,12 +40,11 @@ class IQueryNode:
           soit: (user == jsa OR user == render) AND (status == 1)
         """
 
-        # if 'constraint_id' in pFilterArgs:
-        #     filteredIds = [int(id) for id in pFilterArgs['constraint_id']]
-        #     nodes = [child for child in nodes if child.id in filteredIds]
-        #     for nodeId in filteredIds:
-        #         if not any([node.id == nodeId for node in nodes]):
-        #             return Http404("Node not found", "Node %d not found." % nodeId, "text/plain")
+        if 'constraint_id' in pFilterArgs:
+            filteredIds = [int(id) for id in pFilterArgs['constraint_id']]
+            pNodes = [child for child in pNodes if child.id in filteredIds]
+            logger.info( "-- Filtering on id list %s, nb remaining nodes: %d", pFilterArgs['constraint_id'], len(pNodes) )
+
         if 'constraint_status' in pFilterArgs:
             statusList = [int(status) for status in pFilterArgs['constraint_status']]
             pNodes = [child for child in pNodes if child.status in statusList]
@@ -62,10 +62,11 @@ class IQueryNode:
             pNodes = filteredNodes
             logger.info( "-- Filtering on prod %s, nb remaining nodes: %d", pFilterArgs['constraint_prod'], len(pNodes) )
 
+        # WARNING: regexp matching constraint can take some time
+        # TO IMPROVE
         if 'constraint_name' in pFilterArgs:
-            # TODO: Faire evoluer cette contrainte pour pouvoir utiliser une expression reguliere
-            # AATENTION au temps d'execution
-            pNodes = [child for child in pNodes if child.name in pFilterArgs['constraint_name']]
+            nameRegex = '|'.join( pFilterArgs['constraint_name'] )
+            pNodes = [child for child in pNodes if re.match( nameRegex, child.name ) ]
             logger.info( "-- Filtering on name %s, nb remaining nodes: %d", pFilterArgs['constraint_name'], len(pNodes) )
 
         if 'constraint_creationtime' in pFilterArgs:

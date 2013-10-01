@@ -51,7 +51,7 @@ def handle_request(response):
         print "Error:", response.error
     else:
         REQUEST_END_TIME = time.time() - REQUEST_BEGIN_TIME
-
+        # import pudb;pu.db
         if VERBOSE: print ""
         if VERBOSE: print "Getting response for request \""+_query+"\" in " + str(REQUEST_END_TIME)
 
@@ -277,8 +277,7 @@ if __name__ == '__main__':
     # Applying restriction arguments
     for arg in args:
         if arg.isdigit():
-            print "TODO: user can specify an id to retrieve information on a specific job"
-            if VERBOSE: print "int as arg, consider an id"
+            _query += "&constraint_id=%s" % arg
         else:
             _query += "&constraint_user=%s" % arg
 
@@ -296,8 +295,15 @@ if __name__ == '__main__':
             if len(constraint) < 2:
                 print "Error: constraint is not valid, it must have the following format: -C field=value"
                 continue
-            constField = str(constraint[0])
+            constField = str(constraint[0]).lower()
             constVal = str(constraint[1])
+
+            # Handling regexp for "name" constraint, we would like to hide the python regex complexity to have something
+            # close to unix expression syntaxe...
+            # TO IMPROVE
+            if constField in ['name']:
+                constVal = '^'+constVal.replace('*', '.*')+'$'
+
             _query += "&constraint_%s=%s" % (constField , urllib.quote(constVal))
 
 

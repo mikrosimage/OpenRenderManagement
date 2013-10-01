@@ -74,7 +74,6 @@ class EditResource(BaseResource, IQueryNode):
 
 
 
-    @queue
     def put(self):
         """
 

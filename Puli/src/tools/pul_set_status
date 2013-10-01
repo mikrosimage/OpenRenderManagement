@@ -101,12 +101,12 @@ def process_args():
     Manages arguments parsing definition and help information
     '''
 
-    usage = "usage: %prog -u <new status> [general options] [restriction list]"
+    usage = "usage: %prog --set <new status> [general options] [restriction list]"
     desc="""Updates status of one or several jobs.
 To restrict the action to jobs of interest, a list of zero or more restrictions may be supplied. Each restriction may be one of:
     - a user --> matches all jobs owned by the specified owner
-    - (TODO) a job id  --> matches the specified job
-    - (TODO)a date  --> matches all jobs created after the given date
+    - a job id  --> matches the specified job
+    - a date  --> matches all jobs created after the given date
     - a constraint expression --> matches all jobs that satisfy the specified expressions: FILTER="VALUE"
         user=jsa
         status=1 (value is a number corresponding to the states: "Blocked", "Ready", "Running", "Done", "Error", "Cancel", "Pause")

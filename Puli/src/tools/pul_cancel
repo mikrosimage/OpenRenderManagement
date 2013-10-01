@@ -2,14 +2,94 @@
 # -*- coding: utf8 -*-
 
 """
-pul_rm.py: Utilitaire d'édition de puli
-Permet d'archiver des jobs sur le serveur (si le status est DONE ou CANCELED).
+pul_cancel: Utility for editing jobs
 
-Requetes: "archive?constraint_id=235135&constraint_id=235152"
-
-constraint:
+Will set the status of jobs to DONE on the server according to the specified constraints
+It is a wrapper over the pul_set_status utility, which is a more generic but more dangerous to use.
 
 """
 __author__      = "Jérôme Samson"
 __copyright__   = "Copyright 2013, Mikros Image"
 
+
+# Imports from libs
+# from tornado import ioloop, escape
+# from tornado.httpclient import AsyncHTTPClient, HTTPRequest
+
+from optparse import OptionParser, IndentedHelpFormatter
+# from datetime import datetime
+# import simplejson as json
+import os
+import sys
+# import time
+# import urllib
+
+# Imports from local dir
+from settings import Settings
+# from pul_set_status import *
+
+VERBOSE = Settings.verbose
+
+
+###########################################################################################################################
+
+class PlainHelpFormatter(IndentedHelpFormatter): 
+    '''
+    Subclass of OptParse format handler, will allow to have a raw text formatting in usage and desc fields.
+    '''
+    def format_description(self, description):
+        if description:
+            return description + "\n"
+        else:
+            return ""
+
+
+def process_args():
+    '''
+    Manages arguments parsing definition and help information
+    '''
+
+    usage = "usage: %prog [general options] [restriction list]"
+    desc="""Cancel one or several jobs according to the given filters. This utility is a wrapper on the more flexible "pul_set_status" utility.
+To restrict the action to jobs of interest, a list of zero or more restrictions may be supplied. Each restriction may be one of:
+    - a user --> matches all jobs owned by the specified owner
+    - a job id  --> matches the specified job
+
+In addition, user can specified one or several additionnal filters: 
+Constraint expressions will match all jobs that satisfy the specified expressions: FILTER="VALUE"
+For instance:
+    user=jsa
+    status=1 (value is a number corresponding to the states: "Blocked", "Ready", "Running", "Done", "Error", "Cancel", "Pause")
+    name="mon job"
+    creationtime="2013-09-09 14:00:00" (It filters all jobs created AFTER the given date/time)
+"""
+    parser = OptionParser(usage=usage, description=desc, version="%prog 0.1", formatter=PlainHelpFormatter() )
+ 
+    # parser.add_option("-C", "--constraint", action="append", type="string", help="Allow user to specify one or more filter constraints")
+    # parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help="Verbose mode [%default]", default=False)
+    # parser.add_option("-s", "--server", action="store", dest="hostname", help="Specified a target host to send the request")
+    # parser.add_option("-p", "--port", action="store", dest="port", help="Specified a target port")
+
+    options, args = parser.parse_args()
+
+    return options, args
+
+
+if __name__ == '__main__':
+
+	# (options, args) = process_args()
+	# VERBOSE = options.verbose
+
+	# if VERBOSE:
+	# 	print "Command options: %s" % options
+	# 	print "Command arguments: %s" % args
+
+	argString = ''
+	for i in range(1, len(sys.argv)):
+		argString += " %s" % sys.argv[i]
+
+	# if VERBOSE:
+	# 	argString += " -v"
+
+	command = "./pul_set_status --set 5 %s" % argString
+	os.system(command)

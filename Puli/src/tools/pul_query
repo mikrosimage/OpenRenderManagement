@@ -33,6 +33,7 @@ import urllib
 
 # Imports from local dir
 from settings import Settings
+from common import ConstraintFactory
 
 
 
@@ -169,12 +170,13 @@ def process_args():
 To restrict the display to jobs of interest, a list of zero or more restriction options may be supplied. Each restriction may be one of:
     - a user matches all jobs owned by the specified owner
     - a job id matches the specified job
-    - a date matches all jobs created after the given creation date
-    - a constraint expression which matches all jobs that satisfy the specified expressions: FILTER="VALUE"
-        user=jsa
-        status=1 (value is a number corresponding to the states: "Blocked", "Ready", "Running", "Done", "Error", "Cancel", "Pause")
-        name="mon job"
-        creationtime="2013-09-09 14:00:00" (It filters all jobs created AFTER the given date/time)
+
+In addition, user can specified one or several specific constraint with the "-C" option. A constraint expression which matches all jobs
+that satisfy the specified expressions: FILTER="VALUE"
+    user=jsa
+    status=1 (value is a number corresponding to the states: "Blocked", "Ready", "Running", "Done", "Error", "Cancel", "Pause")
+    name="mon job"
+    creationtime="2013-09-09 14:00:00" (It filters all jobs created AFTER the given date/time)
     
 Output options will indicate if the command will output information as human readable format, or csv or raw json
 If no output option is specified, the ouput will be a single line presenting the following information:
@@ -276,38 +278,11 @@ if __name__ == '__main__':
     #
     # Creating corresponding query
     #
+    userConstraint = ConstraintFactory.makeQuery( pUserArguments=args, pUserOptions=options)
+    if userConstraint is None:
+        sys.exit(1)
 
-    # Applying restriction arguments
-    for arg in args:
-        if arg.isdigit():
-            _query += "&constraint_id=%s" % arg
-        else:
-            _query += "&constraint_user=%s" % arg
-
-
-    # Applying display attributes
-    if options.attribute is not None:
-        for attr in options.attribute:
-            _query += "&attr=%s" % attr
-
-
-    # Applying constraints
-    if options.constraint is not None:
-        for currConst in options.constraint:
-            constraint = currConst.split("=",1)
-            if len(constraint) < 2:
-                print "Error: constraint is not valid, it must have the following format: -C field=value"
-                continue
-            constField = str(constraint[0]).lower()
-            constVal = str(constraint[1])
-
-            # Handling regexp for "name" constraint, we would like to hide the python regex complexity to have something
-            # close to unix expression syntaxe...
-            # TO IMPROVE
-            if constField in ['name']:
-                constVal = '^'+constVal.replace('*', '.*')+'$'
-
-            _query += "&constraint_%s=%s" % (constField , urllib.quote(constVal))
+    _query += userConstraint
 
 
     #

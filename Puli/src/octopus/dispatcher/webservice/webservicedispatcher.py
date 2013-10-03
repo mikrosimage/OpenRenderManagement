@@ -10,7 +10,9 @@ from tornado.web import Application
 import tornado.web as web
 from tornado.httpserver import HTTPServer
 from octopus.dispatcher.webservice import commands, rendernodes, graphs, nodes,\
-    tasks, poolshares, pools, licenses
+    tasks, poolshares, pools, licenses, \
+    wsQuery, wsEdit
+
 from octopus.core.enums.command import *
 from octopus.core.framework import BaseResource
 
@@ -73,10 +75,16 @@ class WebServiceDispatcher(Application):
             (r'^/pools/([\w.-]+)/rendernodes/?$', pools.PoolRenderNodesResource, dict(framework=framework)),
 
             (r'^/system/?$', SystemResource, dict(framework=framework)),
+            (r'^/system_json/?$', SystemResourceJson, dict(framework=framework)),
             (r'^/mobile/?$', MobileResource, dict(framework=framework)),
+
+            (r'^/query$', wsQuery.QueryResource, dict(framework=framework)),
+            (r'^/edit$', wsEdit.EditResource, dict(framework=framework))
+
         ])
         self.listen(port, "0.0.0.0")
         self.framework = framework
+
 
 
 class StatsResource(BaseResource):
@@ -178,3 +186,31 @@ class SystemResource(BaseResource):
         for param in os.environ.keys():
             env = env + param + "=" + os.environ[param] + "<br><br>"
         self.writeCallback(env)
+
+
+#TMP pour tester une nouvelle ressource
+from octopus.core.communication.http import Http404, Http400, HttpConflict
+try:
+    import simplejson as json
+except ImportError:
+    import json
+
+class SystemResourceJson(BaseResource):
+    def get(self):
+        '''
+        Builds the server environment representation.
+        '''
+        try:
+            import os
+
+            envData = {}
+            for param in os.environ.keys():
+                envData[param] = os.environ[param]
+
+            data = json.dumps( envData )
+        except TypeError:
+            return Http404("Impossible to retrieve server environnement.")
+
+        self.writeCallback(data)
+
+

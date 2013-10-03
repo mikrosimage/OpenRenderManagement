@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+
+"""
+pul_resume: Resume one or several jobs according to the given filters.
+
+This utility is a wrapper on the more flexible "pul_set_status" utility.
+Will set the status of jobs to READY on the server according to the specified constraints
+
+Job status possible values:
+	0 = "Blocked"
+	1 = "Ready"
+	2 = "Running"
+	3 = "Done"
+	4 = "Error"
+	5 = "Canceled"
+	6 = "Paused
+"""
+__author__      = "Jérôme Samson"
+__copyright__   = "Copyright 2013, Mikros Image"
+
+import os
+import sys
+
+###########################################################################################################################
+if __name__ == '__main__':
+
+	argString = ''
+	for i in range(1, len(sys.argv)):
+		argString += " %s" % sys.argv[i]
+
+	command = "./pul_set_status --set 1 %s" % argString
+	os.system(command)
+	

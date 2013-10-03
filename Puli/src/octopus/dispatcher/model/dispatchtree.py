@@ -349,6 +349,8 @@ class DispatchTree(object):
     ### methods called after interaction with a Task
 
     def onTaskCreation(self, task):
+        # logger.info("  -- on task creation: %s" % task)
+
         if task.id == None:
             self.taskMaxId += 1
             task.id = self.taskMaxId
@@ -358,14 +360,17 @@ class DispatchTree(object):
         self.tasks[task.id] = task
 
     def onTaskDestruction(self, task):
+        # logger.info("  -- on task destruction: %s" % task)
         self.unregisterElementsFromTree(task)
 
     def onTaskChange(self, task, field, oldvalue, newvalue):
+        # logger.info("  -- on task change: %s [ %s = %s -> %s ]" % (task,field, oldvalue, newvalue) )
         self.toModifyElements.append(task)
 
     ### methods called after interaction with a BaseNode
 
     def onNodeCreation(self, node):
+        # logger.info("  -- on node creation: %s" % node)
         if node.id == None:
             self.nodeMaxId += 1
             node.id = self.nodeMaxId
@@ -376,9 +381,11 @@ class DispatchTree(object):
             node.parent = self.root
 
     def onNodeDestruction(self, node):
+        # logger.info("  -- on node destruction: %s" % node)
         del self.nodes[node.id]
 
     def onNodeChange(self, node, field, oldvalue, newvalue):
+        # logger.info("  -- on node change: %s [ %s = %s -> %s ]" % (node,field, oldvalue, newvalue) )
         # FIXME: do something when nodes are reparented from or to the root node
         if node.id is not None:
             self.toModifyElements.append(node)

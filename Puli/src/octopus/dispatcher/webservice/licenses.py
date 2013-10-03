@@ -9,13 +9,13 @@ from tornado.httpclient import HTTPError
 
 
 class LicensesResource(BaseResource):
-    @queue
+    #@queue
     def get(self):
         self.writeCallback(repr(self.dispatcher.licenseManager))
 
 
 class LicenseResource(BaseResource):
-    @queue
+    #@queue
     def get(self, licenseName):
         try:
             lic = self.dispatcher.licenseManager.licenses[licenseName]
@@ -27,7 +27,7 @@ class LicenseResource(BaseResource):
         except KeyError:
             raise ResourceNotFoundError
 
-    @queue
+    #@queue
     def put(self, licenseName):
         data = self.getBodyAsJSON()
         try:
@@ -38,7 +38,7 @@ class LicenseResource(BaseResource):
             self.dispatcher.licenseManager.setMaxLicensesNumber(licenseName, maxLic)
             self.writeCallback("OK")
 
-    @queue
+    #@queue
     def delete(self, licenseName):
         data = self.getBodyAsJSON()
         try:

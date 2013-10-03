@@ -67,8 +67,10 @@ class Dispatcher(MainLoopApplication):
         self.pulidb = None
         if self.enablePuliDB:
             self.pulidb = PuliDB(self.cleanDB, self.licenseManager)
+
         self.dispatchTree.registerModelListeners()
         rnsAlreadyInitialized = self.initPoolsDataFromBackend()
+
         if self.enablePuliDB and not self.cleanDB:
             LOGGER.info("reloading jobs from database")
             beginTime = time.time()
@@ -170,87 +172,86 @@ class Dispatcher(MainLoopApplication):
 
     def mainLoop(self):
         '''Dispatcher main loop iteration.'''
-        # profiling mainloop
+        
+        # JSA DEBUG: timer pour profiler les etapes       
         loopStartTime = time.time()
         prevTimer = time.time()
         LOGGER.info("")
 
+        # JSA: Check if requests are finished (necessaire ?)
         try:
             self.threadPool.poll()
         except NoResultsPending:
             pass
         else:
             LOGGER.info("finished some network requests")
-        self.cycle += 1
-        self.dispatchTree.updateCompletionAndStatus()
 
-        durationCompletion = (time.time() - prevTimer)*1000
-        LOGGER.info("%8.2f ms --> update completion status" % durationCompletion )
+        self.cycle += 1
+
+        self.dispatchTree.updateCompletionAndStatus()
+        LOGGER.info("%8.2f ms --> update completion status" % ( (time.time() - prevTimer)*1000 ) )
         prevTimer = time.time()
 
 
         self.updateRenderNodes()
-        LOGGER.info("%8.2f ms --> update rendernodes" % ( (time.time() - prevTimer)*1000 ) )
+        LOGGER.info("%8.2f ms --> update render node" % ( (time.time() - prevTimer)*1000 ) )
         prevTimer = time.time()
+
 
         self.dispatchTree.validateDependencies()
         LOGGER.info("%8.2f ms --> validate dependencies" % ( (time.time() - prevTimer)*1000 ) )
         prevTimer = time.time()
 
-        # save profiling because of old inappropriate queue lock
-        loopDuration=(time.time() - loopStartTime)*1000
-
-        executedRequests = []
-        first = True
-        while first or not self.queue.empty():
-            workload = self.queue.get()
-            workload()
-            executedRequests.append(workload)
-            first = False
-
-        # reinit profiling because of old inappropriate queue lock
-        loopStartTime = time.time()
-        prevTimer = loopStartTime
 
         # update db
         self.updateDB()
 
-        durationDB = (time.time() - prevTimer)*1000
-        LOGGER.info("%8.2f ms --> update DB" % durationDB )
+        # JSA DEBUG
+        LOGGER.info("%8.2f ms --> update DB" % ( (time.time() - prevTimer)*1000 ) )
         prevTimer = time.time()
 
         # compute and send command assignments to rendernodes
         assignments = self.computeAssignments()
-
-        durationCompute = (time.time() - prevTimer)*1000
-        LOGGER.info("%8.2f ms --> compute assignments" % durationCompute )
-        prevTimer = time.time()
-
         self.sendAssignments(assignments)
-        LOGGER.info("%8.2f ms --> send assignments" % ( (time.time() - prevTimer)*1000 ) )
-        prevTimer = time.time()
 
+        # JSA DEBUG
+        LOGGER.info("%8.2f ms --> compute assignements" % ( (time.time() - prevTimer)*1000 ) )
+        prevTimer = time.time()
 
         # call the release finishing status on all rendernodes
         for renderNode in self.dispatchTree.renderNodes.values():
             renderNode.releaseFinishingStatus()
-        LOGGER.info("%8.2f ms --> rendernodes release finishing status" % ( (time.time() - prevTimer)*1000 ) )
+
+        # JSA DEBUG
+        LOGGER.info("%8.2f ms --> releaseFinishingStatus" % ( (time.time() - prevTimer)*1000 ) )
         prevTimer = time.time()
 
-        for workload in executedRequests:
-            workload.submit()
-        LOGGER.info("%8.2f ms --> workload" % ( (time.time() - prevTimer)*1000 ) )
-        prevTimer = time.time()
-
-        loopDuration += (time.time() - loopStartTime)*1000
-        LOGGER.info( "%8.2f ms --> TOTAL -- LOG: time=%.f db=%.2f complet=%.2f compute=%.2f" % ( time.time(), loopDuration, durationDB, durationCompletion, durationCompute ) )
+        # JSA DEBUG
+        loopDuration = (time.time() - loopStartTime)*1000
+        LOGGER.info( "%8.2f ms --> TOTAL " % loopDuration )
 
 
     def updateDB(self):
+
+        # TODO: Study how to change the DB subsystem to a simple file dump (json or pickle)
+
+        # data1 = {'a': [1, 2.0, 3, 4],
+        #          'b': ('string', u'Unicode string'),
+        #          'c': None}
+        # with open('/datas/puli/Puli/data.json', 'wb') as fp:
+        #     json.dump(self.dispatchTree, fp)
+
+        # import shelve
+
+        # d = shelve.open('/datas/puli/Puli/data.pkl')
+        # d['test'] = self.dispatchTree
+        # d.close()
+
         if settings.DB_ENABLE:
             self.pulidb.createElements(self.dispatchTree.toCreateElements)
             self.pulidb.updateElements(self.dispatchTree.toModifyElements)
             self.pulidb.archiveElements(self.dispatchTree.toArchiveElements)
+            LOGGER.info("                UpdateDB: create=%d update=%d delete=%d" % (len(self.dispatchTree.toCreateElements), len(self.dispatchTree.toModifyElements), len(self.dispatchTree.toArchiveElements)) )
         self.dispatchTree.resetDbElements()
 
     def computeAssignments(self):
@@ -420,7 +421,13 @@ class Dispatcher(MainLoopApplication):
         '''Handles a graph submission request and closes the given ticket
         according to the result of the process.
         '''
+        prevTimer = time.time()
+
         nodes = self.dispatchTree.registerNewGraph(graph)
+
+        LOGGER.info("%.2f ms --> graph registered" % ( (time.time() - prevTimer)*1000 ) )
+        prevTimer = time.time()
+
         # handles the case of post job with paused status
         for node in nodes:
             try:
@@ -428,6 +435,10 @@ class Dispatcher(MainLoopApplication):
                     node.setPaused(True)
             except KeyError:
                 continue
+
+        LOGGER.info("%.2f ms --> jobs set in pause if needed" % ( (time.time() - prevTimer)*1000 ) )
+        prevTimer = time.time()
+
         LOGGER.info('Added graph "%s" to the model.' % graph['name'])
         return nodes
 

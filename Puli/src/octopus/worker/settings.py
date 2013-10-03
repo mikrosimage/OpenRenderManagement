@@ -18,7 +18,6 @@ def loadSettingsFile(filename):
 
 DEBUG = True
 
-
 fqdn = socket.getfqdn(socket.gethostname())
 if "." in fqdn:
     computername, domain = fqdn.split(".", 1)

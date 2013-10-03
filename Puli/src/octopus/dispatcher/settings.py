@@ -40,6 +40,9 @@ PIDFILE = "dispatcher.pid"
 RENDERNODE_REQUEST_MAX_RETRY_COUNT = 10
 RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE = .1
 
+# Delay in millisecond between two runs of the "main" iteration: i.e. update db, compute assignement, send orders...
+MASTER_UPDATE_INTERVAL = 4000
+
 POOLS_BACKEND_TYPE = "db"
 #POOLS_BACKEND_TYPE = "file"
 #POOLS_BACKEND_TYPE = "ws"

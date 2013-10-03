@@ -103,6 +103,15 @@ def process_args():
 
     usage = "usage: %prog --set <new status> [general options] [restriction list]"
     desc="""Updates status of one or several jobs.
+Here is a list of possible statuses:
+	0="Blocked"
+	1="Ready"
+	2="Running"
+	3="Done"
+	4="Error"
+	5="Canceled"
+	6="Paused"
+
 To restrict the action to jobs of interest, a list of zero or more restrictions may be supplied. Each restriction may be one of:
     - a user --> matches all jobs owned by the specified owner
     - a job id  --> matches the specified job

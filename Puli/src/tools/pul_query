@@ -143,6 +143,15 @@ def handle_request(response):
             print ""
             print "Summary: " + str(_data['summary']['count']) + " of " +str(_data['summary']['totalInDispatcher'])+ " tasks retrieved in "+ str(_data['summary']['requestTime']*1000)[:3] +" ms."
             print ""
+            print "Reminder, possible values for a job status are: "
+            print "  0 --> Blocked"
+            print "  1 --> Ready"
+            print "  2 --> Running"
+            print "  3 --> Done"
+            print "  4 --> Error"
+            print "  5 --> Canceled"
+            print "  6 --> Paused"
+
 
     # Quit loop
     ioloop.IOLoop.instance().stop()
@@ -233,6 +242,16 @@ Example 3. Retrieve all tasks with status "Ready" for a specific user and presen
         "requestDate": "Thu Sep 12 11:14:48 2013"
     }
 }
+
+
+Reminder: Possible values for a job status
+    0 --> Blocked  = B
+    1 --> Ready    = I
+    2 --> Running  = R
+    3 --> Done     = D
+    4 --> Error    = E
+    5 --> Canceled = C
+    6 --> Paused   = P
 """
 
     parser = OptionParser(usage=usage, description=desc, version="%prog 0.1", formatter=PlainHelpFormatter() )

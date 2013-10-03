@@ -153,19 +153,6 @@ class Dispatcher(MainLoopApplication):
             self.stop()
         self.dispatchTree.rules.append(GraphViewBuilder(self.dispatchTree, graphs))
 
-#         from .rules.userview import UserView
-#         if self.cleanDB or not self.enablePuliDB:
-#             userview = UserView.register(self.dispatchTree, "root", "users")
-# #            self.dispatchTree.toCreateElements.append(userview.root)
-#             self.dispatchTree.nodes[userview.root.id] = userview.root
-#         else:
-#             for node in self.dispatchTree.root.children:
-#                 if node.name == "users":
-#                     root = node
-#                     break
-#             else:
-#                 raise RuntimeError("missing root node for UserView")
-#             userview = UserView(self.dispatchTree, root)
 
     def prepare(self):
         pass
@@ -183,6 +170,11 @@ class Dispatcher(MainLoopApplication):
 
     def mainLoop(self):
         '''Dispatcher main loop iteration.'''
+        # profiling mainloop
+        loopStartTime = time.time()
+        prevTimer = time.time()
+        LOGGER.info("")
+
         try:
             self.threadPool.poll()
         except NoResultsPending:
@@ -191,9 +183,22 @@ class Dispatcher(MainLoopApplication):
             LOGGER.info("finished some network requests")
         self.cycle += 1
         self.dispatchTree.updateCompletionAndStatus()
+
+        durationCompletion = (time.time() - prevTimer)*1000
+        LOGGER.info("%8.2f ms --> update completion status" % durationCompletion )
+        prevTimer = time.time()
+
+
         self.updateRenderNodes()
+        LOGGER.info("%8.2f ms --> update rendernodes" % ( (time.time() - prevTimer)*1000 ) )
+        prevTimer = time.time()
 
         self.dispatchTree.validateDependencies()
+        LOGGER.info("%8.2f ms --> validate dependencies" % ( (time.time() - prevTimer)*1000 ) )
+        prevTimer = time.time()
+
+        # save profiling because of old inappropriate queue lock
+        loopDuration=(time.time() - loopStartTime)*1000
 
         executedRequests = []
         first = True
@@ -203,19 +208,43 @@ class Dispatcher(MainLoopApplication):
             executedRequests.append(workload)
             first = False
 
+        # reinit profiling because of old inappropriate queue lock
+        loopStartTime = time.time()
+        prevTimer = loopStartTime
+
         # update db
         self.updateDB()
 
+        durationDB = (time.time() - prevTimer)*1000
+        LOGGER.info("%8.2f ms --> update DB" % durationDB )
+        prevTimer = time.time()
+
         # compute and send command assignments to rendernodes
         assignments = self.computeAssignments()
+
+        durationCompute = (time.time() - prevTimer)*1000
+        LOGGER.info("%8.2f ms --> compute assignments" % durationCompute )
+        prevTimer = time.time()
+
         self.sendAssignments(assignments)
+        LOGGER.info("%8.2f ms --> send assignments" % ( (time.time() - prevTimer)*1000 ) )
+        prevTimer = time.time()
+
 
         # call the release finishing status on all rendernodes
         for renderNode in self.dispatchTree.renderNodes.values():
             renderNode.releaseFinishingStatus()
+        LOGGER.info("%8.2f ms --> rendernodes release finishing status" % ( (time.time() - prevTimer)*1000 ) )
+        prevTimer = time.time()
 
         for workload in executedRequests:
             workload.submit()
+        LOGGER.info("%8.2f ms --> workload" % ( (time.time() - prevTimer)*1000 ) )
+        prevTimer = time.time()
+
+        loopDuration += (time.time() - loopStartTime)*1000
+        LOGGER.info( "%8.2f ms --> TOTAL -- LOG: time=%.f db=%.2f complet=%.2f compute=%.2f" % ( time.time(), loopDuration, durationDB, durationCompletion, durationCompute ) )
+
 
     def updateDB(self):
         if settings.DB_ENABLE:

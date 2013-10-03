@@ -107,7 +107,6 @@ class NodeStatusResource(NodesResource):
             arguments = self.request.arguments
             nodeId = int(nodeId)
             node = self._findNode(nodeId)
-            # TODO handle the case when there is no node with nodeId
             # handles the case of retry all commands on error
             if "cmdStatus" in arguments.keys() and nodeStatus == NODE_READY:
                 filterfunc = lambda command: command.status in [int(s) for s in arguments['cmdStatus']]

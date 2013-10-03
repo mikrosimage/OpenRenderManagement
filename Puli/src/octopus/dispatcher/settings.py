@@ -35,7 +35,6 @@ RUN_AS = None
 LOGDIR = "/s/apps/lin/eval/puli/distrib/OpenRenderManagement/logs"
 CONFDIR = "/s/apps/lin/eval/puli/distrib/OpenRenderManagement/Puli/etc/puli"
 
-
 PIDFILE = "dispatcher.pid"
 
 RENDERNODE_REQUEST_MAX_RETRY_COUNT = 10

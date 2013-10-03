@@ -1,5 +1,5 @@
 ## Misc-machines
 # --------------
 # computer-name worker-port cpu-count cpu-core-count cpu-frequency ram-size {"property1":"value1","property2":"value2"}
-localhost 8000 4 4 3.0 8000 {"os":"linux"}
+localhost 8000 1 2 3.0 4000 {"os":"linux"}
 

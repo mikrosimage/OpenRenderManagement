@@ -16,7 +16,7 @@ logger = logging.getLogger('dispatcher.webservice.PoolController')
 
 
 class PoolsResource(BaseResource):
-    @queue
+    #@queue
     def get(self):
         pools = self.getDispatchTree().pools.values()
         self.writeCallback({
@@ -25,7 +25,7 @@ class PoolsResource(BaseResource):
 
 
 class PoolResource(BaseResource):
-    @queue
+    #@queue
     def get(self, poolName):
         try:
             pool = self.getDispatchTree().pools[poolName]
@@ -35,7 +35,7 @@ class PoolResource(BaseResource):
             'pool': pool.to_json()
         })
 
-    @queue
+    #@queue
     def post(self, poolName):
         if poolName in self.getDispatchTree().pools:
             return HttpConflict("Pool already registered")
@@ -49,7 +49,7 @@ class PoolResource(BaseResource):
             self.set_header('Location', 'http://%s/pools/%s/' % (host, poolName))
             self.writeCallback(json.dumps(tmpPool.to_json()))
 
-    @queue
+    #@queue
     def delete(self, poolName):
         try:
             # remove reference of the pool from all rendernodes
@@ -64,7 +64,7 @@ class PoolResource(BaseResource):
 
 
 class PoolRenderNodesResource(BaseResource):
-    @queue
+    #@queue
     def put(self, poolName):
         dct = self.getBodyAsJSON()
         if poolName not in self.getDispatchTree().pools:

@@ -2,6 +2,11 @@ from .models import (Model, StringField, ModelField, DictField, IntegerField, Fl
                      ModelListField, ModelDictField)
 from .enums import NODE_BLOCKED, NODE_CANCELED, NODE_DONE, NODE_ERROR, NODE_PAUSED, NODE_READY, NODE_RUNNING
 from collections import defaultdict
+import logging
+import datetime
+
+
+logger = logging.getLogger('model.task')
 
 
 class TaskGroup(Model):
@@ -23,9 +28,10 @@ class TaskGroup(Model):
     startTime = FloatField(allow_null=True)
     updateTime = FloatField(allow_null=True)
     endTime = FloatField(allow_null=True)
+    timer = FloatField(allow_null=True)
 
     def __init__(self, id, name, parent, user, arguments, environment, requirements,
-                 maxRN, priority, dispatchKey, strategy, nodes={}, tags={}):
+                 maxRN, priority, dispatchKey, strategy, nodes={}, tags={}, timer=None):
         Model.__init__(self)
         self.id = int(id) if id else None
         self.name = str(name)
@@ -48,10 +54,19 @@ class TaskGroup(Model):
         self.startTime = None
         self.updateTime = None
         self.endTime = None
+        self.timer = timer
 
     def addTask(self, task):
         assert isinstance(task, Task) or isinstance(task, TaskGroup)
+        task.setTimer(self.timer)
         self.tasks.append(task)
+
+    def setTimer(self, timer):
+        if timer is not None:
+            logger.warning("Setting timer for %d to %s" % (self.id, datetime.datetime.fromtimestamp(timer)))
+        self.timer = timer
+        for task in self.tasks:
+            task.setTimer(timer)
 
     def removeTask(self, task):
         self.tasks.remove(task)
@@ -118,8 +133,9 @@ class Task(Model):
     updateTime = FloatField(allow_null=True)
     endTime = FloatField(allow_null=True)
     lic = StringField()
+    timer = FloatField(allow_null=True)
 
-    def __init__(self, id, name, parent, user, maxRN, priority, dispatchKey, runner, arguments, validationExpression, commands, requirements=[], minNbCores=1, maxNbCores=0, ramUse=0, environment={}, nodes={}, lic="", tags={}):
+    def __init__(self, id, name, parent, user, maxRN, priority, dispatchKey, runner, arguments, validationExpression, commands, requirements=[], minNbCores=1, maxNbCores=0, ramUse=0, environment={}, nodes={}, lic="", tags={}, timer=None):
         assert parent is None or isinstance(parent, TaskGroup)
         Model.__init__(self)
         self.id = int(id) if id else None
@@ -147,6 +163,7 @@ class Task(Model):
         self.startTime = None
         self.updateTime = None
         self.endTime = None
+        self.timer = timer
 
     def addValidationExpression(self, validationExpression):
         self.validationExpression = "&".join(self.validationExpression,
@@ -154,6 +171,11 @@ class Task(Model):
 
     def archive(self):
         self.fireDestructionEvent(self)
+
+    def setTimer(self, timer):
+        if timer is not None:
+            logger.warning("Setting timer for %d to %s" % (self.id, datetime.datetime.fromtimestamp(timer)))
+        self.timer = timer
 
     def repr(self):
         return "Task(%r, %r, %r, %r, %r, %r, %r, %r, %r, %r)" % (self.id,

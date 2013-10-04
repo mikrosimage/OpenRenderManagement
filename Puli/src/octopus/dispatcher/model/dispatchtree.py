@@ -236,8 +236,11 @@ class DispatchTree(object):
         strategy = loadStrategyClass(strategy.encode())
         strategy = strategy()
         tags = taskGroupDefinition['tags']
+        timer = None
+        if 'timer' in taskGroupDefinition.keys():
+            timer = taskGroupDefinition['timer']
         return TaskGroup(id, name, parent, user, arguments, environment, requirements,
-                         maxRN, priority, dispatchKey, strategy, tags=tags)
+                         maxRN, priority, dispatchKey, strategy, tags=tags, timer=timer)
 
     def _createTaskFromJSON(self, taskDefinition, user):
         # id, name, parent, user, priority, dispatchKey, runner, arguments,
@@ -257,9 +260,12 @@ class DispatchTree(object):
         ramUse = taskDefinition['ramUse']
         lic = taskDefinition['lic']
         tags = taskDefinition['tags']
+        timer = None
+        if 'timer' in taskDefinition.keys():
+            timer = taskDefinition['timer']
         task = Task(None, name, None, user, maxRN, priority, dispatchKey, runner,
                     arguments, validationExpression, [], requirements, minNbCores,
-                    maxNbCores, ramUse, environment, lic=lic, tags=tags)
+                    maxNbCores, ramUse, environment, lic=lic, tags=tags, timer=timer)
 
         for commandDef in taskDefinition['commands']:
             description = commandDef['description']
@@ -343,6 +349,8 @@ class DispatchTree(object):
     ### methods called after interaction with a Task
 
     def onTaskCreation(self, task):
+        # logger.info("  -- on task creation: %s" % task)
+
         if task.id == None:
             self.taskMaxId += 1
             task.id = self.taskMaxId
@@ -352,14 +360,17 @@ class DispatchTree(object):
         self.tasks[task.id] = task
 
     def onTaskDestruction(self, task):
+        # logger.info("  -- on task destruction: %s" % task)
         self.unregisterElementsFromTree(task)
 
     def onTaskChange(self, task, field, oldvalue, newvalue):
+        # logger.info("  -- on task change: %s [ %s = %s -> %s ]" % (task,field, oldvalue, newvalue) )
         self.toModifyElements.append(task)
 
     ### methods called after interaction with a BaseNode
 
     def onNodeCreation(self, node):
+        # logger.info("  -- on node creation: %s" % node)
         if node.id == None:
             self.nodeMaxId += 1
             node.id = self.nodeMaxId
@@ -370,9 +381,11 @@ class DispatchTree(object):
             node.parent = self.root
 
     def onNodeDestruction(self, node):
+        # logger.info("  -- on node destruction: %s" % node)
         del self.nodes[node.id]
 
     def onNodeChange(self, node, field, oldvalue, newvalue):
+        # logger.info("  -- on node change: %s [ %s = %s -> %s ]" % (node,field, oldvalue, newvalue) )
         # FIXME: do something when nodes are reparented from or to the root node
         if node.id is not None:
             self.toModifyElements.append(node)
@@ -395,7 +408,8 @@ class DispatchTree(object):
         self.toArchiveElements.append(rendernode)
 
     def onRenderNodeChange(self, rendernode, field, oldvalue, newvalue):
-        self.toModifyElements.append(rendernode)
+        if field == "performance":
+            self.toModifyElements.append(rendernode)
 
     ### methods called after interaction with a Pool
 

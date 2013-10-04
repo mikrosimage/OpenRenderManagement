@@ -11,9 +11,12 @@
 
 import httplib as http
 import time
+import datetime
 import logging
 import errno
 import requests
+from collections import deque
+import simplejson as json
 
 from octopus.dispatcher.model.enums import *
 from octopus.dispatcher import settings
@@ -48,6 +51,7 @@ class RenderNode(models.Model):
     isRegistered = models.BooleanField()
     lastAliveTime = models.FloatField()
     performance = models.FloatField()
+    excluded = models.BooleanField()
 
     def __init__(self, id, name, coresNumber, speed, ip, port, ramSize, caracteristics=None, performance=0.0):
         '''Constructs a new Rendernode.
@@ -82,6 +86,9 @@ class RenderNode(models.Model):
         self.caracteristics = caracteristics if caracteristics else {}
         self.currentpoolshare = None
         self.performance = float(performance)
+        self.history = deque(maxlen=settings.RN_NB_ERRORS_TOLERANCE)
+        self.tasksHistory = deque(maxlen=15)
+        self.excluded = False
 
         if not "softs" in self.caracteristics:
             self.caracteristics["softs"] = []
@@ -130,7 +137,8 @@ class RenderNode(models.Model):
         try:
             del self.commands[command.id]
         except KeyError:
-            LOGGER.debug('attempt to clear assignment of not assigned command %d on worker %s', command.id, self.name)
+            pass
+            #LOGGER.debug('attempt to clear assignment of not assigned command %d on worker %s', command.id, self.name)
         else:
             self.releaseRessources(command)
             self.releaseLicense(command)
@@ -227,12 +235,12 @@ class RenderNode(models.Model):
         commandStatus = [command.status for command in self.commands.values()]
         if CMD_RUNNING in commandStatus:
             self.status = RN_WORKING
+        elif CMD_ASSIGNED in commandStatus:
+            self.status = RN_ASSIGNED
         elif CMD_ERROR in commandStatus:
             self.status = RN_FINISHING
         elif CMD_FINISHING in commandStatus:
             self.status = RN_FINISHING
-        elif CMD_ASSIGNED in commandStatus:
-            self.status = RN_ASSIGNED
         elif CMD_DONE in commandStatus:
             self.status = RN_FINISHING  # do not set the status to IDLE immediately, to ensure that the order of affectation will be respected
         elif CMD_CANCELED in commandStatus:
@@ -247,14 +255,13 @@ class RenderNode(models.Model):
     #
     def releaseFinishingStatus(self):
         if self.status is RN_FINISHING:
-            #LOGGER.warning("Trying to release Finishing status for : %s, %s" % (self.name, self.status))
             # remove the commands that are in a final status
             for cmd in self.commands.values():
                 if isFinalStatus(cmd.status):
+                    self.unassign(cmd)
                     if CMD_DONE == cmd.status:
                         cmd.completion = 1.0
                     cmd.finish()
-                    self.unassign(cmd)
             self.status = RN_IDLE
 
     ##
@@ -324,9 +331,21 @@ class RenderNode(models.Model):
             time.sleep(settings.RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE)
         # request failed too many times so pause the RN and report a failure
         self.reset(paused=True)
+        self.excluded = True
         raise self.RequestFailed()
 
     def canRun(self, command):
+        # check if this rendernode has made too much errors in its last commands
+        cpt = 0
+        for i in self.history:
+            if i == CMD_ERROR:
+                cpt += 1
+        if cpt == settings.RN_NB_ERRORS_TOLERANCE:
+            LOGGER.warning("RenderNode %s had only errors in its commands history, excluding..." % self.name)
+            self.excluded = True
+            return False
+        if self.excluded:
+            return False
         for (requirement, value) in command.task.requirements.items():
             if requirement.lower() == "softs":  # todo
                 for soft in value:
@@ -374,9 +393,20 @@ class RenderNode(models.Model):
             except requests.exceptions.Timeout:
                 LOGGER.warning("Timeout occured while trying to get ram in use on %s" % self.name)
                 return False
+            except requests.exceptions.ConnectionError:
+                LOGGER.warning("Connection error while trying to get ram in use on %s" % self.name)
+                return False
 
         if freeRam < command.task.ramUse:
             LOGGER.warning("Not enough ram on %s. %d needed, %d avail." % (self.name, int(command.task.ramUse), int(freeRam)))
             return False
+
+        # timer requirements
+        # the timer is on the task and is the same for all commands
+        if command.task.timer is not None:
+            LOGGER.warning("Command has a timer : %s" % (datetime.datetime.fromtimestamp(command.task.timer)))
+            if time.time() < command.task.timer:
+                LOGGER.warning("Prevented execution of command %d because of timer present (%s)" % (command.id, datetime.datetime.fromtimestamp(command.task.timer)))
+                return False
 
         return True

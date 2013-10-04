@@ -13,6 +13,8 @@ import pwd
 import sys
 import atexit
 import signal
+import tornado
+import time
 
 from octopus.dispatcher import make_dispatcher, settings
 
@@ -86,7 +88,7 @@ def setup_logging(options):
 
     if options.CONSOLE and not options.DAEMONIZE:
         consoleHandler = logging.StreamHandler()
-        consoleHandler.setFormatter(logging.Formatter("%(asctime)s %(name)10s %(levelname)6s %(message)s", '%H:%M:%S'))
+        consoleHandler.setFormatter(logging.Formatter("%(asctime)s %(name)10s %(levelname)6s %(message)s", '%Y-%m-%d %H:%M:%S'))
         consoleHandler.setLevel(debugLevel)
         logger.addHandler(consoleHandler)
 
@@ -99,7 +101,14 @@ def main():
     if options.DAEMONIZE:
         daemonize(settings.RUN_AS)
     dispatcherApplication = make_dispatcher()
-    dispatcherApplication.mainLoop()
+    # dispatcherApplication.mainLoop()
+
+    periodic = tornado.ioloop.PeriodicCallback( dispatcherApplication.loop, settings.MASTER_UPDATE_INTERVAL)
+    periodic.start()
+    try:
+        tornado.ioloop.IOLoop.instance().start()
+    except KeyboardInterrupt, SystemExit:
+        logging.getLogger('dispatcher').info("Exit event caught: closing dispatcher...")
 
 if __name__ == '__main__':
     main()

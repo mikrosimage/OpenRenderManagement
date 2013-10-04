@@ -29,7 +29,7 @@ class TaskNotFoundError(ResourceNotFoundError):
 
 
 class TasksResource(BaseResource):
-    @queue
+    #@queue
     def get(self):
         tasks = self.getDispatchTree().tasks
         tasks = [task.to_json() for task in tasks.values()]
@@ -39,7 +39,7 @@ class TasksResource(BaseResource):
 
 
 class DeleteTasksResource(BaseResource):
-    @queue
+    #@queue
     def post(self):
         data = self.getBodyAsJSON()
         try:
@@ -64,7 +64,7 @@ class DeleteTasksResource(BaseResource):
 
 
 class TaskResource(BaseResource):
-    @queue
+    #@queue
     def get(self, taskID):
         taskID = int(taskID)
         task = self._findTask(taskID)
@@ -81,7 +81,7 @@ class TaskResource(BaseResource):
 
 
 class TaskCommentResource(TaskResource):
-    @queue
+    #@queue
     def put(self, taskId):
         '''
         Sets a comment on the task.
@@ -99,7 +99,7 @@ class TaskCommentResource(TaskResource):
 
 
 class TaskUserResource(TaskResource):
-    @queue
+    #@queue
     def put(self, taskId):
         '''
         Sets the user of a task.
@@ -117,7 +117,7 @@ class TaskUserResource(TaskResource):
 
 
 class TaskRamResource(TaskResource):
-    @queue
+    #@queue
     def put(self, taskId):
         '''
         Sets the min ram required for a task.
@@ -135,8 +135,30 @@ class TaskRamResource(TaskResource):
                 self.dispatcher.dispatchTree.toModifyElements.append(task)
 
 
+class TaskTimerResource(TaskResource):
+    #@queue
+    def put(self, taskId):
+        '''
+        Sets the timer for a task.
+        '''
+        data = self.getBodyAsJSON()
+        try:
+            timer = data['timer']
+        except:
+            return HTTPError(400, 'Missing entry: "timer".')
+        else:
+            taskId = int(taskId)
+            task = self._findTask(taskId)
+            task.setTimer(timer)
+            # set the timer on the parent node of the task as well
+            node = task.nodes.values()[0]
+            node.timer = timer
+            self.dispatcher.dispatchTree.toModifyElements.append(task)
+            self.dispatcher.dispatchTree.toModifyElements.append(node)
+
+
 class TaskEnvResource(TaskResource):
-    @queue
+    #@queue
     def post(self, taskId):
         taskId = int(taskId)
         task = self._findTask(taskId)
@@ -147,7 +169,7 @@ class TaskEnvResource(TaskResource):
         message = "Environment of task %d has successfully been set." % taskId
         self.writeCallback(message)
 
-    @queue
+    #@queue
     def put(self, taskId):
         taskId = int(taskId)
         data = self.getBodyAsJSON()
@@ -162,7 +184,7 @@ class TaskEnvResource(TaskResource):
 
 
 class TaskArgumentResource(TaskResource):
-    @queue
+    #@queue
     def post(self, taskId):
         taskId = int(taskId)
         data = self.getBodyAsJSON()
@@ -178,7 +200,7 @@ class TaskArgumentResource(TaskResource):
         message = "Arguments of task %d have successfully been set." % taskId
         self.writeCallback(message)
 
-    @queue
+    #@queue
     def put(self, taskId):
         taskId = int(taskId)
         task = self._findTask(taskId)
@@ -190,7 +212,7 @@ class TaskArgumentResource(TaskResource):
 
 
 class TaskCommandResource(TaskResource):
-    @queue
+    #@queue
     def get(self, taskId):
         taskId = int(taskId)
         query = self.getBodyAsJSON()
@@ -223,7 +245,7 @@ class TaskCommandResource(TaskResource):
 
 
 class TaskTreeResource(TaskResource):
-    @queue
+    #@queue
     def get(self, taskId):
         taskId = int(taskId)
         try:

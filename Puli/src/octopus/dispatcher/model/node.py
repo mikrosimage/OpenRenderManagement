@@ -51,6 +51,7 @@ class BaseNode(models.Model):
     averageTimeByFrame = models.FloatField(allow_null=True)
     minTimeByFrame = models.FloatField(allow_null=True)
     maxTimeByFrame = models.FloatField(allow_null=True)
+    timer = models.FloatField(allow_null=True)
 
     @property
     def tags(self):
@@ -97,6 +98,7 @@ class BaseNode(models.Model):
         self.averageTimeByFrame = 0.0
         self.minTimeByFrame = 0.0
         self.maxTimeByFrame = 0.0
+        self.timer = None
 
     def to_json(self):
         base = super(BaseNode, self).to_json()
@@ -207,6 +209,8 @@ class FolderNode(BaseNode):
         self.children = []
         self.strategy = strategy
         self.taskGroup = taskGroup
+        if taskGroup is not None:
+            self.timer = taskGroup.timer
 
     def addChild(self, child, setParent=True):
             if child.parent is not self and setParent:
@@ -330,6 +334,7 @@ class FolderNode(BaseNode):
                     self.taskGroup.endTime = None
         self.invalidated = False
         if self.taskGroup:
+            self.timer = self.taskGroup.timer
             # FIXME: suboptimal... lazy update someday ?
             self.taskGroup.updateStatusAndCompletion()
 
@@ -375,6 +380,8 @@ class TaskNode(BaseNode):
         BaseNode.__init__(self, id, name, parent, user, priority, dispatchKey, maxRN, creationTime, startTime, updateTime, endTime, status)
         self.task = task
         self.paused = paused
+        if task is not None:
+            self.timer = task.timer
 
     def dispatchIterator(self, stopFunc, ep=None):
         if ep is None:
@@ -433,7 +440,9 @@ class TaskNode(BaseNode):
         else:
             self.completion = 1.0
 
-        if self.paused:
+        if CMD_CANCELED in status:
+            self.status = NODE_CANCELED
+        elif self.paused:
             self.status = NODE_PAUSED
         elif CMD_ERROR in status:
             self.status = NODE_ERROR
@@ -449,8 +458,6 @@ class TaskNode(BaseNode):
             self.status = NODE_READY
         elif CMD_BLOCKED in status:
             self.status = NODE_BLOCKED
-        elif CMD_CANCELED in status:
-            self.status = NODE_CANCELED
         else:
             # all commands are DONE, ensure the completion is at 1.0 (in case of failed completion update from some workers)
             self.completion = 1.0
@@ -482,6 +489,8 @@ class TaskNode(BaseNode):
         self.task.startTime = self.startTime
         self.task.updateTime = self.updateTime
         self.task.endTime = self.endTime
+
+        self.timer = self.task.timer
 
         self.invalidated = False
 

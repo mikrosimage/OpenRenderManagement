@@ -1,117 +1,167 @@
 #!/bin/bash
+#
+# Deploy a puli server.
+#
 
-USAGE="
-${0} [ -b ] 
-     [-d -w workspace] 
-     -u username 
-     -s servername
 
--b option to backup distant worker before new deploy
+usage()
+{
+cat << EOF
+usage: $0 -s [origin folder] -d [installation folder] [options]
 
--d run deploy process
-"
+This script install puli server execution files into the desired folder.
 
-PULISERVER_PATH=/opt/puli
-OCTOPUSSERVER_PATH=${PULISERVER_PATH}/octopus
+MANDATORY
+   -s      origin folder
+           i.e. the root folder containing puli source code and puli scripts,
+           for instance: /tmp/OpenRenderManagement/Puli
 
-OPTION_B=0
-OPTION_D=0
-OPTION_U=0
-OPTION_S=0
-OPTION_W=0
+   -d      destination folder
+           i.e. the place you want the program to be installed, typically: /opt/puli
 
-while getopts ":bdu:s:w:" OPTION
+OPTIONS:
+   -h      Show this message
+   -q      Quiet install, no user prompt
+
+EOF
+}
+
+SOURCE=
+DESTINATION=
+QUIET=
+BACKUP_FOLDER=
+
+# Assign process vars with parameters
+while getopts “h:s:d:q” OPTION
 do
-  case "${OPTION}" in
-  	"b")
-  		OPTION_B=1
-  		;;
-  	"d")
-  		OPTION_D=1
-  		;;
-  	"u")
-  		OPTION_U=1
-  		USERNAME="${OPTARG}"
-  		;;
-  	"s")
-  		OPTION_S=1
-  		SERVERNAME="${OPTARG}"
-  		;;
-  	"w")
-  		OPTION_W=1
-  		WORKSPACE="${OPTARG}"
-  		;;
-  	*)
-  		echo ${USAGE}
-  esac
+     case $OPTION in
+         h)
+             usage
+             exit 1
+             ;;
+         s)
+             SOURCE=$OPTARG
+             ;;
+         d)
+             DESTINATION=$OPTARG
+             ;;
+         q)
+             QUIET=0
+             ;;
+         ?)
+             usage
+             exit
+             ;;
+     esac
 done
-  
-if [ ${OPTION_B} -eq 0 -a ${OPTION_D} -eq 0 -a ${OPTION_U} -eq 0 -a ${OPTION_S} -eq 0 -a ${OPTION_W} -eq 0 ]
-then 
-   echo ${USAGE}
-   exit 1
-fi
 
-if [ ${OPTION_B} -eq 1 ]
+
+
+# Check if at least source and destination are defined
+if [[ -z $SOURCE ]] || [[ -z $DESTINATION ]]
 then
-   if [ ${OPTION_U} -eq 0 -o ${OPTION_S} -eq 0 ]
-   then
-   	echo ${USAGE}
-   	exit 1
-   fi
+    echo "Error: You need to specify the origin and destination folder."
+    usage
+    exit 1
 fi
 
-if [ ${OPTION_D} -eq 1 ]
+# Check folders exist
+if [[ -d "${SOURCE}" && ! -L "${SOURCE}" ]] ; then
+
+  if [[ ! -d "${SOURCE}/src/octopus" ]] ; then
+    echo "Error: origin folder does not contains the puliserver core 'src/octopus' subfolder."
+    exit 1
+  fi
+
+  if [[ ! -d "${SOURCE}/scripts" ]] ; then
+    echo "Error: origin folder does not contains the '${SOURCE}/scripts' subfolder."
+    exit 1
+  fi
+
+
+  if [[ ! -f "${SOURCE}/scripts/puliserver" ]] ; then
+    echo "Error: origin folder does not contains the startup script: '${SOURCE}/scripts/puliserver'."
+    exit 1
+  fi
+
+else
+    echo "Error: origin folder does not exist or is a symlink."
+    exit 1
+fi
+
+if [[ ! -d "${DESTINATION}" ]]
 then
-   if [ ${OPTION_U} -eq 0 -o ${OPTION_S} -eq 0 -o ${OPTION_W} -eq 0 ]
-   then
-   	echo ${USAGE}
-   	exit 1
-   fi
+    echo "Error: destination folder does not exist."
+    exit 1
 fi
 
-if [ ${OPTION_D} -eq 1 -a ${OPTION_S} -eq 1 ]
+if [[ "$(ls -A ${DESTINATION})" ]]
 then
-	PULISERVER=${USERNAME}@${SERVERNAME}
+  BACKUP_FOLDER=${DESTINATION}_bkp_`date +'%Y-%m-%d_%H%M%S'`
+
+  if [[ -z $QUIET ]]
+  then
+    echo "Warning: Destination is not empty."
+    read -p "A backup named: ${BACKUP_FOLDER} will be created, Continue (y/n) ? "
+    if [[ "$REPLY" != "y" ]]
+    then
+      echo "Installation interrupted by user." 
+      exit 1
+    fi
+  fi
+
+  echo ""
+  echo "Previous install detected, creating backup:"
+  echo "  - previous install: "${DESTINATION}
+  echo "  - backup folder: "${BACKUP_FOLDER}
+  mv ${DESTINATION} ${BACKUP_FOLDER}
 fi
 
+# Summary and user prompt
+echo ""
+echo "Installing puliserver:"
+echo "  - origin folder: "$SOURCE
+echo "  - destination folder: "$DESTINATION
 
 
-if [ ${OPTION_B} -eq 1 ]
+if [[ -z $QUIET ]]
 then
-   echo "Start backup puli"
-   
-   if [ ! -d "pulibackup" ]
-   then
-   	echo "Create pulibackup directory"
-   	mkdir pulibackup
-   fi
-   if [ ! -d "tmp" ]
-   then
-   	echo "Create tmp directory"
-   	mkdir tmp
-   fi
-   
-   rm -rf pulibackup/dispatcher
-   mkdir -p pulibackup/dispatcher
-   
-   scp -r ${PULISERVER}:${OCTOPUSSERVER_PATH} pulibackup/dispatcher
-   
-   scp ${PULISERVER}:${OCTOPUSSERVER_PATH}/dispatcher/settings.py tmp/settings.py
-   
+  read -p "Continue (y/n) ? "
+  if [[ "$REPLY" != "y" ]]
+  then
+    echo "Installation interrupted by user." 
+    exit 1
+  fi
 fi
 
-if [ ${OPTION_D} -eq 1 ]
-then
-   echo "Start deploing puli"
-   
-   ssh ${PULISERVER} rm -rf ${OCTOPUSSERVER_PATH}/*
+# Process installation
+echo ""
+echo "Copying octopus source files..."
+rsync -rL --exclude "*.pyc" ${SOURCE}/src/octopus ${DESTINATION}/
 
-   scp -r ${WORKSPACE} ${PULISERVER}:${PULISERVER_PATH}/
+echo "Copying startup scripts files..."
+mkdir -p ${DESTINATION}/scripts
+rsync -rL --exclude "*.pyc" ${SOURCE}/scripts/dispatcherd.py ${DESTINATION}/scripts
+rsync -rL --exclude "*.pyc" ${SOURCE}/scripts/puliserver ${DESTINATION}/scripts
 
-   scp tmp/settings.py ${PULISERVER}:${OCTOPUSSERVER_PATH}/dispatcher/settings.py
-   
-   ssh ${PULISERVER} rm ${OCTOPUSSERVER_PATH}/dispatcher/settings.pyc
-   
-   ssh ${PULISERVER} rm -rf ${OCTOPUSSERVER_PATH}/*.svn
+echo "Copying puliser startup file..."
+rsync -rL --exclude "*.pyc" ${SOURCE}/scripts/puliserver /etc/init.d/
+
+echo "Creating config dir..."
+mkdir -p ${DESTINATION}/conf
+
+echo "Copying conf file..."
+rsync -rL --exclude "*.pyc" ${SOURCE}/etc/puli/licences.lst ${DESTINATION}/conf
+rsync -rL --exclude "*.pyc" ${SOURCE}/etc/puli/workers.lst ${DESTINATION}/conf
+rsync -rL --exclude "*.pyc" ${SOURCE}/etc/puli/pools ${DESTINATION}/conf
+
+if [[ -f "${BACKUP_FOLDER}/octopus/dispatcher/settings.py" ]] ; then
+  echo "Restoring setting from backup: "${BACKUP_FOLDER}
+  rsync -rL --exclude "*.pyc" ${BACKUP_FOLDER}/octopus/dispatcher/settings.py ${DESTINATION}/octopus/dispatcher
 fi
+
+echo "Creating log dir..."
+mkdir  ${DESTINATION}/logs
+
+echo "Installation done."
+echo ""

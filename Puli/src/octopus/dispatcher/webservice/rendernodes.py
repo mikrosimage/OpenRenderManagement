@@ -23,7 +23,7 @@ class RenderNodesResource(BaseResource):
     #
     # @param request the HTTP request
     #
-    @queue
+    #@queue
     def get(self):
         rendernodes = self.getDispatchTree().renderNodes.values()
         content = {'rendernodes': list(rendernode.to_json() for rendernode in rendernodes)}
@@ -37,7 +37,7 @@ class RenderNodeResource(BaseResource):
     # @param request the HTTP request object for this request
     # @param computerName the name of the requested render node
     #
-    @queue
+    #@queue
     def get(self, computerName):
         computerName = computerName.lower()
         try:
@@ -48,7 +48,7 @@ class RenderNodeResource(BaseResource):
         content = json.dumps(content)
         self.writeCallback(content)
 
-    @queue
+    #@queue
     def post(self, computerName):
         computerName = computerName.lower()
         if computerName.startswith(('1', '2')):
@@ -95,7 +95,7 @@ class RenderNodeResource(BaseResource):
             self.getDispatchTree().renderNodes[renderNode.name] = renderNode
             self.writeCallback(json.dumps(renderNode.to_json()))
 
-    @queue
+    #@queue
     def put(self, computerName):
         computerName = computerName.lower()
         try:
@@ -120,7 +120,7 @@ class RenderNodeResource(BaseResource):
     # @param computerName the name of the requested render node
     #
     #@fqdn_request_decorator
-    @queue
+    #@queue
     def delete(self, computerName):
         computerName = computerName.lower()
         try:
@@ -135,7 +135,7 @@ class RenderNodeResource(BaseResource):
 
 
 class RenderNodeCommandsResource(BaseResource):
-    @queue
+    #@queue
     def put(self, computerName, commandId):
         '''Update command `commandId` running on rendernode `renderNodeId`.
 
@@ -172,7 +172,7 @@ class RenderNodeCommandsResource(BaseResource):
     #             res[name] = value
     #     return res
 
-    @queue
+    #@queue
     def delete(self, computerName, commandId):
         computerName = computerName.lower()
         commandId = int(commandId)
@@ -202,7 +202,7 @@ class RenderNodeCommandsResource(BaseResource):
 
 
 class RenderNodeSysInfosResource(BaseResource):
-    @queue
+    #@queue
     def put(self, computerName):
         computerName = computerName.lower()
         rns = self.getDispatchTree().renderNodes
@@ -233,7 +233,7 @@ class RenderNodeSysInfosResource(BaseResource):
 
 
 class RenderNodesPerfResource(BaseResource):
-    @queue
+    #@queue
     def put(self):
         dct = self.getBodyAsJSON()
         for computerName, perf in dct.items():
@@ -243,7 +243,7 @@ class RenderNodesPerfResource(BaseResource):
 
 
 class RenderNodeResetResource(BaseResource):
-    @queue
+    #@queue
     def put(self, computerName):
         computerName = computerName.lower()
         rns = self.getDispatchTree().renderNodes
@@ -256,8 +256,24 @@ class RenderNodeResetResource(BaseResource):
             renderNode.reset()
 
 
+class RenderNodeQuarantineResource(BaseResource):
+    #@queue
+    def put(self):
+        dct = self.getBodyAsJSON()
+        quarantine = dct["quarantine"]
+        logger.warning(quarantine)
+        for computerName in dct["rns"]:
+            renderNode = self.getDispatchTree().renderNodes[computerName]
+            logger.warning(renderNode.name)
+            renderNode.excluded = quarantine
+            if not quarantine:
+                renderNode.history.clear()
+                renderNode.tasksHistory.clear()
+        self.writeCallback("Quarantine attributes set.")
+
+
 class RenderNodePausedResource(BaseResource):
-    @queue
+    #@queue
     def put(self, computerName):
         dct = self.getBodyAsJSON()
         paused = dct['paused']
@@ -274,3 +290,4 @@ class RenderNodePausedResource(BaseResource):
         else:
             # FIXME maybe set this to RN_FINISHING ?
             renderNode.status = RN_IDLE
+            renderNode.excluded = False

@@ -11,6 +11,7 @@ import socket
 import datetime
 import platform
 import sys
+import threading
 import re
 sys.path.append("/s/apps/common/python")
 sys.path.append("\\\\exastore2\\Applis\\common\\python")
@@ -169,8 +170,24 @@ class PuliActionHelper(object):
 
     def execute(self, cmdArgs, env):
         os.umask(2)
-        out = subprocess.Popen(cmdArgs, env=env)
-        return out.wait()
+        process = subprocess.Popen(cmdArgs, env=env)
+        return process.wait()
+
+    def executeWithTimeout(self, cmdArgs, env, timeout):
+        self.process = None
+
+        def target():
+            os.umask(2)
+            self.process = subprocess.Popen(cmdArgs, env=env)
+            self.process.communicate()
+
+        thread = threading.Thread(target=target)
+        thread.start()
+        thread.join(timeout)
+        if thread.is_alive():
+            self.process.terminate()
+            thread.join()
+            raise Exception("Execution has taken more than allowed time (%d)" % timeout)
 
     def buildMayaCommand(self, mikserActionScript, arguments, additionalArguments, env):
         if self.isLinux():

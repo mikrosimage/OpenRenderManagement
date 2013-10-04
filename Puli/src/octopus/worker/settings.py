@@ -18,20 +18,32 @@ def loadSettingsFile(filename):
 
 DEBUG = True
 
-PORT = 8000
 fqdn = socket.getfqdn(socket.gethostname())
 if "." in fqdn:
     computername, domain = fqdn.split(".", 1)
 else:
     computername = fqdn
 computername = computername.lower()
+
+#
+# Infos du webservice local
+#
+PORT = 8000
 ADDRESS = computername
 
-PIDFILE = "/tmp/worker.pid"
-KILLFILE = "/tmp/render/killfile"
-
+#
+# Infos du webservice server
+#
 DISPATCHER_PORT = 8004
 DISPATCHER_ADDRESS = "puliserver"
 
+#
+# Definition des fichiers de surveillance
+#
+PIDFILE = "/tmp/worker.pid"
+KILLFILE = "/tmp/render/killfile"
+
 RUN_AS = ""
 LOGDIR = "/var/log/puli"
+
+LIMIT_OPEN_FILES = 32768

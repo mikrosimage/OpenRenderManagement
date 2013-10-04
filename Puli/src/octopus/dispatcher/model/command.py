@@ -11,6 +11,7 @@
 
 import time
 import logging
+from threading import Timer
 
 from octopus.core.enums.command import *
 from octopus.core.enums.rendernode import RN_FINISHING
@@ -189,6 +190,12 @@ class CommandDatesUpdater(object):
 
     def onStatusUpdate(self, cmd):
         cmd.updateTime = time.time()
+        # append the command's status to the rendernode's history
+        if isFinalStatus(cmd.status):
+            # only if we don't already have a command for this task
+            if hasattr(cmd.renderNode, 'tasksHistory') and cmd.task.id not in cmd.renderNode.tasksHistory:
+                cmd.renderNode.tasksHistory.append(cmd.task.id)
+                cmd.renderNode.history.append(cmd.status)
         if cmd.status is CMD_DONE:
             cmd.endTime = cmd.updateTime
             cmd.computeAvgTimeByFrame()
@@ -197,16 +204,20 @@ class CommandDatesUpdater(object):
             if cmd.retryCount == settings.MAX_RETRY_CMD_COUNT:
                 cmd.retryRnList.append(cmd.renderNode.name)
             elif cmd.retryCount < settings.MAX_RETRY_CMD_COUNT:
-                rn = cmd.renderNode
-                cmd.retryRnList.append(rn.name)
-                cmd.setReadyStatusAndClear()
-                rn.clearAssignment(cmd)
-                rn.status = RN_FINISHING
-                cmd.retryCount += 1
+                t = Timer(settings.DELAY_BEFORE_AUTORETRY, self.autoretry, [cmd])
+                t.start()
         elif cmd.status is CMD_ASSIGNED:
             cmd.startTime = cmd.updateTime
         elif cmd.status < CMD_ASSIGNED:
             cmd.startTime = None
+
+    def autoretry(self, cmd):
+        rn = cmd.renderNode
+        cmd.retryRnList.append(rn.name)
+        cmd.setReadyStatusAndClear()
+        rn.clearAssignment(cmd)
+        rn.status = RN_FINISHING
+        cmd.retryCount += 1
 
 
 Command.changeListeners.append(CommandDatesUpdater())

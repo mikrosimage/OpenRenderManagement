@@ -37,12 +37,25 @@ CONFDIR = "/s/apps/lin/eval/puli/distrib/OpenRenderManagement/Puli/etc/puli"
 
 PIDFILE = "dispatcher.pid"
 
-RENDERNODE_REQUEST_MAX_RETRY_COUNT = 10
-RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE = .1
 
+#
+# COMUNICATION BEHAVIOUR
+# Defines how the dispatcher will handle communication with a render node
+RENDERNODE_REQUEST_MAX_RETRY_COUNT = 10                 # nb of retry for a failed request
+RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE = .5     # wait 500ms before resending a request in case of failure
+RN_TIMEOUT = 1200.0                                     # wait 20 min before considering a render node as offline
+
+
+#
+# CORE BEHAVIOUR
+#
 # Delay in millisecond between two runs of the "main" iteration: i.e. update db, compute assignement, send orders...
-MASTER_UPDATE_INTERVAL = 4000
+MASTER_UPDATE_INTERVAL = 4000                           
 
+
+#
+# PERSISTENCE MECANISM
+#
 POOLS_BACKEND_TYPE = "db"
 #POOLS_BACKEND_TYPE = "file"
 #POOLS_BACKEND_TYPE = "ws"
@@ -59,9 +72,17 @@ DB_CLEAN_DATA = False
 DB_URL = "mysql://puliuser:0ct0pus@127.0.0.1/pulidb"
 #DB_URL = "sqlite:///path/to/my/database/file.db"
 
-RN_TIMEOUT = 1200.0
 
-MAX_RETRY_CMD_COUNT = 2
+#
+# AUTO RETRY MECANISM
+#
+MAX_RETRY_CMD_COUNT = 0 # Deactivate autoretry
 DELAY_BEFORE_AUTORETRY = 20.0
 
+
+#
+# QUARANTINE
+#
+# A node that returns more than RN_NB_ERRORS_TOLERANCE will automatically be set in "quarantine" mode.
+# This is to prevent hardware/system failure on a particular render node to propagate errors through the whole queue
 RN_NB_ERRORS_TOLERANCE = 5

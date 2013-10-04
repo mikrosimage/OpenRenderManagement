@@ -141,7 +141,7 @@ def handle_request(response):
                         creationTimeStr, startTimeStr, endTimeStr, runTimeStr )
 
             print ""
-            print "Summary: " + str(_data['summary']['count']) + " of " +str(_data['summary']['totalInDispatcher'])+ " tasks retrieved in "+ str(_data['summary']['requestTime']*1000)[:3] +" ms."
+            print "Summary: %d of %d tasks retrieved in %.2f ms." % (_data['summary']['count'], _data['summary']['totalInDispatcher'], _data['summary']['requestTime']*1000)
             print ""
             print "Reminder, possible values for a job status are: "
             print "  0 --> Blocked"

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.6
 # -*- coding: utf8 -*-
 
 """

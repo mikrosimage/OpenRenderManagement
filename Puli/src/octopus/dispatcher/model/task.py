@@ -103,6 +103,27 @@ class TaskGroup(Model):
             else:
                 self.status = NODE_DONE
 
+    def __repr__(self):
+        # return "TaskGroup(%r, %r, %r, %r, %r, %r, %r, %r, %r, %r, %r)" % (self.id,
+        #                                                     self.name,
+        #                                                     self.parent,
+        #                                                     self.dispatchKey,
+        #                                                     self.user,
+        #                                                     self.arguments,
+        #                                                     self.environment,
+        #                                                     self.requirements,
+        #                                                     self.maxRN,
+        #                                                     self.priority,
+        #                                                     self.dispatchKey)
+        return "Task(%r, name=%r, parent=%r, nodes=%r)" % (self.id,
+                                                 self.name,
+                                                 self.parent,
+                                                 self.nodes)
+
+    def __str__(self):
+        return "TaskGroup(%r, %r, %r)" % (self.id, self.name, self.parent)
+
+
     def __iter__(self):
         return iter(self.tasks)
 
@@ -177,17 +198,25 @@ class Task(Model):
             logger.warning("Setting timer for %d to %s" % (self.id, datetime.datetime.fromtimestamp(timer)))
         self.timer = timer
 
-    def repr(self):
-        return "Task(%r, %r, %r, %r, %r, %r, %r, %r, %r, %r)" % (self.id,
-                                                             self.name,
-                                                             self.priority,
-                                                             self.dispatchKey,
-                                                             self.runner,
-                                                             self.arguments,
-                                                             self.validationExpression,
-                                                             self.commands,
-                                                             self.requirements,
-                                                             self.lic)
+    def __repr__(self):
+        # return "Task(%r, %r, %r, %r, %r, %r, %r, %r, %r, %r)" % (self.id,
+        #                                                      self.name,
+        #                                                      self.priority,
+        #                                                      self.dispatchKey,
+        #                                                      self.runner,
+        #                                                      self.arguments,
+        #                                                      self.validationExpression,
+        #                                                      self.commands,
+        #                                                      self.requirements,
+        #                                                      self.lic)
+        return "Task(%r, %r, %r, %r, %r)" % (self.id,
+                                                 self.name,
+                                                 self.nodes,
+                                                 self.runner,
+                                                 self.commands)
+
+    def __str__(self):
+        return "Task(%r, %r)" % (self.id, self.name)
 
 
 class TaskListener(object):

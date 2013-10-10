@@ -16,6 +16,8 @@ from octopus.core.communication.requestmanager import RequestManager
 from octopus.core.enums import command as COMMAND
 from octopus.core.enums import rendernode
 from octopus.worker import settings
+from octopus.worker import config
+
 from octopus.worker.model.command import Command
 from octopus.worker.process import spawnCommandWatcher
 
@@ -58,7 +60,7 @@ class Worker(MainLoopApplication):
         self.computerName = COMPUTER_NAME_TEMPLATE % (settings.ADDRESS,
                                                       settings.PORT)
         self.lastSysInfosMessageTime = 0
-        self.sysInfosMessagePeriod = 6
+
         self.httpconn = httplib.HTTPConnection(settings.DISPATCHER_ADDRESS, settings.DISPATCHER_PORT)
         self.PID_DIR = os.path.dirname(settings.PIDFILE)
         if not os.path.isdir(self.PID_DIR):
@@ -231,7 +233,7 @@ class Worker(MainLoopApplication):
                     LOGGER.info("Boot process... worker registered")
                     break
             # try to register to dispatcher every 10 seconds
-            time.sleep(10)
+            time.sleep( config.WORKER_REGISTER_DELAY_AFTER_FAILURE )
 
         # once the worker is registered, ensure the RN status is correct according to the killfile presence
         if os.path.isfile(settings.KILLFILE):
@@ -256,7 +258,11 @@ class Worker(MainLoopApplication):
         return dct
 
     def updateCommandWatcher(self, commandWatcher):
-        while True:
+        maxRetry = max(1,config.WORKER_REQUEST_MAX_RETRY_COUNT)
+        delayRetry = config.WORKER_REQUEST_DELAY_AFTER_REQUEST_FAILURE
+        i=0
+
+        while i < maxRetry:
             url = "/rendernodes/%s/commands/%d/" % (self.computerName, commandWatcher.commandId)
             body = json.dumps(self.buildUpdateDict(commandWatcher.command))
             headers = {'Content-Length': len(body)}
@@ -281,7 +287,12 @@ class Worker(MainLoopApplication):
                 return
             finally:
                 self.httpconn.close()
-            LOGGER.warning('Update of command %d failed.', commandWatcher.commandId)
+
+            LOGGER.warning('Update of command %d failed (attempt %d of %d)', commandWatcher.commandId, i, maxRetry)
+            LOGGER.warning('Next retry will occur in %.2f ms' % delayRetry )
+            time.sleep( delayRetry )
+            i += 1
+            delayRetry *= 2
 
     def pauseWorker(self, paused, killproc):
         while True:
@@ -411,7 +422,7 @@ class Worker(MainLoopApplication):
 
         # time resync
         now = time.time()
-        if (now - self.lastSysInfosMessageTime) > self.sysInfosMessagePeriod:
+        if (now - self.lastSysInfosMessageTime) > config.WORKER_SYSINFO_DELAY:
             self.sendSysInfosMessage()
             self.lastSysInfosMessageTime = now
 
@@ -575,3 +586,8 @@ class Worker(MainLoopApplication):
         self.commandWatchers[command.id] = newCommandWatcher
 
         LOGGER.info("Started command %d", command.id)
+
+
+    def reloadConfig(self):
+        reload(config)
+        pass

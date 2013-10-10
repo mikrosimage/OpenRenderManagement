@@ -227,6 +227,7 @@ class PuliDB(object):
     def createElements(self, elements):
         elements.sort(key=lambda element: element.__class__)
         for element in elements:
+            # LOGGER.info("            ----> Creating elem = %s" % element )
             # /////////////// Handling of the TaskNode
             if isinstance(element, TaskNode):
                 conn = TaskNodes._connection
@@ -407,6 +408,7 @@ class PuliDB(object):
     #
     def updateElements(self, elements):
         for element in elements:
+            # LOGGER.info("            ----> Updating elem = %s" % element )
             if isinstance(element, Command) or isinstance(element, TaskNode) or isinstance(element, FolderNode):
                 startTime = self.getDateFromTimeStamp(element.startTime)
                 endTime = self.getDateFromTimeStamp(element.endTime)
@@ -487,6 +489,7 @@ class PuliDB(object):
         poolsharesList = []
         rendernodesList = []
         for element in elements:
+            # LOGGER.info("            ----> Archiving elem = %s" % element )
             if isinstance(element, Task):
                 tasksList.append(element.id)
             elif isinstance(element, TaskGroup):
@@ -963,17 +966,34 @@ class PuliDB(object):
             cmd.computeAvgTimeByFrame()
 
         ### calculate the correct max ids for all elements, get them from db in case of archived elements that would not appear in the dispatchtree
-        tree.nodeMaxId = int(max([FolderNodes.select().max(FolderNodes.q.id), TaskNodes.select().max(TaskNodes.q.id)]))
-        tree.poolMaxId = int(Pools.select().max(Pools.q.id))
-        tree.renderNodeMaxId = int(RenderNodes.select().max(RenderNodes.q.id))
+        try:
+            tree.nodeMaxId = int(max([FolderNodes.select().max(FolderNodes.q.id), TaskNodes.select().max(TaskNodes.q.id)]))
+        except:
+            tree.nodeMaxId = 0
+
+        try:
+            tree.poolMaxId = int(Pools.select().max(Pools.q.id))
+        except:
+            tree.poolMaxId = 0
+
+        try:
+            tree.renderNodeMaxId = int(RenderNodes.select().max(RenderNodes.q.id))
+        except:
+            tree.renderNodeMaxId = 0
+
         try:
             tree.taskMaxId = int(Tasks.select().max(Tasks.q.id))
         except:
             tree.taskMaxId = 0
+
         try:
             tree.commandMaxId = int(Commands.select().max(Commands.q.id))
         except:
             tree.commandMaxId = 0
-        tree.poolShareMaxId = int(PoolShares.select().max(PoolShares.q.id))
+
+        try:            
+            tree.poolShareMaxId = int(PoolShares.select().max(PoolShares.q.id))
+        except:
+            tree.poolShareMaxId = 0
 
         tree.toCreateElements = []

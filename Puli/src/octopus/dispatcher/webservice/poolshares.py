@@ -11,19 +11,28 @@ except ImportError:
 from octopus.core.communication.http import Http404, Http400, HttpConflict
 from octopus.core.framework import BaseResource, queue
 from octopus.dispatcher.model.pool import PoolShare, PoolShareCreationException
+import logging
 
 __all__ = []
 
 
+LOGGER = logging.getLogger('poolshares')
+
 class PoolSharesResource(BaseResource):
-    @queue
+    #@queue
     def get(self):
         poolShares = self.getDispatchTree().poolShares.values()
         self.writeCallback({'poolshares': dict(((poolShare.id, poolShare.to_json()) for poolShare in poolShares))})
 
-    @queue
+    #@queue
     def put(self):
         dct = self.getBodyAsJSON()
+
+        # DBG JSA: display dispatchtree
+        # import time
+        # LOGGER.info( "recup alloc for poolshares: %s", dct )
+        # self.getDispatchTree()._display_()
+
         if "pslist" in dct:
             pslist = dct['pslist']
             poolShares = []
@@ -31,7 +40,7 @@ class PoolSharesResource(BaseResource):
                 poolShares.append(self.getDispatchTree().poolShares[int(psId)])
             self.writeCallback({'poolshares': dict(((poolShare.node.id, poolShare.to_json()) for poolShare in poolShares))})
 
-    @queue
+    #@queue
     def post(self):
         dct = self.getBodyAsJSON()
         for key in ('poolName', 'nodeId', 'maxRN'):
@@ -60,7 +69,7 @@ class PoolSharesResource(BaseResource):
 
 
 class PoolShareResource(BaseResource):
-    @queue
+    #@queue
     def get(self, id):
         try:
             poolShare = self.getDispatchTree().poolShares[int(id)]
@@ -70,8 +79,12 @@ class PoolShareResource(BaseResource):
             'poolshare': poolShare.to_json()
         })
 
-    @queue
+    #@queue
     def post(self, id):
+        '''
+        This request is sent when a user wants to update a poolshare's maxRN.
+        We update the poolShare but also report this update on the related node for data consistency (and display).
+        '''
         try:
             poolShare = self.getDispatchTree().poolShares[int(id)]
         except KeyError:
@@ -80,6 +93,10 @@ class PoolShareResource(BaseResource):
         maxRN = int(dct['maxRN'])
         poolShare.maxRN = maxRN
         poolShare.userDefinedMaxRN = True
+
+        # Mirror this change to the related node of this pool share
+        poolShare.node.maxRN = maxRN
+
         self.writeCallback({
             'poolshare': poolShare.to_json()
         })

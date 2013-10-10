@@ -11,6 +11,7 @@ from octopus.core.enums.command import *
 from octopus.dispatcher.rules import RuleError
 
 
+
 logger = logging.getLogger("dispatcher.dispatchtree")
 
 
@@ -39,6 +40,73 @@ class ObjectListener(object):
 
 
 class DispatchTree(object):
+
+    def _display_(self):
+        '''
+        Debug purpose method, basic display of the dispatchTree
+        '''
+        depth=''
+
+        # import pudb; pu.db
+        
+        print ""
+        print "DispatchTree:"
+
+        # print "\nRenderNodes:"
+        # depth += '  '''
+        # for currRN in self.renderNodes:
+        #     print "%s %s -> %s" % (depth, currRN, self.renderNodes[currRN] )
+        # depth = ''
+        print "\nRoot:"
+        print "%s" % (self.root)
+
+        print "\nPools:"
+        depth += '  '
+        for i,curr in enumerate(self.pools):
+            print "%s %d -> %s" % (depth, i, self.pools[curr] )
+        depth = ''
+
+        print "\nPoolShares: (attribution de parc pour une tache donnee, la tache est forcement une tache fille du root, on attribue pas de poolshare aux autres tasks)"
+        depth += '  '
+        for i,curr in enumerate(self.poolShares):
+            print "%s %d -> %s" % (depth, i, self.poolShares[curr] )
+        depth = ''
+
+        print "\nMain level nodes (proxy info only):"
+        depth += '  '
+        for i,curr in enumerate(self.nodes[1].children):
+            print "%s %d -> %r" % (depth, i, curr )
+        depth = ''
+
+        print "\nAll nodes:"
+        depth += '  '
+        for i,curr in enumerate(self.nodes):
+            print "%s %d -> %s -> %r" % (depth, i, curr, self.nodes[curr] )
+        depth = ''
+
+        print "\nTasks:"
+        depth += '  '
+        for i,curr in enumerate(self.tasks):
+            print "%s %d -> %s" % (depth, i, repr(self.tasks[curr]) )
+        depth = ''
+
+        print "\nCommands:"
+        depth += '  '
+        for i,curr in enumerate(self.commands):
+            print "%s %d -> %s" % (depth, i, self.commands[curr] )
+        depth = ''
+
+        print "\nRules:"''
+        depth += '  '
+        for i,curr in enumerate(self.rules):
+            print "%s %d -> %s" % (depth, i, curr )
+        depth = ''
+
+
+
+        print ""
+        pass
+
 
     def __init__(self):
         # core data
@@ -113,6 +181,23 @@ class DispatchTree(object):
 
     def updateCompletionAndStatus(self):
         self.root.updateCompletionAndStatus()
+
+
+    def updateAllocationInfo(self):
+        '''
+        Update dispatchTree root children to store the current maxRN/Allocated in their corresponding poolShares.
+        We might only consider the running jobs to avoid updating to many jobs but for the moment having a more reliable data is a better choice.
+
+        NOTE: This process can be take some time for large queue, so we prefer using a more lightweith update method :
+            - doing maxRN update directly in the concerned webservice i.e. when the user has ordered the maxRN change on the poolShare
+            - doing allocatedRN update when parsing the tree for completion and status update (it has a "when needed" necanism which will limit the number of updates)
+        When using these 2 processes, it not necessary to call this method periodically. 
+        '''
+        for currNodeRef in self.nodes[1].children:
+            for currPoolShare in currNodeRef.poolShares.values():
+                currNodeRef.maxRN = currPoolShare.maxRN
+                currNodeRef.allocatedRN = currPoolShare.allocatedRN
+        pass
 
     def validateDependencies(self):
         nodes = set()
@@ -349,6 +434,8 @@ class DispatchTree(object):
     ### methods called after interaction with a Task
 
     def onTaskCreation(self, task):
+        # logger.info("  -- on task creation: %s" % task)
+
         if task.id == None:
             self.taskMaxId += 1
             task.id = self.taskMaxId
@@ -358,14 +445,17 @@ class DispatchTree(object):
         self.tasks[task.id] = task
 
     def onTaskDestruction(self, task):
+        # logger.info("  -- on task destruction: %s" % task)
         self.unregisterElementsFromTree(task)
 
     def onTaskChange(self, task, field, oldvalue, newvalue):
+        # logger.info("  -- on task change: %s [ %s = %s -> %s ]" % (task,field, oldvalue, newvalue) )
         self.toModifyElements.append(task)
 
     ### methods called after interaction with a BaseNode
 
     def onNodeCreation(self, node):
+        # logger.info("  -- on node creation: %s" % node)
         if node.id == None:
             self.nodeMaxId += 1
             node.id = self.nodeMaxId
@@ -376,9 +466,11 @@ class DispatchTree(object):
             node.parent = self.root
 
     def onNodeDestruction(self, node):
+        # logger.info("  -- on node destruction: %s" % node)
         del self.nodes[node.id]
 
     def onNodeChange(self, node, field, oldvalue, newvalue):
+        # logger.info("  -- on node change: %s [ %s = %s -> %s ]" % (node,field, oldvalue, newvalue) )
         # FIXME: do something when nodes are reparented from or to the root node
         if node.id is not None:
             self.toModifyElements.append(node)

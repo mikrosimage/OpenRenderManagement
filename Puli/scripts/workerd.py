@@ -62,11 +62,9 @@ def daemonize(username=""):
 
 def process_args():
     parser = optparse.OptionParser()
-    parser.add_option("-D", "--debug", action="store_true", dest="DEBUG", help="changes the default log level to DEBUG")
-    parser.add_option("-C", "--console", action="store_true", dest="CONSOLE", default=False, help="output logs to the console")
 
     parser.add_option("-P", "--pid-file", action="store", dest="PIDFILE", help="change the pid file")
-    parser.add_option("-K", "--kill-file", action="store", dest="KILLFILE", help="change the kill file") 
+    parser.add_option("-K", "--kill-file", action="store", dest="KILLFILE", help="change the kill file")
     parser.add_option("-W", "--commandwatchers-pid-dir", action="store", dest="PID_DIR", help="change the directory where pid files for command watchers are stored")
 
     parser.add_option("-d", "--daemon", action="store_true", dest="DAEMONIZE", default=False, help="daemonize the dispatcher")
@@ -74,8 +72,10 @@ def process_args():
     parser.add_option("-p", "--port", action="store", type="int", dest="PORT", metavar="PORT", help="change the PORT the web service is listening on")
     parser.add_option("-u", "--run-as", action="store", type="string", dest="RUN_AS", metavar="USER", help="run the dispatcher as USER")
 
-    parser.add_option("-s", "--dispatcherhost", action="store", dest="DISPATCHER_ADDRESS", help="change the dispatcher address")
-    parser.add_option("-n", "--dispatcherport", action="store", dest="DISPATCHER_PORT", help="change the dispatcher port")
+    parser.add_option("-D", "--debug", action="store_true", dest="DEBUG", help="changes the default log level to DEBUG")
+    parser.add_option("-C", "--console", action="store_true", dest="CONSOLE", default=False, help="output logs to the console")
+    parser.add_option("-s", "--server", action="store", dest="DISPATCHER_ADDRESS", help="Sets the Puli server hostname")
+    parser.add_option("-i", "--serverport", action="store", dest="DISPATCHER_PORT", help="Sets the Puli server port")
 
     options, args = parser.parse_args()
     if args:

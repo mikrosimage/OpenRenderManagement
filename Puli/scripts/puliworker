@@ -22,10 +22,15 @@ PULI_USER="render"
 export HOME="/homes/render"
 
 # Python/Puli variables
-export PYTHONPATH=/s/apps/lin/puli:${PYTHONPATH}
-WORKER_BIN="/s/apps/lin/puli/scripts/workerd.py"
-SETTINGS=/s/apps/lin/puli/octopus/worker/settings.py
+export PYTHONPATH=/s/prods/ddd/_sandbox/jsa/distrib/OpenRenderManagement/Puli/src:${PYTHONPATH}
+WORKER_BIN="/s/prods/ddd/_sandbox/jsa/distrib/OpenRenderManagement/Puli/scripts/workerd.py"
+
+HOST=puliserver
 PORT=8000
+
+HOST_TEST=pulitest
+PORT_TEST=8001
+
 
 # Test if python script is available on automounted share.
 test -x ${WORKER_BIN} || { echo "${WORKER_BIN} not installed"; 
@@ -80,8 +85,31 @@ case "$1" in
 	# Remember status and be verbose
 	rc_status -v
 	;;
+
+    start_test)
+	echo -n "Starting ${SERVICE}..."
+        ## Start daemon with startproc(8). If this fails
+	## the return value is set appropriately by startproc.
+        /sbin/startproc -p ${PIDFILE} -s -u${PULI_USER} "${WORKER_BIN}" -p ${PORT_TEST} -d -s ${HOST_TEST}
+	#>> /dev/null 2>&1
+	sleep 2s
+
+	# Remember status and be verbose.
+        rc_status -v
+	;;
+
+    restart_test)
+	## Stop the service and regardless of whether it was
+	## running or not, start it again.
+	$0 stop
+	$0 start_test
+
+	# Remember status and be quiet
+	rc_status
+	;;
+
     *)
-	echo "Usage: ${SERVICE} {start|stop|status|restart}"
+	echo "Usage: ${SERVICE} {start|stop|status|restart|start_test|restart_test}"
 	exit 1
 	;;
 esac

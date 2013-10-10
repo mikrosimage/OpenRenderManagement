@@ -176,7 +176,7 @@ class Dispatcher(MainLoopApplication):
         # JSA DEBUG: timer pour profiler les etapes       
         loopStartTime = time.time()
         prevTimer = time.time()
-        LOGGER.info("")
+        # LOGGER.info("")
 
         # JSA: Check if requests are finished (necessaire ?)
         try:
@@ -188,47 +188,48 @@ class Dispatcher(MainLoopApplication):
 
         self.cycle += 1
 
+        # Update of allocation is done when parsing the tree for completion and status update (done partially for invalidated node only i.e. when needed)
         self.dispatchTree.updateCompletionAndStatus()
-        LOGGER.info("%8.2f ms --> update completion status" % ( (time.time() - prevTimer)*1000 ) )
-        prevTimer = time.time()
+        # LOGGER.info("%8.2f ms --> update completion status" % ( (time.time() - prevTimer)*1000 ) )
+        # prevTimer = time.time()
 
 
         self.updateRenderNodes()
-        LOGGER.info("%8.2f ms --> update render node" % ( (time.time() - prevTimer)*1000 ) )
-        prevTimer = time.time()
+        # LOGGER.info("%8.2f ms --> update render node" % ( (time.time() - prevTimer)*1000 ) )
+        # prevTimer = time.time()
 
 
         self.dispatchTree.validateDependencies()
-        LOGGER.info("%8.2f ms --> validate dependencies" % ( (time.time() - prevTimer)*1000 ) )
-        prevTimer = time.time()
+        # LOGGER.info("%8.2f ms --> validate dependencies" % ( (time.time() - prevTimer)*1000 ) )
+        # prevTimer = time.time()
 
 
         # update db
         self.updateDB()
 
         # JSA DEBUG
-        LOGGER.info("%8.2f ms --> update DB" % ( (time.time() - prevTimer)*1000 ) )
-        prevTimer = time.time()
+        # LOGGER.info("%8.2f ms --> update DB" % ( (time.time() - prevTimer)*1000 ) )
+        # prevTimer = time.time()
 
         # compute and send command assignments to rendernodes
         assignments = self.computeAssignments()
         self.sendAssignments(assignments)
 
         # JSA DEBUG
-        LOGGER.info("%8.2f ms --> compute assignements" % ( (time.time() - prevTimer)*1000 ) )
-        prevTimer = time.time()
+        # LOGGER.info("%8.2f ms --> compute assignements" % ( (time.time() - prevTimer)*1000 ) )
+        # prevTimer = time.time()
 
         # call the release finishing status on all rendernodes
         for renderNode in self.dispatchTree.renderNodes.values():
             renderNode.releaseFinishingStatus()
 
         # JSA DEBUG
-        LOGGER.info("%8.2f ms --> releaseFinishingStatus" % ( (time.time() - prevTimer)*1000 ) )
-        prevTimer = time.time()
+        # LOGGER.info("%8.2f ms --> releaseFinishingStatus" % ( (time.time() - prevTimer)*1000 ) )
+        # prevTimer = time.time()
 
         # JSA DEBUG
-        loopDuration = (time.time() - loopStartTime)*1000
-        LOGGER.info( "%8.2f ms --> TOTAL " % loopDuration )
+        # loopDuration = (time.time() - loopStartTime)*1000
+        # LOGGER.info( "%8.2f ms --> TOTAL " % loopDuration )
 
 
     def updateDB(self):
@@ -251,7 +252,7 @@ class Dispatcher(MainLoopApplication):
             self.pulidb.createElements(self.dispatchTree.toCreateElements)
             self.pulidb.updateElements(self.dispatchTree.toModifyElements)
             self.pulidb.archiveElements(self.dispatchTree.toArchiveElements)
-            LOGGER.info("                UpdateDB: create=%d update=%d delete=%d" % (len(self.dispatchTree.toCreateElements), len(self.dispatchTree.toModifyElements), len(self.dispatchTree.toArchiveElements)) )
+            # LOGGER.info("                UpdateDB: create=%d update=%d delete=%d" % (len(self.dispatchTree.toCreateElements), len(self.dispatchTree.toModifyElements), len(self.dispatchTree.toArchiveElements)) )
         self.dispatchTree.resetDbElements()
 
     def computeAssignments(self):

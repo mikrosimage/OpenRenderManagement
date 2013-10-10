@@ -81,6 +81,10 @@ class Command(models.Model):
     def __repr__(self):
         return "Command(id=%r, status=%s)" % (self.id, CMD_STATUS_NAME[self.status])
 
+    def __str__(self):
+        return "Command(id=%r, status=%s, desc=%s, task=%r, completion=%.2f, RN=%s)" % (self.id, CMD_STATUS_NAME[self.status], 
+            self.description, str(self.task), self.completion, self.renderNode)
+
     def clearAssignment(self):
         self.renderNode = None
         self.startTime = None

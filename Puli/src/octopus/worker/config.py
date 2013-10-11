@@ -15,7 +15,7 @@ __copyright__   = "Copyright 2013, Mikros Image"
 #
 # COMUNICATION BEHAVIOUR
 # 
-WORKER_SYSINFO_DELAY = 10                          # interval between 2 heartbeats to the server
+WORKER_SYSINFO_DELAY = 6                           # interval between 2 heartbeats to the server
 WORKER_REGISTER_DELAY_AFTER_FAILURE = 15           # wait 15s before retrying to register to the server
 
 WORKER_REQUEST_MAX_RETRY_COUNT = 10                # nb of retry for a failed request

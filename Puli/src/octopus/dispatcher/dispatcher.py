@@ -24,6 +24,7 @@ from octopus.dispatcher.poolman.wspoolman import WebServicePoolManager
 from octopus.dispatcher.licenses.licensemanager import LicenseManager
 from octopus.dispatcher.model.enums import *
 
+from octopus.core.singletonconfig import SingletonConfig
 
 LOGGER = logging.getLogger('dispatcher')
 
@@ -54,9 +55,7 @@ class Dispatcher(MainLoopApplication):
 
         self.threadPool = ThreadPool(16, 0, 0, None)
 
-        LOGGER.info('settings.DEBUG = %s', settings.DEBUG)
-        LOGGER.info('settings.ADDRESS = %s', settings.ADDRESS)
-        LOGGER.info('settings.PORT = %s', settings.PORT)
+        LOGGER.info('Settings: DEBUG = %s, ADDRESS = %s, PORT = %s', settings.DEBUG, settings.ADDRESS, settings.PORT)
 
         self.cycle = 1
         self.dispatchTree = DispatchTree()
@@ -178,6 +177,7 @@ class Dispatcher(MainLoopApplication):
         prevTimer = time.time()
         # LOGGER.info("")
 
+        
         # JSA: Check if requests are finished (necessaire ?)
         try:
             self.threadPool.poll()

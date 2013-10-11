@@ -6,6 +6,11 @@
 # @version 0.1
 #
 ####################################################################################################
+try:
+    import simplejson as json
+except ImportError:
+    import json
+
 from tornado.web import Application
 import tornado.web as web
 from tornado.httpserver import HTTPServer
@@ -13,8 +18,13 @@ from octopus.dispatcher.webservice import commands, rendernodes, graphs, nodes,\
     tasks, poolshares, pools, licenses, \
     wsQuery, wsEdit
 
+from octopus.core.communication.http import Http404, Http400, HttpConflict
 from octopus.core.enums.command import *
 from octopus.core.framework import BaseResource
+from octopus.core.singletonconfig import SingletonConfig
+
+# import logging
+# LOGGER = logging.getLogger('dispatcher.webservice')
 
 
 ## This class defines the webservice associated with the dispatcher.
@@ -79,7 +89,9 @@ class WebServiceDispatcher(Application):
             (r'^/mobile/?$', MobileResource, dict(framework=framework)),
 
             (r'^/query$', wsQuery.QueryResource, dict(framework=framework)),
-            (r'^/edit$', wsEdit.EditResource, dict(framework=framework))
+            (r'^/edit$', wsEdit.EditResource, dict(framework=framework)),
+            
+            (r'^/reconfig$', ReconfigResource, dict(framework=framework))
 
         ])
         self.listen(port, "0.0.0.0")
@@ -188,12 +200,10 @@ class SystemResource(BaseResource):
         self.writeCallback(env)
 
 
-#TMP pour tester une nouvelle ressource
-from octopus.core.communication.http import Http404, Http400, HttpConflict
-try:
-    import simplejson as json
-except ImportError:
-    import json
+class ReconfigResource(BaseResource):
+    def post(self):
+        SingletonConfig().reload()
+
 
 class SystemResourceJson(BaseResource):
     def get(self):

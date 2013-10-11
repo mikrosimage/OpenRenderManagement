@@ -350,6 +350,7 @@ class Worker(MainLoopApplication):
         # try:
         now = time.time()
 
+        #
         # check if the killfile is present
         #
         if os.path.isfile(settings.KILLFILE):
@@ -386,6 +387,7 @@ class Worker(MainLoopApplication):
             rf = open("/tmp/render/restartfile", 'w')
             rf.close()
 
+        #
         # Waits for any child process, non-blocking (this is necessary to clean up finished process properly)
         #
         try:
@@ -395,17 +397,20 @@ class Worker(MainLoopApplication):
         except OSError:
             pass
 
+        #
         # Send updates for every modified command watcher.
         #
         for commandWatcher in self.modifiedCommandWatchers:
             self.updateCommandWatcher(commandWatcher)
 
+        #
         # Attempt to remove finished command watchers
         #
         for commandWatcher in self.finishedCommandWatchers:
             LOGGER.info("Removing command watcher %d (status=%r, finished=%r, modified=%r)", commandWatcher.command.id, commandWatcher.command.status, commandWatcher.finished, commandWatcher.modified)
             self.removeCommandWatcher(commandWatcher)
 
+        #
         # Kill watchers that timeout and remove dead command watchers
         # that are not flagged as modified.
         #

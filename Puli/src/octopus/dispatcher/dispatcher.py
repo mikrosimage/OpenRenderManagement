@@ -444,6 +444,10 @@ class Dispatcher(MainLoopApplication):
         return nodes
 
     def updateCommandApply(self, dct):
+        """
+        
+        """
+
         commandId = dct['id']
         renderNodeName = dct['renderNodeName']
 
@@ -460,7 +464,7 @@ class Dispatcher(MainLoopApplication):
             # rn = command.renderNode
             # rn.clearAssignment(command)
             # rn.request("DELETE", "/commands/" + str(commandId) + "/")
-            raise KeyError("Command %d is running on a different rendernode (%s) than the one in puli's model (%s)." % (commandId, renderNodeName, rn.name))
+            raise KeyError("Command %d is running on a different rendernode (%s) than the one in puli's model (%s)." % (commandId, renderNodeName, command.renderNode.name))
 
         rn = command.renderNode
         rn.lastAliveTime = max(time.time(), rn.lastAliveTime)

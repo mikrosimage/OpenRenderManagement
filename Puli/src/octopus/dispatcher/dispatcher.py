@@ -24,8 +24,6 @@ from octopus.dispatcher.poolman.wspoolman import WebServicePoolManager
 from octopus.dispatcher.licenses.licensemanager import LicenseManager
 from octopus.dispatcher.model.enums import *
 
-from octopus.core.singletonconfig import SingletonConfig
-
 LOGGER = logging.getLogger('dispatcher')
 
 

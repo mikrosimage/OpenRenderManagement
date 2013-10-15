@@ -114,9 +114,8 @@ class Worker(MainLoopApplication):
                 for line in f.readlines():
                     if 'model name' in line:
                         self.cpuName = line.split(':')[1].strip()
-                    elif 'MHz' in line:
-                        speedStr = line.split(':')[1].strip()
-                        self.speed = "%.1f" % (float(speedStr) / 1000)
+                        speedStr = line.split('@')[1].strip()
+                        self.speed = speedStr.split('GHz')[0].strip()
                         break
                 f.close()
             except:

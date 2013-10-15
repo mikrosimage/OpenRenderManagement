@@ -20,11 +20,10 @@ import time
 # Init singleton object holding reloadable config values
 # Must be done in the very first place because some import might ask for config value
 #
-from octopus.core.singletonconfig import SingletonConfig
 from octopus.dispatcher import settings
+from octopus.core import singletonconfig
 
-globalconf = SingletonConfig()
-globalconf.load( settings.CONFDIR + "/config.ini" )
+singletonconfig.load( settings.CONFDIR + "/config.ini" )
 
 #
 # Init the rest of dispatcher app
@@ -125,7 +124,7 @@ def main():
 
     dispatcherApplication = make_dispatcher()
 
-    periodic = tornado.ioloop.PeriodicCallback( dispatcherApplication.loop, globalconf.conf.getint('CORE','MASTER_UPDATE_INTERVAL') )
+    periodic = tornado.ioloop.PeriodicCallback( dispatcherApplication.loop, singletonconfig.get('CORE','MASTER_UPDATE_INTERVAL') )
     periodic.start()
     try:
         tornado.ioloop.IOLoop.instance().start()

@@ -21,7 +21,7 @@ from octopus.dispatcher.webservice import commands, rendernodes, graphs, nodes,\
 from octopus.core.communication.http import Http404, Http400, HttpConflict
 from octopus.core.enums.command import *
 from octopus.core.framework import BaseResource
-from octopus.core.singletonconfig import SingletonConfig
+from octopus.core import singletonconfig
 
 # import logging
 # LOGGER = logging.getLogger('dispatcher.webservice')
@@ -202,7 +202,7 @@ class SystemResource(BaseResource):
 
 class ReconfigResource(BaseResource):
     def post(self):
-        SingletonConfig().reload()
+        singletonconfig.reload()
 
 
 class SystemResourceJson(BaseResource):

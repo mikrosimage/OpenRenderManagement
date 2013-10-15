@@ -20,15 +20,12 @@ import simplejson as json
 
 from octopus.dispatcher.model.enums import *
 from octopus.dispatcher import settings
-from octopus.core.singletonconfig import SingletonConfig
+from octopus.core import singletonconfig
 
 from . import models
 
 LOGGER = logging.getLogger('dispatcher.webservice')
 logging.getLogger('requests.packages.urllib3.connectionpool').setLevel(logging.WARNING)
-
-# Load timeout setting at import time only, access via singleton instance is still a bit long
-TIMEOUT = SingletonConfig().conf.getint('COMMUNICATION','RN_TIMEOUT')
 
 ## This class represents the state of a RenderNode.
 #
@@ -87,7 +84,7 @@ class RenderNode(models.Model):
         self.currentpoolshare = None
         self.performance = float(performance)
         # self.history = deque(maxlen=settings.RN_NB_ERRORS_TOLERANCE)
-        self.history = deque( maxlen=SingletonConfig().conf.getint('CORE','RN_NB_ERRORS_TOLERANCE') )
+        self.history = deque( maxlen=singletonconfig.get('CORE','RN_NB_ERRORS_TOLERANCE') )
         self.tasksHistory = deque(maxlen=15)
         self.excluded = False
 
@@ -211,7 +208,7 @@ class RenderNode(models.Model):
     #
     def updateStatus(self):
         # self.status is not RN_PAUSED and time elapsed is enough
-        if time.time() > ( self.lastAliveTime + TIMEOUT ):
+        if time.time() > ( self.lastAliveTime + singletonconfig.conf["COMMUNICATION"]["RN_TIMEOUT"] ):
 
             # set the status of a render node to RN_UNKNOWN after TIMEOUT seconds have elapsed since last update
             # timeout the commands running on this node
@@ -306,7 +303,7 @@ class RenderNode(models.Model):
 
         conn = self.getHTTPConnection()
         # try to process the request at most RENDERNODE_REQUEST_MAX_RETRY_COUNT times.
-        for i in xrange( SingletonConfig().conf.getint('COMMUNICATION','RENDERNODE_REQUEST_MAX_RETRY_COUNT') ):
+        for i in xrange( singletonconfig.get('COMMUNICATION','RENDERNODE_REQUEST_MAX_RETRY_COUNT') ):
         # for i in xrange(settings.RENDERNODE_REQUEST_MAX_RETRY_COUNT):
             try:
                 conn.request(method, url, body, headers)
@@ -333,7 +330,7 @@ class RenderNode(models.Model):
                 LOGGER.exception("rendernode.request failed")
             # request failed so let's sleep for a while
             # time.sleep(settings.RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE)
-            time.sleep( SingletonConfig().conf.getint('COMMUNICATION','RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE') )
+            time.sleep( singletonconfig.get('COMMUNICATION','RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE') )
 
         # request failed too many times so pause the RN and report a failure
         self.reset(paused=True)
@@ -346,7 +343,7 @@ class RenderNode(models.Model):
         for i in self.history:
             if i == CMD_ERROR:
                 cpt += 1
-        if cpt == SingletonConfig().conf.getint('CORE','RN_NB_ERRORS_TOLERANCE'):
+        if cpt == singletonconfig.get('CORE','RN_NB_ERRORS_TOLERANCE'):
             LOGGER.warning("RenderNode %s had only errors in its commands history, excluding..." % self.name)
             self.excluded = True
             return False

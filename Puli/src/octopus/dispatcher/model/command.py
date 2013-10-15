@@ -17,7 +17,7 @@ from octopus.core.enums.command import *
 from octopus.core.enums.rendernode import RN_FINISHING
 from . import models
 from octopus.dispatcher import settings
-from octopus.core.singletonconfig import SingletonConfig
+from octopus.core import singletonconfig
 
 LOGGER = logging.getLogger('command')
 
@@ -206,10 +206,10 @@ class CommandDatesUpdater(object):
             cmd.computeAvgTimeByFrame()
         # autoretry
         elif cmd.status is CMD_ERROR:
-            if cmd.retryCount == SingletonConfig().conf.getint('CORE','MAX_RETRY_CMD_COUNT'):
+            if cmd.retryCount == singletonconfig.get('CORE','MAX_RETRY_CMD_COUNT'):
                 cmd.retryRnList.append(cmd.renderNode.name)
-            elif cmd.retryCount < SingletonConfig().conf.getint('CORE','MAX_RETRY_CMD_COUNT'):
-                t = Timer(SingletonConfig().conf.getint('CORE','DELAY_BEFORE_AUTORETRY'), self.autoretry, [cmd])
+            elif cmd.retryCount < singletonconfig.get('CORE','MAX_RETRY_CMD_COUNT'):
+                t = Timer(singletonconfig.get('CORE','DELAY_BEFORE_AUTORETRY'), self.autoretry, [cmd])
                 t.start()
         elif cmd.status is CMD_ASSIGNED:
             cmd.startTime = cmd.updateTime

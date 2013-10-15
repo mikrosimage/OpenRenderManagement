@@ -181,26 +181,33 @@ class Worker(MainLoopApplication):
         infos['speed'] = float(self.speed)
         return infos
 
-    def setPerformanceIndex(self, ticket, performance):
-        LOGGER.warning("set perf idx")
-        dct = json.dumps({'performance': performance})
-        headers = {}
-        headers['content-length'] = len(dct)
+    # def setPerformanceIndex(self, ticket, performance):
+    #     """
+    #     NOTE: never called ???
 
-        LOGGER.warning(dct)
+    #     Send sys infos to the dispatcher
+    #     req: PUT /rendernodes/<currentRN>/sysinfos
+    #     """
 
-        try:
-            self.requestManager.put("/rendernodes/%s/sysinfos" % self.computerName, dct, headers)
-        except RequestManager.RequestError, err:
-            if err.status == 404:
-                # the dispatcher doesn't know the worker
-                # it may have been launched before the dispatcher itself
-                # and not be mentioned in the tree.description file
-                self.registerWorker()
-            else:
-                raise
-        except httplib.BadStatusLine:
-            LOGGER.exception('Sending sys infos has failed with a BadStatusLine error')
+    #     LOGGER.warning("set perf idx")
+    #     dct = json.dumps({'performance': performance})
+    #     headers = {}
+    #     headers['content-length'] = len(dct)
+
+    #     LOGGER.warning(dct)
+
+    #     try:
+    #         self.requestManager.put("/rendernodes/%s/sysinfos" % self.computerName, dct, headers)
+    #     except RequestManager.RequestError, err:
+    #         if err.status == 404:
+    #             # the dispatcher doesn't know the worker
+    #             # it may have been launched before the dispatcher itself
+    #             # and not be mentioned in the tree.description file
+    #             self.registerWorker()
+    #         else:
+    #             raise
+    #     except httplib.BadStatusLine:
+    #         LOGGER.exception('Sending sys infos has failed with a BadStatusLine error')
 
     def registerWorker(self):
         '''Register the worker in the dispatcher.'''
@@ -258,6 +265,12 @@ class Worker(MainLoopApplication):
         return dct
 
     def updateCommandWatcher(self, commandWatcher):
+        """
+        Send info to the dispatcher about currently running command watcher.
+        Called from the mainloop every time a command has been tagged "modified"
+        req: PUT /rendernodes/<currentRN>/commands/<commandId>/
+        """
+
         maxRetry = max(1,config.WORKER_REQUEST_MAX_RETRY_COUNT)
         delayRetry = config.WORKER_REQUEST_DELAY_AFTER_REQUEST_FAILURE
         i=0
@@ -289,12 +302,17 @@ class Worker(MainLoopApplication):
                 self.httpconn.close()
 
             LOGGER.warning('Update of command %d failed (attempt %d of %d)', commandWatcher.commandId, i, maxRetry)
-            LOGGER.warning('Next retry will occur in %.2f ms' % delayRetry )
+            LOGGER.warning('Next retry will occur in %.2f s' % delayRetry )
             time.sleep( delayRetry )
             i += 1
             delayRetry *= 2
 
     def pauseWorker(self, paused, killproc):
+        """
+        Called from mainloop when checking killfile presence (also checked when registering).
+        Send a request to the dispatcher to update rendernode's state.
+        req: PUT /rendernodes/<currentRN>/paused/
+        """
         while True:
             url = "/rendernodes/%s/paused/" % (self.computerName)
             dct = {}
@@ -439,6 +457,12 @@ class Worker(MainLoopApplication):
         #     LOGGER.error("A problem occured : " + repr(sys.exc_info()))
 
     def sendSysInfosMessage(self):
+        """
+        Send sys infos to the dispatcher, the request content holds the RN status only, it has to be kept
+        very small to avoid nerwork flood.
+        req: PUT /rendernodes/<currentRN>/sysinfos
+        """
+
         # we don't need to send the whole dict of sysinfos
         #infos = self.fetchSysInfos()
         infos = {}

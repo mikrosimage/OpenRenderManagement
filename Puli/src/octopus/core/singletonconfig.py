@@ -5,49 +5,81 @@
 name: config.py
 
 Module holding param values that might be reloaded without restarting the dispatcher
-The dispatcher handles a "reconfig" request wich ask the worker applicaiton to reload this class
+The dispatcher handles a "reconfig" request wich ask the worker application to reload the source config file and recreate the conf object
 
 Basic usage:
-globalconf = SingletonConfig()
-globalconf.load( settings.CONFDIR + "/config.ini" )
 
-print "one_value = " + globalconf.conf.get('ONE_SECTION','ONE_FIELD')
+	import singletonconfig
+	singletonconfig.load( settings.CONFDIR + "/config.ini" )
+
+	# Access the options with module's get() method
+	print "one_value = " + singletonconfig.get('ONE_SECTION','ONE_FIELD')
+
+	# Or with direct access to the key/value dict for faster access
+	print "one_value = " + singletonconfig.conf.['ONE_SECTION']['ONE_FIELD']
+
 """
 __author__      = "Jérôme Samson"
 __copyright__   = "Copyright 2013, Mikros Image"
 
 
 import ConfigParser
+import ast
+
+confPath = None
+confWithString = None
+conf = None
 
 
-class SingletonConfig(object):
-	class __SingletonConfig:
-		def __init__(self):
-			self.confPath = None
-			self.conf = None
+def get( pSection, pOption ):
+	"""
+	Simple accessor to hide/protect the multiple depth dict access: conf["SECTION"]["OPTION"]
+	"""
+	if pSection in conf.keys():
+		if pOption in conf[pSection].keys():
+			return conf[pSection][pOption]
+	return None
 
-		def __str__(self):
-			return "SingletonConfig(%r) --> %r" % (self.confPath, self.conf)
+def parse():
+	"""
+	Load a conf object with evaluated options intead of strings (as returned by the ConfigParser)
+	We use the "ast" lib to eval the attributes more safely than with classic python eval()
+	"""
+	global confWithString, conf
+	
+	if confWithString is None:
+		return
 
-		def load( self, pFilePath ):
-			self.confPath = pFilePath
+	conf={}
+	for section in confWithString.sections():
+		conf[section]={}
+		for item in confWithString.items(section):
+			optName, optValue = item
+			optValue = ast.literal_eval(optValue)
 
-			self.conf = ConfigParser.ConfigParser()
-			self.conf.read(pFilePath)
+			conf[section][optName.upper()] = optValue
 
-		def reload( self ):
-			self.conf.read(self.confPath)
+def load( pFilePath ):
+	"""
+	Load ini file for later use in application
+	"""
+	global confPath, confWithString
 
+	confPath = pFilePath
 
-	instance = None
+	confWithString = ConfigParser.ConfigParser()
+	confWithString.read(pFilePath)
 
-	def __new__(c): # _new_ est toujours une méthode de classe
-		if not SingletonConfig.instance:
-		  SingletonConfig.instance = SingletonConfig.__SingletonConfig()
-		return SingletonConfig.instance
+	# parse pour creer cleanconf
+	parse()
+	# print "DBG: conf = %r" % conf
 
-	def __getattr__(self, attr):
-		return getattr(self.instance, attr)
+def reload():
+	"""
+	Reload conf file for later use in application
+	"""
+	global confPath, confWithString
 
-	def __setattr__(self, attr, val):
-		return setattr(self.instance, attr, val)
+	confWithString.read(confPath)
+	parse()
+

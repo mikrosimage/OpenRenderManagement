@@ -86,6 +86,10 @@ class PauseResource(BaseResource):
 
 
 class RamInUseResource(BaseResource):
+    """
+    TO FIX: the method for retrieving mem used is not really correct. 
+    We should use "free -m" or directly /proc/meminfo -> use = memtotal - (memfree + membuffer + memcache)
+    """
     def get(self):
         process = subprocess.Popen("ps -e -o rss | awk '{sum+=$1} END {print sum/1024}'",
                                    shell=True,

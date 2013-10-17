@@ -101,8 +101,8 @@ def handle_request(response):
         else:
             # Default display
             print ""
-            print " ID     NAME          PROD    SHOT  IMG  OWNER   PRIO ST    %  SUBMITTED    START        END          RUN_TIME  "
-            print "--------------------------------------------------------------------------------------------------------------"
+            print " ID     NAME                  PROD    SHOT  IMG  OWNER   PRIO ST    %  SUBMITTED    START        END          RUN_TIME  "
+            print "------------------------------------------------------------------------------------------------------------------------"
 
             for row in _data['tasks']:
                 line=""
@@ -135,7 +135,7 @@ def handle_request(response):
                 shot = 'shot' in row.keys() and row['shot'][:4]  or ''
                 frames = 'frames' in row.keys() and row['shot']  or ''
 
-                print "%6d  %12s  %6s  %-4s  %-3s  %-6s  %4d %2s  %3d  %11s  %11s  %11s  %s" \
+                print "%6d  %20s  %6s  %-4s  %-3s  %-6s  %4d %2s  %3d  %11s  %11s  %11s  %s" \
                     % ( row['id'], row['name'][:12], prod, shot, "-", row['user'][:6], \
                         row['priority'], Settings.status_short_name[row['status']], percentCompletion, \
                         creationTimeStr, startTimeStr, endTimeStr, runTimeStr )

@@ -444,8 +444,14 @@ class Dispatcher(MainLoopApplication):
         return nodes
 
     def updateCommandApply(self, dct):
+        '''
+        Called from a RN with a json desc of a command (ie rendernode info, command info etc).
+        Raise an execption to tell caller to send a HTTP404 response to RN, if not error a HTTP200 will be send instead
+        '''
         commandId = dct['id']
         renderNodeName = dct['renderNodeName']
+
+        print json.dumps(dct, indent=4)
 
         try:
             command = self.dispatchTree.commands[commandId]
@@ -467,16 +473,25 @@ class Dispatcher(MainLoopApplication):
 
         #if command is no more in the rn's list, it means the rn was reported as timeout
         if commandId not in rn.commands:
+            import pudb; pu.db
             if len(rn.commands) == 0 and command.status is not enums.CMD_CANCELED:
                 # in this case, re-add the command to the list of the rendernode
                 rn.commands[commandId] = command
                 # we should re-reserve the lic
                 rn.reserveLicense(command, self.licenseManager)
                 LOGGER.warning("re-assigning command %d on %s. (TIMEOUT?)" % (commandId, rn.name))
+
+            # The command has been cancelled on the dispatcher but update from RN only arrives now
+            # -> raise an error will send http404 and RN will remove its commandWatcher
+            elif len(rn.commands) == 0 and command.status is enums.CMD_CANCELED:
+                raise KeyError("Command already cancelled on dispatcher: %d" % commandId)
             else:
                 # cancel the command on rn?
                 # rn.request("DELETE", "/commands/" + str(commandId) + "/")
-                LOGGER.warning("Status update from %d (%d) on %s but %d currently assigned." % (commandId, int(dct['status']), rn.name, rn.commands.keys()[0]))
+                try:
+                    LOGGER.warning("Status update from %d (%d) on %s but %d currently assigned." % (commandId, int(dct['status']), rn.name, rn.commands.keys()[0]))
+                except IndexError, e:
+                    raise IndexError("test")
                 pass
 
         if "status" in dct:

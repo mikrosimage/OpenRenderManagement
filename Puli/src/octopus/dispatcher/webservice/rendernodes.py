@@ -139,7 +139,7 @@ class RenderNodeCommandsResource(BaseResource):
     def put(self, computerName, commandId):
         '''Update command `commandId` running on rendernode `renderNodeId`.
 
-        Returns "200 OK" on success, or "400 Bad Request" if the provided json data is not valid.
+        Returns "200 OK" on success, or "404 Bad Request" if the provided json data is not valid.
         '''
         computerName = computerName.lower()
         # try:
@@ -152,6 +152,8 @@ class RenderNodeCommandsResource(BaseResource):
         try:
             self.framework.application.updateCommandApply(updateDict)
         except KeyError, e:
+            return Http404(str(e))
+        except IndexError, e:
             return Http404(str(e))
         self.writeCallback("Command updated")
 

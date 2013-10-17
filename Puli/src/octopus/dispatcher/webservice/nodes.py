@@ -92,12 +92,16 @@ class NodeNameResource(NodesResource):
 
 
 class NodeStatusResource(NodesResource):
+    '''
+    TOFIX: specific case for a retry all command on errors should be handled in another WS for better understanding
+    '''
     ##@queue
     def put(self, nodeId):
         '''
         Pushes an order to change the status of the given node.
         Returns the ticket for this order.
         '''
+        # import pudb; pu.db
         data = self.getBodyAsJSON()
         try:
             nodeStatus = data['status']

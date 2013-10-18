@@ -444,8 +444,14 @@ class Dispatcher(MainLoopApplication):
         return nodes
 
     def updateCommandApply(self, dct):
+        '''
+        Called from a RN with a json desc of a command (ie rendernode info, command info etc).
+        Raise an execption to tell caller to send a HTTP404 response to RN, if not error a HTTP200 will be send instead
+        '''
         commandId = dct['id']
         renderNodeName = dct['renderNodeName']
+
+        print json.dumps(dct, indent=4)
 
         try:
             command = self.dispatchTree.commands[commandId]
@@ -465,7 +471,7 @@ class Dispatcher(MainLoopApplication):
         rn = command.renderNode
         rn.lastAliveTime = max(time.time(), rn.lastAliveTime)
 
-        #if command is no more in the rn's list, it means the rn was reported as timeout
+        # if command is no more in the rn's list, it means the rn was reported as timeout or asynchronously removed from RN
         if commandId not in rn.commands:
             if len(rn.commands) == 0 and command.status is not enums.CMD_CANCELED:
                 # in this case, re-add the command to the list of the rendernode
@@ -473,10 +479,10 @@ class Dispatcher(MainLoopApplication):
                 # we should re-reserve the lic
                 rn.reserveLicense(command, self.licenseManager)
                 LOGGER.warning("re-assigning command %d on %s. (TIMEOUT?)" % (commandId, rn.name))
+
             else:
-                # cancel the command on rn?
-                # rn.request("DELETE", "/commands/" + str(commandId) + "/")
-                LOGGER.warning("Status update from %d (%d) on %s but %d currently assigned." % (commandId, int(dct['status']), rn.name, rn.commands.keys()[0]))
+                # The command has been cancelled on the dispatcher but update from RN only arrives now
+                LOGGER.warning("Status update from %d (%d) on %s but command is currently assigned." % (commandId, int(dct['status']), rn.name ))
                 pass
 
         if "status" in dct:

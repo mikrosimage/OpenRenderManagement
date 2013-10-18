@@ -103,7 +103,9 @@ class Command(models.Model):
         elif self.status == CMD_RUNNING:
             try:
                 self.renderNode.clearAssignment(self)
-                self.renderNode.request("DELETE", "/commands/" + str(self.id) + "/")
+                (response, data) = self.renderNode.request("DELETE", "/commands/" + str(self.id) + "/")
+                LOGGER.info( "data: %r" % data )
+                
             except Exception:
                 # if request has failed, it means the rendernode is unreachable
                 self.status = CMD_CANCELED

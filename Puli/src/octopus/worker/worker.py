@@ -256,6 +256,7 @@ class Worker(MainLoopApplication):
 
     def updateCommandWatcher(self, commandWatcher):
         while True:
+            # import pudb;pu.db
             url = "/rendernodes/%s/commands/%d/" % (self.computerName, commandWatcher.commandId)
             body = json.dumps(self.buildUpdateDict(commandWatcher.command))
             headers = {'Content-Length': len(body)}

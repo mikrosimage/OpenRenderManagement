@@ -534,7 +534,8 @@ class TaskNode(BaseNode):
             command.completion = 0
 
     def setStatus(self, status):
-        '''Update commands in order to reach the required status.
+        '''
+        Update commands in order to reach the required status.
         '''
         if status == NODE_CANCELED and self.status != NODE_DONE:
             for command in self.task.commands:

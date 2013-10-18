@@ -28,11 +28,6 @@ class PoolSharesResource(BaseResource):
     def put(self):
         dct = self.getBodyAsJSON()
 
-        # DBG JSA: display dispatchtree
-        # import time
-        # LOGGER.info( "recup alloc for poolshares: %s", dct )
-        # self.getDispatchTree()._display_()
-
         if "pslist" in dct:
             pslist = dct['pslist']
             poolShares = []

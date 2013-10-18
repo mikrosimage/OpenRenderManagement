@@ -43,69 +43,49 @@ class DispatchTree(object):
 
     def _display_(self):
         '''
-        Debug purpose method, basic display of the dispatchTree
+        Debug purpose method, returns a basic display of the dispatch tree as html
         '''
-        depth=''
 
         # import pudb; pu.db
-        
-        print ""
-        print "DispatchTree:"
+        result="<html><body font-family='verdana'>"
 
-        # print "\nRenderNodes:"
-        # depth += '  '''
-        # for currRN in self.renderNodes:
-        #     print "%s %s -> %s" % (depth, currRN, self.renderNodes[currRN] )
-        # depth = ''
-        print "\nRoot:"
-        print "%s" % (self.root)
-
-        print "\nPools:"
-        depth += '  '
+        result +="<h3>Pools</h3><table>"
         for i,curr in enumerate(self.pools):
-            print "%s %d -> %s" % (depth, i, self.pools[curr] )
-        depth = ''
+            result += "<tr><td>%r</td><td>%s</td></tr>" % (i, self.pools[curr])
+        result+="</table>"
 
-        print "\nPoolShares: (attribution de parc pour une tache donnee, la tache est forcement une tache fille du root, on attribue pas de poolshare aux autres tasks)"
-        depth += '  '
+        result +="<h3>PoolShares: (attribution de parc pour une tache fille du root, on attribue pas de poolshare aux autres)</h3><table>"
         for i,curr in enumerate(self.poolShares):
-            print "%s %d -> %s" % (depth, i, self.poolShares[curr] )
-        depth = ''
+            result += "<tr><td>%r</td><td>%s</td></tr>" % (i, self.poolShares[curr])
+        result+="</table>"
 
-        print "\nMain level nodes (proxy info only):"
-        depth += '  '
+        result +="<h3>Main level nodes (proxy info only):</h3><table>"
         for i,curr in enumerate(self.nodes[1].children):
-            print "%s %d -> %r" % (depth, i, curr )
-        depth = ''
+            result += "<tr><td>%r</td><td>%s</td></tr>" % (i, curr.name)
+        result+="</table>"
 
-        print "\nAll nodes:"
-        depth += '  '
+        result +="<h3>All nodes:</h3><table>"
         for i,curr in enumerate(self.nodes):
-            print "%s %d -> %s -> %r" % (depth, i, curr, self.nodes[curr] )
-        depth = ''
+            result += "<tr><td>%d</td><td>%s</td><td>%r</td></tr>" % (i, curr, self.nodes[curr].name)
+        result+="</table>"
 
-        print "\nTasks:"
-        depth += '  '
+        result +="<h3>Tasks:</h3><table>"
         for i,curr in enumerate(self.tasks):
-            print "%s %d -> %s" % (depth, i, repr(self.tasks[curr]) )
-        depth = ''
+            result += "<tr><td>%r</td><td>%s</td></tr>" % (i, repr(self.tasks[curr]) )
+        result+="</table>"
 
-        print "\nCommands:"
-        depth += '  '
+        result +="<h3>Commands:</h3><table>"
         for i,curr in enumerate(self.commands):
-            print "%s %d -> %s" % (depth, i, self.commands[curr] )
-        depth = ''
+            result += "<tr><td>%r</td><td>%s</td></tr>" % (i, self.commands[curr] )
+        result+="</table>"
 
-        print "\nRules:"''
-        depth += '  '
+        result +="<h3>Rules:</h3><table>"
         for i,curr in enumerate(self.rules):
-            print "%s %d -> %s" % (depth, i, curr )
-        depth = ''
+            result += "<tr><td>%r</td><td>%s</td></tr>" % (i, curr )
+        result+="</table>"
 
-
-
-        print ""
-        pass
+        result +="</body></html>"
+        return result
 
 
     def __init__(self):

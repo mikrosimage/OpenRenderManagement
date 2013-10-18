@@ -79,12 +79,24 @@ class WebServiceDispatcher(Application):
             (r'^/mobile/?$', MobileResource, dict(framework=framework)),
 
             (r'^/query$', wsQuery.QueryResource, dict(framework=framework)),
-            (r'^/edit$', wsEdit.EditResource, dict(framework=framework))
+            (r'^/edit$', wsEdit.EditResource, dict(framework=framework)),
+
+            (r'^/dbg$', DbgResource, dict(framework=framework))
 
         ])
         self.listen(port, "0.0.0.0")
         self.framework = framework
 
+class DbgResource(BaseResource):
+    '''
+    Very basic debug WS, it returns a simple HTML representation of the currently hold dispatchTree
+    TODO: return a json string instead
+    '''
+    def get(self):
+        # DBG JSA: display dispatchtree
+        res = self.getDispatchTree()._display_()
+        self.writeCallback(str(res))
+        pass
 
 
 class StatsResource(BaseResource):

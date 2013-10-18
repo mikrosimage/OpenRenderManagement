@@ -1,3 +1,17 @@
+#!/usr/bin/python2.6
+# -*- coding: utf8 -*-
+
+"""
+name: settings.py
+
+Module holding core value for the worker process.
+These values might be overriden by user arguments and should not be reloaded.
+Value which could be reloaded during execution (using "reconfig" webservice) should be defined in settings.py.
+"""
+__author__      = "Arnaud Chassagne"
+__copyright__   = "Copyright 2010, Mikros Image"
+
+
 import socket
 
 
@@ -14,15 +28,19 @@ def loadSettingsFile(filename):
     settings = [(name, value) for name, value in l.items() if name.isupper() and name in globals()]
     globals().update(settings)
 
-## SETTINGS ###########################################################
-
-DEBUG = True
 
 fqdn = socket.getfqdn(socket.gethostname())
 if "." in fqdn:
     computername, domain = fqdn.split(".", 1)
 else:
     computername = fqdn
+
+
+## SETTINGS ###########################################################
+## These settings cannot be reloaded during worker execution because some of the values can be overriden with program user arguments
+## To change these values, the worker must be restarted
+
+DEBUG = True
 computername = computername.lower()
 
 #
@@ -47,3 +65,4 @@ RUN_AS = ""
 LOGDIR = "/var/log/puli"
 
 LIMIT_OPEN_FILES = 32768
+

@@ -54,9 +54,7 @@ class Dispatcher(MainLoopApplication):
 
         self.threadPool = ThreadPool(16, 0, 0, None)
 
-        LOGGER.info('settings.DEBUG = %s', settings.DEBUG)
-        LOGGER.info('settings.ADDRESS = %s', settings.ADDRESS)
-        LOGGER.info('settings.PORT = %s', settings.PORT)
+        LOGGER.info('Settings: DEBUG = %s, ADDRESS = %s, PORT = %s', settings.DEBUG, settings.ADDRESS, settings.PORT)
 
         self.cycle = 1
         self.dispatchTree = DispatchTree()
@@ -451,8 +449,6 @@ class Dispatcher(MainLoopApplication):
         commandId = dct['id']
         renderNodeName = dct['renderNodeName']
 
-        print json.dumps(dct, indent=4)
-
         try:
             command = self.dispatchTree.commands[commandId]
         except KeyError:
@@ -466,7 +462,7 @@ class Dispatcher(MainLoopApplication):
             # rn = command.renderNode
             # rn.clearAssignment(command)
             # rn.request("DELETE", "/commands/" + str(commandId) + "/")
-            raise KeyError("Command %d is running on a different rendernode (%s) than the one in puli's model (%s)." % (commandId, renderNodeName, rn.name))
+            raise KeyError("Command %d is running on a different rendernode (%s) than the one in puli's model (%s)." % (commandId, renderNodeName, command.renderNode.name))
 
         rn = command.renderNode
         rn.lastAliveTime = max(time.time(), rn.lastAliveTime)
@@ -479,7 +475,6 @@ class Dispatcher(MainLoopApplication):
                 # we should re-reserve the lic
                 rn.reserveLicense(command, self.licenseManager)
                 LOGGER.warning("re-assigning command %d on %s. (TIMEOUT?)" % (commandId, rn.name))
-
             else:
                 # The command has been cancelled on the dispatcher but update from RN only arrives now
                 LOGGER.warning("Status update from %d (%d) on %s but command is currently assigned." % (commandId, int(dct['status']), rn.name ))

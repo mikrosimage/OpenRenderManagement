@@ -235,6 +235,10 @@ class RenderNodeSysInfosResource(BaseResource):
 
 
 class RenderNodesPerfResource(BaseResource):
+    """
+    Sets a performance index (float) for one or several given rendernode names
+    TOFIX: might not be actually used, need to verify
+    """
     #@queue
     def put(self):
         dct = self.getBodyAsJSON()

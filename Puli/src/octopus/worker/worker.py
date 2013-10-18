@@ -495,7 +495,6 @@ class Worker(MainLoopApplication):
     #       can call their after-execution scripts
     #
     def stopCommandApply(self, ticket, commandId):
-        import pudb;pu.db
         commandWatcher = self.commandWatchers[commandId]
         commandWatcher.processObj.kill()
         self.updateCompletionAndStatus(commandId, 0, COMMAND.CMD_CANCELED, "killed")

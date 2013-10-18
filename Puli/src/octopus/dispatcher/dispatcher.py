@@ -471,9 +471,8 @@ class Dispatcher(MainLoopApplication):
         rn = command.renderNode
         rn.lastAliveTime = max(time.time(), rn.lastAliveTime)
 
-        #if command is no more in the rn's list, it means the rn was reported as timeout
+        # if command is no more in the rn's list, it means the rn was reported as timeout or asynchronously removed from RN
         if commandId not in rn.commands:
-            import pudb; pu.db
             if len(rn.commands) == 0 and command.status is not enums.CMD_CANCELED:
                 # in this case, re-add the command to the list of the rendernode
                 rn.commands[commandId] = command
@@ -481,17 +480,9 @@ class Dispatcher(MainLoopApplication):
                 rn.reserveLicense(command, self.licenseManager)
                 LOGGER.warning("re-assigning command %d on %s. (TIMEOUT?)" % (commandId, rn.name))
 
-            # The command has been cancelled on the dispatcher but update from RN only arrives now
-            # -> raise an error will send http404 and RN will remove its commandWatcher
-            elif len(rn.commands) == 0 and command.status is enums.CMD_CANCELED:
-                raise KeyError("Command already cancelled on dispatcher: %d" % commandId)
             else:
-                # cancel the command on rn?
-                # rn.request("DELETE", "/commands/" + str(commandId) + "/")
-                try:
-                    LOGGER.warning("Status update from %d (%d) on %s but %d currently assigned." % (commandId, int(dct['status']), rn.name, rn.commands.keys()[0]))
-                except IndexError, e:
-                    raise IndexError("test")
+                # The command has been cancelled on the dispatcher but update from RN only arrives now
+                LOGGER.warning("Status update from %d (%d) on %s but command is currently assigned." % (commandId, int(dct['status']), rn.name ))
                 pass
 
         if "status" in dct:

@@ -290,14 +290,15 @@ class Worker(MainLoopApplication):
                 if response.status == 200:
                     response = response.read()
                     commandWatcher.modified = False
+                    break
                 elif response.status == 404:
                     LOGGER.warning('removing stale command %d', commandWatcher.commandId)
                     response = response.read()
                     self.removeCommandWatcher(commandWatcher)
+                    break
                 else:
                     data = response.read()
                     print "unexpected status %d: %s %s" % (response.status, response.reason, data)
-                return
             finally:
                 self.httpconn.close()
 
@@ -306,6 +307,13 @@ class Worker(MainLoopApplication):
             time.sleep( delayRetry )
             i += 1
             delayRetry *= 2
+
+        # Request error encountered "maxRetry" times, removing the command watcher to avoid
+        # recalling this update in next main loop iter
+        if i == maxRetry:
+            LOGGER.exception('Update of command %d failed repeatedly, removing watcher.', commandWatcher.commandId )
+            self.removeCommandWatcher(commandWatcher)
+
 
     def pauseWorker(self, paused, killproc):
         """

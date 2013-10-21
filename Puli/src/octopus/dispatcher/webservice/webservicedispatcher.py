@@ -79,7 +79,9 @@ class WebServiceDispatcher(Application):
             (r'^/mobile/?$', MobileResource, dict(framework=framework)),
 
             (r'^/query$', wsQuery.QueryResource, dict(framework=framework)),
-            (r'^/edit$', wsEdit.EditResource, dict(framework=framework))
+            (r'^/editstatus$', wsEdit.EditStatusResource, dict(framework=framework)),
+            (r'^/pause$', wsEdit.PauseResource, dict(framework=framework)),
+            (r'^/resume$', wsEdit.ResumeResource, dict(framework=framework))
 
         ])
         self.listen(port, "0.0.0.0")

@@ -30,6 +30,17 @@ On retourne un objet json au format:
                 attr1: data,
                 attr2: data,
                 attr3: data
+                'tasks':
+                    [
+                        {
+                            attr1: data,
+                            attr2: data,
+                            attr3: data
+                            'tasks': [...]
+                        },
+                        ...
+                    ]
+
             },
             ...
         ] 
@@ -61,11 +72,42 @@ class QueryResource(BaseResource, IQueryNode):
                      'status', 'completion', 'priority', \
                      'startTime', 'creationTime', 'endTime', 'updateTime']
 
+
+    def createTaskRepr( self, pNode, pAttributes, pTree=False ):
+        """
+        Create a json representation for a given node hierarchy and user attributes.
+        Recursive call to represent the FolderNode/TaskNode tree
+        param: node to explore
+        param: attributes to retrieve on each node
+        param: flag to indicate if user wants to retrieve subtasks (enable recursive call)
+        return: a json dict
+        """
+        currTask = {}
+        for currArg in pAttributes:
+            if not currArg.startswith("tags:"):
+                currTask[currArg] =  getattr(pNode, currArg, 'undefined')
+            else:
+                tag = unicode(currArg[5:])
+                value = unicode(pNode.tags.get(tag,''))
+                currTask[tag] = value
+
+        if pTree and hasattr(pNode, 'children'):
+            childTasks = []
+            for child in pNode.children:
+                childTasks.append( self.createTaskRepr( child, pAttributes, pTree ) )
+
+            currTask['tasks'] = childTasks
+        return currTask
+
     # @queue
     def get(self):
         """
         """
         args = self.request.arguments
+        if 'tree' in args:
+            tree = bool(args['tree'])
+        else:
+            tree=False
 
         # import pudb; pu.db
         try:
@@ -118,16 +160,7 @@ class QueryResource(BaseResource, IQueryNode):
             # --- Prepare the result json object
             #
             for currNode in filteredNodes:
-
-                # logger.info('---- Create json for node %d: %s', int(currNode.id), str(currNode.name))
-                currTask = {}
-                for currArg in args['attr']:
-                    if not currArg.startswith("tags:"):
-                        currTask[currArg] =  getattr(currNode, currArg, 'undefined')
-                    else:
-                        tag = unicode(currArg[5:])
-                        value = unicode(currNode.tags.get(tag,''))
-                        currTask[tag] = value
+                currTask = self.createTaskRepr(currNode, args['attr'], tree)
                 resultData.append( currTask )
 
             content = { 

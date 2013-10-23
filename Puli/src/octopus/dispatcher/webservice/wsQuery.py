@@ -68,9 +68,10 @@ __all__ = []
 logger = logging.getLogger('dispatcher.webservice.wsQueryController')
 
 class QueryResource(BaseResource, IQueryNode):
+    ADDITIONNAL_SUPPORTED_FIELDS = ['pool']
     DEFAULT_FIELDS = ['id','user','name', 'tags:prod', 'tags:shot', \
-                     'status', 'completion', 'priority', \
-                     'startTime', 'creationTime', 'endTime', 'updateTime']
+                     'status', 'completion', 'dispatchKey', \
+                     'startTime', 'creationTime', 'endTime', 'updateTime', 'maxRN', 'allocatedRN']
 
 
     def createTaskRepr( self, pNode, pAttributes, pTree=False ):
@@ -84,12 +85,17 @@ class QueryResource(BaseResource, IQueryNode):
         """
         currTask = {}
         for currArg in pAttributes:
-            if not currArg.startswith("tags:"):
-                currTask[currArg] =  getattr(pNode, currArg, 'undefined')
-            else:
+            if currArg.startswith("tags:"):
+                # Attribute name references a "tags" item
                 tag = unicode(currArg[5:])
                 value = unicode(pNode.tags.get(tag,''))
                 currTask[tag] = value
+            elif currArg == "pool":
+                # Attribute name is a specific item
+                currTask[currArg] = pNode.poolShares.keys()[0].name
+            else:
+                # Attribute is a standard attribute of a Node
+                currTask[currArg] =  getattr(pNode, currArg, 'undefined')
 
         if pTree and hasattr(pNode, 'children'):
             childTasks = []
@@ -102,6 +108,11 @@ class QueryResource(BaseResource, IQueryNode):
     # @queue
     def get(self):
         """
+        Handle user query request.
+          1. init timer and result struct
+          2. check attributes to retrieve
+          3. limit nodes list regarding the given query filters
+          4. for each filtered node: add info in result
         """
         args = self.request.arguments
         if 'tree' in args:
@@ -143,8 +154,9 @@ class QueryResource(BaseResource, IQueryNode):
                 for currAttribute in args['attr']:
                     if not currAttribute.startswith("tags:"):
                         if not hasattr(nodes[0],currAttribute):
-                            logger.warning('Error retrieving data : %s', currAttribute )
-                            return Http404("Invalid attribute requested:"+str(currAttribute), "Invalid attribute specified.", "text/plain")
+                            if currAttribute not in QueryResource.ADDITIONNAL_SUPPORTED_FIELDS :
+                                logger.warning('Error retrieving data, invalid attribute requested : %s', currAttribute )
+                                return Http404("Invalid attribute requested:"+str(currAttribute), "Invalid attribute specified.", "text/plain")
             else:
                 # Using default result attributes
                 args['attr'] = QueryResource.DEFAULT_FIELDS

@@ -47,6 +47,10 @@ __all__ = []
 logger = logging.getLogger('dispatcher.webservice.wsEditController')
 
 class EditStatusResource(BaseResource, IQueryNode):
+    """
+    Handle user request to change the status on a set of nodes. Status value will be change according to transition constraints 
+    in setStatusForNode() class member.
+    """
 
     def getNode(self, nodeId):
         try:
@@ -154,18 +158,6 @@ class PauseResource(BaseResource, IQueryNode):
 
         args = self.request.arguments
 
-        # if 'pause' in args:
-        #     newStatus = int(args['update_status'][0])
-        # else:
-        #     return Http400('New status could not be found.')
-
-        # if newStatus not in NODE_STATUS:
-        #     return Http400("Invalid status given: %d" % newStatus)
-
-        # # Optional argument to allow job to be restarted (if defined) or only resumed (if nothing defined)
-        # if 'update_option' in args:
-        #     if args['update_option'][0] == "restart" :
-        #         restartNode = True
 
         nodes = self.filterNodes( args, nodes )
         for currNode in nodes:
@@ -174,7 +166,7 @@ class PauseResource(BaseResource, IQueryNode):
                     currNode.setPaused( True)
                     editedJobs.append( currNode.id )
             except:
-                return Http400('Error changing status.')
+                return Http400('Error when pausing job.')
 
 
         content = { 
@@ -225,7 +217,7 @@ class ResumeResource(BaseResource, IQueryNode):
                 currNode.setPaused( False )
                 editedJobs.append( currNode.id )
             except:
-                return Http400('Error changing status.')
+                return Http400('Error when resuming job.')
 
 
         content = { 
@@ -242,3 +234,57 @@ class ResumeResource(BaseResource, IQueryNode):
 
         # Create response and callback
         self.writeCallback( json.dumps(content) )
+
+
+class EditMaxRnResource(BaseResource, IQueryNode):
+    """
+    Edit multiple jobs with a query for filtering
+    """
+
+    def put(self):
+        """
+        """
+        import pudb;pu.db
+        start_time = time.time()
+        prevTimer = time.time()
+        editedJobs = []
+
+        nodes = self.getDispatchTree().nodes[1].children
+        totalNodes = len(nodes)
+
+        args = self.request.arguments
+
+        if 'value' in args:
+            newMaxRn = int(args['value'][0])
+        else:
+            return Http404('New value could not be found.')
+
+        if newMaxRn < -1:
+            return Http500("Invalid maxRn given: %d" % newMaxRn)
+
+        nodes = self.filterNodes( args, nodes )
+
+        for currNode in nodes:
+            try:
+                currNode.maxRN = newMaxRn
+                editedJobs.append( currNode.id )
+            except:
+                return Http500('Error changing status of job: %d.', currNode.id)
+
+        content = { 
+                    'summary': 
+                        { 
+                        'editedCount':len(editedJobs),
+                        'filteredCount':len(nodes),
+                        'totalInDispatcher':totalNodes, 
+                        'requestTime':time.time() - start_time,
+                        'requestDate':time.ctime()
+                        }, 
+                    'editedJobs':editedJobs 
+                    }
+
+        # Create response and callback
+        self.writeCallback( json.dumps(content) )
+
+
+    pass

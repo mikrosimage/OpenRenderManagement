@@ -14,6 +14,22 @@ attr: allow to choose which attribute will be retrieved for each job [id user pr
 format: specify the representation of the result set: a table, json or csv raw data
 constraint: custom set of filters
 
+Default fields retrieved from the server are:
+id              --> unique id of the folder or task node
+user            --> creator login
+name            --> text description of the task
+tags:prod       --> attribute of the task
+tags:shot       --> attribute of the task
+status          --> job status (Blocked, Ready, Running, Done, Error, Canceled, Paused)
+completion      --> float value indicating a percent completion of the whole task
+dispatchKey     --> indicates the priority of the job ("priority" attribute is deprecated)
+startTime       --> job started
+creationTime    --> job submitted
+endTime         --> job ended
+updateTime      --> last update
+maxRN           --> max number of rendernode to assign to a particular task
+allocatedRN     --> current number of allocated render nodes on this task
+
 """
 __author__      = "Jérôme Samson"
 __copyright__   = "Copyright 2013, Mikros Image"
@@ -68,7 +84,7 @@ def displayTask( pTask, pDepth=0 ):
 
     # elapsedTime = datetime.now() - creationTime
     # print "Elapsed time = ", elapsedTime
-    percentCompletion = int(pTask['completion']) * 100.0
+    percentCompletion = float(pTask['completion']) * 100.0
 
     prod = 'prod' in pTask.keys() and pTask['prod'][:6] or ''
     shot = 'shot' in pTask.keys() and pTask['shot'][:4]  or ''
@@ -78,10 +94,10 @@ def displayTask( pTask, pDepth=0 ):
         strId = (" " * pDepth) + "`" + str(pTask['id'])
     else:
         strId = str(pTask['id'])
-
-    result =  "%-8s  %20s  %6s  %-4s  %-3s  %-6s  %4d %2s  %3d  %11s  %11s  %11s  %s" \
+    #            id   na    pro  sho   im    us   pr   s   %  max all  crea  sta   end
+    result =  "%-8s  %20s  %6s  %-4s  %-3s  %-6s  %4d %2s %3.f  %3d  %5d  %11s  %11s  %11s  %s" \
                 % ( strId, pTask['name'][:12], prod, shot, "-", pTask['user'][:6], \
-                    pTask['priority'], Settings.status_short_name[pTask['status']], percentCompletion, \
+                    pTask['dispatchKey'], Settings.status_short_name[pTask['status']], percentCompletion, pTask['maxRN'],pTask['allocatedRN'], \
                     creationTimeStr, startTimeStr, endTimeStr, runTimeStr )
 
     if options.tree and 'tasks' in pTask:
@@ -150,8 +166,8 @@ def handle_request(response):
         else:
             # Default display
             print ""
-            print " ID       NAME                  PROD    SHOT  IMG  OWNER   PRIO ST    %  SUBMITTED    START        END          RUN_TIME  "
-            print "------------------------------------------------------------------------------------------------------------------------"
+            print " ID       NAME                  PROD    SHOT  IMG  OWNER   PRIO ST   %  MAX  ALLOC  SUBMITTED    START        END          RUN_TIME  "
+            print "-------------------------------------------------------------------------------------------------------------------------------------"
 
             for row in _data['tasks']:
                 print displayTask(row)
@@ -159,14 +175,11 @@ def handle_request(response):
             print ""
             print "Summary: %d of %d tasks retrieved in %.2f s." % (_data['summary']['count'], _data['summary']['totalInDispatcher'], _data['summary']['requestTime']*1000)
             print ""
-            print "Reminder, possible values for a job status are: "
-            print "  0 --> Blocked"
-            print "  1 --> Ready"
-            print "  2 --> Running"
-            print "  3 --> Done"
-            print "  4 --> Error"
-            print "  5 --> Canceled"
-            print "  6 --> Paused"
+            print "Possible values for a job status are: "
+            print "  0 --> Blocked   3 --> Done       6 --> Paused"
+            print "  1 --> Ready     4 --> Error"
+            print "  2 --> Running   5 --> Canceled"
+            print ""
 
 
     # Quit loop

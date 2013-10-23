@@ -80,6 +80,7 @@ class WebServiceDispatcher(Application):
 
             (r'^/query$', wsQuery.QueryResource, dict(framework=framework)),
             (r'^/editstatus$', wsEdit.EditStatusResource, dict(framework=framework)),
+            (r'^/edit/maxrn$', wsEdit.EditMaxRnResource, dict(framework=framework)),
             (r'^/pause$', wsEdit.PauseResource, dict(framework=framework)),
             (r'^/resume$', wsEdit.ResumeResource, dict(framework=framework))
 

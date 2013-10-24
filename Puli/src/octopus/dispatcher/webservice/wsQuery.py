@@ -115,6 +115,7 @@ class QueryResource(BaseResource, IQueryNode):
           4. for each filtered node: add info in result
         """
         args = self.request.arguments
+        
         if 'tree' in args:
             tree = bool(args['tree'])
         else:

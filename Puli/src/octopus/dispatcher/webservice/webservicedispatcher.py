@@ -78,9 +78,12 @@ class WebServiceDispatcher(Application):
             (r'^/system_json/?$', SystemResourceJson, dict(framework=framework)),
             (r'^/mobile/?$', MobileResource, dict(framework=framework)),
 
+            # Several WS to get or edit multiple data in a single request.
+            # It uses the query mecanism defined in octopus.dispatcher.model.nodequery module
             (r'^/query$', wsQuery.QueryResource, dict(framework=framework)),
             (r'^/editstatus$', wsEdit.EditStatusResource, dict(framework=framework)),
             (r'^/edit/maxrn$', wsEdit.EditMaxRnResource, dict(framework=framework)),
+            (r'^/edit/prio$', wsEdit.EditPrioResource, dict(framework=framework)),
             (r'^/pause$', wsEdit.PauseResource, dict(framework=framework)),
             (r'^/resume$', wsEdit.ResumeResource, dict(framework=framework))
 
@@ -212,7 +215,7 @@ class SystemResourceJson(BaseResource):
 
             data = json.dumps( envData )
         except TypeError:
-            return Http404("Impossible to retrieve server environnement.")
+            raise Http500("Impossible to retrieve server environnement.")
 
         self.writeCallback(data)
 

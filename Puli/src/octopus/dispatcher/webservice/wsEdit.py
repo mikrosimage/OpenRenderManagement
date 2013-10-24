@@ -238,13 +238,16 @@ class ResumeResource(BaseResource, IQueryNode):
 
 class EditMaxRnResource(BaseResource, IQueryNode):
     """
-    Edit multiple jobs with a query for filtering
+    Edit multiple jobs with a query for filtering. 
+    Value edited is maxRN field which indicates a max number of rendernodes to assign to a specific job.
+    maxRN is an integer > -1
+
+    test: curl -X PUT  http://pulitest:8004/edit/maxrn?value=2&constraint_id=5028
     """
 
     def put(self):
         """
         """
-        import pudb;pu.db
         start_time = time.time()
         prevTimer = time.time()
         editedJobs = []
@@ -252,25 +255,91 @@ class EditMaxRnResource(BaseResource, IQueryNode):
         nodes = self.getDispatchTree().nodes[1].children
         totalNodes = len(nodes)
 
-        args = self.request.arguments
-
-        if 'value' in args:
-            newMaxRn = int(args['value'][0])
-        else:
-            return Http404('New value could not be found.')
+        #
+        # Getting new value, we check its presence in args, type (int) and range (>-1)
+        #
+        try:
+            newMaxRn = int(self.get_argument('value'))  # Tornado raises a MissingArgumentError if not present
+        except ValueError:
+            raise Http400('Bad request:  invalid value, maxRN must be an integer')
 
         if newMaxRn < -1:
-            return Http500("Invalid maxRn given: %d" % newMaxRn)
+            raise Http400('Bad request: invalid value, maxRN cannot be lower than -1')
 
-        nodes = self.filterNodes( args, nodes )
+        #
+        # Filtering nodes
+        #
+        nodes = self.filterNodes( self.request.arguments, nodes )
 
+        #
+        # Perform action
+        #
         for currNode in nodes:
             try:
                 currNode.maxRN = newMaxRn
                 editedJobs.append( currNode.id )
             except:
-                return Http500('Error changing status of job: %d.', currNode.id)
+                raise Http500('Error changing status of job: %d.', currNode.id)
 
+        #
+        # Prepare response and return
+        #
+        content = { 
+                    'summary': 
+                        { 
+                        'editedCount':len(editedJobs),
+                        'filteredCount':len(nodes),
+                        'totalInDispatcher':totalNodes, 
+                        'requestTime':time.time() - start_time,
+                        'requestDate':time.ctime()
+                        }, 
+                    'editedJobs':editedJobs 
+                    }
+        self.writeCallback( json.dumps(content) )
+
+
+
+class EditPrioResource(BaseResource, IQueryNode):
+    """
+    Edit multiple jobs with a query for filtering.
+    Value given is a new priority, it is stored as the dispatchKey which the true field used for job assignation
+
+    test: curl -X PUT  http://pulitest:8004/edit/prio?value=20&contraint_status=1
+    """
+
+    def put(self):
+        """
+        """
+        start_time = time.time()
+        prevTimer = time.time()
+        editedJobs = []
+
+        nodes = self.getDispatchTree().nodes[1].children
+        totalNodes = len(nodes)
+
+        #
+        # Getting new value, we check its presence in args and type (int)
+        #
+        try:
+            newPrio = int(self.get_argument('value'))  # Tornado raises a MissingArgumentError if not present
+        except ValueError:
+            raise Http400('Bad request:  invalid value, prio must be an integer')
+
+        #
+        # Filtering nodes
+        #
+        nodes = self.filterNodes( self.request.arguments, nodes )
+
+        for currNode in nodes:
+            try:
+                currNode.dispatchKey = newPrio
+                editedJobs.append( currNode.id )
+            except:
+                raise Http500('Error changing status of job: %d.', currNode.id)
+
+        #
+        # Prepare response and return
+        #
         content = { 
                     'summary': 
                         { 
@@ -283,8 +352,6 @@ class EditMaxRnResource(BaseResource, IQueryNode):
                     'editedJobs':editedJobs 
                     }
 
-        # Create response and callback
         self.writeCallback( json.dumps(content) )
+        
 
-
-    pass

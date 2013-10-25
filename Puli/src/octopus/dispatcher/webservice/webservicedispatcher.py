@@ -81,7 +81,7 @@ class WebServiceDispatcher(Application):
             # Several WS to get or edit multiple data in a single request.
             # It uses the query mecanism defined in octopus.dispatcher.model.nodequery module
             (r'^/query$', wsQuery.QueryResource, dict(framework=framework)),
-            (r'^/editstatus$', wsEdit.EditStatusResource, dict(framework=framework)),
+            (r'^/edit/status$', wsEdit.EditStatusResource, dict(framework=framework)),
             (r'^/edit/maxrn$', wsEdit.EditMaxRnResource, dict(framework=framework)),
             (r'^/edit/prio$', wsEdit.EditPrioResource, dict(framework=framework)),
             (r'^/pause$', wsEdit.PauseResource, dict(framework=framework)),

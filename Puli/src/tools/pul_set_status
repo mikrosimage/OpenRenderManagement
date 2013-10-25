@@ -150,7 +150,7 @@ if __name__ == '__main__':
 		print "Command options: %s" % options
 		print "Command arguments: %s" % args
 
-	_target = "editstatus?"
+	_target = "edit/status?"
 	_hostname = Settings.hostname
 	_port = Settings.port
 

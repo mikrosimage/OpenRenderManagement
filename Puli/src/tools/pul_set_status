@@ -50,7 +50,7 @@ def handle_request(response):
 	"""
 
 	if response.error:
-		print "Error:", response.error
+		print "Error: HTTP", response.body
 		sys.exit()
 
 	REQUEST_END_TIME = time.time() - REQUEST_BEGIN_TIME
@@ -159,7 +159,7 @@ if __name__ == '__main__':
 	#   - "update" option must exists because it is a requirement of pul_set_status
 	#   - we don't allow to affect the whole queue, a restriction or constraint must be present
 	#
-	if not hasattr(options, 'set'):
+	if not hasattr(options, 'set') or options.set is None:
 		print "Usage: pul_set_status [general options] [restriction list] \
 				\n\npul_set_status.py: error: parameter --set is required."
 		sys.exit()

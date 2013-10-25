@@ -96,10 +96,10 @@ class EditStatusResource(BaseResource, IQueryNode):
         if 'update_status' in args:
             newStatus = int(args['update_status'][0])
         else:
-            return Http400('New status could not be found.')
+            raise Http400('New status could not be found.')
 
         if newStatus not in NODE_STATUS:
-            return Http400("Invalid status given: %d" % newStatus)
+            raise Http400("Invalid status given: %d" % newStatus)
 
         # # Optional argument to allow job to be restarted (if defined) or only resumed (if nothing defined)
         # if 'update_option' in args:
@@ -114,7 +114,7 @@ class EditStatusResource(BaseResource, IQueryNode):
                 if self.setStatusForNode( newStatus, currNode ) is not None:
                     editedJobs.append( currNode.id )
             except:
-                return Http400('Error changing status.')
+                raise Http500('Error changing status.')
 
 
         content = { 

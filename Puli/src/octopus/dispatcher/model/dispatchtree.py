@@ -11,6 +11,7 @@ from octopus.core.enums.command import *
 from octopus.dispatcher.rules import RuleError
 
 
+
 logger = logging.getLogger("dispatcher.dispatchtree")
 
 
@@ -39,6 +40,53 @@ class ObjectListener(object):
 
 
 class DispatchTree(object):
+
+    def _display_(self):
+        '''
+        Debug purpose method, returns a basic display of the dispatch tree as html
+        '''
+
+        # import pudb; pu.db
+        result="<html><body font-family='verdana'>"
+
+        result +="<h3>Pools</h3><table>"
+        for i,curr in enumerate(self.pools):
+            result += "<tr><td>%r</td><td>%s</td></tr>" % (i, self.pools[curr])
+        result+="</table>"
+
+        result +="<h3>PoolShares: (attribution de parc pour une tache fille du root, on attribue pas de poolshare aux autres)</h3><table>"
+        for i,curr in enumerate(self.poolShares):
+            result += "<tr><td>%r</td><td>%s</td></tr>" % (i, self.poolShares[curr])
+        result+="</table>"
+
+        result +="<h3>Main level nodes (proxy info only):</h3><table>"
+        for i,curr in enumerate(self.nodes[1].children):
+            result += "<tr><td>%r</td><td>%s</td></tr>" % (i, curr.name)
+        result+="</table>"
+
+        result +="<h3>All nodes:</h3><table>"
+        for i,curr in enumerate(self.nodes):
+            result += "<tr><td>%d</td><td>%s</td><td>%r</td></tr>" % (i, curr, self.nodes[curr].name)
+        result+="</table>"
+
+        result +="<h3>Tasks:</h3><table>"
+        for i,curr in enumerate(self.tasks):
+            result += "<tr><td>%r</td><td>%s</td></tr>" % (i, repr(self.tasks[curr]) )
+        result+="</table>"
+
+        result +="<h3>Commands:</h3><table>"
+        for i,curr in enumerate(self.commands):
+            result += "<tr><td>%r</td><td>%s</td></tr>" % (i, self.commands[curr] )
+        result+="</table>"
+
+        result +="<h3>Rules:</h3><table>"
+        for i,curr in enumerate(self.rules):
+            result += "<tr><td>%r</td><td>%s</td></tr>" % (i, curr )
+        result+="</table>"
+
+        result +="</body></html>"
+        return result
+
 
     def __init__(self):
         # core data
@@ -113,6 +161,23 @@ class DispatchTree(object):
 
     def updateCompletionAndStatus(self):
         self.root.updateCompletionAndStatus()
+
+
+    def updateAllocationInfo(self):
+        '''
+        Update dispatchTree root children to store the current maxRN/Allocated in their corresponding poolShares.
+        We might only consider the running jobs to avoid updating to many jobs but for the moment having a more reliable data is a better choice.
+
+        NOTE: This process can be take some time for large queue, so we prefer using a more lightweith update method :
+            - doing maxRN update directly in the concerned webservice i.e. when the user has ordered the maxRN change on the poolShare
+            - doing allocatedRN update when parsing the tree for completion and status update (it has a "when needed" necanism which will limit the number of updates)
+        When using these 2 processes, it not necessary to call this method periodically. 
+        '''
+        for currNodeRef in self.nodes[1].children:
+            for currPoolShare in currNodeRef.poolShares.values():
+                currNodeRef.maxRN = currPoolShare.maxRN
+                currNodeRef.allocatedRN = currPoolShare.allocatedRN
+        pass
 
     def validateDependencies(self):
         nodes = set()

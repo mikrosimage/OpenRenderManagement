@@ -17,6 +17,7 @@ from octopus.core.enums.command import *
 from octopus.core.enums.rendernode import RN_FINISHING
 from . import models
 from octopus.dispatcher import settings
+from octopus.core import singletonconfig
 
 LOGGER = logging.getLogger('command')
 
@@ -81,6 +82,10 @@ class Command(models.Model):
     def __repr__(self):
         return "Command(id=%r, status=%s)" % (self.id, CMD_STATUS_NAME[self.status])
 
+    def __str__(self):
+        return "Command(id=%r, status=%s, desc=%s, task=%r, completion=%.2f, RN=%s)" % (self.id, CMD_STATUS_NAME[self.status], 
+            self.description, str(self.task), self.completion, self.renderNode)
+
     def clearAssignment(self):
         self.renderNode = None
         self.startTime = None
@@ -99,7 +104,9 @@ class Command(models.Model):
         elif self.status == CMD_RUNNING:
             try:
                 self.renderNode.clearAssignment(self)
-                self.renderNode.request("DELETE", "/commands/" + str(self.id) + "/")
+                (response, data) = self.renderNode.request("DELETE", "/commands/" + str(self.id) + "/")
+                LOGGER.info( "data: %r" % data )
+                
             except Exception:
                 # if request has failed, it means the rendernode is unreachable
                 self.status = CMD_CANCELED
@@ -201,10 +208,10 @@ class CommandDatesUpdater(object):
             cmd.computeAvgTimeByFrame()
         # autoretry
         elif cmd.status is CMD_ERROR:
-            if cmd.retryCount == settings.MAX_RETRY_CMD_COUNT:
+            if cmd.retryCount == singletonconfig.get('CORE','MAX_RETRY_CMD_COUNT'):
                 cmd.retryRnList.append(cmd.renderNode.name)
-            elif cmd.retryCount < settings.MAX_RETRY_CMD_COUNT:
-                t = Timer(settings.DELAY_BEFORE_AUTORETRY, self.autoretry, [cmd])
+            elif cmd.retryCount < singletonconfig.get('CORE','MAX_RETRY_CMD_COUNT'):
+                t = Timer(singletonconfig.get('CORE','DELAY_BEFORE_AUTORETRY'), self.autoretry, [cmd])
                 t.start()
         elif cmd.status is CMD_ASSIGNED:
             cmd.startTime = cmd.updateTime

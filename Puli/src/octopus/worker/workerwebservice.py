@@ -9,6 +9,9 @@ import subprocess
 
 from octopus.core.communication.http import Http400, Http404
 from octopus.worker import settings
+# from octopus.worker import config
+# from octopus.worker.worker import theConfig
+
 from tornado.web import Application, RequestHandler
 
 # /commands/ [GET] { commands: [ { id, status, completion } ] }
@@ -33,7 +36,8 @@ class WorkerWebService(Application):
             (r'/log/command/(?P<path>\S+)', CommandLogResource),
             (r'/updatesysinfos/?$', UpdateSysResource, dict(framework=framework)),
             (r'/pause/?$', PauseResource, dict(framework=framework)),
-            (r'/ramInUse/?$', RamInUseResource, dict(framework=framework))
+            (r'/ramInUse/?$', RamInUseResource, dict(framework=framework)),
+            (r'/reconfig/?$', WorkerReconfig, dict(framework=framework))
         ])
         self.queue = Queue()
         self.listen(port, "0.0.0.0")
@@ -82,6 +86,10 @@ class PauseResource(BaseResource):
 
 
 class RamInUseResource(BaseResource):
+    """
+    TO FIX: the method for retrieving mem used is not really correct. 
+    We should use "free -m" or directly /proc/meminfo -> use = memtotal - (memfree + membuffer + memcache)
+    """
     def get(self):
         process = subprocess.Popen("ps -e -o rss | awk '{sum+=$1} END {print sum/1024}'",
                                    shell=True,
@@ -178,3 +186,12 @@ class UpdateSysResource(BaseResource):
     def get(self):
         args = {}
         self.framework.addOrder(self.framework.application.updateSysInfos, **args)
+
+
+class WorkerReconfig(BaseResource):
+    def post(self):
+        # reload(config)
+        self.framework.application.reloadConfig()
+
+
+        

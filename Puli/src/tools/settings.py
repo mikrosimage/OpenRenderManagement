@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.6
 # -*- coding: utf8 -*-
 
 """
@@ -13,7 +13,7 @@ class Settings(object):
 	verbose=False
 
 	# Initial server/port config
-	hostname="localhost"
+	hostname="puliserver"
 	port="8004"
 
 	# Default formating & enums

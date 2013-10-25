@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.6
 # -*- coding: utf8 -*-
 
 """
@@ -70,6 +70,10 @@ class ConstraintFactory:
         if hasattr(pUserOptions, 'attribute') and pUserOptions.attribute is not None:
             for attr in pUserOptions.attribute:
                 query += "&attr=%s" % urllib.quote(attr)
+
+        # Indicating to retrieve subnodes hierarchy
+        if hasattr(pUserOptions, 'tree') and pUserOptions.tree is True:
+            query += "&tree=1"
 
 
         #

@@ -9,7 +9,6 @@ OpenRenderManagement is an open-source render management project.
 
 The Core project is called `Puli` and is entirely written in python.
 
-`PuliUI` is a GWT project that provides a simple web interface for OpenDispatcher.
 
 
 LICENSING

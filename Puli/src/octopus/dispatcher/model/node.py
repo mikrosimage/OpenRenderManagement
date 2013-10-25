@@ -102,6 +102,8 @@ class BaseNode(models.Model):
 
     def to_json(self):
         base = super(BaseNode, self).to_json()
+        base["allocatedRN"] = self.allocatedRN
+        base["maxRN"] = self.maxRN
         base["tags"] = self.tags.copy()
         base["readyCommandCount"] = self.readyCommandCount
         return base
@@ -162,6 +164,16 @@ class BaseNode(models.Model):
         if self.poolShares:
             return list(self.dispatchIterator())
         return []
+
+    def updateAllocation(self):
+        '''
+        Called by subclasses during updateCompletion process to store maxRN and allocatedRN in the node.
+        maxRN is also updated during webservice on user requests, this is a bit of a redefinition since it shouldn't change programmatically.
+        '''
+        for currPoolShare in self.poolShares.values():
+            self.maxRN = currPoolShare.maxRN
+            self.allocatedRN = currPoolShare.allocatedRN
+
 
     def updateCompletionAndStatus(self):
         raise NotImplementedError
@@ -270,12 +282,16 @@ class FolderNode(BaseNode):
                 return
 
     def updateCompletionAndStatus(self):
+        self.updateAllocation()
+
         if not self.invalidated:
             return
         if not self.children:
             completion = 1.0
             status = NODE_DONE
         else:
+
+            # Getting completion info
             self.readyCommandCount = 0
             completion = 0.0
             status = defaultdict(int)
@@ -286,6 +302,7 @@ class FolderNode(BaseNode):
                 self.readyCommandCount += child.readyCommandCount
             self.completion = completion / len(self.children)
 
+            # Updating node's overall status
             if NODE_PAUSED in status:
                 self.status = NODE_PAUSED
             elif NODE_ERROR in status:
@@ -303,6 +320,7 @@ class FolderNode(BaseNode):
                 self.completion = 1.0
                 self.status = NODE_DONE
 
+            # Updating timers
             times = [childNode.creationTime for childNode in self.children if childNode.creationTime is not None]
             if times:
                 self.creationTime = min(times)
@@ -425,6 +443,8 @@ class TaskNode(BaseNode):
         return None
 
     def updateCompletionAndStatus(self):
+        self.updateAllocation()
+
         if not self.invalidated:
             return
         completion = 0.0
@@ -514,7 +534,8 @@ class TaskNode(BaseNode):
             command.completion = 0
 
     def setStatus(self, status):
-        '''Update commands in order to reach the required status.
+        '''
+        Update commands in order to reach the required status.
         '''
         if status == NODE_CANCELED and self.status != NODE_DONE:
             for command in self.task.commands:

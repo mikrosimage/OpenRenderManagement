@@ -16,6 +16,8 @@ from octopus.core.communication.requestmanager import RequestManager
 from octopus.core.enums import command as COMMAND
 from octopus.core.enums import rendernode
 from octopus.worker import settings
+from octopus.worker import config
+
 from octopus.worker.model.command import Command
 from octopus.worker.process import spawnCommandWatcher
 
@@ -58,7 +60,7 @@ class Worker(MainLoopApplication):
         self.computerName = COMPUTER_NAME_TEMPLATE % (settings.ADDRESS,
                                                       settings.PORT)
         self.lastSysInfosMessageTime = 0
-        self.sysInfosMessagePeriod = 6
+
         self.httpconn = httplib.HTTPConnection(settings.DISPATCHER_ADDRESS, settings.DISPATCHER_PORT)
         self.PID_DIR = os.path.dirname(settings.PIDFILE)
         if not os.path.isdir(self.PID_DIR):
@@ -114,9 +116,8 @@ class Worker(MainLoopApplication):
                 for line in f.readlines():
                     if 'model name' in line:
                         self.cpuName = line.split(':')[1].strip()
-                    elif 'MHz' in line:
-                        speedStr = line.split(':')[1].strip()
-                        self.speed = "%.1f" % (float(speedStr) / 1000)
+                        speedStr = line.split('@')[1].strip()
+                        self.speed = speedStr.split('GHz')[0].strip()
                         break
                 f.close()
             except:
@@ -179,26 +180,33 @@ class Worker(MainLoopApplication):
         infos['speed'] = float(self.speed)
         return infos
 
-    def setPerformanceIndex(self, ticket, performance):
-        LOGGER.warning("set perf idx")
-        dct = json.dumps({'performance': performance})
-        headers = {}
-        headers['content-length'] = len(dct)
+    # def setPerformanceIndex(self, ticket, performance):
+    #     """
+    #     NOTE: never called ???
 
-        LOGGER.warning(dct)
+    #     Send sys infos to the dispatcher
+    #     req: PUT /rendernodes/<currentRN>/sysinfos
+    #     """
 
-        try:
-            self.requestManager.put("/rendernodes/%s/sysinfos" % self.computerName, dct, headers)
-        except RequestManager.RequestError, err:
-            if err.status == 404:
-                # the dispatcher doesn't know the worker
-                # it may have been launched before the dispatcher itself
-                # and not be mentioned in the tree.description file
-                self.registerWorker()
-            else:
-                raise
-        except httplib.BadStatusLine:
-            LOGGER.exception('Sending sys infos has failed with a BadStatusLine error')
+    #     LOGGER.warning("set perf idx")
+    #     dct = json.dumps({'performance': performance})
+    #     headers = {}
+    #     headers['content-length'] = len(dct)
+
+    #     LOGGER.warning(dct)
+
+    #     try:
+    #         self.requestManager.put("/rendernodes/%s/sysinfos" % self.computerName, dct, headers)
+    #     except RequestManager.RequestError, err:
+    #         if err.status == 404:
+    #             # the dispatcher doesn't know the worker
+    #             # it may have been launched before the dispatcher itself
+    #             # and not be mentioned in the tree.description file
+    #             self.registerWorker()
+    #         else:
+    #             raise
+    #     except httplib.BadStatusLine:
+    #         LOGGER.exception('Sending sys infos has failed with a BadStatusLine error')
 
     def registerWorker(self):
         '''Register the worker in the dispatcher.'''
@@ -231,7 +239,7 @@ class Worker(MainLoopApplication):
                     LOGGER.info("Boot process... worker registered")
                     break
             # try to register to dispatcher every 10 seconds
-            time.sleep(10)
+            time.sleep( config.WORKER_REGISTER_DELAY_AFTER_FAILURE )
 
         # once the worker is registered, ensure the RN status is correct according to the killfile presence
         if os.path.isfile(settings.KILLFILE):
@@ -256,7 +264,17 @@ class Worker(MainLoopApplication):
         return dct
 
     def updateCommandWatcher(self, commandWatcher):
-        while True:
+        """
+        Send info to the dispatcher about currently running command watcher.
+        Called from the mainloop every time a command has been tagged "modified"
+        req: PUT /rendernodes/<currentRN>/commands/<commandId>/
+        """
+
+        maxRetry = max(1,config.WORKER_REQUEST_MAX_RETRY_COUNT)
+        delayRetry = config.WORKER_REQUEST_DELAY_AFTER_REQUEST_FAILURE
+        i=0
+
+        while i < maxRetry:
             url = "/rendernodes/%s/commands/%d/" % (self.computerName, commandWatcher.commandId)
             body = json.dumps(self.buildUpdateDict(commandWatcher.command))
             headers = {'Content-Length': len(body)}
@@ -271,19 +289,37 @@ class Worker(MainLoopApplication):
                 if response.status == 200:
                     response = response.read()
                     commandWatcher.modified = False
+                    break
                 elif response.status == 404:
                     LOGGER.warning('removing stale command %d', commandWatcher.commandId)
                     response = response.read()
                     self.removeCommandWatcher(commandWatcher)
+                    break
                 else:
                     data = response.read()
                     print "unexpected status %d: %s %s" % (response.status, response.reason, data)
-                return
             finally:
                 self.httpconn.close()
-            LOGGER.warning('Update of command %d failed.', commandWatcher.commandId)
+
+            LOGGER.warning('Update of command %d failed (attempt %d of %d)', commandWatcher.commandId, i, maxRetry)
+            LOGGER.warning('Next retry will occur in %.2f s' % delayRetry )
+            time.sleep( delayRetry )
+            i += 1
+            delayRetry *= 2
+
+        # Request error encountered "maxRetry" times, removing the command watcher to avoid
+        # recalling this update in next main loop iter
+        if i == maxRetry:
+            LOGGER.exception('Update of command %d failed repeatedly, removing watcher.', commandWatcher.commandId )
+            self.removeCommandWatcher(commandWatcher)
+
 
     def pauseWorker(self, paused, killproc):
+        """
+        Called from mainloop when checking killfile presence (also checked when registering).
+        Send a request to the dispatcher to update rendernode's state.
+        req: PUT /rendernodes/<currentRN>/paused/
+        """
         while True:
             url = "/rendernodes/%s/paused/" % (self.computerName)
             dct = {}
@@ -339,6 +375,7 @@ class Worker(MainLoopApplication):
         # try:
         now = time.time()
 
+        #
         # check if the killfile is present
         #
         if os.path.isfile(settings.KILLFILE):
@@ -375,6 +412,7 @@ class Worker(MainLoopApplication):
             rf = open("/tmp/render/restartfile", 'w')
             rf.close()
 
+        #
         # Waits for any child process, non-blocking (this is necessary to clean up finished process properly)
         #
         try:
@@ -384,17 +422,20 @@ class Worker(MainLoopApplication):
         except OSError:
             pass
 
+        #
         # Send updates for every modified command watcher.
         #
         for commandWatcher in self.modifiedCommandWatchers:
             self.updateCommandWatcher(commandWatcher)
 
+        #
         # Attempt to remove finished command watchers
         #
         for commandWatcher in self.finishedCommandWatchers:
             LOGGER.info("Removing command watcher %d (status=%r, finished=%r, modified=%r)", commandWatcher.command.id, commandWatcher.command.status, commandWatcher.finished, commandWatcher.modified)
             self.removeCommandWatcher(commandWatcher)
 
+        #
         # Kill watchers that timeout and remove dead command watchers
         # that are not flagged as modified.
         #
@@ -411,7 +452,7 @@ class Worker(MainLoopApplication):
 
         # time resync
         now = time.time()
-        if (now - self.lastSysInfosMessageTime) > self.sysInfosMessagePeriod:
+        if (now - self.lastSysInfosMessageTime) > config.WORKER_SYSINFO_DELAY:
             self.sendSysInfosMessage()
             self.lastSysInfosMessageTime = now
 
@@ -423,6 +464,12 @@ class Worker(MainLoopApplication):
         #     LOGGER.error("A problem occured : " + repr(sys.exc_info()))
 
     def sendSysInfosMessage(self):
+        """
+        Send sys infos to the dispatcher, the request content holds the RN status only, it has to be kept
+        very small to avoid nerwork flood.
+        req: PUT /rendernodes/<currentRN>/sysinfos
+        """
+
         # we don't need to send the whole dict of sysinfos
         #infos = self.fetchSysInfos()
         infos = {}
@@ -575,3 +622,8 @@ class Worker(MainLoopApplication):
         self.commandWatchers[command.id] = newCommandWatcher
 
         LOGGER.info("Started command %d", command.id)
+
+
+    def reloadConfig(self):
+        reload(config)
+        pass

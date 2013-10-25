@@ -46,3 +46,6 @@ class GraphViewBuilder(object):
             for deptask, statuslist in taskdeps.items():
                 depnode = deptask.nodes['graph_rule']
                 node.addDependency(depnode,  statuslist)
+
+    def __repr__(self):
+        return "GraphViewBuilder( root=%r, dispatchTree=%r )" % (self.root, self.dispatchTree )

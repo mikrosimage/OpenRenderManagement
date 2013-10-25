@@ -11,9 +11,12 @@ except ImportError:
 from octopus.core.communication.http import Http404, Http400, HttpConflict
 from octopus.core.framework import BaseResource, queue
 from octopus.dispatcher.model.pool import PoolShare, PoolShareCreationException
+import logging
 
 __all__ = []
 
+
+LOGGER = logging.getLogger('poolshares')
 
 class PoolSharesResource(BaseResource):
     #@queue
@@ -24,6 +27,7 @@ class PoolSharesResource(BaseResource):
     #@queue
     def put(self):
         dct = self.getBodyAsJSON()
+
         if "pslist" in dct:
             pslist = dct['pslist']
             poolShares = []
@@ -72,6 +76,10 @@ class PoolShareResource(BaseResource):
 
     #@queue
     def post(self, id):
+        '''
+        This request is sent when a user wants to update a poolshare's maxRN.
+        We update the poolShare but also report this update on the related node for data consistency (and display).
+        '''
         try:
             poolShare = self.getDispatchTree().poolShares[int(id)]
         except KeyError:
@@ -80,6 +88,10 @@ class PoolShareResource(BaseResource):
         maxRN = int(dct['maxRN'])
         poolShare.maxRN = maxRN
         poolShare.userDefinedMaxRN = True
+
+        # Mirror this change to the related node of this pool share
+        poolShare.node.maxRN = maxRN
+
         self.writeCallback({
             'poolshare': poolShare.to_json()
         })

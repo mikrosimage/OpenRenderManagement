@@ -6,6 +6,11 @@
 # @version 0.1
 #
 ####################################################################################################
+try:
+    import simplejson as json
+except ImportError:
+    import json
+
 from tornado.web import Application
 import tornado.web as web
 from tornado.httpserver import HTTPServer
@@ -13,8 +18,10 @@ from octopus.dispatcher.webservice import commands, rendernodes, graphs, nodes,\
     tasks, poolshares, pools, licenses, \
     wsQuery, wsEdit
 
+from octopus.core.communication.http import Http404, Http400, HttpConflict
 from octopus.core.enums.command import *
 from octopus.core.framework import BaseResource
+from octopus.core import singletonconfig
 
 
 ## This class defines the webservice associated with the dispatcher.
@@ -78,13 +85,32 @@ class WebServiceDispatcher(Application):
             (r'^/system_json/?$', SystemResourceJson, dict(framework=framework)),
             (r'^/mobile/?$', MobileResource, dict(framework=framework)),
 
+            # Several WS to get or edit multiple data in a single request.
+            # It uses the query mecanism defined in octopus.dispatcher.model.nodequery module
             (r'^/query$', wsQuery.QueryResource, dict(framework=framework)),
-            (r'^/edit$', wsEdit.EditResource, dict(framework=framework))
+            (r'^/edit/status$', wsEdit.EditStatusResource, dict(framework=framework)),
+            (r'^/edit/maxrn$', wsEdit.EditMaxRnResource, dict(framework=framework)),
+            (r'^/edit/prio$', wsEdit.EditPrioResource, dict(framework=framework)),
+            (r'^/pause$', wsEdit.PauseResource, dict(framework=framework)),
+            (r'^/resume$', wsEdit.ResumeResource, dict(framework=framework)),
+            
+            (r'^/reconfig$', ReconfigResource, dict(framework=framework)),
+            (r'^/dbg$', DbgResource, dict(framework=framework))
 
         ])
         self.listen(port, "0.0.0.0")
         self.framework = framework
 
+class DbgResource(BaseResource):
+    '''
+    Very basic debug WS, it returns a simple HTML representation of the currently hold dispatchTree
+    TODO: return a json string instead
+    '''
+    def get(self):
+        # DBG JSA: display dispatchtree
+        res = self.getDispatchTree()._display_()
+        self.writeCallback(str(res))
+        pass
 
 
 class StatsResource(BaseResource):
@@ -188,12 +214,10 @@ class SystemResource(BaseResource):
         self.writeCallback(env)
 
 
-#TMP pour tester une nouvelle ressource
-from octopus.core.communication.http import Http404, Http400, HttpConflict
-try:
-    import simplejson as json
-except ImportError:
-    import json
+class ReconfigResource(BaseResource):
+    def post(self):
+        singletonconfig.reload()
+
 
 class SystemResourceJson(BaseResource):
     def get(self):
@@ -209,7 +233,7 @@ class SystemResourceJson(BaseResource):
 
             data = json.dumps( envData )
         except TypeError:
-            return Http404("Impossible to retrieve server environnement.")
+            raise Http500("Impossible to retrieve server environnement.")
 
         self.writeCallback(data)
 

@@ -16,9 +16,25 @@ import signal
 import tornado
 import time
 
-from octopus.dispatcher import make_dispatcher, settings
+#
+# Init singleton object holding reloadable config values
+# Must be done in the very first place because some import might ask for config value
+#
+from octopus.dispatcher import settings
+from octopus.core import singletonconfig
+
+singletonconfig.load( settings.CONFDIR + "/config.ini" )
+
+#
+# Init the rest of dispatcher app
+#
+# from octopus.dispatcher import make_dispatcher
+from octopus.core.framework import WSAppFramework
+from octopus.dispatcher.webservice.webservicedispatcher import WebServiceDispatcher
+from octopus.dispatcher.dispatcher import Dispatcher
 
 os.path.dirname(__file__) + "/../logs/dispatcher/dispatcher.log"
+
 
 def daemonize(username=""):
     if os.fork() != 0:
@@ -95,15 +111,20 @@ def setup_logging(options):
     logging.getLogger('dispatcher').setLevel(debugLevel)
     logging.getLogger('webservice').setLevel(logging.ERROR)
 
+
+def make_dispatcher():
+    return WSAppFramework( applicationClass=Dispatcher, webServiceClass=WebServiceDispatcher, port=settings.PORT )
+
 def main():
     options = process_args()
     setup_logging(options)
+
     if options.DAEMONIZE:
         daemonize(settings.RUN_AS)
-    dispatcherApplication = make_dispatcher()
-    # dispatcherApplication.mainLoop()
 
-    periodic = tornado.ioloop.PeriodicCallback( dispatcherApplication.loop, settings.MASTER_UPDATE_INTERVAL)
+    dispatcherApplication = make_dispatcher()
+
+    periodic = tornado.ioloop.PeriodicCallback( dispatcherApplication.loop, singletonconfig.get('CORE','MASTER_UPDATE_INTERVAL') )
     periodic.start()
     try:
         tornado.ioloop.IOLoop.instance().start()

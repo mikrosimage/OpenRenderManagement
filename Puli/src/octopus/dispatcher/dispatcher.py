@@ -54,9 +54,7 @@ class Dispatcher(MainLoopApplication):
 
         self.threadPool = ThreadPool(16, 0, 0, None)
 
-        LOGGER.info('settings.DEBUG = %s', settings.DEBUG)
-        LOGGER.info('settings.ADDRESS = %s', settings.ADDRESS)
-        LOGGER.info('settings.PORT = %s', settings.PORT)
+        LOGGER.info('Settings: DEBUG = %s, ADDRESS = %s, PORT = %s', settings.DEBUG, settings.ADDRESS, settings.PORT)
 
         self.cycle = 1
         self.dispatchTree = DispatchTree()
@@ -176,7 +174,7 @@ class Dispatcher(MainLoopApplication):
         # JSA DEBUG: timer pour profiler les etapes       
         loopStartTime = time.time()
         prevTimer = time.time()
-        LOGGER.info("")
+        # LOGGER.info("")
 
         # JSA: Check if requests are finished (necessaire ?)
         try:
@@ -188,47 +186,48 @@ class Dispatcher(MainLoopApplication):
 
         self.cycle += 1
 
+        # Update of allocation is done when parsing the tree for completion and status update (done partially for invalidated node only i.e. when needed)
         self.dispatchTree.updateCompletionAndStatus()
-        LOGGER.info("%8.2f ms --> update completion status" % ( (time.time() - prevTimer)*1000 ) )
-        prevTimer = time.time()
+        # LOGGER.info("%8.2f ms --> update completion status" % ( (time.time() - prevTimer)*1000 ) )
+        # prevTimer = time.time()
 
 
         self.updateRenderNodes()
-        LOGGER.info("%8.2f ms --> update render node" % ( (time.time() - prevTimer)*1000 ) )
-        prevTimer = time.time()
+        # LOGGER.info("%8.2f ms --> update render node" % ( (time.time() - prevTimer)*1000 ) )
+        # prevTimer = time.time()
 
 
         self.dispatchTree.validateDependencies()
-        LOGGER.info("%8.2f ms --> validate dependencies" % ( (time.time() - prevTimer)*1000 ) )
-        prevTimer = time.time()
+        # LOGGER.info("%8.2f ms --> validate dependencies" % ( (time.time() - prevTimer)*1000 ) )
+        # prevTimer = time.time()
 
 
         # update db
         self.updateDB()
 
         # JSA DEBUG
-        LOGGER.info("%8.2f ms --> update DB" % ( (time.time() - prevTimer)*1000 ) )
-        prevTimer = time.time()
+        # LOGGER.info("%8.2f ms --> update DB" % ( (time.time() - prevTimer)*1000 ) )
+        # prevTimer = time.time()
 
         # compute and send command assignments to rendernodes
         assignments = self.computeAssignments()
         self.sendAssignments(assignments)
 
         # JSA DEBUG
-        LOGGER.info("%8.2f ms --> compute assignements" % ( (time.time() - prevTimer)*1000 ) )
-        prevTimer = time.time()
+        # LOGGER.info("%8.2f ms --> compute assignements" % ( (time.time() - prevTimer)*1000 ) )
+        # prevTimer = time.time()
 
         # call the release finishing status on all rendernodes
         for renderNode in self.dispatchTree.renderNodes.values():
             renderNode.releaseFinishingStatus()
 
         # JSA DEBUG
-        LOGGER.info("%8.2f ms --> releaseFinishingStatus" % ( (time.time() - prevTimer)*1000 ) )
-        prevTimer = time.time()
+        # LOGGER.info("%8.2f ms --> releaseFinishingStatus" % ( (time.time() - prevTimer)*1000 ) )
+        # prevTimer = time.time()
 
         # JSA DEBUG
-        loopDuration = (time.time() - loopStartTime)*1000
-        LOGGER.info( "%8.2f ms --> TOTAL " % loopDuration )
+        # loopDuration = (time.time() - loopStartTime)*1000
+        # LOGGER.info( "%8.2f ms --> TOTAL " % loopDuration )
 
 
     def updateDB(self):
@@ -251,7 +250,7 @@ class Dispatcher(MainLoopApplication):
             self.pulidb.createElements(self.dispatchTree.toCreateElements)
             self.pulidb.updateElements(self.dispatchTree.toModifyElements)
             self.pulidb.archiveElements(self.dispatchTree.toArchiveElements)
-            LOGGER.info("                UpdateDB: create=%d update=%d delete=%d" % (len(self.dispatchTree.toCreateElements), len(self.dispatchTree.toModifyElements), len(self.dispatchTree.toArchiveElements)) )
+            # LOGGER.info("                UpdateDB: create=%d update=%d delete=%d" % (len(self.dispatchTree.toCreateElements), len(self.dispatchTree.toModifyElements), len(self.dispatchTree.toArchiveElements)) )
         self.dispatchTree.resetDbElements()
 
     def computeAssignments(self):
@@ -443,6 +442,10 @@ class Dispatcher(MainLoopApplication):
         return nodes
 
     def updateCommandApply(self, dct):
+        '''
+        Called from a RN with a json desc of a command (ie rendernode info, command info etc).
+        Raise an execption to tell caller to send a HTTP404 response to RN, if not error a HTTP200 will be send instead
+        '''
         commandId = dct['id']
         renderNodeName = dct['renderNodeName']
 
@@ -459,12 +462,12 @@ class Dispatcher(MainLoopApplication):
             # rn = command.renderNode
             # rn.clearAssignment(command)
             # rn.request("DELETE", "/commands/" + str(commandId) + "/")
-            raise KeyError("Command %d is running on a different rendernode (%s) than the one in puli's model (%s)." % (commandId, renderNodeName, rn.name))
+            raise KeyError("Command %d is running on a different rendernode (%s) than the one in puli's model (%s)." % (commandId, renderNodeName, command.renderNode.name))
 
         rn = command.renderNode
         rn.lastAliveTime = max(time.time(), rn.lastAliveTime)
 
-        #if command is no more in the rn's list, it means the rn was reported as timeout
+        # if command is no more in the rn's list, it means the rn was reported as timeout or asynchronously removed from RN
         if commandId not in rn.commands:
             if len(rn.commands) == 0 and command.status is not enums.CMD_CANCELED:
                 # in this case, re-add the command to the list of the rendernode
@@ -473,9 +476,8 @@ class Dispatcher(MainLoopApplication):
                 rn.reserveLicense(command, self.licenseManager)
                 LOGGER.warning("re-assigning command %d on %s. (TIMEOUT?)" % (commandId, rn.name))
             else:
-                # cancel the command on rn?
-                # rn.request("DELETE", "/commands/" + str(commandId) + "/")
-                LOGGER.warning("Status update from %d (%d) on %s but %d currently assigned." % (commandId, int(dct['status']), rn.name, rn.commands.keys()[0]))
+                # The command has been cancelled on the dispatcher but update from RN only arrives now
+                LOGGER.warning("Status update from %d (%d) on %s but command is currently assigned." % (commandId, int(dct['status']), rn.name ))
                 pass
 
         if "status" in dct:

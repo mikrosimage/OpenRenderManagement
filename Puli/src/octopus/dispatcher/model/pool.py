@@ -67,7 +67,7 @@ class PoolShare(models.Model):
         return any((rn.isAvailable() for rn in self.pool.renderNodes))
 
     def __repr__(self):
-        return "PoolShare(%r, %r, %r, %r)" % (self.id, self.pool.name if self.pool else None, self.node, self.maxRN)
+        return "PoolShare(id=%r, pool.name=%r, node=%r, maxRN=%r, allocatedRN=%r)" % (self.id, self.pool.name if self.pool else None, self.node.name, self.maxRN, self.allocatedRN)
 
 
 ## This class represents a Pool.
@@ -127,4 +127,7 @@ class Pool(models.Model):
     ## Returns a human readable representation of the pool.
     #
     def __str__(self):
+        return u"Pool(id=%s, name=%s)" % (repr(self.id), repr(self.name))
+
+    def __repr__(self):
         return u"Pool(id=%s, name=%s)" % (repr(self.id), repr(self.name))

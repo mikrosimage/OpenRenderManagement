@@ -71,6 +71,10 @@ class ConstraintFactory:
             for attr in pUserOptions.attribute:
                 query += "&attr=%s" % urllib.quote(attr)
 
+        # Indicating to retrieve subnodes hierarchy
+        if hasattr(pUserOptions, 'tree') and pUserOptions.tree is True:
+            query += "&tree=1"
+
 
         #
         # Specific for edit request

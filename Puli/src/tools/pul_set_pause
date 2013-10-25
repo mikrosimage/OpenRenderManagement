@@ -2,21 +2,13 @@
 # -*- coding: utf8 -*-
 
 """
-pul_set_status.py: Utilitaire d'edition des jobs dans puli
-Permet de lancer des requetes http au serveur pour editer le status des jobs.
+pul_set_pause.py: Utilitaire d'edition des jobs dans puli
+Permet de lancer des requetes http au serveur pour editer l'attribut pause des jobs.
+On prepare selon les arguments de l'utilisateur, soit une requete "pause" soit une requete "resume"
 
-requete: edit?update_status=0&update_option=restart&constraint_user=jsa
-		 edit?update_status=1&constraint_user=jsa&constraint_user=render
-		 edit?update_status=0&constraint_id=1&constraint_id=2&constraint_id=3
+requete: pause?constraint_user=jsa
+		 resume?constraint_user=jsa&constraint_user=render
 
-value: represente le nouveau statut a attribuer au job [0-6]
-		0="Blocked"
-		1="Ready"
-		2="Running"
-		3="Done"
-		4="Error"
-		5="Canceled"
-		6="Paused"
 """
 __author__      = "Jérôme Samson"
 __copyright__   = "Copyright 2013, Mikros Image"
@@ -50,7 +42,7 @@ def handle_request(response):
 	"""
 
 	if response.error:
-		print "Error: HTTP", response.body
+		print "Error:", response.error
 		sys.exit()
 
 	REQUEST_END_TIME = time.time() - REQUEST_BEGIN_TIME
@@ -102,16 +94,8 @@ def process_args():
     '''
 
     usage = "usage: %prog --set <new status> [general options] [restriction list]"
-    desc="""Updates status of one or several jobs.
-Here is a list of possible statuses:
-	0="Blocked"
-	1="Ready"
-	2="Running"
-	3="Done"
-	4="Error"
-	5="Canceled"
-	6="Paused"
-
+    desc="""Updates "paused" attribute of one or several jobs.
+Job can be put in pause or resumed (1 or 0).
 To restrict the action to jobs of interest, a list of zero or more restrictions may be supplied. Each restriction may be one of:
     - a user --> matches all jobs owned by the specified owner
     - a job id  --> matches the specified job
@@ -128,7 +112,7 @@ To restrict the action to jobs of interest, a list of zero or more restrictions 
     parser.add_option("-C", "--constraint", action="append", type="string", help="Allow user to specify one or more filter constraints")
 
     # TODO limit range of values or use a "choice" string sequence
-    parser.add_option("--set", action="store", type="int", metavar="STATUS", help="Allow user to specify a new status value [1-6]")
+    parser.add_option("--set", action="store", type="int", metavar="STATUS", help="Allow user to set pause or resume [0-1]")
 
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help="Verbose mode [%default]", default=False)
 
@@ -150,30 +134,32 @@ if __name__ == '__main__':
 		print "Command options: %s" % options
 		print "Command arguments: %s" % args
 
-	_target = "edit/status?"
+	_target = ""
 	_hostname = Settings.hostname
 	_port = Settings.port
 
 	#
 	# Manually check set_status specific rules:
-	#   - "update" option must exists because it is a requirement of pul_set_status
+	#   - "set" option must exists because it is a requirement of pul_set_status
 	#   - we don't allow to affect the whole queue, a restriction or constraint must be present
 	#
-	if not hasattr(options, 'set') or options.set is None:
+	if not hasattr(options, 'set'):
 		print "Usage: pul_set_status [general options] [restriction list] \
 				\n\npul_set_status.py: error: parameter --set is required."
 		sys.exit()
-	elif options.set not in xrange(0,7):
+	elif options.set not in range(0,2):
 		print "Usage: pul_set_status [general options] [restriction list] \
-				\n\npul_set_status.py: error: parameter --set must be in the range [0-6]."
+				\n\npul_set_status.py: error: parameter --set must be in the range [0-1]."
 		sys.exit()
 
 	else:
-		_target += "update_status=%d" % options.set
-		# print 'Adding "update" in target query'
-		# # options['update']="update_status=4"# ("update=%s"%options.update)
-		# print "opt = "+options.update
-		# print "Command options: %s" % options
+		if options.set == 1:
+			_target = "pause?"
+		elif options.set == 0:
+			_target = "resume?"
+		else:
+			print"Error: unknown '--set' value"
+			sys.exit()
 
 	if (len(args)==0) and not options.constraint:
 		print "Usage: pul_set_status [general options] [restriction list]\

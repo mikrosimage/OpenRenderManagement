@@ -108,5 +108,5 @@ class Http411(HTTPError):
 class Http500(HTTPError):
     """A basic HttpResponse for error 500 (Internal server error)"""
 
-    def __init__(self):
-        super(Http500, self).__init__(500, "Internal server error")
+    def __init__(self, message="Internal server error", content='', contenttype='text/plain'):
+        super(Http500, self).__init__(500, message)

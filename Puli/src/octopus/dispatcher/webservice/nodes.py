@@ -159,7 +159,9 @@ class NodePausedResource(NodesResource):
         try:
             paused = data['paused']
         except KeyError:
-            return Http400('Missing entry: "paused".')
+            raise Http400('Missing entry: "paused".')
+        except TypeError:
+            raise Http400('Missing entry: "paused".')
         else:
             nodeId = int(nodeId)
             node = self._findNode(nodeId)

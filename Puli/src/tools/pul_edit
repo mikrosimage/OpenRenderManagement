@@ -2,21 +2,13 @@
 # -*- coding: utf8 -*-
 
 """
-pul_set_status.py: Utilitaire d'edition des jobs dans puli
-Permet de lancer des requetes http au serveur pour editer le status des jobs.
+pul_edit: Utilitaire d'edition des jobs dans puli
+Permet de lancer des requetes http au serveur pour editer les attributs 
+On prepare selon les arguments de l'utilisateur, soit une requete "pause" soit une requete "resume"
 
-requete: edit?update_status=0&update_option=restart&constraint_user=jsa
-		 edit?update_status=1&constraint_user=jsa&constraint_user=render
-		 edit?update_status=0&constraint_id=1&constraint_id=2&constraint_id=3
+requete: pause?constraint_user=jsa
+		 resume?constraint_user=jsa&constraint_user=render
 
-value: represente le nouveau statut a attribuer au job [0-6]
-		0="Blocked"
-		1="Ready"
-		2="Running"
-		3="Done"
-		4="Error"
-		5="Canceled"
-		6="Paused"
 """
 __author__      = "Jérôme Samson"
 __copyright__   = "Copyright 2013, Mikros Image"
@@ -41,6 +33,8 @@ VERBOSE = Settings.verbose
 
 REQUEST_BEGIN_TIME = ''
 REQUEST_END_TIME = ''
+
+EDITABLE_FIELDS = ["dispatchKey","maxRN"]
 
 
 def handle_request(response):
@@ -101,16 +95,13 @@ def process_args():
     Manages arguments parsing definition and help information
     '''
 
-    usage = "usage: %prog --set <new status> [general options] [restriction list]"
-    desc="""Updates status of one or several jobs.
-Here is a list of possible statuses:
-	0="Blocked"
-	1="Ready"
-	2="Running"
-	3="Done"
-	4="Error"
-	5="Canceled"
-	6="Paused"
+    usage = "usage: %prog --field <name> --value <val> [general options] [restriction list]"
+    desc="""
+Sends a request to the main server (or user defined host) to set a new value to a desired field. The user must specify a restriction or a constraint 
+to avoid editing the whole queue. The command can edit "Node" elements only i.e. main level jobs in the queue.
+Here is a list of editable fields: dispatchKey, maxrn
+
+TODO: add support for more fields
 
 To restrict the action to jobs of interest, a list of zero or more restrictions may be supplied. Each restriction may be one of:
     - a user --> matches all jobs owned by the specified owner
@@ -127,8 +118,8 @@ To restrict the action to jobs of interest, a list of zero or more restrictions 
  
     parser.add_option("-C", "--constraint", action="append", type="string", help="Allow user to specify one or more filter constraints")
 
-    # TODO limit range of values or use a "choice" string sequence
-    parser.add_option("--set", action="store", type="int", metavar="STATUS", help="Allow user to specify a new status value [1-6]")
+    parser.add_option("--field", action="store", metavar="FIELD", help="Indicate which job field will be edited")
+    parser.add_option("--value", action="store", metavar="VALUE", help="Indicate the new value")
 
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help="Verbose mode [%default]", default=False)
 
@@ -150,34 +141,46 @@ if __name__ == '__main__':
 		print "Command options: %s" % options
 		print "Command arguments: %s" % args
 
-	_target = "edit/status?"
+	_target = "edit/"
 	_hostname = Settings.hostname
 	_port = Settings.port
 
 	#
-	# Manually check set_status specific rules:
-	#   - "update" option must exists because it is a requirement of pul_set_status
+	# Manually check specific rules:
+	#   - "field" and "value" options must exists
 	#   - we don't allow to affect the whole queue, a restriction or constraint must be present
 	#
-	if not hasattr(options, 'set') or options.set is None:
-		print "Usage: pul_set_status [general options] [restriction list] \
-				\n\npul_set_status.py: error: parameter --set is required."
-		sys.exit()
-	elif options.set not in xrange(0,7):
-		print "Usage: pul_set_status [general options] [restriction list] \
-				\n\npul_set_status.py: error: parameter --set must be in the range [0-6]."
+	if not hasattr(options, 'field') or options.field is None:
+		print "Usage: pul_edit [general options] [restriction list] \
+				\n\npul_edit.py: error: parameter --field is required."
 		sys.exit()
 
+	if not hasattr(options, 'value') or options.value is None:
+		print "Usage: pul_edit [general options] [restriction list] \
+				\n\npul_edit.py: error: parameter --value is required."
+		sys.exit()
+
+	#
+	# Match user attributes (field & value) with proper webservice address
+	#
+	if options.field not in EDITABLE_FIELDS:
+		print "Usage: pul_edit [general options] [restriction list] \
+				\n\npul_edit.py: error: given field is not in the list of editable fields"
+		sys.exit()
 	else:
-		_target += "update_status=%d" % options.set
-		# print 'Adding "update" in target query'
-		# # options['update']="update_status=4"# ("update=%s"%options.update)
-		# print "opt = "+options.update
-		# print "Command options: %s" % options
+		if options.field == "dispatchKey":
+			# Changing job priority
+			_target += "prio?value=%s" % options.value
+		elif options.field == "maxRN":
+			# Changing max number of rendernode
+			_target += "maxrn?value=%s" % options.value
+		else:
+			print"Error: unknown '--field' value"
+			sys.exit()
 
 	if (len(args)==0) and not options.constraint:
-		print "Usage: pul_set_status [general options] [restriction list]\
-				\n\npul_set_status.py: error: It is not allowed to set a new status without any restriction. \
+		print "Usage: pul_edit [general options] [restriction list]\
+				\n\npul_edit.py: error: It is not allowed to edit jobs without any restriction. \
 				\n                          Please specify a restriction or a constraint."
 		sys.exit()
 

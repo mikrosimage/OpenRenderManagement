@@ -94,8 +94,13 @@ def setup_logging(options):
 
     logFile = os.path.join(settings.LOGDIR, "dispatcher.log")
 
-    fileHandler = logging.handlers.RotatingFileHandler(logFile, maxBytes=1048576, backupCount=7, encoding="UTF-8")
-#    fileHandler = logging.handlers.TimedRotatingFileHandler(logFile, when='D', encoding="UTF-8")
+
+    fileHandler = logging.handlers.RotatingFileHandler(logFile, 
+                    maxBytes=singletonconfig.get('CORE','LOG_SIZE'), 
+                    backupCount=singletonconfig.get('CORE','LOG_BACKUPS'), 
+                    encoding="UTF-8")
+    # fileHandler = logging.handlers.RotatingFileHandler(logFile, maxBytes=2097152, backupCount=10, encoding="UTF-8")
+
     fileHandler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
     logger = logging.getLogger()
     debugLevel = logging.DEBUG if options.DEBUG else logging.WARNING

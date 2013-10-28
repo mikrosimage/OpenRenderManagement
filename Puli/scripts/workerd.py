@@ -15,7 +15,7 @@ import signal
 import resource
 
 from octopus.worker import make_worker, settings
-
+from octopus.worker import config
 
 def daemonize(username=""):
     # set the limit of open files for ddd
@@ -94,7 +94,9 @@ def setup_logging(options):
     logFileName = "worker%d.log" % settings.PORT
     logFile = os.path.join(settings.LOGDIR, logFileName)
 
-    fileHandler = logging.handlers.RotatingFileHandler(logFile, 'w', 1048576, 1, "UTF-8")
+
+    fileHandler = logging.handlers.RotatingFileHandler(logFile, 'w', config.LOG_SIZE, config.LOG_BACKUPS, "UTF-8")
+    # fileHandler = logging.handlers.RotatingFileHandler(logFile, 'w', 1048576, 1, "UTF-8")
     fileHandler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)6s - %(message)s"))
     logger = logging.getLogger()
     logger.addHandler(fileHandler)

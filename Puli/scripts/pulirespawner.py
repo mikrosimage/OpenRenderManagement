@@ -210,7 +210,10 @@ def createDaemon():
 
 
 def pollRestartFile():
-    logging.basicConfig(filename="/var/log/puli/respawner.log", level=logging.DEBUG)
+    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s',
+                        filename="/var/log/puli/respawner.log",
+                        level=logging.DEBUG
+                        )
 
     restartfile = "/tmp/render/restartfile"
     if os.path.isfile(restartfile):

@@ -96,7 +96,7 @@ def displayTask( pTask, pDepth=0 ):
         strId = str(pTask['id'])
     #            id   na    pro  sho   im    us   pr   s   %  max all  crea  sta   end
     result =  "%-8s  %20s  %6s  %-4s  %-3s  %-6s  %4d %2s %3.f  %3d  %5d  %11s  %11s  %11s  %s" \
-                % ( strId, pTask['name'][:12], prod, shot, "-", pTask['user'][:6], \
+                % ( strId, pTask['name'][:20], prod, shot, "-", pTask['user'][:6], \
                     pTask['dispatchKey'], Settings.status_short_name[pTask['status']], percentCompletion, pTask['maxRN'],pTask['allocatedRN'], \
                     creationTimeStr, startTimeStr, endTimeStr, runTimeStr )
 

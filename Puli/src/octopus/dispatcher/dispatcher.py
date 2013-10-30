@@ -54,7 +54,7 @@ class Dispatcher(MainLoopApplication):
 
         self.threadPool = ThreadPool(16, 0, 0, None)
 
-        LOGGER.info('Settings: DEBUG = %s, ADDRESS = %s, PORT = %s', settings.DEBUG, settings.ADDRESS, settings.PORT)
+        LOGGER.warning('Settings: DEBUG = %s, ADDRESS = %s, PORT = %s', settings.DEBUG, settings.ADDRESS, settings.PORT)
 
         self.cycle = 1
         self.dispatchTree = DispatchTree()
@@ -70,20 +70,21 @@ class Dispatcher(MainLoopApplication):
         rnsAlreadyInitialized = self.initPoolsDataFromBackend()
 
         if self.enablePuliDB and not self.cleanDB:
-            LOGGER.info("reloading jobs from database")
+            LOGGER.warning("reloading jobs from database")
             beginTime = time.time()
             self.pulidb.restoreStateFromDb(self.dispatchTree, rnsAlreadyInitialized)
-            LOGGER.info("reloading took %s" % str(time.time() - beginTime))
-            LOGGER.info("done reloading jobs from database")
-            LOGGER.info("reloaded %d tasks" % len(self.dispatchTree.tasks))
-        LOGGER.info("checking dispatcher state")
+            LOGGER.warning("reloading took %.2fs" % (time.time() - beginTime))
+            LOGGER.warning("done reloading jobs from database")
+            LOGGER.warning("reloaded %d tasks" % len(self.dispatchTree.tasks))
+        LOGGER.warning("checking dispatcher state")
+
         self.dispatchTree.updateCompletionAndStatus()
         self.updateRenderNodes()
         self.dispatchTree.validateDependencies()
         if self.enablePuliDB and not self.cleanDB:
             self.dispatchTree.toModifyElements = []
         self.defaultPool = self.dispatchTree.pools['default']
-        LOGGER.info("loading dispatch rules")
+        LOGGER.warning("loading dispatch rules")
         self.loadRules()
         # it should be better to have a maxsize
         self.queue = Queue(maxsize=10000)

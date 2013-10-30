@@ -94,8 +94,8 @@ class WebServiceDispatcher(Application):
             (r'^/pause$', wsEdit.PauseResource, dict(framework=framework)),
             (r'^/resume$', wsEdit.ResumeResource, dict(framework=framework)),
             
-            (r'^/reconfig$', ReconfigResource, dict(framework=framework)),
-            (r'^/dbg$', DbgResource, dict(framework=framework))
+            (r'^/reconfig$', ReconfigResource, dict(framework=framework))
+            # (r'^/dbg$', DbgResource, dict(framework=framework))
 
         ])
         self.listen(port, "0.0.0.0")

@@ -49,16 +49,23 @@ class DeleteTasksResource(BaseResource):
         else:
             taskidsList = taskids.split(",")
             for taskId in taskidsList:
-                taskId = int(taskId)
+                try:
+                    taskId = int(taskId)
+                except ValueError,e:
+                    logger.warning("A task id to delete is not a correct integer %r (from list: %r)." % (taskId, taskidsList))
+                    continue
+
                 try:
                     task = self.getDispatchTree().tasks[taskId]
                 except KeyError:
                     logger.warning("Trying to archive task %s that no longer exists." % str(taskId))
                     continue
+
                 if task.nodes.values()[0].status not in ALLOWED_STATUS_VALUES:
                     logger.warning("Preventing archiving of task %s [Bad status]." % str(taskId))
                     continue
                     #return BadStatusValueResponse()
+
                 task.archive()
             self.writeCallback("Tasks archived successfully.")
 

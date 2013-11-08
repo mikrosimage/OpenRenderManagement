@@ -113,12 +113,12 @@ class CommandWatcher(object):
         from puliclient.jobs import loadCommandRunner, JobTypeImportError
         try:
             runnerClass = loadCommandRunner(runner)
-        except JobTypeImportError:
-            self.logger.error("Command runner loading failed.")
+        except JobTypeImportError, e:
+            self.logger.error("Command runner loading failed: %r" % e )
             self.updateCommandStatus(CMD_ERROR)
             sys.exit(1)
-        except ImportError:
-            self.logger.exception("Command runner loading failed.")
+        except ImportError, e:
+            self.logger.exception("Command runner loading failed: %r" % e )
             self.updateCommandStatus(CMD_ERROR)
             sys.exit(1)
 

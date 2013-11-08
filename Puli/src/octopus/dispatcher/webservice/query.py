@@ -107,7 +107,6 @@ class QueryResource(BaseResource, IQueryNode):
             currTask['tasks'] = childTasks
         return currTask
 
-    # @queue
     def get(self):
         """
         Handle user query request.
@@ -201,3 +200,19 @@ class QueryResource(BaseResource, IQueryNode):
             logger.warning('Impossible to retrieve result for query: %s', self.request.uri)
             raise e
 
+
+class RenderNodeQueryResource(BaseResource, IQueryNode):
+    ADDITIONNAL_SUPPORTED_FIELDS = ['']
+    DEFAULT_FIELDS = ['id']
+
+    def get(self):
+        """
+        Handle user query request.
+          1. init timer and result struct
+          2. check attributes to retrieve
+          3. limit nodes list regarding the given query filters
+          4. for each filtered node: add info in result
+        """
+        args = self.request.arguments
+
+    pass

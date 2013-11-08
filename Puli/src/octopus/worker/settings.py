@@ -58,7 +58,8 @@ DISPATCHER_ADDRESS = "puliserver"
 #
 # Definition des fichiers de surveillance
 #
-PIDFILE = "/tmp/worker.pid"
+PIDFILE = "/var/run/puliworker/worker.pid"
+#PIDFILE = "/tmp/worker.pid"
 KILLFILE = "/tmp/render/killfile"
 
 RUN_AS = ""

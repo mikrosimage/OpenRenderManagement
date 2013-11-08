@@ -16,7 +16,7 @@ import tornado.web as web
 from tornado.httpserver import HTTPServer
 from octopus.dispatcher.webservice import commands, rendernodes, graphs, nodes,\
     tasks, poolshares, pools, licenses, \
-    wsQuery, wsEdit
+    query, edit
 
 from octopus.core.communication.http import Http404, Http400, HttpConflict
 from octopus.core.enums.command import *
@@ -87,15 +87,15 @@ class WebServiceDispatcher(Application):
 
             # Several WS to get or edit multiple data in a single request.
             # It uses the query mecanism defined in octopus.dispatcher.model.nodequery module
-            (r'^/query$', wsQuery.QueryResource, dict(framework=framework)),
-            (r'^/edit/status$', wsEdit.EditStatusResource, dict(framework=framework)),
-            (r'^/edit/maxrn$', wsEdit.EditMaxRnResource, dict(framework=framework)),
-            (r'^/edit/prio$', wsEdit.EditPrioResource, dict(framework=framework)),
-            (r'^/pause$', wsEdit.PauseResource, dict(framework=framework)),
-            (r'^/resume$', wsEdit.ResumeResource, dict(framework=framework)),
+            (r'^/query$', query.QueryResource, dict(framework=framework)),
+            (r'^/edit/status$', edit.EditStatusResource, dict(framework=framework)),
+            (r'^/edit/maxrn$', edit.EditMaxRnResource, dict(framework=framework)),
+            (r'^/edit/prio$', edit.EditPrioResource, dict(framework=framework)),
+            (r'^/pause$', edit.PauseResource, dict(framework=framework)),
+            (r'^/resume$', edit.ResumeResource, dict(framework=framework)),
             
-            (r'^/reconfig$', ReconfigResource, dict(framework=framework))
-            # (r'^/dbg$', DbgResource, dict(framework=framework))
+            (r'^/reconfig$', ReconfigResource, dict(framework=framework)),
+            (r'^/dbg$', DbgResource, dict(framework=framework))
 
         ])
         self.listen(port, "0.0.0.0")
@@ -108,7 +108,12 @@ class DbgResource(BaseResource):
     '''
     def get(self):
         # DBG JSA: display dispatchtree
-        res = self.getDispatchTree()._display_()
+        from octopus.dispatcher.model.dispatchtree import TimeoutException
+        try:
+            res = self.getDispatchTree()._display_()
+        except TimeoutException, e:
+            res = str(e)
+
         self.writeCallback(str(res))
         pass
 

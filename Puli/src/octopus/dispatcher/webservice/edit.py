@@ -44,7 +44,7 @@ from octopus.core.framework import BaseResource, queue
 
 __all__ = []
 
-logger = logging.getLogger('dispatcher.webservice.wsEditController')
+logger = logging.getLogger('dispatcher.webservice.editController')
 
 class EditStatusResource(BaseResource, IQueryNode):
     """

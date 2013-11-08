@@ -67,7 +67,7 @@ from octopus.core.framework import BaseResource, queue
 
 __all__ = []
 
-logger = logging.getLogger('dispatcher.webservice.wsQueryController')
+logger = logging.getLogger('dispatcher.webservice.queryController')
 
 class QueryResource(BaseResource, IQueryNode):
     ADDITIONNAL_SUPPORTED_FIELDS = ['pool']

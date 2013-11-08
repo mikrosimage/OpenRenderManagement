@@ -14,6 +14,7 @@ import logging
 import time
 import re
 from datetime import datetime
+from tornado.web import HTTPError
 
 from octopus.dispatcher.model import FolderNode
 from octopus.core.framework import BaseResource, queue
@@ -75,18 +76,17 @@ class IQueryNode:
                 logger.info( "More than one date specified, first occurence is used: %s" % str(pFilterArgs['constraint_creationtime'][0]) )
             try:
                 filterTimestamp = datetime.strptime( pFilterArgs['constraint_creationtime'][0], "%Y-%m-%d %H:%M:%S" ).strftime('%s')
+                pNodes = [child for child in pNodes if child.creationTime >= int(filterTimestamp)]
 
                 logger.info( "-- Filtering on date %s (e.g. timestamp=%d), nb remaining nodes: %d", pFilterArgs['constraint_creationtime'][0], 
                     int(filterTimestamp), len(pNodes) )
 
-                pNodes = [child for child in pNodes if child.creationTime >= int(filterTimestamp)]
-
             except ValueError:
                 logger.warning('Error: invalid date format, the format definition is "YYYY-mm-dd HH:MM:SS"' )
-                return Http404('Invalid date format')
+                raise HTTPError(400, 'Invalid date format')
             except Exception:
                 logger.warning('Error parsing date constraint')
-                return Http404('Error when parsing date constraint')
+                raise HTTPError(400, 'Error when parsing date constraint')
 
         return pNodes
         pass

@@ -116,15 +116,16 @@ def handle_request(response):
     We try to load the data as JSON and display it according to the arguments or default specification
     """
 
+    REQUEST_END_TIME = time.time() - REQUEST_BEGIN_TIME
+
+    if VERBOSE: print ""
+    if VERBOSE: print "Getting response for request \""+_query+"\" in " + str(REQUEST_END_TIME)
+
+    if VERBOSE: print "DEBUG - Response: " + str(response)
+
     if response.error:
         print "Error:", response.error
     else:
-        REQUEST_END_TIME = time.time() - REQUEST_BEGIN_TIME
-        # import pudb;pu.db
-        if VERBOSE: print ""
-        if VERBOSE: print "Getting response for request \""+_query+"\" in " + str(REQUEST_END_TIME)
-
-        if VERBOSE: print "DEBUG - Response: " + str(response)
 
         if response.body == "":
             print ""

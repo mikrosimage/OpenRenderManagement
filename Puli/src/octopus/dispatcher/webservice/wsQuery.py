@@ -57,6 +57,8 @@ import logging
 import time
 from datetime import datetime
 
+from tornado.web import HTTPError
+
 from octopus.dispatcher.model import FolderNode
 from octopus.dispatcher.model.nodequery import IQueryNode
 
@@ -157,7 +159,8 @@ class QueryResource(BaseResource, IQueryNode):
                         if not hasattr(nodes[0],currAttribute):
                             if currAttribute not in QueryResource.ADDITIONNAL_SUPPORTED_FIELDS :
                                 logger.warning('Error retrieving data, invalid attribute requested : %s', currAttribute )
-                                return Http404("Invalid attribute requested:"+str(currAttribute), "Invalid attribute specified.", "text/plain")
+                                # raise HTTPError(404, "Invalid attribute requested: %s" % currAttribute)
+                                raise HTTPError( 500, "Invalid attribute requested:"+str(currAttribute) )
             else:
                 # Using default result attributes
                 args['attr'] = QueryResource.DEFAULT_FIELDS
@@ -192,9 +195,9 @@ class QueryResource(BaseResource, IQueryNode):
 
 
         except KeyError:
-            return Http404('Error unknown key')
+            raise Http404('Error unknown key')
         
-        except Exception:
+        except Exception, e:
             logger.warning('Impossible to retrieve result for query: %s', self.request.uri)
-            return Http500()
+            raise e
 

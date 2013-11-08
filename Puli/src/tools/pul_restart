@@ -18,7 +18,7 @@ if __name__ == '__main__':
 
 	argString = ''
 	for i in range(1, len(sys.argv)):
-		argString += " %s" % sys.argv[i]
+		argString += " \"%s\"" % sys.argv[i]
 
 	command = "./pul_set_status --set 1 %s" % argString
 	os.system(command)

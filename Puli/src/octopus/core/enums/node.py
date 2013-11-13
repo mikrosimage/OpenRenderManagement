@@ -14,6 +14,8 @@ NODE_STATUS_NAMES = ("BLOCKED",
                       "CANCELED",
                       "PAUSED")
 
+NODE_STATUS_SHORT_NAMES = ("B", "I", "R", "D", "E", "C", "P")
+
 
 def isFinalNodeStatus(status):
     return status in [NODE_DONE, NODE_ERROR, NODE_CANCELED]

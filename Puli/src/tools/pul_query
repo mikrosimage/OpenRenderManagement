@@ -50,7 +50,7 @@ import urllib
 # Imports from local dir
 from settings import Settings
 from common import ConstraintFactory
-
+from octopus.core.enums.node import NODE_STATUS_SHORT_NAMES
 
 
 _query = "query?"
@@ -97,7 +97,7 @@ def displayTask( pTask, pDepth=0 ):
     #            id   na    pro  sho   im    us   pr   s   %  max all  crea  sta   end
     result =  "%-8s  %20s  %6s  %-4s  %-3s  %-6s  %4d %2s %3.f  %3d  %5d  %11s  %11s  %11s  %s" \
                 % ( strId, pTask['name'][:20], prod, shot, "-", pTask['user'][:6], \
-                    pTask['dispatchKey'], Settings.status_short_name[pTask['status']], percentCompletion, pTask['maxRN'],pTask['allocatedRN'], \
+                    pTask['dispatchKey'], NODE_STATUS_SHORT_NAMES[pTask['status']], percentCompletion, pTask['maxRN'],pTask['allocatedRN'], \
                     creationTimeStr, startTimeStr, endTimeStr, runTimeStr )
 
     if options.tree and 'tasks' in pTask:

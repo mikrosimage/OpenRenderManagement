@@ -93,6 +93,9 @@ class WebServiceDispatcher(Application):
             (r'^/edit/prio$', edit.EditPrioResource, dict(framework=framework)),
             (r'^/pause$', edit.PauseResource, dict(framework=framework)),
             (r'^/resume$', edit.ResumeResource, dict(framework=framework)),
+
+            (r'^/query/rn$', query.RenderNodeQueryResource, dict(framework=framework)),
+            (r'^/edit/rn$', edit.RenderNodeEditResource, dict(framework=framework)),
             
             (r'^/reconfig$', ReconfigResource, dict(framework=framework)),
             (r'^/dbg$', DbgResource, dict(framework=framework))

@@ -355,3 +355,12 @@ class EditPrioResource(BaseResource, IQueryNode):
         self.writeCallback( json.dumps(content) )
         
 
+
+
+class RenderNodeEditResource(BaseResource, IQueryNode):
+    def get(self):
+        """
+        """
+        args = self.request.arguments
+        logger.info("args: %r" % args)
+        pass

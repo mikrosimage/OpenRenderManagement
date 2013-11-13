@@ -12,7 +12,7 @@ from settings import Settings
 from optparse import IndentedHelpFormatter
 from datetime import datetime
 
-import urllib, sys
+import urllib, sys, types
 
 VERBOSE=Settings.verbose
 
@@ -22,10 +22,42 @@ class CustomTable:
     Utility class to display a table with field data. 
     Use in pul_query/pul_rn tools
     """
+    # @staticmethod
+    # def truncateStr(pValue, pLen):
+    #     return str(datetime.strftime( datetime.fromtimestamp( pValue ), Settings.date_format ))
+
+    #
+    # Formula methods
+    #
+
+    @staticmethod
+    def formulaDiff( pValue1, pValue2 ):
+        if pValue1 is None or pValue2 is None:
+            return 0
+        return float(pValue1) - float(pValue2)
+
+    @staticmethod
+    def formulaRuntime( pEndTime, pStartTime ):
+        result = "-"
+        if pStartTime is not None:
+            if pEndTime is not None:
+                result = datetime.fromtimestamp( pEndTime ) - datetime.fromtimestamp( pStartTime )
+            else:
+                result = datetime.now() - datetime.fromtimestamp( pStartTime )
+        return result
+
+
+    #
+    # Transformation methods
+    #
+    @staticmethod
+    def timeToStr(pValue):
+        return str(datetime.strftime( float(pValue), Settings.date_format ))
+
 
     @staticmethod
     def dateToStr(pValue):
-        return str(datetime.strftime( datetime.fromtimestamp( pValue ), Settings.date_format ))
+        return str(datetime.strftime( datetime.fromtimestamp( float(pValue) ), Settings.date_format ))
 
     @staticmethod
     def percentToFloat(pValue):
@@ -61,26 +93,56 @@ class CustomTable:
         '''
         Print content row for a particular table description and data.
         '''
-
         line=""
         for column in pDescription.columns:
+
             if column['visible'] == True:
 
-                if 'transform' in column.keys():
-                    try:
-                        data = column['transform'](pRow[column['field']])
-                    except Exception, e:
-                        print "Invalid transformation for column %r: %r" % (column['field'], e)
-                        sys.exit()
-                else:
-                    data = pRow[column['field']]
-
                 try:
+                    if type(column['field']) is tuple:
+                        # The field is a formula
+                        formula = column['field'][0]
+                        args = [ pRow[curField] for curField in column['field'][1:] ]
+
+                        try:
+                            data = str(formula( *args ))
+                        except Exception, e:
+                            print "Invalid formula execution for %r --> %r" % (column['field'], e)
+                            sys.exit()
+
+                        # Apply transformation if specified, this process take a data and calls a method to retrieve a string
+                        if 'transform' in column.keys():
+                            try:
+                                data = column['transform']( data )
+                            except Exception, e:
+                                print "Invalid transformation for column %r --> %r" % (data, e)
+                                sys.exit()
+
+                    elif pRow[column['field']] is None:
+                        # The field is None, use replacement text
+                        data = "-"
+                    else:
+                        data = pRow[column['field']]
+
+                        # Apply transformation if specified, this process take a data and calls a method to retrieve a string
+                        if 'transform' in column.keys():
+                            try:
+                                data = column['transform']( data )
+                            except Exception, e:
+                                print "Invalid transformation for column %r --> %r" % (column['field'], e)
+                                sys.exit()
+
+                    # Limit length of the data if specified
+                    if 'truncate' in column.keys() and len(data) > column['truncate']:
+                        data = data[:(column['truncate']-3)]+"..."
+
                     line += column['dataFormat'] % data
+
                 except KeyError, e:
-                    print "Error: Invalid field specified --> %r" % e
+                    print "Error displaying column %r --> %r" % ( column, e )
                     sys.exit()
 
+        # Once all columns are processed, display the full line
         print line
 
     @staticmethod
@@ -90,18 +152,157 @@ class CustomTable:
         '''
 
         print ""
-        print "Summary: %d of %d items retrieved in %.2f s." % (pSummary['count'], pSummary['totalInDispatcher'], pSummary['requestTime']*1000)
+        print "Summary: %d of %d items retrieved in %.3f s." % (pSummary['count'], pSummary['totalInDispatcher'], pSummary['requestTime'])
         print ""
+
+
+
+
+class JobTable( CustomTable ):
+    """
+    Definition of a table representation for jobs.
+    
+    Usage:
+        - field:        the data to display, supported fields are those defined in job object
+        - label:        a text used for table header
+        - visible:      a flag indicating if the column will be printed
+        - dataFormat:   a format for the corresponding field, it uses the 'print' (and similar to POSIX print) function
+        - labelFormat:  idem for label info
+        - truncate:     Optionnal attribute, the max length that should be displayed (to avoid messing with columns alignment)
+        - transform:    Optionnal attribute, the name of a static method of the parent CustomTable class.
+                        It will preprocess the value before displaying it at a string (example: date format, status short name)
+
+    """
+    columns = [
+            {
+                "field":        "id", 
+                "label":        "ID", 
+                "visible":      True, 
+                "dataFormat":   " %-6d",
+                "labelFormat":  " %-6s",
+            },
+            {
+                "field":        "status", 
+                "label":        "ST", 
+                "visible":      True, 
+                "dataFormat":   " %-2s",
+                "labelFormat":  " %-2s",
+                "transform":    CustomTable.jobStatusToStr,
+            },
+            {
+                "field":        "name", 
+                "label":        "NAME", 
+                "visible":      True, 
+                "dataFormat":   " %-50s",
+                "labelFormat":  " %-50s",
+                "truncate":     50,
+            },
+            {
+                "field":        "prod", 
+                "label":        "PROD", 
+                "visible":      True, 
+                "dataFormat":   " %-10s",
+                "labelFormat":  " %-10s",
+                "truncate":     10,
+            },
+            {
+                "field":        "shot", 
+                "label":        "SHOT", 
+                "visible":      True, 
+                "dataFormat":   " %-10s",
+                "labelFormat":  " %-10s",
+                "truncate":     10,
+            },
+            {
+                "field":        "", 
+                "label":        "IMG", 
+                "visible":      False, 
+                "dataFormat":   " %-10s",
+                "labelFormat":  " %-10s",
+            },
+            {
+                "field":        "user", 
+                "label":        "OWNER", 
+                "visible":      True, 
+                "dataFormat":   " %-5s",
+                "labelFormat":  " %-5s",
+                "truncate":     5,
+            },
+            {
+                "field":        "dispatchKey", 
+                "label":        "PRIO", 
+                "visible":      True, 
+                "dataFormat":   " %4d",
+                "labelFormat":  " %4s",
+            },
+            {
+                "field":        "completion", 
+                "label":        "%", 
+                "visible":      True, 
+                "dataFormat":   " %3.f",
+                "labelFormat":  " %3s",
+                "transform":    CustomTable.percentToFloat,
+            },
+            {
+                "field":        "maxRN", 
+                "label":        "MAX", 
+                "visible":      True, 
+                "dataFormat":   " %3d",
+                "labelFormat":  " %3s",
+            },
+            {
+                "field":        "allocatedRN", 
+                "label":        "ALLOC", 
+                "visible":      True, 
+                "dataFormat":   " %5d",
+                "labelFormat":  " %5s",
+            },
+            {
+                "field":        "creationTime", 
+                "label":        "SUBMITTED", 
+                "visible":      True, 
+                "dataFormat":   " %-12s",
+                "labelFormat":  " %-12s",
+                "transform":    CustomTable.dateToStr,
+            },
+            {
+                "field":        "startTime", 
+                "label":        "START", 
+                "visible":      True, 
+                "dataFormat":   " %-12s",
+                "labelFormat":  " %-12s",
+                "transform":    CustomTable.dateToStr,
+            },
+            {
+                "field":        "endTime", 
+                "label":        "END", 
+                "visible":      True, 
+                "dataFormat":   " %-12s",
+                "labelFormat":  " %-12s",
+                "transform":    CustomTable.dateToStr,
+            },
+
+            {
+                "field":        ( CustomTable.formulaRuntime, "endTime", "startTime" ),
+                "label":        "RUN TIME", 
+                "visible":      True, 
+                "dataFormat":   " %-12s",
+                "labelFormat":  " %-12s",
+                # "transform":    CustomTable.dateToStr,
+            },
+
+        ]
+
 
 
 
 
 class RenderNodeTable( CustomTable ):
     """
-    Definition of a table representation for rendernodes.
+    Definition of a table representation for RN.
     
     Usage:
-        - Field: the data to display, supported fields are those defined in rendernode object
+        - Field: the data to display, supported fields are those defined in RN object
         - Label: a text used for table header
         - Visible: a flag indicating if the column will be printed
         - dataFormat: a format for the corresponding field, it uses the 'print' (and similar to POSIX print) function
@@ -124,71 +325,6 @@ class RenderNodeTable( CustomTable ):
                 "dataFormat":   " %-2s",
                 "labelFormat":  " %-2s",
                 "transform":    CustomTable.nodeStatusToStr
-            },
-            {
-                "field":        "name", 
-                "label":        "NAME", 
-                "visible":      True, 
-                "dataFormat":   " %-25s",
-                "labelFormat":  " %-25s"
-            },
-            {
-                "field":        "prod", 
-                "label":        "PROD", 
-                "visible":      True, 
-                "dataFormat":   " %-10s",
-                "labelFormat":  " %-10s"
-            },
-            {
-                "field":        "shot", 
-                "label":        "SHOT", 
-                "visible":      True, 
-                "dataFormat":   " %-10s",
-                "labelFormat":  " %-10s"
-            },
-            {
-                "field":        "endTime", 
-                "label":        "END", 
-                "visible":      True, 
-                "dataFormat":   " %-15s",
-                "labelFormat":  " %-15s",
-                "transform":    CustomTable.dateToStr
-            },
-
-        ]
-
-
-
-
-
-class JobTable( CustomTable ):
-    """
-    Definition of a table representation for jobs.
-    
-    Usage:
-        - Field: the data to display, supported fields are those defined in job object
-        - Label: a text used for table header
-        - Visible: a flag indicating if the column will be printed
-        - dataFormat: a format for the corresponding field, it uses the 'print' (and similar to POSIX print) function
-        - labelFormat: idem for label info
-        - transform: Optionnal attribute, the name of a static method of the parent CustomTable class.
-                     It will preprocess the value before displaying it at a string (example: date format, status short name)
-    """
-    columns = [
-            {
-                "field":        "id", 
-                "label":        "ID", 
-                "visible":      True, 
-                "dataFormat":   " %-5d",
-                "labelFormat":  " %-5s"
-            },
-            {
-                "field":        "status", 
-                "label":        "ST", 
-                "visible":      True, 
-                "dataFormat":   " %-2s",
-                "labelFormat":  " %-2s",
-                "transform":    CustomTable.jobStatusToStr
             },
             {
                 "field":        "name", 
@@ -220,7 +356,7 @@ class JobTable( CustomTable ):
             },
             {
                 "field":        "lastAliveTime", 
-                "label":        "UPDATE", 
+                "label":        "LAST PING", 
                 "visible":      True, 
                 "dataFormat":   " %-15s",
                 "labelFormat":  " %-15s",

@@ -50,6 +50,7 @@ import urllib
 # Imports from local dir
 from settings import Settings
 from common import ConstraintFactory
+from common import JobTable
 from octopus.core.enums.node import NODE_STATUS_SHORT_NAMES
 
 
@@ -166,21 +167,28 @@ def handle_request(response):
 
         else:
             # Default display
-            print ""
-            print " ID       NAME                  PROD    SHOT  IMG  OWNER   PRIO ST   %  MAX  ALLOC  SUBMITTED    START        END          RUN_TIME  "
-            print "-------------------------------------------------------------------------------------------------------------------------------------"
-
+            # import pudb;pu.db
+            JobTable.displayHeader( JobTable )
             for row in _data['tasks']:
-                print displayTask(row)
+                JobTable.displayRow( row, JobTable )
+            JobTable.displayFooter( _data['summary'], JobTable )
 
-            print ""
-            print "Summary: %d of %d tasks retrieved in %.2f s." % (_data['summary']['count'], _data['summary']['totalInDispatcher'], _data['summary']['requestTime']*1000)
-            print ""
-            print "Possible values for a job status are: "
-            print "  0 --> Blocked   3 --> Done       6 --> Paused"
-            print "  1 --> Ready     4 --> Error"
-            print "  2 --> Running   5 --> Canceled"
-            print ""
+
+            # print ""
+            # print " ID       NAME                  PROD    SHOT  IMG  OWNER   PRIO ST   %  MAX  ALLOC  SUBMITTED    START        END          RUN_TIME  "
+            # print "-------------------------------------------------------------------------------------------------------------------------------------"
+
+            # for row in _data['tasks']:
+            #     print displayTask(row)
+
+            # print ""
+            # print "Summary: %d of %d tasks retrieved in %.2f s." % (_data['summary']['count'], _data['summary']['totalInDispatcher'], _data['summary']['requestTime']*1000)
+            # print ""
+            # print "Possible values for a job status are: "
+            # print "  0 --> Blocked   3 --> Done       6 --> Paused"
+            # print "  1 --> Ready     4 --> Error"
+            # print "  2 --> Running   5 --> Canceled"
+            # print ""
 
 
     # Quit loop

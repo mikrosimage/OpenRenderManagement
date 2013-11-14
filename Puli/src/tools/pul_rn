@@ -82,10 +82,7 @@ def handle_request(response):
             sys.exit()
 
         # Sorting data according to table description
-        # print "before: " + str(_data['rendernodes'])
-        # print "after: " + str(sorted( _data['rendernodes'], key=lambda row : row[RenderNodesDescription.sortField], reverse=RenderNodesDescription.sortReverse))
-
-        _data['rendernodes'] = sorted(_data['rendernodes'], key=lambda row : row[options.sortField], reverse=options.reverseOrder)
+        _data['items'] = sorted(_data['items'], key=lambda row : row[options.sortField], reverse=options.reverseOrder)
 
 
         # Display data according to given args
@@ -96,12 +93,12 @@ def handle_request(response):
 
             # Print header
             header = ""
-            if _data['rendernodes'] is not None:
-                header += ";".join(_data['rendernodes'][0].keys())
+            if _data['items'] is not None:
+                header += ";".join(_data['items'][0].keys())
                 print header
 
             # Print rows with ";" separator and without field indicator (usually " or ')
-            for row in _data['rendernodes']:
+            for row in _data['items']:
                 line=""
                 for val in row.values():
                     line += ";"+( str(val) )
@@ -110,7 +107,7 @@ def handle_request(response):
         else:
             RenderNodeTable.displayHeader( RenderNodeTable )
 
-            for row in _data['rendernodes']:
+            for row in _data['items']:
                 RenderNodeTable.displayRow( row, RenderNodeTable )
 
             RenderNodeTable.displayFooter( _data['summary'], RenderNodeTable )

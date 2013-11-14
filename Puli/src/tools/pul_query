@@ -63,53 +63,6 @@ REQUEST_BEGIN_TIME = ''
 REQUEST_END_TIME = ''
 
 
-def displayTask( pTask, pDepth=0 ):
-    """
-    """
-    creationTime = datetime.fromtimestamp( pTask['creationTime'] )
-    creationTimeStr = datetime.strftime( creationTime, Settings.date_format )
-
-    startTimeStr='-'
-    endTimeStr='-'
-    runTimeStr = "-"
-
-    if pTask['startTime'] is not None:
-        startTime= datetime.fromtimestamp( pTask['startTime'] )
-        startTimeStr = datetime.strftime( startTime, Settings.date_format )
-
-        if pTask['endTime'] is not None:
-            endTimeStr = datetime.strftime( datetime.fromtimestamp( pTask['endTime'] ), Settings.date_format )
-            runTimeStr = str(datetime.fromtimestamp(pTask['endTime']) - startTime)
-        else:
-            runTimeStr = str(datetime.now() - startTime)
-
-    # elapsedTime = datetime.now() - creationTime
-    # print "Elapsed time = ", elapsedTime
-    percentCompletion = float(pTask['completion']) * 100.0
-
-    prod = 'prod' in pTask.keys() and pTask['prod'][:6] or ''
-    shot = 'shot' in pTask.keys() and pTask['shot'][:4]  or ''
-    frames = 'frames' in pTask.keys() and pTask['shot']  or ''
-
-    if pDepth != 0:
-        strId = (" " * pDepth) + "`" + str(pTask['id'])
-    else:
-        strId = str(pTask['id'])
-    #            id   na    pro  sho   im    us   pr   s   %  max all  crea  sta   end
-    result =  "%-8s  %20s  %6s  %-4s  %-3s  %-6s  %4d %2s %3.f  %3d  %5d  %11s  %11s  %11s  %s" \
-                % ( strId, pTask['name'][:20], prod, shot, "-", pTask['user'][:6], \
-                    pTask['dispatchKey'], NODE_STATUS_SHORT_NAMES[pTask['status']], percentCompletion, pTask['maxRN'],pTask['allocatedRN'], \
-                    creationTimeStr, startTimeStr, endTimeStr, runTimeStr )
-
-    if options.tree and 'tasks' in pTask:
-        pDepth += 1
-        for child in pTask['tasks']:
-            result += "\n"+displayTask( child, pDepth )
-        pass
-
-    return result
-
-
 
 def handle_request(response):
     """
@@ -154,12 +107,12 @@ def handle_request(response):
 
             # Print header
             header = ""
-            if _data['tasks'] is not None:
-                header += ";".join(_data['tasks'][0].keys())
+            if _data['items'] is not None:
+                header += ";".join(_data['items'][0].keys())
                 print header
 
             # Print rows with ";" separator and without field indicator (usually " or ')
-            for row in _data['tasks']:
+            for row in _data['items']:
                 line=""
                 for val in row.values():
                     line += ";"+( str(val) )
@@ -169,26 +122,9 @@ def handle_request(response):
             # Default display
             # import pudb;pu.db
             JobTable.displayHeader( JobTable )
-            for row in _data['tasks']:
+            for row in _data['items']:
                 JobTable.displayRow( row, JobTable )
             JobTable.displayFooter( _data['summary'], JobTable )
-
-
-            # print ""
-            # print " ID       NAME                  PROD    SHOT  IMG  OWNER   PRIO ST   %  MAX  ALLOC  SUBMITTED    START        END          RUN_TIME  "
-            # print "-------------------------------------------------------------------------------------------------------------------------------------"
-
-            # for row in _data['tasks']:
-            #     print displayTask(row)
-
-            # print ""
-            # print "Summary: %d of %d tasks retrieved in %.2f s." % (_data['summary']['count'], _data['summary']['totalInDispatcher'], _data['summary']['requestTime']*1000)
-            # print ""
-            # print "Possible values for a job status are: "
-            # print "  0 --> Blocked   3 --> Done       6 --> Paused"
-            # print "  1 --> Ready     4 --> Error"
-            # print "  2 --> Running   5 --> Canceled"
-            # print ""
 
 
     # Quit loop
@@ -322,7 +258,6 @@ if __name__ == '__main__':
     if VERBOSE:
         print "Command options: %s" % options
         print "Command arguments: %s" % args
-
 
     #
     # Apply display rules

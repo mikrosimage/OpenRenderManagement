@@ -3,6 +3,51 @@
 
 """
 commons.py: Utility classes and static methods used in every tools
+
+CustomTable and descendant are a generic way to display information returned by a query.
+Usual query result is of the form:
+{
+    "item": 
+    [
+        {
+            "field1": val1, 
+            "field2": val2, 
+            ...
+        },
+        ...
+    ]
+
+    "summary":
+    {
+        "count": xx, 
+        "totalInDispatcher": xx, 
+        "requestTime": xx, 
+        "requestDate": xx
+    }
+}
+
+Any class inheriting CustomTable can define a list of column, each column handling the representation of a field and its header.
+From outside the class, a user can then delcare a table representation and call the main functions:
+    - displayHeader() to print header on stdout
+    - displayRow( "one item" ) to print each individual row on stdout
+    - displayFooter() to print the footer (i.e. summary info)
+
+The representation class will allow several attribute for each column
+    - field:        a data field (from query result) or a formula (any CustomTable formula method)
+    - label:        a text used for table header
+    - visible:      a flag indicating if the column will be printed
+    - dataFormat:   a format for the corresponding field, it uses the 'print' (and similar to POSIX print) function
+    - labelFormat:  idem for label info
+    - truncate:     Optionnal attribute, the max length that should be displayed (to avoid messing with columns alignment)
+    - transform:    Optionnal attribute, the name of a static method of the parent CustomTable class.
+                    It will preprocess the value before displaying it at a string (example: date format, status short name)
+
+The mecanism to calcultate a data or transform a data, is based on python's ability to store function addresses.
+Formulas and Transforms are defined as CustomTable static method.
+    - A formula will be defined in the "field" of the column, it is a tuple : the first item is the formula function, 
+      the remaining items are the parameters
+    - A transformation is defined as "transform" column, it is the address of a transform function
+
 """
 __author__      = "Jérôme Samson"
 __copyright__   = "Copyright 2013, Mikros Image"
@@ -89,7 +134,7 @@ class CustomTable:
 
 
     @staticmethod
-    def displayRow( pRow, pDescription ):
+    def displayRow( pRow, pDescription, pDepth=0 ):
         '''
         Print content row for a particular table description and data.
         '''
@@ -143,7 +188,15 @@ class CustomTable:
                     sys.exit()
 
         # Once all columns are processed, display the full line
-        print line
+        if pDepth == 0:
+            print line
+        else:
+            print (" "*pDepth)+"`"+line
+
+        if 'items' in pRow:
+            pDepth += 1
+            for child in pRow['items']:
+                CustomTable.displayRow( child, pDescription, pDepth )
 
     @staticmethod
     def displayFooter( pSummary, pDescription ):
@@ -178,8 +231,8 @@ class JobTable( CustomTable ):
                 "field":        "id", 
                 "label":        "ID", 
                 "visible":      True, 
-                "dataFormat":   " %-6d",
-                "labelFormat":  " %-6s",
+                "dataFormat":   "%-6d",
+                "labelFormat":  "%-6s",
             },
             {
                 "field":        "status", 
@@ -193,8 +246,8 @@ class JobTable( CustomTable ):
                 "field":        "name", 
                 "label":        "NAME", 
                 "visible":      True, 
-                "dataFormat":   " %-50s",
-                "labelFormat":  " %-50s",
+                "dataFormat":   " %-30s",
+                "labelFormat":  " %-30s",
                 "truncate":     50,
             },
             {
@@ -288,7 +341,6 @@ class JobTable( CustomTable ):
                 "visible":      True, 
                 "dataFormat":   " %-12s",
                 "labelFormat":  " %-12s",
-                # "transform":    CustomTable.dateToStr,
             },
 
         ]

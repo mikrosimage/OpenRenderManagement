@@ -104,7 +104,7 @@ class QueryResource(BaseResource, IQueryNode):
             for child in pNode.children:
                 childTasks.append( self.createTaskRepr( child, pAttributes, pTree ) )
 
-            currTask['tasks'] = childTasks
+            currTask['items'] = childTasks
         return currTask
 
     def get(self):
@@ -140,7 +140,7 @@ class QueryResource(BaseResource, IQueryNode):
                                 'totalInDispatcher':0, \
                                 'requestTime':time.time() - start_time, \
                                 'requestDate':time.ctime() }, \
-                            'tasks':resultData }
+                            'items':resultData }
             
                 self.writeCallback( json.dumps(content) )
                 return
@@ -186,7 +186,7 @@ class QueryResource(BaseResource, IQueryNode):
                             'requestTime':time.time() - start_time,
                             'requestDate':time.ctime()
                             }, 
-                        'tasks':resultData 
+                        'items':resultData 
                         }
 
             # Create response and callback
@@ -325,7 +325,7 @@ class RenderNodeQueryResource(BaseResource, IQueryNode):
                             'requestTime':time.time() - start_time,
                             'requestDate':time.ctime()
                             }, 
-                        'rendernodes':resultData 
+                        'items':resultData 
                         }
 
             #

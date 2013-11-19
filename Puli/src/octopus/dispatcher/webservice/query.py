@@ -24,19 +24,19 @@ On retourne un objet json au format:
         'requestDate': datetime,
     } 
 
-    'tasks': 
+    'items': 
         [
             {
                 attr1: data,
                 attr2: data,
                 attr3: data
-                'tasks':
+                'items':
                     [
                         {
                             attr1: data,
                             attr2: data,
                             attr3: data
-                            'tasks': [...]
+                            'items': [...]
                         },
                         ...
                     ]

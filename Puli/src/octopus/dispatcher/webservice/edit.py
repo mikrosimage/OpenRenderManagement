@@ -166,7 +166,7 @@ class PauseResource(BaseResource, IQueryNode):
                     currNode.setPaused( True)
                     editedJobs.append( currNode.id )
             except:
-                return Http400('Error when pausing job.')
+                raise Http400('Error when pausing job.')
 
 
         content = { 
@@ -217,7 +217,7 @@ class ResumeResource(BaseResource, IQueryNode):
                 currNode.setPaused( False )
                 editedJobs.append( currNode.id )
             except:
-                return Http400('Error when resuming job.')
+                raise Http400('Error when resuming job.')
 
 
         content = { 

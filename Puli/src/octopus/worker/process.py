@@ -18,9 +18,16 @@ def setlimits():
     # the use of os.setsid is necessary to create a processgroup properly for the commandwatcher
     # it creates a new session in which the cmdwatcher is the leader of the new process group
     os.setsid()
+
     # set the limit of open files for ddd
     soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
-    resource.setrlimit(resource.RLIMIT_NOFILE, (settings.LIMIT_OPEN_FILES, hard))
+    try:
+        newSoft = max(settings.LIMIT_OPEN_FILES, hard)
+        resource.setrlimit(resource.RLIMIT_NOFILE, (newSoft, hard))
+
+    except Exception,e:
+        LOGGER.error("Setting ressource limit failed: RLIMT_NOFILE [%r,%r] --> [%r,%r]" % (soft, hard, settings.LIMIT_OPEN_FILES, hard) )
+        raise e
 
 
 def spawnCommandWatcher(pidfile, logfile, args, env):
@@ -32,9 +39,16 @@ def spawnCommandWatcher(pidfile, logfile, args, env):
     envN = {}
     for key in env:
         envN[str(key)] = str(env[key])
-    pid = subprocess.Popen(args, bufsize=-1, stdin=devnull, stdout=logfile,
+
+    LOGGER.info("Starting subprocess, log: %r, args: %r" % (logfile, args) )        
+    try:
+        pid = subprocess.Popen(args, bufsize=-1, stdin=devnull, stdout=logfile,
                            stderr=subprocess.STDOUT, close_fds=CLOSE_FDS,
                            preexec_fn=setlimits, env=envN).pid
+    except Exception,e:
+        LOGGER.error("Impossible to start subprocess: %r" % e)        
+        raise e
+
     file(pidfile, "w").write(str(pid))
     return CommandWatcherProcess(pidfile, pid)
 

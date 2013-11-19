@@ -208,8 +208,10 @@ class RenderNodeSysInfosResource(BaseResource):
     def put(self, computerName):
         computerName = computerName.lower()
         rns = self.getDispatchTree().renderNodes
+
         if not computerName in rns:
-            return Http404("RenderNode not found")
+            raise Http404("RenderNode not found")
+
         dct = self.getBodyAsJSON()
         renderNode = rns[computerName]
         if "caracteristics" in dct:
@@ -230,6 +232,10 @@ class RenderNodeSysInfosResource(BaseResource):
                     #renderNode.status = RN_IDLE
                 renderNode.status = int(dct["status"])
                 logger.info("status reported is %d" % renderNode.status)
+
+            if renderNode.status != int(dct["status"]):
+                logger.warning("The status reported (%r) is different from the status on dispatcher (%r)" % (dct["status"],renderNode.status))
+
         renderNode.lastAliveTime = time.time()
         renderNode.isRegistered = True
 

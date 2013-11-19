@@ -20,8 +20,17 @@ from octopus.worker import config
 def daemonize(username=""):
     # set the limit of open files for ddd
     soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+
     if settings.LIMIT_OPEN_FILES <= hard:
-        resource.setrlimit(resource.RLIMIT_NOFILE, (settings.LIMIT_OPEN_FILES, hard))
+
+        try:
+            resource.setrlimit(resource.RLIMIT_NOFILE, (settings.LIMIT_OPEN_FILES, hard))
+        except Exception,e:
+            logging.getLogger('worker').error("Setting ressource limit failed: RLIMT_NOFILE [%r,%r] --> [%r,%r] (%r)" % (soft, hard, settings.LIMIT_OPEN_FILES, hard, e) )
+            raise e
+    else:
+        logging.getLogger('worker').info("Current RLIMIT_NOFILE is smaller than settings -> do not change: [soft=%r, hard=%r]" % (soft,hard) )
+
     #
     if os.fork() != 0:
         os._exit(0)
@@ -96,7 +105,6 @@ def setup_logging(options):
 
 
     fileHandler = logging.handlers.RotatingFileHandler(logFile, 'w', config.LOG_SIZE, config.LOG_BACKUPS, "UTF-8")
-    # fileHandler = logging.handlers.RotatingFileHandler(logFile, 'w', 1048576, 1, "UTF-8")
     fileHandler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)6s - %(message)s"))
     logger = logging.getLogger()
     logger.addHandler(fileHandler)
@@ -108,10 +116,8 @@ def setup_logging(options):
         logger.setLevel(logging.DEBUG)
         logger.addHandler(consoleHandler)
 
-    debugLevel = logging.DEBUG if options.DEBUG else logging.INFO
-
-    logging.getLogger('worker').setLevel(debugLevel)
-    logging.getLogger('webservice').setLevel(debugLevel)
+    logLevel = logging.DEBUG if options.DEBUG else logging.INFO
+    logging.getLogger().setLevel(logLevel)
 
 
 def main():

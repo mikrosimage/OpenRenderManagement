@@ -49,7 +49,10 @@ class Worker(MainLoopApplication):
 
     def __init__(self, framework):
         super(Worker, self).__init__(self)
+        LOGGER.info("")
+        LOGGER.info("-----------------------------------------------")
         LOGGER.info("Starting worker on %s:%d.", settings.ADDRESS, settings.PORT)
+        LOGGER.info("-----------------------------------------------")
         self.framework = framework
         self.data = None
         self.requestManager = RequestManager(settings.DISPATCHER_ADDRESS,
@@ -85,6 +88,7 @@ class Worker(MainLoopApplication):
         self.openglversion = ""
 
     def prepare(self):
+        LOGGER.info("Before registering: prepare worker.")
         for name in (name for name in dir(settings) if name.isupper()):
             LOGGER.info("settings.%s = %r", name, getattr(settings, name))
         self.registerWorker()
@@ -214,8 +218,8 @@ class Worker(MainLoopApplication):
         infos = self.fetchSysInfos()
         dct = json.dumps(infos)
         # FIXME if a command is currently running on this worker, notify the dispatcher
-        if len(self.commands.items()):
-            dct['commands'] = self.commands.items()
+        # if len(self.commands.items()):
+        #     dct['commands'] = self.commands.items()
         headers = {}
         headers['content-length'] = len(dct)
 
@@ -491,6 +495,9 @@ class Worker(MainLoopApplication):
         except httplib.BadStatusLine:
             LOGGER.exception('Sending sys infos has failed with a BadStatusLine error')
 
+        LOGGER.debug('Sys infos transmitted to the server: %r' % dct)
+
+
     def connect(self):
         return httplib.HTTPConnection(settings.DISPATCHER_ADDRESS, settings.DISPATCHER_PORT)
 
@@ -529,10 +536,15 @@ class Worker(MainLoopApplication):
 
     def addCommandApply(self, ticket, commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment):
         if not self.isPaused:
-            newCommand = Command(commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment=environment)
-            self.commands[commandId] = newCommand
-            self.addCommandWatcher(newCommand)
-            LOGGER.info("Added command %d {runner: %s, arguments: %s}", commandId, runner, repr(arguments))
+            try:
+                newCommand = Command(commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment=environment)
+                self.commands[commandId] = newCommand
+                self.addCommandWatcher(newCommand)
+                LOGGER.info("Added command %d {runner: %s, arguments: %s}", commandId, runner, repr(arguments))
+            except Exception, e:
+                LOGGER.error("Error during command init: %r" % e)
+                raise e
+
 
     ##
     #
@@ -612,16 +624,19 @@ class Worker(MainLoopApplication):
         ]
         args.extend(('%s=%s' % (str(name), str(value)) for (name, value) in command.arguments.items()))
 
-        watcherProcess = spawnCommandWatcher(pidFile, logFile, args, command.environment)
-        newCommandWatcher.processObj = watcherProcess
-        newCommandWatcher.startTime = time.time()
-        newCommandWatcher.timeOut = None
-        newCommandWatcher.command = command
-        newCommandWatcher.processId = watcherProcess.pid
+        try:
+            watcherProcess = spawnCommandWatcher(pidFile, logFile, args, command.environment)
+            newCommandWatcher.processObj = watcherProcess
+            newCommandWatcher.startTime = time.time()
+            newCommandWatcher.timeOut = None
+            newCommandWatcher.command = command
+            newCommandWatcher.processId = watcherProcess.pid
 
-        self.commandWatchers[command.id] = newCommandWatcher
-
-        LOGGER.info("Started command %d", command.id)
+            self.commandWatchers[command.id] = newCommandWatcher
+            LOGGER.info("Started command %d", command.id)
+        except Exception, e:
+            LOGGER.error("Error spawning command watcher %r", e)
+            raise e
 
 
     def reloadConfig(self):

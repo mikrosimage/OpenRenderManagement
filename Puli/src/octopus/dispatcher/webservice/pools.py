@@ -30,7 +30,7 @@ class PoolResource(BaseResource):
         try:
             pool = self.getDispatchTree().pools[poolName]
         except KeyError:
-            return Http404('No such pool')
+            raise Http404('No such pool')
         self.writeCallback({
             'pool': pool.to_json()
         })
@@ -38,15 +38,19 @@ class PoolResource(BaseResource):
     #@queue
     def post(self, poolName):
         if poolName in self.getDispatchTree().pools:
-            return HttpConflict("Pool already registered")
+            raise HttpConflict("Pool already registered")
         else:
             tmpPool = Pool(None, poolName)
             self.getDispatchTree().pools[poolName] = tmpPool
-            if self.request.headers('Host') is not None:
-                host = self.request.headers('Host')
-            else:
-                host = "%s:%d" % self.getServerAddress()
-            self.set_header('Location', 'http://%s/pools/%s/' % (host, poolName))
+
+            # JSA not necessary and old code causes an error
+            # we just return the pool repr
+            
+            # if self.request.headers['Host'] is not None:
+            #     host = self.request.headers['Host']
+            # else:
+            #     host = "%s:%d" % self.getServerAddress()
+            # self.set_header('Location', 'http://%s/pools/%s/' % (host, poolName))
             self.writeCallback(json.dumps(tmpPool.to_json()))
 
     #@queue
@@ -59,8 +63,8 @@ class PoolResource(BaseResource):
             # try to remove the pool from the dispatch tree
             self.getDispatchTree().pools[poolName].archive()
         except KeyError, e:
-            print e
-            return Http404('No such pool')
+            logger.warning("No such pool: %r" % e)
+            raise Http404('No such pool')
 
 
 class PoolRenderNodesResource(BaseResource):
@@ -71,7 +75,7 @@ class PoolRenderNodesResource(BaseResource):
             return HttpConflict("Pool %s is not registered" % poolName)
         pool = self.getDispatchTree().pools[poolName]
         if not 'renderNodes' in dct:
-            return Http400("Missing renderNodes list in the request body.")
+            raise Http400("Missing renderNodes list in the request body.")
         rns = dct['renderNodes']
         rnList = []
         for rnName in rns:

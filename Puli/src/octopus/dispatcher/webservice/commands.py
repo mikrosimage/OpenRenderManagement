@@ -30,7 +30,7 @@ class CommandResource(BaseResource):
             command = self._findCommand(id)
             rep = command.to_json()
         except KeyError:
-            return Http404("No such command. Command with id %d not found." % id)
+            raise Http404("No such command. Command with id %d not found." % id)
         body = json.dumps(rep)
         self.writeCallback(body)
 
@@ -44,7 +44,7 @@ class CommandResource(BaseResource):
             # TODO should run the following piece of code at boot...
             if command.status in [CMD_ASSIGNED, CMD_RUNNING] and command.renderNode and command.id not in command.renderNode.commands.keys():
                 command.status = CMD_ERROR
-                return Http400("Invalid command state. Command has been set to error.")
+                raise Http400("Invalid command state. Command has been set to error.")
             if 'description' in toUpdate:
                 command.description = toUpdate['description']
             if 'arguments' in toUpdate:
@@ -57,8 +57,9 @@ class CommandResource(BaseResource):
                     elif status == CMD_READY:
                         command.setReadyStatus()
                     else:
-                        return Http400("Invalid status. Cannot set of command %d to %r" % (commandId, status))
+                        raise Http400("Invalid status. Cannot set of command %d to %r" % (commandId, status))
             return "Done"
+
         # check requested updates
         commandId = int(commandId)
         updatedData = self.getBodyAsJSON()
@@ -76,7 +77,7 @@ class CommandResource(BaseResource):
         result = work(self, commandId, toUpdate)
 
         if result is None:
-            return Http404('No such command %r' % commandId)
+            raise Http404('No such command %r' % commandId)
         self.writeCallback(result)
 
     def _findCommand(self, id):

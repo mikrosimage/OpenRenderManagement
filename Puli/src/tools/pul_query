@@ -165,7 +165,9 @@ that satisfy the specified expressions: FILTER="VALUE"
 Output options will indicate if the command will output information as human readable format, or csv or raw json
 Default output will only return top level jobs in queue, user can override this to return in-depth data of job nodes hierarchy
 If no output option is specified, the ouput will be a single line presenting the following information:
-id, name, prod, shot, frames, owner, priority, status, creation date, start date, end date and runtime
+    - id, name, prod, shot, owner, priority, status
+    - creation date, start date, end date, runtime
+    - minTimeByFrame, maxTimeByFrame and averageTimeByFrame
 
 
 Example 1. Retrieve all task for a specific user:

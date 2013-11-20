@@ -55,7 +55,7 @@ __copyright__   = "Copyright 2013, Mikros Image"
 
 from settings import Settings
 from optparse import IndentedHelpFormatter
-from datetime import datetime
+from datetime import datetime,timedelta
 
 import urllib, sys, types
 
@@ -97,7 +97,7 @@ class CustomTable:
     #
     @staticmethod
     def timeToStr(pValue):
-        return str(datetime.strftime( float(pValue), Settings.date_format ))
+        return str(timedelta (seconds=pValue))
 
 
     @staticmethod
@@ -339,10 +339,19 @@ class JobTable( CustomTable ):
                 "field":        ( CustomTable.formulaRuntime, "endTime", "startTime" ),
                 "label":        "RUN TIME", 
                 "visible":      True, 
-                "dataFormat":   " %-12s",
-                "labelFormat":  " %-12s",
+                "dataFormat":   " %10s",
+                "labelFormat":  " %10s",
             },
 
+            {
+                "field":        "averageTimeByFrame",
+                "label":        "AVG TIME", 
+                "visible":      True, 
+                "dataFormat":   " %10s",
+                "labelFormat":  " %10s",
+                "transform":    CustomTable.timeToStr,
+
+            },
         ]
 
 

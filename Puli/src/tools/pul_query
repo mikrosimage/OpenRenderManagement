@@ -29,6 +29,7 @@ endTime         --> job ended
 updateTime      --> last update
 maxRN           --> max number of rendernode to assign to a particular task
 allocatedRN     --> current number of allocated render nodes on this task
+averageTimeByFrame --> 
 
 """
 __author__      = "Jérôme Samson"

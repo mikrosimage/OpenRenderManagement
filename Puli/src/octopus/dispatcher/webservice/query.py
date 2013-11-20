@@ -73,7 +73,9 @@ class QueryResource(BaseResource, IQueryNode):
     ADDITIONNAL_SUPPORTED_FIELDS = ['pool']
     DEFAULT_FIELDS = ['id','user','name', 'tags:prod', 'tags:shot', \
                      'status', 'completion', 'dispatchKey', \
-                     'startTime', 'creationTime', 'endTime', 'updateTime', 'maxRN', 'allocatedRN']
+                     'startTime', 'creationTime', 'endTime', 'updateTime', \
+                     'averageTimeByFrame', 'maxTimeByFrame', 'minTimeByFrame', \
+                     'maxRN', 'allocatedRN']
 
 
     def createTaskRepr( self, pNode, pAttributes, pTree=False ):

@@ -4,7 +4,7 @@
 #
 ### BEGIN INIT INFO
 # Provides:          puliworker
-# Required-Start:    $syslog rpcbind $remote_fs autofs 
+# Required-Start:    $syslog rpcbind $remote_fs autofs checkautofs
 # Should-Start: 
 # Required-Stop: 
 # Should-Stop: 
@@ -16,18 +16,22 @@
 
 # init script variables
 SERVICE=$(basename $0)
-PIDDIR="/var/run/${SERVICE}"
-PIDFILE="${PIDDIR}/${SERVICE}.pid"
+#PIDDIR="/var/run/${SERVICE}"
+PIDDIR="/tmp"
+#PIDFILE="${PIDDIR}/${SERVICE}.pid"
+PIDFILE="${PIDDIR}/worker.pid"
+
 PULI_USER="render"
 export HOME="/homes/render"
 
 # Python/Puli variables
-export PYTHONPATH=/s/apps/lin/puli:${PYTHONPATH}
-WORKER_BIN="/s/apps/lin/puli/scripts/workerd.py"
+export PYTHONPATH="/s/apps/lin/eval/puli/distrib/OpenRenderManagement/Puli/src/":${PYTHONPATH}
+#export PYTHONPATH="/s/apps/lin/puli/":${PYTHONPATH}
+WORKER_BIN="/s/apps/lin/eval/puli/distrib/OpenRenderManagement/Puli/scripts/workerd.py"
+#WORKER_BIN="/s/apps/lin/puli/scripts/workerd.py"
 
 HOST=puliserver
 PORT=8000
-
 
 # Test if python script is available on automounted share.
 test -x ${WORKER_BIN} || { echo "${WORKER_BIN} not installed"; 
@@ -35,8 +39,8 @@ test -x ${WORKER_BIN} || { echo "${WORKER_BIN} not installed";
 	else exit 5; fi; }
 
 if [ ! -d ${PIDDIR} ]; then
-	mkdir ${PIDDIR}
-	chown ${PULI_USER} ${PIDDIR}
+  mkdir ${PIDDIR}
+  chown ${PULI_USER} ${PIDDIR}
 fi
 
 . /etc/rc.status
@@ -45,51 +49,48 @@ rc_reset
 
 case "$1" in
     start)
-		echo -n "Starting ${SERVICE}..."
-		## Start daemon with startproc(8). If this fails
-		## the return value is set appropriately by startproc.
-		/sbin/startproc -p ${PIDFILE} -s -u${PULI_USER} "${WORKER_BIN}" -p ${PORT} -s ${HOST} -d
-		#>> /dev/null 2>&1
-		sleep 2s
+	echo -n "Starting ${SERVICE}..."
+	# set Hard limit for max open files per process (Katana strange needs)
+	ulimit -H -n 32768
+        ## Start daemon with startproc(8). If this fails
+	## the return value is set appropriately by startproc.
+        /sbin/startproc -p ${PIDFILE} -s -u${PULI_USER} "${WORKER_BIN}" -s ${HOST} -p ${PORT} -d 
+	#>> /dev/null 2>&1
+	sleep 2s
 
-		# Remember status and be verbose.
-		rc_status -v
-		;;
-
+	# Remember status and be verbose.
+        rc_status -v
+	;;
     stop)
-		echo -n "Shutting down ${SERVICE}..."
-		## Stop daemon with killproc(8) and if this fails
-		## killproc sets the return value according to LSB.
-		/sbin/killproc -TERM -p ${PIDFILE} python 
+	echo -n "Shutting down ${SERVICE}..."
+	## Stop daemon with killproc(8) and if this fails
+	## killproc sets the return value according to LSB.
+	/sbin/killproc -TERM -p ${PIDFILE} python 
 
-		# Remember status and be verbose
-		rc_status -v
-		;;
-
+	# Remember status and be verbose
+	rc_status -v
+        ;;
     restart)
-		## Stop the service and regardless of whether it was
-		## running or not, start it again.
-		$0 stop
-		$0 start
+	## Stop the service and regardless of whether it was
+	## running or not, start it again.
+	$0 stop
+	$0 start
 
-		# Remember status and be quiet
-		rc_status
-		;;
-
+	# Remember status and be quiet
+	rc_status
+	;;
     status)
-		echo -n "Checking for service ${SERVICE}..."
-		## Check status with checkproc(8), if process is running
-		## checkproc will return with exit status 0.
-		/sbin/checkproc -p ${PIDFILE} python
+	echo -n "Checking for service ${SERVICE}..."
+	## Check status with checkproc(8), if process is running
+	## checkproc will return with exit status 0.
+	/sbin/checkproc -p ${PIDFILE} python
 
-		# Remember status and be verbose
-		rc_status -v
-		;;
-
+	# Remember status and be verbose
+	rc_status -v
+	;;
     *)
-		echo "Usage: ${SERVICE} {start|stop|status|restart|start_test|restart_test}"
-		exit 1
-		;;
-
+	echo "Usage: ${SERVICE} {start|stop|status|restart}"
+	exit 1
+	;;
 esac
 rc_exit

@@ -48,13 +48,13 @@ Create the folders `conf` and `logs` in the install dir.
 The settings are located in the file `/opt/puli/octopus/dispatcher/settings.py`.
 
 Please check the following settings:
-
-* CONFDIR = /opt/puli/conf
-* LOGDIR = /opt/puli/logs
-* POOLS_BACKEND_TYPE = "file"
-* DB_ENABLE = True
-* DB_CLEAN_DATA = True
-
+```ini
+CONFDIR = /opt/puli/conf
+LOGDIR = /opt/puli/logs
+POOLS_BACKEND_TYPE = "file"
+DB_ENABLE = True
+DB_CLEAN_DATA = True
+```
 #### First launch
 
 To launch the dispatcher, execute the following command in a shell:
@@ -65,10 +65,11 @@ Upon the first execution, Puli will create the appropriate tables in the databas
 
 For the following executions, you may set these parameters in the settings file:
 
-* POOLS_BACKEND_TYPE = "db"
-* DB_ENABLE = True
-* DB_CLEAN_DATA = False
-
+```ini
+POOLS_BACKEND_TYPE = "db"
+DB_ENABLE = True
+DB_CLEAN_DATA = False
+```
 These will tell Puli to init itself with the database that was previously created, and it will enable the persistence of the jobs.
 
 If you want to erase the database in order to have a clean start, reset these parameters to the values in the installation section.

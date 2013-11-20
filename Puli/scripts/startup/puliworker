@@ -16,18 +16,23 @@
 
 # init script variables
 SERVICE=$(basename $0)
-#PIDDIR="/var/run/${SERVICE}"
+
 PIDDIR="/tmp"
-#PIDFILE="${PIDDIR}/${SERVICE}.pid"
 PIDFILE="${PIDDIR}/worker.pid"
+#PIDDIR="/var/run/${SERVICE}"
+#PIDFILE="${PIDDIR}/${SERVICE}.pid"
 
 PULI_USER="render"
 export HOME="/homes/render"
 
 # Python/Puli variables
+
+# TEST ENV
 export PYTHONPATH="/s/apps/lin/eval/puli/distrib/OpenRenderManagement/Puli/src/":${PYTHONPATH}
-#export PYTHONPATH="/s/apps/lin/puli/":${PYTHONPATH}
 WORKER_BIN="/s/apps/lin/eval/puli/distrib/OpenRenderManagement/Puli/scripts/workerd.py"
+
+# PROD ENV
+#export PYTHONPATH="/s/apps/lin/puli/":${PYTHONPATH}
 #WORKER_BIN="/s/apps/lin/puli/scripts/workerd.py"
 
 HOST=puliserver

@@ -4,7 +4,7 @@
 #
 ### BEGIN INIT INFO
 # Provides:          puliworker
-# Required-Start:    $syslog rpcbind $remote_fs autofs 
+# Required-Start:    $syslog rpcbind $remote_fs autofs checkautofs
 # Should-Start: 
 # Required-Stop: 
 # Should-Stop: 
@@ -16,21 +16,27 @@
 
 # init script variables
 SERVICE=$(basename $0)
-PIDDIR="/var/run/${SERVICE}"
-PIDFILE="${PIDDIR}/${SERVICE}.pid"
+
+PIDDIR="/tmp"
+PIDFILE="${PIDDIR}/worker.pid"
+#PIDDIR="/var/run/${SERVICE}"
+#PIDFILE="${PIDDIR}/${SERVICE}.pid"
+
 PULI_USER="render"
 export HOME="/homes/render"
 
 # Python/Puli variables
-export PYTHONPATH=/s/prods/ddd/_sandbox/jsa/distrib/OpenRenderManagement/Puli/src:${PYTHONPATH}
-WORKER_BIN="/s/prods/ddd/_sandbox/jsa/distrib/OpenRenderManagement/Puli/scripts/workerd.py"
+
+# TEST ENV
+export PYTHONPATH="/s/apps/lin/eval/puli/distrib/OpenRenderManagement/Puli/src/":${PYTHONPATH}
+WORKER_BIN="/s/apps/lin/eval/puli/distrib/OpenRenderManagement/Puli/scripts/workerd.py"
+
+# PROD ENV
+#export PYTHONPATH="/s/apps/lin/puli/":${PYTHONPATH}
+#WORKER_BIN="/s/apps/lin/puli/scripts/workerd.py"
 
 HOST=puliserver
 PORT=8000
-
-HOST_TEST=pulitest
-PORT_TEST=8001
-
 
 # Test if python script is available on automounted share.
 test -x ${WORKER_BIN} || { echo "${WORKER_BIN} not installed"; 
@@ -49,9 +55,11 @@ rc_reset
 case "$1" in
     start)
 	echo -n "Starting ${SERVICE}..."
+	# set Hard limit for max open files per process (Katana strange needs)
+	ulimit -H -n 32768
         ## Start daemon with startproc(8). If this fails
 	## the return value is set appropriately by startproc.
-        /sbin/startproc -p ${PIDFILE} -s -u${PULI_USER} "${WORKER_BIN}" -p ${PORT} -d 
+        /sbin/startproc -p ${PIDFILE} -s -u${PULI_USER} "${WORKER_BIN}" -s ${HOST} -p ${PORT} -d 
 	#>> /dev/null 2>&1
 	sleep 2s
 
@@ -85,31 +93,8 @@ case "$1" in
 	# Remember status and be verbose
 	rc_status -v
 	;;
-
-    start_test)
-	echo -n "Starting ${SERVICE}..."
-        ## Start daemon with startproc(8). If this fails
-	## the return value is set appropriately by startproc.
-        /sbin/startproc -p ${PIDFILE} -s -u${PULI_USER} "${WORKER_BIN}" -p ${PORT_TEST} -d -s ${HOST_TEST}
-	#>> /dev/null 2>&1
-	sleep 2s
-
-	# Remember status and be verbose.
-        rc_status -v
-	;;
-
-    restart_test)
-	## Stop the service and regardless of whether it was
-	## running or not, start it again.
-	$0 stop
-	$0 start_test
-
-	# Remember status and be quiet
-	rc_status
-	;;
-
     *)
-	echo "Usage: ${SERVICE} {start|stop|status|restart|start_test|restart_test}"
+	echo "Usage: ${SERVICE} {start|stop|status|restart}"
 	exit 1
 	;;
 esac

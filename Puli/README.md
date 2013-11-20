@@ -35,10 +35,13 @@ INSTALLATION
 
 Execute the following mysql commands to create the database and the dedicated user:
 
-    create database pulidb character set utf8;
-    create user puliuser identified by 'yourpasswd';
-    grant all privileges on pulidb.* to 'puliuser'@'localhost' identified by 'yourpasswd' with grant option;
-
+```sql
+create database pulidb character set utf8;
+create user puliuser identified by 'yourpasswd';
+grant all privileges on pulidb.* 
+      to 'puliuser'@'localhost' 
+      identified by 'yourpasswd' with grant option;
+```
 #### Installation and configuration
 
 You can copy the `octopus` folder containing all the code to wherever you like (for example `/opt/puli`) just make sure this dir is in your PYTHONPATH.

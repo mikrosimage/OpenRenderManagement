@@ -1,0 +1,186 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>tools.common &mdash; OpenRenderManagement 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="OpenRenderManagement 1.6.1 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">OpenRenderManagement 1.6.1 documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for tools.common</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/python2.6</span>
+<span class="c"># -*- coding: utf8 -*-</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">commons.py: Utility classes and static methods used in every tools</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">__author__</span>      <span class="o">=</span> <span class="s">&quot;Jérôme Samson&quot;</span>
+<span class="n">__copyright__</span>   <span class="o">=</span> <span class="s">&quot;Copyright 2013, Mikros Image&quot;</span>
+
+
+<span class="kn">from</span> <span class="nn">settings</span> <span class="kn">import</span> <span class="n">Settings</span>
+
+<span class="kn">import</span> <span class="nn">urllib</span>
+
+<span class="n">VERBOSE</span><span class="o">=</span><span class="n">Settings</span><span class="o">.</span><span class="n">verbose</span>
+
+<div class="viewcode-block" id="ConstraintFactory"><a class="viewcode-back" href="../../index.html#tools.common.ConstraintFactory">[docs]</a><span class="k">class</span> <span class="nc">ConstraintFactory</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Can parse arguments and options received as command line and create a proper http query string, i.e. :</span>
+<span class="sd">    With command line args and options: &quot;&lt;tools&gt; --constraint user=jsa 152 156 188&quot;</span>
+<span class="sd">    We create a useful query: &quot;&amp;constraint_user=jsa&amp;constraint_id=152&amp;constraint_id=156&amp;constraint_id=188&quot;</span>
+
+<span class="sd">    Returns None if a constraint or update is not valid.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">makeQuery</span><span class="p">(</span> <span class="n">pUserArguments</span><span class="p">,</span> <span class="n">pUserOptions</span> <span class="p">):</span>
+
+        <span class="c">#</span>
+        <span class="c"># Creating corresponding query</span>
+        <span class="c">#</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+
+
+        <span class="c">#</span>
+        <span class="c"># Common preprocess</span>
+        <span class="c">#</span>
+        <span class="c"># Applying restriction arguments</span>
+        <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">pUserArguments</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">arg</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+                <span class="n">query</span> <span class="o">+=</span> <span class="s">&quot;&amp;constraint_id=</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">urllib</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">query</span> <span class="o">+=</span> <span class="s">&quot;&amp;constraint_user=</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">urllib</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+            <span class="c">#  TODO: user might want to specify a date to retrieve/update information on a specific job</span>
+
+        <span class="c"># Applying constraints</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">pUserOptions</span><span class="p">,</span> <span class="s">&#39;constraint&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">pUserOptions</span><span class="o">.</span><span class="n">constraint</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">currConst</span> <span class="ow">in</span> <span class="n">pUserOptions</span><span class="o">.</span><span class="n">constraint</span><span class="p">:</span>
+                <span class="n">constraint</span> <span class="o">=</span> <span class="n">currConst</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;=&quot;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">constraint</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="s">&quot;Error: constraint is not valid, it must have the following format: -C field=value&quot;</span>
+                    <span class="k">return</span> <span class="bp">None</span>
+                    
+                <span class="n">constField</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">constraint</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                <span class="n">constVal</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">constraint</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+                <span class="c"># Handling regexp for &quot;name&quot; constraint, we would like to hide the python regex complexity to have something</span>
+                <span class="c"># close to unix expression syntaxe...</span>
+                <span class="c"># TO IMPROVE</span>
+                <span class="k">if</span> <span class="n">constField</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]:</span>
+                    <span class="n">constVal</span> <span class="o">=</span> <span class="s">&#39;^&#39;</span><span class="o">+</span><span class="n">constVal</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;*&#39;</span><span class="p">,</span> <span class="s">&#39;.*&#39;</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;$&#39;</span>
+
+                <span class="n">query</span> <span class="o">+=</span> <span class="s">&quot;&amp;constraint_</span><span class="si">%s</span><span class="s">=</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">constField</span> <span class="p">,</span> <span class="n">urllib</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">constVal</span><span class="p">))</span>
+
+
+
+        <span class="c">#</span>
+        <span class="c"># Specific for query requests</span>
+        <span class="c">#</span>
+        <span class="c"># Applying display attributes</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">pUserOptions</span><span class="p">,</span> <span class="s">&#39;attribute&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">pUserOptions</span><span class="o">.</span><span class="n">attribute</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">pUserOptions</span><span class="o">.</span><span class="n">attribute</span><span class="p">:</span>
+                <span class="n">query</span> <span class="o">+=</span> <span class="s">&quot;&amp;attr=</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">urllib</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">attr</span><span class="p">)</span>
+
+        <span class="c"># Indicating to retrieve subnodes hierarchy</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">pUserOptions</span><span class="p">,</span> <span class="s">&#39;tree&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">pUserOptions</span><span class="o">.</span><span class="n">tree</span> <span class="ow">is</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="n">query</span> <span class="o">+=</span> <span class="s">&quot;&amp;tree=1&quot;</span>
+
+
+        <span class="c">#</span>
+        <span class="c"># Specific for edit request</span>
+        <span class="c">#</span>
+        <span class="c"># Applying updates</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">pUserOptions</span><span class="p">,</span> <span class="s">&#39;update&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">pUserOptions</span><span class="o">.</span><span class="n">update</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">currUpdate</span> <span class="ow">in</span> <span class="n">pUserOptions</span><span class="o">.</span><span class="n">update</span><span class="p">:</span>
+                <span class="n">updateExpression</span> <span class="o">=</span> <span class="n">currUpdate</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;=&quot;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">updateExpression</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="s">&quot;Error: update info is not valid, it must have the following format: -U field=value&quot;</span>
+                    <span class="k">return</span> <span class="bp">None</span>
+
+                <span class="n">field</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">updateExpression</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">updateExpression</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">query</span> <span class="o">+=</span> <span class="s">&quot;&amp;update_</span><span class="si">%s</span><span class="s">=</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">field</span> <span class="p">,</span> <span class="n">urllib</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">query</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">OpenRenderManagement 1.6.1 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Arnaud Chassagne, Jerome Samson.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b3.
+    </div>
+  </body>
+</html>

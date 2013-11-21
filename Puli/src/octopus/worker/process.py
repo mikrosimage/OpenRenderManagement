@@ -1,8 +1,9 @@
 '''
-Created on Sep 16, 2009
-
-@author: Olivier Derpierre
+Used by Worker to spawn a new process.
 '''
+
+__author__      = "Olivier Derpierre"
+__copyright__   = "Copyright 2009, Mikros Image"
 
 import logging
 import os

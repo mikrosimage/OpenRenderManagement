@@ -2,7 +2,7 @@
 # -*- coding: utf8 -*-
 
 """
-commons.py: Utility classes and static methods used in every tools
+Utility classes and static methods used in every tools
 """
 __author__      = "Jérôme Samson"
 __copyright__   = "Copyright 2013, Mikros Image"
@@ -16,15 +16,20 @@ VERBOSE=Settings.verbose
 
 class ConstraintFactory:
     """
-    Can parse arguments and options received as command line and create a proper http query string, i.e. :
-    With command line args and options: "<tools> --constraint user=jsa 152 156 188"
-    We create a useful query: "&constraint_user=jsa&constraint_id=152&constraint_id=156&constraint_id=188"
-
-    Returns None if a constraint or update is not valid.
+    Can parse arguments and options received as command line and create a proper http query string.
     """
     @staticmethod
     def makeQuery( pUserArguments, pUserOptions ):
-
+        '''
+        Parse arguments and options to create a proper http query string:
+        "constraint_user=jsa&constraint_id=152"
+        With command line args and options: "--constraint user=jsa -c id=152 -c id=156 -c id=188"
+        We create a useful query: "&constraint_user=jsa&constraint_id=152&constraint_id=156&constraint_id=188"
+        
+        :param pUserArguments: A list of strings representing user arguments
+        :param pUserOptions: A dic of strings representing user options
+        :returns: A string query or none if a constraint or update is not valid.
+        '''
         #
         # Creating corresponding query
         #

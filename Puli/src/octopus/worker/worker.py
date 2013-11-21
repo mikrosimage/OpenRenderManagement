@@ -26,6 +26,9 @@ COMPUTER_NAME_TEMPLATE = "%s:%d"
 
 
 class Worker(MainLoopApplication):
+    """
+    
+    """
 
     class CommandWatcher(object):
         def __init__(self):
@@ -41,6 +44,11 @@ class Worker(MainLoopApplication):
 
     @property
     def modifiedCommandWatchers(self):
+        """
+        an iterable list of the modified command watchers
+
+        :rtype: list of CommandWatcher
+        """
         return (watcher for watcher in self.commandWatchers.values() if watcher.modified)
 
     @property
@@ -640,5 +648,11 @@ class Worker(MainLoopApplication):
 
 
     def reloadConfig(self):
+        """
+        This function translates foo into bar
+
+        :param foo: A string to be converted
+        :returns: A bar formatted string
+        """
         reload(config)
         pass

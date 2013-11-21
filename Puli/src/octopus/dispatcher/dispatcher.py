@@ -169,7 +169,7 @@ class Dispatcher(MainLoopApplication):
                     self.dispatchTree.toCreateElements or
                     self.dispatchTree.toModifyElements)
 
-    def mainLoop(self):MASTER_UPDATE_INTERVAL
+    def mainLoop(self):
         '''Dispatcher main loop iteration.
         Periodically called with tornado'sinternal callback mecanism, the frequency is defined by config: CORE.MASTER_UPDATE_INTERVAL
         During this process, the dispatcher will:

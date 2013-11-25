@@ -22,9 +22,8 @@ def setlimits():
     # set the limit of open files for ddd
     soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
     try:
-        newSoft = max(settings.LIMIT_OPEN_FILES, hard)
-        resource.setrlimit(resource.RLIMIT_NOFILE, (newSoft, hard))
-
+        if settings.LIMIT_OPEN_FILES < hard:
+            resource.setrlimit(resource.RLIMIT_NOFILE, (settings.LIMIT_OPEN_FILES, hard))
     except Exception,e:
         LOGGER.error("Setting ressource limit failed: RLIMT_NOFILE [%r,%r] --> [%r,%r]" % (soft, hard, settings.LIMIT_OPEN_FILES, hard) )
         raise e

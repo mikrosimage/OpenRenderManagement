@@ -7,3 +7,11 @@ RN_STATUS = (RN_UNKNOWN,
              RN_FINISHING) = range(7)
 
 RN_STATUS_NAMES = ('Unknown', 'Booting', 'Paused', 'Idle', 'Assigned', 'Working', 'Finishing')
+
+# 0 --> RN_UNKNOWN
+# 1 --> RN_BOOTING
+# 2 --> RN_PAUSED
+# 3 --> RN_IDLE
+# 4 --> RN_ASSIGNED
+# 5 --> RN_WORKING
+# 6 --> RN_FINISHING

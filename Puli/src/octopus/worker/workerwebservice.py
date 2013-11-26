@@ -9,8 +9,8 @@ import subprocess
 
 from octopus.core.communication.http import Http400, Http404
 from octopus.worker import settings
-# from octopus.worker import config
-# from octopus.worker.worker import theConfig
+
+from octopus.worker.worker import WorkerInternalException
 
 from tornado.web import Application, RequestHandler
 
@@ -124,9 +124,10 @@ class CommandsResource(BaseResource):
             dct[str(key)] = value
         dct['commandId'] = int(dct['id'])
         del dct['id']
+
         try:
             # self.framework.addOrder(self.framework.application.addCommandApply, **dct)
-            self.framework.application.addCommandApply( None,
+            ret = self.framework.application.addCommandApply( None,
                     dct['commandId'], 
                     dct['runner'], 
                     dct['arguments'],
@@ -135,11 +136,15 @@ class CommandsResource(BaseResource):
                     dct['relativePathToLogDir'],
                     dct['environment']
                 )
+        except WorkerInternalException, e:
+            LOGGER.error("Impossible to add command %r, the RN status is 'paused' (%r)" % (dct['commandId'],e) )
+            self.set_status(500)
         except Exception, e:
-            LOGGER.error("Impossible to add command (%r)" % e)
+            LOGGER.error("Impossible to add command %r (%r)" % (dct['commandId'],e) )
             self.set_status(500)
         else:
             self.set_status(202)
+
 
 
 class CommandResource(BaseResource):

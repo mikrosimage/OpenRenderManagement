@@ -109,6 +109,7 @@ class DbgResource(BaseResource):
     def get(self):
         # DBG JSA: display dispatchtree
         from octopus.dispatcher.model.dispatchtree import TimeoutException
+
         try:
             res = self.getDispatchTree()._display_()
         except TimeoutException, e:

@@ -88,13 +88,19 @@ class RenderNode(models.Model):
         self.tasksHistory = deque(maxlen=15)
         self.excluded = False
 
+        # Flag linked to the worker flag "isPaused". Handles the case when a worker is set paused but a command is still running (finishing)
+        # the RN on the dispatcher must be flag not to be assigned (i.e. in isAvailable property)
+        # self.canBeAssigned = True
+
         if not "softs" in self.caracteristics:
             self.caracteristics["softs"] = []
 
     ## Returns True if this render node is available for command assignment.
     #
     def isAvailable(self):
-        return (self.isRegistered and self.status == RN_IDLE and not self.commands)
+        # Need to avoid nodes that have flag isPaused set (i.e. nodes paused by user but still running a command)
+        # return (self.isRegistered and self.canBeAssigned and self.status == RN_IDLE and not self.commands)
+        return (self.isRegistered and self.status == RN_IDLE and not self.commands and not self.isPaused)
 
     def reset(self, paused=False):
         # if paused, set the status to RN_PAUSED, else set it to Finishing, it will be set to IDLE in the next iteration of the dispatcher main loop
@@ -203,10 +209,11 @@ class RenderNode(models.Model):
     def remove(self):
         self.fireDestructionEvent(self)
 
-    ## update node status according to its commands ones
-    #  status is not changed if no info is brought by the commands
-    #
     def updateStatus(self):
+        """
+        Update rendernode status according to its states: having commands or not, commands status, time etc
+        Status is not changed if no info is brought by the commands.
+        """
         # self.status is not RN_PAUSED and time elapsed is enough
         if time.time() > ( self.lastAliveTime + singletonconfig.conf["COMMUNICATION"]["RN_TIMEOUT"] ):
 

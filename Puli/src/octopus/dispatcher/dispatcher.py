@@ -206,7 +206,7 @@ class Dispatcher(MainLoopApplication):
 
 
         self.updateRenderNodes()
-        # LOGGER.info("%8.2f ms --> update render node" % ( (time.time() - prevTimer)*1000 ) )
+        LOGGER.info("%8.2f ms --> update render node" % ( (time.time() - prevTimer)*1000 ) )
         prevTimer = time.time()
 
 
@@ -420,10 +420,14 @@ class Dispatcher(MainLoopApplication):
             self.threadPool.putRequest(request)
 
     def _assignmentFailed(self, request, failures):
+        LOGGER.info("Assignment failure detected: %r match could not be send." % len(failures))
         for assignment in failures:
             rendernode, command = assignment
             rendernode.clearAssignment(command)
             command.clearAssignment()
+
+            LOGGER.info(" - assignment cleared: command[%r] on rn[%r]" % (command.id, rendernode.name) )
+
 
     def handleNewGraphRequestApply(self, graph):
         '''Handles a graph submission request and closes the given ticket

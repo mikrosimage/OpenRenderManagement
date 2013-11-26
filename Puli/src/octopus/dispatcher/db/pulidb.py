@@ -924,19 +924,19 @@ class PuliDB(object):
 
         print "%s -- taskgroups complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
         ### recreate the rules:
-        realRulesForFolderNodes = {}
-        realRulesForTaskNodes = {}
-        conn = Rules._connection
-        fields = [Rules.q.name,
-                  Rules.q.taskNodeId,
-                  Rules.q.folderNodeId]
-        rules = conn.queryAll(conn.sqlrepr(Select(fields)))
-        for num, dbRule in enumerate(rules):
-            name, taskNodeId, folderNodeId = dbRule
-            if folderNodeId:
-                realRulesForFolderNodes[int(folderNodeId)] = str(name)
-            else:
-                realRulesForTaskNodes[int(taskNodeId)] = str(name)
+        # realRulesForFolderNodes = {}
+        # realRulesForTaskNodes = {}
+        # conn = Rules._connection
+        # fields = [Rules.q.name,
+        #           Rules.q.taskNodeId,
+        #           Rules.q.folderNodeId]
+        # rules = conn.queryAll(conn.sqlrepr(Select(fields)))
+        # for num, dbRule in enumerate(rules):
+        #     name, taskNodeId, folderNodeId = dbRule
+        #     if folderNodeId:
+        #         realRulesForFolderNodes[int(folderNodeId)] = str(name)
+        #     else:
+        #         realRulesForTaskNodes[int(taskNodeId)] = str(name)
 
         ### affect the task objects to the corresponding TaskNodes
         for num, dbTaskNode in enumerate(taskNodes):
@@ -945,7 +945,7 @@ class PuliDB(object):
             dbTaskNodeId = int(id)
             nodesById[dbTaskNodeId].task = realTasksList[int(taskId)]
             # get the correct task in the dispatchtree and append the node to the dict of nodes
-            tree.tasks[nodesById[dbTaskNodeId].task.id].nodes[realRulesForTaskNodes[dbTaskNodeId]] = nodesById[dbTaskNodeId]
+            tree.tasks[nodesById[dbTaskNodeId].task.id].nodes["graph_rule"] = nodesById[dbTaskNodeId]
             tree.nodes[dbTaskNodeId] = nodesById[dbTaskNodeId]
 
         print "%s -- affect task complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
@@ -957,7 +957,7 @@ class PuliDB(object):
                 #FIXME temp
                 #if tgId in tree.tasks.keys():
                 nodesById[int(id)].taskGroup = tree.tasks[tgId]
-                tree.tasks[tgId].nodes[realRulesForFolderNodes[int(id)]] = nodesById[int(id)]
+                tree.tasks[tgId].nodes["graph_rule"] = nodesById[int(id)]
             tree.nodes[int(id)] = nodesById[int(id)]
 
         print "%s -- affect taskgroup complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
@@ -991,7 +991,7 @@ class PuliDB(object):
         except:
             tree.commandMaxId = 0
 
-        try:            
+        try:
             tree.poolShareMaxId = int(PoolShares.select().max(PoolShares.q.id))
         except:
             tree.poolShareMaxId = 0

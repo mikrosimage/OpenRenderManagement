@@ -11,14 +11,16 @@ try:
 except ImportError:
     import json
 
+import logging
+
 from tornado.web import Application
-import tornado.web as web
-from tornado.httpserver import HTTPServer
+#import tornado.web as web
+#from tornado.httpserver import HTTPServer
 from octopus.dispatcher.webservice import commands, rendernodes, graphs, nodes,\
     tasks, poolshares, pools, licenses, \
     query, edit
 
-from octopus.core.communication.http import Http404, Http400, HttpConflict
+from octopus.core.communication.http import Http404, Http400, Http500, HttpConflict
 from octopus.core.enums.command import *
 from octopus.core.framework import BaseResource
 from octopus.core import singletonconfig
@@ -102,10 +104,10 @@ class WebServiceDispatcher(Application):
         self.framework = framework
 
 class DbgResource(BaseResource):
-    '''
+    """
     Very basic debug WS, it returns a simple HTML representation of the currently hold dispatchTree
     TODO: return a json string instead
-    '''
+    """
     def get(self):
         # DBG JSA: display dispatchtree
         from octopus.dispatcher.model.dispatchtree import TimeoutException
@@ -176,7 +178,6 @@ class MobileResource(BaseResource):
                   'ERROR': "rgb(217,37,38)",
                   'UNKNOWN': "rgb(217,37,38)",
                   'PAUSED': "rgb(242,195,64)",
-                  'ASSIGNED': "lightblue",
                   'CANCELED': "lightgray",
                   'TOTAL': "white"}
 
@@ -222,14 +223,61 @@ class SystemResource(BaseResource):
 
 class ReconfigResource(BaseResource):
     def post(self):
-        singletonconfig.reload()
+        try:
+            singletonconfig.reload()
+
+            # FIXME on est oblige de changer le loglevel de tous les loggers du projet...
+            # Il faudrait pouvoir affecter tous les log d'un seul coup
+
+            logLevel = singletonconfig.get('CORE','LOG_LEVEL')
+            logging.getLogger().setLevel( logLevel )
+            logging.getLogger("cmdwatcher").setLevel( logLevel )
+            logging.getLogger("command").setLevel( logLevel )
+            logging.getLogger("dispatcher").setLevel( logLevel )
+            logging.getLogger("framework").setLevel( logLevel )
+            logging.getLogger("model").setLevel( logLevel )
+            logging.getLogger("poolshares").setLevel( logLevel )
+            logging.getLogger("process").setLevel( logLevel )
+            logging.getLogger("worker").setLevel( logLevel )
+            logging.getLogger("workerws").setLevel( logLevel )
+
+            # Tous les logger de l'appli
+            #
+            # root
+            # cmdwatcher
+            # command
+            # dispatcher
+            # dispatcher.dispatchtree
+            # dispatcher.webservice
+            # dispatcher.webservice.editController
+            # dispatcher.webservice.NodeController
+            # dispatcher.webservice.PoolController
+            # dispatcher.webservice.queryController
+            # dispatcher.webservice.TaskController
+            # framework
+            # framework.application
+            # framework.webservice
+            # model
+            # model.task
+            # poolshares
+            # process
+            # userview
+            # worker
+            # worker.CmdThreader
+            # workerws
+
+
+        except Exception, e:
+            raise Http500("Error during server reconfig: %r"%e)
+
+        self.writeCallback("done")
 
 
 class SystemResourceJson(BaseResource):
     def get(self):
-        '''
+        """
         Builds the server environment representation.
-        '''
+        """
         try:
             import os
 

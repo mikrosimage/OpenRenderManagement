@@ -50,7 +50,7 @@ class DispatchTree(object):
         Debug purpose method, returns a basic display of the dispatch tree as html
         '''
         startTimer = time.time()
-        timeout = 0.1
+        timeout = 2.0
 
         result="<html><body font-family='verdana'>"
 

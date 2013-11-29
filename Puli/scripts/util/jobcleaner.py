@@ -7,11 +7,11 @@ The cleaning is done in 2 times:
 - a final step call a webservice to DELETE the targeted jobs on the server (the server will automatically tags jobs as 'archived' and delete them from memory)
 
 This process is done twice, a first time to clean folder_nodes a second time for the task_nodes
-
 It is usually called from the server itself and croned to execute every day at 7:00
 """
 
 from optparse import OptionParser
+import socket
 from sqlobject import SQLObject, UnicodeCol, IntCol, FloatCol, DateTimeCol, BoolCol, sqlhub, connectionForURI
 from sqlobject.sqlbuilder import *
 import json
@@ -55,16 +55,16 @@ class PuliJobCleaner(object):
 
         result = True
         if options.noaction is False:
-            res = self.clean(tasksIds)
+            result = self.clean(tasksIds)
         return result 
 
 
-    def clean(self, tasksIds):
+    @staticmethod
+    def clean(tasksIds):
         if len(tasksIds):
             print "ids :" + tasksIds
             url = "/tasks/delete/"
-            dct = {}
-            dct['taskids'] = tasksIds
+            dct = { 'taskids': tasksIds }
             body = json.dumps(dct)
             headers = {'Content-Length': len(body)}
             try:
@@ -85,7 +85,8 @@ class PuliJobCleaner(object):
                     raise Exception() # A quoi ca sert ! on perd toutes les infos
         return False
 
-    def finish(self):
+    @staticmethod
+    def finish( ):
         sqlhub.processConnection.close()
 
 

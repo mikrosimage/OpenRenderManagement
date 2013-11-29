@@ -13,3 +13,5 @@ eggs/
 downloads/
 tests/
 src/*.egg-info
+./src/tornado/
+.idea/

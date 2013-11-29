@@ -18,5 +18,4 @@ class Settings(object):
 
 	# Default formating & enums
 	date_format = '%m/%d %H:%M'
-	status_short_name = ("B", "I", "R", "D", "E", "C", "P")
-	status_long_name = ("Blocked", "Ready", "Running", "Done", "Error", "Canceled", "Paused")
+

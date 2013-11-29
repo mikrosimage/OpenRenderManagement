@@ -13,5 +13,6 @@ eggs/
 downloads/
 tests/
 src/*.egg-info
-./src/tornado/
 .idea/
+Puli/src/tornado
+Puli/src/puliclient/contrib

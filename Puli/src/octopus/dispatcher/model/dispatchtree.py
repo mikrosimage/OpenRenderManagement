@@ -1,6 +1,7 @@
 # coding: utf8
-import time
+
 import logging
+import time
 from weakref import WeakValueDictionary
 
 
@@ -38,6 +39,7 @@ class ObjectListener(object):
         self.onDestructionEvent = onDestructionEvent
         self.onChangeEvent = onChangeEvent
 
+
 class TimeoutException(Exception):
     pass
 
@@ -47,9 +49,8 @@ class DispatchTree(object):
         '''
         Debug purpose method, returns a basic display of the dispatch tree as html
         '''
-
         startTimer = time.time()
-        timeout = 0.1
+        timeout = 2.0
 
         result="<html><body font-family='verdana'>"
 

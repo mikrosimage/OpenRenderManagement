@@ -8,6 +8,8 @@ RN_STATUS = (RN_UNKNOWN,
 
 RN_STATUS_NAMES = ('Unknown', 'Booting', 'Paused', 'Idle', 'Assigned', 'Working', 'Finishing')
 
+RN_STATUS_SHORT_NAMES = ("U", "B", "P", "I", "A", "W", "F")
+
 # 0 --> RN_UNKNOWN
 # 1 --> RN_BOOTING
 # 2 --> RN_PAUSED

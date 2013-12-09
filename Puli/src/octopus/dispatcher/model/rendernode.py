@@ -99,8 +99,7 @@ class RenderNode(models.Model):
     #
     def isAvailable(self):
         # Need to avoid nodes that have flag isPaused set (i.e. nodes paused by user but still running a command)
-        return (self.isRegistered and self.canBeAssigned and self.status == RN_IDLE and not self.commands)
-        #return (self.isRegistered and self.status == RN_IDLE and not self.commands and not self.isPaused)
+        return (self.isRegistered and self.status == RN_IDLE and not self.commands)
 
     def reset(self, paused=False):
         # if paused, set the status to RN_PAUSED, else set it to Finishing, it will be set to IDLE in the next iteration of the dispatcher main loop

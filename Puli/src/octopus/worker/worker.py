@@ -357,7 +357,6 @@ class Worker(MainLoopApplication):
                 LOGGER.exception('"PUT %s" failed', url)
             else:
                 if response.status == 200:
-                    # TODO JSA mettre à jour "canBeAssigned"
                     if paused:
                         self.status = rendernode.RN_PAUSED
                         self.isPaused = True

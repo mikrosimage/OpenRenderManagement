@@ -235,14 +235,11 @@ class RenderNodeSysInfosResource(BaseResource):
                 renderNode.status = int(dct["status"])
                 logger.info("status reported is %d" % renderNode.status)
 
-            # if renderNode.status != int(dct["status"]):
-            #     logger.warning("The status reported (%r) is different from the status on dispatcher (%r)" % (RN_STATUS_NAMES[dct["status"]],RN_STATUS_NAMES[renderNode.status]))
+            if renderNode.status != int(dct["status"]):
+                logger.warning("The status reported (%r) is different from the status on dispatcher (%r)" % (RN_STATUS_NAMES[dct["status"]],RN_STATUS_NAMES[renderNode.status]))
 
-        if "isPaused" in dct:
-            # logger.warning("Flag 'ispaused'=%r" % dct['isPaused'])
-            renderNode.canBeAssigned = not bool(dct['isPaused'])
-
-        logger.debug("reported for %r: remoteStatus=%r remoteIsPaused=%r" % (renderNode.name, RN_STATUS_NAMES[dct["status"]], dct['isPaused']) )
+        if "isPaused" in dct and "status" in dct:
+            logger.debug("reported for %r: remoteStatus=%r remoteIsPaused=%r" % (renderNode.name, RN_STATUS_NAMES[dct["status"]], dct['isPaused']) )
 
         renderNode.lastAliveTime = time.time()
         renderNode.isRegistered = True

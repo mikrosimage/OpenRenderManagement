@@ -1,0 +1,4 @@
+#!/bin/sh
+
+python2.6 /opt/puli/scripts/util/jobcleaner.py -d 5 &>> /tmp/pulicleaner.log
+

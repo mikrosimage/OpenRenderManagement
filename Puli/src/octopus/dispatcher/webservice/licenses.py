@@ -33,7 +33,7 @@ class LicenseResource(BaseResource):
         try:
             maxLic = data['maxlic']
         except KeyError:
-            return HTTPError(404, "Missing entry : 'maxlic'")
+            raise HTTPError(404, "Missing entry : 'maxlic'")
         else:
             self.dispatcher.licenseManager.setMaxLicensesNumber(licenseName, maxLic)
             self.writeCallback("OK")
@@ -44,7 +44,7 @@ class LicenseResource(BaseResource):
         try:
             rns = data['rns']
         except KeyError:
-            return HTTPError(404, "Missing entry : 'rns'")
+            raise HTTPError(404, "Missing entry : 'rns'")
         else:
             rnsList = rns.split(",")
             for rn in rnsList:

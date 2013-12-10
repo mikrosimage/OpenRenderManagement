@@ -1,6 +1,7 @@
 # coding: utf8
 
 import logging
+import time
 from weakref import WeakValueDictionary
 
 
@@ -39,52 +40,81 @@ class ObjectListener(object):
         self.onChangeEvent = onChangeEvent
 
 
+class TimeoutException(Exception):
+    pass
+
 class DispatchTree(object):
 
     def _display_(self):
         '''
         Debug purpose method, returns a basic display of the dispatch tree as html
         '''
+        startTimer = time.time()
+        timeout = 2.0
 
-        # import pudb; pu.db
         result="<html><body font-family='verdana'>"
 
-        result +="<h3>Pools</h3><table>"
+        result +="<h3>Pools: %r</h3><table>" % len(self.pools)
         for i,curr in enumerate(self.pools):
             result += "<tr><td>%r</td><td>%s</td></tr>" % (i, self.pools[curr])
-        result+="</table>"
 
+            if (time.time()-startTimer) > timeout:
+                raise TimeoutException("TimeoutException occured: the dispatchTree might be too large to dump")
+        result+="</table>"
+        
         result +="<h3>PoolShares: (attribution de parc pour une tache fille du root, on attribue pas de poolshare aux autres)</h3><table>"
         for i,curr in enumerate(self.poolShares):
             result += "<tr><td>%r</td><td>%s</td></tr>" % (i, self.poolShares[curr])
+
+            if (time.time()-startTimer) > timeout:
+                raise TimeoutException("TimeoutException occured: the dispatchTree might be too large to dump")
         result+="</table>"
+
 
         result +="<h3>Main level nodes (proxy info only):</h3><table>"
         for i,curr in enumerate(self.nodes[1].children):
             result += "<tr><td>%r</td><td>%s</td></tr>" % (i, curr.name)
+
+            if (time.time()-startTimer) > timeout:
+                raise TimeoutException("TimeoutException occured: the dispatchTree might be too large to dump")
         result+="</table>"
+
 
         result +="<h3>All nodes:</h3><table>"
         for i,curr in enumerate(self.nodes):
             result += "<tr><td>%d</td><td>%s</td><td>%r</td></tr>" % (i, curr, self.nodes[curr].name)
+
+            if (time.time()-startTimer) > timeout:
+                raise TimeoutException("TimeoutException occured: the dispatchTree might be too large to dump")
         result+="</table>"
+
 
         result +="<h3>Tasks:</h3><table>"
         for i,curr in enumerate(self.tasks):
             result += "<tr><td>%r</td><td>%s</td></tr>" % (i, repr(self.tasks[curr]) )
+            if (time.time()-startTimer) > timeout:
+                raise TimeoutException("TimeoutException occured: the dispatchTree might be too large to dump")
         result+="</table>"
+
 
         result +="<h3>Commands:</h3><table>"
         for i,curr in enumerate(self.commands):
             result += "<tr><td>%r</td><td>%s</td></tr>" % (i, self.commands[curr] )
+            if (time.time()-startTimer) > timeout:
+                raise TimeoutException("TimeoutException occured: the dispatchTree might be too large to dump")
         result+="</table>"
+
 
         result +="<h3>Rules:</h3><table>"
         for i,curr in enumerate(self.rules):
             result += "<tr><td>%r</td><td>%s</td></tr>" % (i, curr )
+            if (time.time()-startTimer) > timeout:
+                raise TimeoutException("TimeoutException occured: the dispatchTree might be too large to dump")
         result+="</table>"
 
+
         result +="</body></html>"
+        logger.info("DispatchTree printed in %.6f s" % (time.time()-startTimer) )
         return result
 
 

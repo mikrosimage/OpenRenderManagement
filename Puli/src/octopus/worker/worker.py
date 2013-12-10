@@ -15,6 +15,8 @@ from octopus.core.framework.mainloopapplication import MainLoopApplication
 from octopus.core.communication.requestmanager import RequestManager
 from octopus.core.enums import command as COMMAND
 from octopus.core.enums import rendernode
+from octopus.core.enums.rendernode import *
+
 from octopus.worker import settings
 from octopus.worker import config
 
@@ -25,7 +27,21 @@ LOGGER = logging.getLogger("worker")
 COMPUTER_NAME_TEMPLATE = "%s:%d"
 
 
+class WorkerInternalException(Exception):
+    """
+    Custom exception to handle internal failure during worker's execution.
+    """
+    def __init__(self, value):
+        self.parameter = value
+    def __str__(self):
+        return repr(self.parameter)
+
 class Worker(MainLoopApplication):
+    """
+    Worker application based on the main framework. 
+    It is an independant remote daemon communicating with the dispatcher via WS and in charge of handling job execution with the help
+    of CommandWatcher subprocess.
+    """
 
     class CommandWatcher(object):
         def __init__(self):
@@ -49,7 +65,10 @@ class Worker(MainLoopApplication):
 
     def __init__(self, framework):
         super(Worker, self).__init__(self)
+        LOGGER.info("")
+        LOGGER.info("-----------------------------------------------")
         LOGGER.info("Starting worker on %s:%d.", settings.ADDRESS, settings.PORT)
+        LOGGER.info("-----------------------------------------------")
         self.framework = framework
         self.data = None
         self.requestManager = RequestManager(settings.DISPATCHER_ADDRESS,
@@ -85,6 +104,7 @@ class Worker(MainLoopApplication):
         self.openglversion = ""
 
     def prepare(self):
+        LOGGER.info("Before registering: prepare worker.")
         for name in (name for name in dir(settings) if name.isupper()):
             LOGGER.info("settings.%s = %r", name, getattr(settings, name))
         self.registerWorker()
@@ -214,8 +234,8 @@ class Worker(MainLoopApplication):
         infos = self.fetchSysInfos()
         dct = json.dumps(infos)
         # FIXME if a command is currently running on this worker, notify the dispatcher
-        if len(self.commands.items()):
-            dct['commands'] = self.commands.items()
+        # if len(self.commands.items()):
+        #     dct['commands'] = self.commands.items()
         headers = {}
         headers['content-length'] = len(dct)
 
@@ -268,6 +288,7 @@ class Worker(MainLoopApplication):
         Send info to the dispatcher about currently running command watcher.
         Called from the mainloop every time a command has been tagged "modified"
         req: PUT /rendernodes/<currentRN>/commands/<commandId>/
+        :param commandWatcher: A command watcher reference
         """
 
         maxRetry = max(1,config.WORKER_REQUEST_MAX_RETRY_COUNT)
@@ -339,6 +360,7 @@ class Worker(MainLoopApplication):
                     if paused:
                         self.status = rendernode.RN_PAUSED
                         self.isPaused = True
+
                         LOGGER.info("Worker has been put in paused mode")
                     else:
                         self.status = rendernode.RN_IDLE
@@ -467,13 +489,15 @@ class Worker(MainLoopApplication):
         """
         Send sys infos to the dispatcher, the request content holds the RN status only, it has to be kept
         very small to avoid nerwork flood.
-        req: PUT /rendernodes/<currentRN>/sysinfos
+        :param req: PUT /rendernodes/<currentRN>/sysinfos
         """
 
         # we don't need to send the whole dict of sysinfos
         #infos = self.fetchSysInfos()
         infos = {}
         infos['status'] = self.status
+        infos['isPaused'] = self.isPaused
+
         dct = json.dumps(infos)
         headers = {}
         headers['content-length'] = len(dct)
@@ -491,6 +515,9 @@ class Worker(MainLoopApplication):
         except httplib.BadStatusLine:
             LOGGER.exception('Sending sys infos has failed with a BadStatusLine error')
 
+        LOGGER.debug('Sys infos transmitted to the server: %r' % RN_STATUS_NAMES[self.status])
+
+
     def connect(self):
         return httplib.HTTPConnection(settings.DISPATCHER_ADDRESS, settings.DISPATCHER_PORT)
 
@@ -501,7 +528,10 @@ class Worker(MainLoopApplication):
         del self.commands[commandWatcher.commandId]
         try:
             os.remove(commandWatcher.processObj.pidfile)
-            self.status = rendernode.RN_IDLE
+            if self.status is not rendernode.RN_PAUSED:
+                # Only set status to IDLE if RN was not marked as pause (via mylawn or pulback)
+                self.status = rendernode.RN_IDLE
+
         except OSError, e:
             from errno import ENOENT
             err, msg = e.args
@@ -529,10 +559,17 @@ class Worker(MainLoopApplication):
 
     def addCommandApply(self, ticket, commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment):
         if not self.isPaused:
-            newCommand = Command(commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment=environment)
-            self.commands[commandId] = newCommand
-            self.addCommandWatcher(newCommand)
-            LOGGER.info("Added command %d {runner: %s, arguments: %s}", commandId, runner, repr(arguments))
+            try:
+                newCommand = Command(commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment=environment)
+                self.commands[commandId] = newCommand
+                self.addCommandWatcher(newCommand)
+                LOGGER.info("Added command %d {runner: %s, arguments: %s}", commandId, runner, repr(arguments))
+            except Exception, e:
+                LOGGER.error("Error during command init: %r" % e)
+                raise e
+        else:
+            raise WorkerInternalException("Worker flag 'isPaused' is on.")
+
 
     ##
     #
@@ -612,16 +649,21 @@ class Worker(MainLoopApplication):
         ]
         args.extend(('%s=%s' % (str(name), str(value)) for (name, value) in command.arguments.items()))
 
-        watcherProcess = spawnCommandWatcher(pidFile, logFile, args, command.environment)
-        newCommandWatcher.processObj = watcherProcess
-        newCommandWatcher.startTime = time.time()
-        newCommandWatcher.timeOut = None
-        newCommandWatcher.command = command
-        newCommandWatcher.processId = watcherProcess.pid
+        try:
+            watcherProcess = spawnCommandWatcher(pidFile, logFile, args, command.environment)
+            newCommandWatcher.processObj = watcherProcess
+            newCommandWatcher.startTime = time.time()
+            newCommandWatcher.timeOut = None
+            newCommandWatcher.command = command
+            newCommandWatcher.processId = watcherProcess.pid
 
-        self.commandWatchers[command.id] = newCommandWatcher
+            self.commandWatchers[command.id] = newCommandWatcher
+            self.status = rendernode.RN_WORKING
 
-        LOGGER.info("Started command %d", command.id)
+            LOGGER.info("Started command %d", command.id)
+        except Exception, e:
+            LOGGER.error("Error spawning command watcher %r", e)
+            raise e
 
 
     def reloadConfig(self):

@@ -54,7 +54,7 @@ class Dispatcher(MainLoopApplication):
 
         self.threadPool = ThreadPool(16, 0, 0, None)
 
-        LOGGER.info('Settings: DEBUG = %s, ADDRESS = %s, PORT = %s', settings.DEBUG, settings.ADDRESS, settings.PORT)
+        LOGGER.warning('Settings: DEBUG = %s, ADDRESS = %s, PORT = %s', settings.DEBUG, settings.ADDRESS, settings.PORT)
 
         self.cycle = 1
         self.dispatchTree = DispatchTree()
@@ -70,20 +70,21 @@ class Dispatcher(MainLoopApplication):
         rnsAlreadyInitialized = self.initPoolsDataFromBackend()
 
         if self.enablePuliDB and not self.cleanDB:
-            LOGGER.info("reloading jobs from database")
+            LOGGER.warning("reloading jobs from database")
             beginTime = time.time()
             self.pulidb.restoreStateFromDb(self.dispatchTree, rnsAlreadyInitialized)
-            LOGGER.info("reloading took %s" % str(time.time() - beginTime))
-            LOGGER.info("done reloading jobs from database")
-            LOGGER.info("reloaded %d tasks" % len(self.dispatchTree.tasks))
-        LOGGER.info("checking dispatcher state")
+            LOGGER.warning("reloading took %.2fs" % (time.time() - beginTime))
+            LOGGER.warning("done reloading jobs from database")
+            LOGGER.warning("reloaded %d tasks" % len(self.dispatchTree.tasks))
+        LOGGER.warning("checking dispatcher state")
+
         self.dispatchTree.updateCompletionAndStatus()
         self.updateRenderNodes()
         self.dispatchTree.validateDependencies()
         if self.enablePuliDB and not self.cleanDB:
             self.dispatchTree.toModifyElements = []
         self.defaultPool = self.dispatchTree.pools['default']
-        LOGGER.info("loading dispatch rules")
+        LOGGER.warning("loading dispatch rules")
         self.loadRules()
         # it should be better to have a maxsize
         self.queue = Queue(maxsize=10000)
@@ -169,12 +170,24 @@ class Dispatcher(MainLoopApplication):
                     self.dispatchTree.toModifyElements)
 
     def mainLoop(self):
-        '''Dispatcher main loop iteration.'''
+        '''Dispatcher main loop iteration.
+        Periodically called with tornado'sinternal callback mecanism, the frequency is defined by config: CORE.MASTER_UPDATE_INTERVAL
+        During this process, the dispatcher will:
+          - update completion and status for all jobs in dispatchTree
+          - update status of renderNodes
+          - validate inter tasks dependencies
+          - update the DB with recorded changes in the model
+          - compute new assignments and send them to the proper rendernodes
+          - release all finished jobs/rns
+        '''
         
         # JSA DEBUG: timer pour profiler les etapes       
         loopStartTime = time.time()
         prevTimer = time.time()
-        # LOGGER.info("")
+        LOGGER.info("")
+        LOGGER.info("-----------------------------------------------------")
+        LOGGER.info(" Start dispatcher process cycle.")
+        LOGGER.info("-----------------------------------------------------")
 
         # JSA: Check if requests are finished (necessaire ?)
         try:
@@ -189,46 +202,42 @@ class Dispatcher(MainLoopApplication):
         # Update of allocation is done when parsing the tree for completion and status update (done partially for invalidated node only i.e. when needed)
         self.dispatchTree.updateCompletionAndStatus()
         # LOGGER.info("%8.2f ms --> update completion status" % ( (time.time() - prevTimer)*1000 ) )
-        # prevTimer = time.time()
+        prevTimer = time.time()
 
 
         self.updateRenderNodes()
-        # LOGGER.info("%8.2f ms --> update render node" % ( (time.time() - prevTimer)*1000 ) )
-        # prevTimer = time.time()
+        LOGGER.info("%8.2f ms --> update render node" % ( (time.time() - prevTimer)*1000 ) )
+        prevTimer = time.time()
 
 
         self.dispatchTree.validateDependencies()
         # LOGGER.info("%8.2f ms --> validate dependencies" % ( (time.time() - prevTimer)*1000 ) )
-        # prevTimer = time.time()
+        prevTimer = time.time()
 
 
         # update db
         self.updateDB()
 
-        # JSA DEBUG
-        # LOGGER.info("%8.2f ms --> update DB" % ( (time.time() - prevTimer)*1000 ) )
-        # prevTimer = time.time()
+        LOGGER.info("%8.2f ms --> update DB" % ( (time.time() - prevTimer)*1000 ) )
+        prevTimer = time.time()
 
         # compute and send command assignments to rendernodes
         assignments = self.computeAssignments()
         self.sendAssignments(assignments)
 
-        # JSA DEBUG
-        # LOGGER.info("%8.2f ms --> compute assignements" % ( (time.time() - prevTimer)*1000 ) )
-        # prevTimer = time.time()
+        LOGGER.info("%8.2f ms --> compute and send %r assignements." % ( (time.time() - prevTimer)*1000, len(assignments) )  )
+        prevTimer = time.time()
 
         # call the release finishing status on all rendernodes
         for renderNode in self.dispatchTree.renderNodes.values():
             renderNode.releaseFinishingStatus()
 
-        # JSA DEBUG
         # LOGGER.info("%8.2f ms --> releaseFinishingStatus" % ( (time.time() - prevTimer)*1000 ) )
-        # prevTimer = time.time()
+        prevTimer = time.time()
 
-        # JSA DEBUG
-        # loopDuration = (time.time() - loopStartTime)*1000
-        # LOGGER.info( "%8.2f ms --> TOTAL " % loopDuration )
-
+        loopDuration = (time.time() - loopStartTime)*1000
+        LOGGER.info( "%8.2f ms --> cycle ended. " % loopDuration )
+        LOGGER.info("-----------------------------------------------------")
 
     def updateDB(self):
 
@@ -411,10 +420,14 @@ class Dispatcher(MainLoopApplication):
             self.threadPool.putRequest(request)
 
     def _assignmentFailed(self, request, failures):
+        LOGGER.info("Assignment failure detected: %r match could not be send." % len(failures))
         for assignment in failures:
             rendernode, command = assignment
             rendernode.clearAssignment(command)
             command.clearAssignment()
+
+            LOGGER.info(" - assignment cleared: command[%r] on rn[%r]" % (command.id, rendernode.name) )
+
 
     def handleNewGraphRequestApply(self, graph):
         '''Handles a graph submission request and closes the given ticket

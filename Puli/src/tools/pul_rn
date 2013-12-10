@@ -1,0 +1,202 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+
+
+"""
+name: pul_rn
+
+Utility to retrieve render node info
+It processes HTTP request to the server to present information about the state of the RN pool
+
+Request example: "query?attr=id&attr=name"
+
+Default fields retrieved from the server are:
+id              --> unique id of the folder or task node
+
+"""
+__author__      = "Jérôme Samson"
+__copyright__   = "Copyright 2013, Mikros Image"
+
+
+
+# Imports from libs
+from tornado import ioloop, escape
+from tornado.httpclient import AsyncHTTPClient
+from optparse import OptionParser
+from datetime import datetime
+
+import simplejson as json
+import sys
+import time
+import urllib
+
+# Imports from local dir
+from settings import Settings
+from common import ConstraintFactory
+from common import PlainHelpFormatter
+from common import RenderNodeTable
+
+
+_query = "query/rn?"
+_hostname = Settings.hostname
+_port = Settings.port
+
+VERBOSE = Settings.verbose
+REQUEST_BEGIN_TIME = ''
+REQUEST_END_TIME = ''
+
+
+
+def handle_request(response):
+    """
+    Callback for handling the request result.
+    We try to load the data as JSON and display it according to the arguments or default specification
+    """
+
+    REQUEST_END_TIME = time.time() - REQUEST_BEGIN_TIME
+
+    if VERBOSE: print ""
+    if VERBOSE: print "Getting response for request \""+_query+"\" in " + str(REQUEST_END_TIME)
+
+    if VERBOSE: print "DEBUG - Response: " + str(response)
+
+    if response.error:
+        print "Error:", response.error
+    else:
+
+        if response.body == "":
+            print ""
+            print "No rendernodes registered."
+            print ""
+            sys.exit()
+
+
+        # Parsing json
+        try:
+            _data = json.loads ( response.body )
+        except KeyError, e:
+            print "Error unknown key : " + str(e)
+            sys.exit()
+        except Exception, e:
+            print "Error loading json: " + str(e)
+            sys.exit()
+
+        # Sorting data according to table description
+        _data['items'] = sorted(_data['items'], key=lambda row : row[options.sortField], reverse=options.reverseOrder)
+
+
+        # Display data according to given args
+        if options.json:
+            print json.dumps( _data, indent=4 )
+
+        elif options.csv:
+
+            # Print header
+            header = ""
+            if _data['items'] is not None:
+                header += ";".join(_data['items'][0].keys())
+                print header
+
+            # Print rows with ";" separator and without field indicator (usually " or ')
+            for row in _data['items']:
+                line=""
+                for val in row.values():
+                    line += ";"+( str(val) )
+                print line[1:]
+
+        else:
+            RenderNodeTable.displayHeader( RenderNodeTable )
+
+            for row in _data['items']:
+                RenderNodeTable.displayRow( row, RenderNodeTable )
+
+            RenderNodeTable.displayFooter( _data['summary'], RenderNodeTable )
+
+
+    # Quit loop
+    ioloop.IOLoop.instance().stop()
+
+def process_args():
+    '''
+    Manages arguments parsing definition and help information
+    '''
+
+    usage = "usage: %prog [general options] [restriction list] [output option]"
+    desc=""" """
+
+    parser = OptionParser(usage=usage, description=desc, version="%prog 0.1", formatter=PlainHelpFormatter() )
+
+    parser.add_option("-c", "--csv", action="store_true", dest="csv", help="Returns data formatted as raw CSV file [%default]", default=False)
+    parser.add_option("-j", "--json", action="store_true", dest="json", help="Returns data formatted as JSON [%default]", default=False)
+
+    parser.add_option("-o", "--sort", action="store", dest="sortField", help="Sort items with the given field [%default]", default='id')
+    parser.add_option("-r", "--reverse-order", action="store_true", dest="reverseOrder", help="Sort item in reverse order [%default]", default=False)
+    
+    parser.add_option("-C", "--constraint", action="append", type="string", help="Allow user to specify one or more filter constraints")
+    parser.add_option("-a", "--attribute", action="append", type="string", help="Allow user to display specific attributes only (WARNING if defined, result will be presented as csv by default, it can be overriden by -j flag)")
+
+    parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help="Verbose mode [%default]", default=False)
+
+    parser.add_option("-s", "--server", action="store", dest="hostname", help="Specified a target host to send the request")
+    parser.add_option("-p", "--port", action="store", dest="port", help="Specified a target port")
+
+    options, args = parser.parse_args()
+
+    return options, args
+
+
+
+if __name__ == '__main__':
+
+
+    options, args = process_args()
+    VERBOSE = options.verbose
+    
+    if VERBOSE:
+        print "Command options: %s" % options
+        print "Command arguments: %s" % args
+
+
+    #
+    # Apply display rules
+    #
+    if options.attribute is not None:
+        # Specifc attributes is desired by arguments, we must ensure that either json or csv is activated 
+        # And if not, activate csv display.
+        if not options.json and not options.csv:
+            options.csv = True
+
+
+    #
+    # Creating corresponding query
+    #
+    userConstraint = ConstraintFactory.makeQuery( pUserArguments=args, pUserOptions=options)
+    if userConstraint is None:
+        sys.exit(1)
+
+    _query += userConstraint
+
+
+    #
+    # Set hotsname/port if given as arguments
+    #
+    if options.hostname is not None:
+        _hostname = options.hostname
+
+    if options.port is not None:
+        _port = options.port
+
+    if VERBOSE:
+        print "Host: %s" % _hostname
+        print "Port: %s" % _port
+        print "Request: %s" % _query
+        # print "http://%s:%s/%s" % ( _hostname, _port, _query )
+
+    _request = "http://%s:%s/%s" % ( _hostname, _port, _query )
+
+    http_client = AsyncHTTPClient()
+
+    REQUEST_BEGIN_TIME = time.time()
+    http_client.fetch( _request, handle_request )
+
+    ioloop.IOLoop.instance().start()

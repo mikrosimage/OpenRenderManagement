@@ -30,6 +30,10 @@ import os
 import subprocess
 import time
 import logging
+import pwd
+import atexit
+import signal
+import sys
 
 # Default daemon parameters.
 # File mode creation mask of the daemon.
@@ -51,11 +55,51 @@ if hasattr(os, 'devnull'):
 else:
     REDIRECT_TO = '/dev/null'
 
+def daemonize(username=""):
+    """
+    Detach a process from the controlling terminal and run it in the
+    background as a daemon.
+    """
+
+    if os.fork() != 0:
+        os._exit(0)
+    os.setsid()
+    if username:
+        uid = pwd.getpwnam(username)[2]
+        os.setuid(uid)
+    if os.fork() != 0:
+        os._exit(0)
+    # create the pidfile
+    pidfile = file("/tmp/pulirespawner.pid", "w")
+    pidfile.write("%d\n" % os.getpid())
+    pidfile.close()
+    # register a cleanup callback
+    pidfile = os.path.abspath("/tmp/pulirespawner.pid")
+    def delpidfile():
+        os.remove(pidfile)
+    atexit.register(delpidfile)
+    def delpidfileonSIGTERM(a, b):
+        os.remove(pidfile)
+        sys.exit()
+    signal.signal(signal.SIGTERM, delpidfileonSIGTERM)
+    #
+    os.chdir("/")
+    f = os.open(os.devnull, os.O_RDONLY)
+    os.dup2(f, sys.stdin.fileno())
+    os.close(f)
+    f = os.open(os.devnull, os.O_WRONLY)
+    os.dup2(f, sys.stdout.fileno())
+    os.close(f)
+    f = os.open(os.devnull, os.O_WRONLY)
+    os.dup2(f, sys.stderr.fileno())
+    os.close(f)
+
 
 def createDaemon():
-    """Detach a process from the controlling terminal and run it in the
-   background as a daemon.
-   """
+    """
+    Detach a process from the controlling terminal and run it in the
+    background as a daemon.
+    """
 
     try:
 
@@ -210,7 +254,10 @@ def createDaemon():
 
 
 def pollRestartFile():
-    logging.basicConfig(filename="/var/log/puli/respawner.log", level=logging.DEBUG)
+    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s',
+                        filename="/var/log/puli/respawner.log",
+                        level=logging.DEBUG
+                        )
 
     restartfile = "/tmp/render/restartfile"
     if os.path.isfile(restartfile):
@@ -227,8 +274,9 @@ def pollRestartFile():
 
 if __name__ == '__main__':
 
-    retCode = createDaemon()
-
+    # retCode = createDaemon()
+    daemonize("render")
+    
     while 1:
         pollRestartFile()
         time.sleep(30)

@@ -110,11 +110,15 @@ class CommandWatcher(object):
         self.runnerErrorInPostExec = None
 
         # check that the job type is a registered one
-        from puliclient.jobs import loadCommandRunner
+        from puliclient.jobs import loadCommandRunner, JobTypeImportError
         try:
             runnerClass = loadCommandRunner(runner)
-        except ImportError:
-            self.logger.exception("Command runner loading failed.")
+        except JobTypeImportError, e:
+            self.logger.error("Command runner loading failed: %r" % e )
+            self.updateCommandStatus(CMD_ERROR)
+            sys.exit(1)
+        except ImportError, e:
+            self.logger.exception("Command runner loading failed: %r" % e )
             self.updateCommandStatus(CMD_ERROR)
             sys.exit(1)
 

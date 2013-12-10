@@ -9,7 +9,9 @@ import logging
 from tornado.web import HTTPError
 
 from octopus.core.communication import HttpResponse, Http400, Http404, Http403, HttpConflict
-from octopus.core.enums.rendernode import RN_PAUSED, RN_IDLE, RN_UNKNOWN, RN_BOOTING, RN_ASSIGNED
+# from octopus.core.enums.rendernode import RN_PAUSED, RN_IDLE, RN_UNKNOWN, RN_BOOTING, RN_ASSIGNED
+from octopus.core.enums.rendernode import *
+
 from octopus.core import enums
 from octopus.dispatcher.model import RenderNode
 from octopus.core.framework import BaseResource, queue
@@ -19,11 +21,11 @@ logger = logging.getLogger("dispatcher")
 
 
 class RenderNodesResource(BaseResource):
-    ## Lists the render nodes known by the dispatcher.
-    #
-    # @param request the HTTP request
-    #
-    #@queue
+    """
+    Lists the render nodes known by the dispatcher.
+    :param: request the HTTP request
+    """
+
     def get(self):
         rendernodes = self.getDispatchTree().renderNodes.values()
         content = {'rendernodes': list(rendernode.to_json() for rendernode in rendernodes)}
@@ -208,8 +210,10 @@ class RenderNodeSysInfosResource(BaseResource):
     def put(self, computerName):
         computerName = computerName.lower()
         rns = self.getDispatchTree().renderNodes
+
         if not computerName in rns:
-            return Http404("RenderNode not found")
+            raise Http404("RenderNode not found")
+
         dct = self.getBodyAsJSON()
         renderNode = rns[computerName]
         if "caracteristics" in dct:
@@ -230,6 +234,13 @@ class RenderNodeSysInfosResource(BaseResource):
                     #renderNode.status = RN_IDLE
                 renderNode.status = int(dct["status"])
                 logger.info("status reported is %d" % renderNode.status)
+
+            if renderNode.status != int(dct["status"]):
+                logger.warning("The status reported (%r) is different from the status on dispatcher (%r)" % (RN_STATUS_NAMES[dct["status"]],RN_STATUS_NAMES[renderNode.status]))
+
+        if "isPaused" in dct and "status" in dct:
+            logger.debug("reported for %r: remoteStatus=%r remoteIsPaused=%r" % (renderNode.name, RN_STATUS_NAMES[dct["status"]], dct['isPaused']) )
+
         renderNode.lastAliveTime = time.time()
         renderNode.isRegistered = True
 

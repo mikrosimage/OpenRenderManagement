@@ -12,6 +12,10 @@ try:
 except ImportError:
     import json
 
+
+from tornado.web import HTTPError
+
+
 logger = logging.getLogger("dispatcher.webservice.NodeController")
 
 from octopus.core.communication import *
@@ -59,7 +63,7 @@ class NodesResource(BaseResource):
         try:
             node = self._findNode(nodeId)
         except NodeNotFoundError, e:
-            return Http404("Node not found. %s" % str(e))
+            raise Http404("Node not found. %s" % str(e))
         data = json.dumps(node.to_json())
         return data
 
@@ -106,7 +110,7 @@ class NodeStatusResource(NodesResource):
         try:
             nodeStatus = data['status']
         except:
-            return Http400('Missing entry: "status".')
+            raise Http400('Missing entry: "status".')
         else:
             arguments = self.request.arguments
             nodeId = int(nodeId)
@@ -144,7 +148,7 @@ class NodeStatusResource(NodesResource):
                 if node.status in [NODE_ERROR, NODE_CANCELED, NODE_DONE] and nodeStatus == NODE_READY:
                     node.resetCompletion()
                 if nodeStatus not in NODE_STATUS:
-                    return Http400("Invalid status value %r" % nodeStatus)
+                    raise Http400("Invalid status value %r" % nodeStatus)
                 else:
                     if node.setStatus(nodeStatus):
                         self.writeCallback("Status set to %r" % nodeStatus)
@@ -259,7 +263,7 @@ class NodeStrategyResource(NodesResource):
         try:
             strategyClass = loadStrategyClass(strategyClassName)
         except StrategyImportError, e:
-            return Http400("Failed to set strategy: %s" % e)
+            raise Http400("Failed to set strategy: %s" % e)
         else:
             node.strategy = strategyClass()
             message = "Strategy for node %d set to %s." % (node.id, repr(strategyClassName))
@@ -273,15 +277,20 @@ class NodeUserResource(NodesResource):
         Sets the user of a node.
         '''
         data = self.getBodyAsJSON()
-        try:
-            user = data['user']
-        except:
-            return HTTPError(400, 'Missing entry: "user".')
+
+        if 'user' not in data:
+            raise HTTPError(400, 'Missing entry: "user".')
         else:
+            user = data['user']
+    
+            if user == '':
+                raise HTTPError(400, 'Empty value received: user can not be empty.')
+
             nodeId = int(nodeId)
             node = self._findNode(nodeId)
             node.user = str(user)
             self.dispatcher.dispatchTree.toModifyElements.append(node)
+
 
 
 class NodeProdResource(NodesResource):
@@ -291,7 +300,7 @@ class NodeProdResource(NodesResource):
         try:
             prod = data['prod']
         except:
-            return HTTPError(400, 'Missing entry: "prod".')
+            raise HTTPError(400, 'Missing entry: "prod".')
         else:
             nodeId = int(nodeId)
             node = self._findNode(nodeId)
@@ -321,11 +330,6 @@ class NodeChildrenResource(NodesResource):
         except Http400:
             data = {}
 
-        # time.sleep(2)
-        # for i in xrange(1,999999):
-        #     i *= i
-        # logger.info("fin de la pause")
-
         #
         # --- filtering
         #
@@ -334,7 +338,7 @@ class NodeChildrenResource(NodesResource):
             children = [child for child in children if child.id in filteredIds]
             for nodeId in filteredIds:
                 if not any([node.id == nodeId for node in children]):
-                    return Http404("Node not found", "Node %d not found." % nodeId, "text/plain")
+                    raise Http404("Node not found", "Node %d not found." % nodeId, "text/plain")
         if 'status' in data:
             statusList = [int(status) for status in data['status']]
             children = [child for child in children if child.status in statusList]

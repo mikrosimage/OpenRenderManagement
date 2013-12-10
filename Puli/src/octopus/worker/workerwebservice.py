@@ -9,8 +9,8 @@ import subprocess
 
 from octopus.core.communication.http import Http400, Http404
 from octopus.worker import settings
-# from octopus.worker import config
-# from octopus.worker.worker import theConfig
+
+from octopus.worker.worker import WorkerInternalException
 
 from tornado.web import Application, RequestHandler
 
@@ -64,25 +64,31 @@ class BaseResource(RequestHandler):
 class PauseResource(BaseResource):
     def post(self):
         self.setRnId(self.request)
-        data = self.getBodyAsJSON()
-        #LOGGER.warning(data)
-        content = data["content"]
-        killfile = settings.KILLFILE
-        if os.path.isfile(killfile):
-            os.remove(killfile)
-        # if 0, unpause the worker
-        if content != "0":
-            if not os.path.isdir(os.path.dirname(killfile)):
-                os.makedirs(os.path.dirname(killfile))
-            f = open(killfile, 'w')
-            # if -1, kill all current rendering processes
-            # if -2, schedule the worker for a restart
-            # if -3, kill all and schedule for restart
-            if content in ["-1", "-2", "-3"]:
-                f.write(content)
-            f.close()
-            os.chmod(killfile, 0666)
-        self.set_status(202)
+
+        try:
+            data = self.getBodyAsJSON()
+
+            content = data["content"]
+            killfile = settings.KILLFILE
+            if os.path.isfile(killfile):
+                os.remove(killfile)
+            # if 0, unpause the worker
+            if content != "0":
+                if not os.path.isdir(os.path.dirname(killfile)):
+                    os.makedirs(os.path.dirname(killfile))
+                f = open(killfile, 'w')
+                # if -1, kill all current rendering processes
+                # if -2, schedule the worker for a restart
+                # if -3, kill all and schedule for restart
+                if content in ["-1", "-2", "-3"]:
+                    f.write(content)
+                f.close()
+                os.chmod(killfile, 0666)
+        except Exception,e:
+            LOGGER.error("Error when pausing RN (%r)" % e)
+            self.set_status(500)
+        else:
+            self.set_status(202)
 
 
 class RamInUseResource(BaseResource):
@@ -118,12 +124,32 @@ class CommandsResource(BaseResource):
             dct[str(key)] = value
         dct['commandId'] = int(dct['id'])
         del dct['id']
-        self.framework.addOrder(self.framework.application.addCommandApply, **dct)
-        self.set_status(202)
+
+        try:
+            # self.framework.addOrder(self.framework.application.addCommandApply, **dct)
+            ret = self.framework.application.addCommandApply( None,
+                    dct['commandId'], 
+                    dct['runner'], 
+                    dct['arguments'],
+                    dct['validationExpression'],
+                    dct['taskName'],
+                    dct['relativePathToLogDir'],
+                    dct['environment']
+                )
+        except WorkerInternalException, e:
+            LOGGER.error("Impossible to add command %r, the RN status is 'paused' (%r)" % (dct['commandId'],e) )
+            self.set_status(500)
+        except Exception, e:
+            LOGGER.error("Impossible to add command %r (%r)" % (dct['commandId'],e) )
+            self.set_status(500)
+        else:
+            self.set_status(202)
+
 
 
 class CommandResource(BaseResource):
     def put(self, id):
+        #TODO check error and set error response
         self.setRnId(self.request)
         rawArgs = self.getBodyAsJSON()
         if 'status' in rawArgs or 'completion' in rawArgs:
@@ -145,6 +171,7 @@ class CommandResource(BaseResource):
         self.set_status(202)
 
     def delete(self, id):
+        #TODO check error and set error response
         dct = {'commandId': int(id)}
         self.framework.addOrder(self.framework.application.stopCommandApply, **dct)
         self.set_status(202)
@@ -190,7 +217,7 @@ class UpdateSysResource(BaseResource):
 
 class WorkerReconfig(BaseResource):
     def post(self):
-        # reload(config)
+        #TODO check error and set error response
         self.framework.application.reloadConfig()
 
 

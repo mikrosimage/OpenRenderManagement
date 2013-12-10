@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
 '''
 Created on Aug 10, 2009
 
@@ -94,21 +94,35 @@ def setup_logging(options):
 
     logFile = os.path.join(settings.LOGDIR, "dispatcher.log")
 
-    fileHandler = logging.handlers.RotatingFileHandler(logFile, maxBytes=1048576, backupCount=7, encoding="UTF-8")
-#    fileHandler = logging.handlers.TimedRotatingFileHandler(logFile, when='D', encoding="UTF-8")
+    # Logger config
+    # FIXME might be a more comprehensive way to get logging level from INI file
+    # logLevelName = 'DEBUG' if options.DEBUG else singletonconfig.get('CORE','LOG_LEVEL')
+    # logLevel = getattr(logging, logLevelName.upper(), None)
+    # if not isinstance(logLevel, int):
+    #     raise ValueError('Invalid log level: %s' % logLevelName)
+    # logging.basicConfig(level=logLevel)
+
+    fileHandler = logging.handlers.RotatingFileHandler(logFile, 
+                    maxBytes=singletonconfig.get('CORE','LOG_SIZE'), 
+                    backupCount=singletonconfig.get('CORE','LOG_BACKUPS'), 
+                    encoding="UTF-8")
+
     fileHandler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
     logger = logging.getLogger()
-    debugLevel = logging.DEBUG if options.DEBUG else logging.WARNING
-    logger.setLevel(debugLevel)
+
+    # logLevel = logging.DEBUG if options.DEBUG else logging.WARNING
+    logLevel = logging.DEBUG if options.DEBUG else singletonconfig.get('CORE','LOG_LEVEL')
+    logger.setLevel(logLevel)
+
     logger.addHandler(fileHandler)
 
     if options.CONSOLE and not options.DAEMONIZE:
         consoleHandler = logging.StreamHandler()
         consoleHandler.setFormatter(logging.Formatter("%(asctime)s %(name)10s %(levelname)6s %(message)s", '%Y-%m-%d %H:%M:%S'))
-        consoleHandler.setLevel(debugLevel)
+        consoleHandler.setLevel(logLevel)
         logger.addHandler(consoleHandler)
 
-    logging.getLogger('dispatcher').setLevel(debugLevel)
+    logging.getLogger('dispatcher').setLevel(logLevel)
     logging.getLogger('webservice').setLevel(logging.ERROR)
 
 

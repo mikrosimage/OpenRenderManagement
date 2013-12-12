@@ -31,7 +31,7 @@ if __name__ == '__main__':
     tg2.addNewTask( name="task2.1", arguments=defaultArgs, decomposer=defaultDecomposer )
     tg2.addNewTask( name="task2.2", arguments=defaultArgs, decomposer=defaultDecomposer )
 
-    print graph
+    # print graph
     graph.submit("pulitest", 8004)
 
 # PREVIOUS METHOD (still valid)
@@ -53,3 +53,58 @@ if __name__ == '__main__':
     # mainTG.addtaskGroup(tg1)
     # mainTG.addtaskGroup(tg2)
     # graph.add( mainTG )
+
+# SIMPLIFIED GRAPH DUMP
+# {
+#     "tasks": [
+#         {
+#             "tasks": [
+#                 1, 
+#                 5
+#             ], 
+#             "name": "multi-level", 
+#             "type": "TaskGroup"
+#         }, 
+#         {
+#             "tasks": [
+#                 2, 
+#                 3, 
+#                 4
+#             ], 
+#             "name": "taskgroup1", 
+#             "type": "TaskGroup"
+#         }, 
+#         {
+#             "name": "task1.1", 
+#             "type": "Task", 
+#         }, 
+#         {
+#             "name": "task1.2", 
+#             "type": "Task", 
+#         }, 
+#         {
+#             "name": "task1.3", 
+#             "type": "Task", 
+#         }, 
+#         {
+#             "tasks": [
+#                 6, 
+#                 7
+#             ], 
+#             "name": "taskgroup2", 
+#             "type": "TaskGroup"
+#         }, 
+#         {
+#             "name": "task2.1", 
+#             "type": "Task", 
+#         }, 
+#         {
+#             "name": "task2.2", 
+#             "type": "Task", 
+#         }
+#     ], 
+#     "name": "multi-level", 
+#     "user": "jsa", 
+#     "root": 0
+# }
+  

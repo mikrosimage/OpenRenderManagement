@@ -15,7 +15,7 @@ class GraphesResource(BaseResource):
             nodes = self.dispatcher.handleNewGraphRequestApply(self.getBodyAsJSON())
         except Exception, e:
             logger.exception("Graph submission failed")
-            return Http500("Failed. %s" % str(e))
+            raise Http500("Failed. %s" % str(e))
 
         host, port = self.getServerAddress()
         # import socket

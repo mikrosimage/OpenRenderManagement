@@ -32,3 +32,36 @@ if __name__ == '__main__':
 # graph = Graph('simpleGraph', simpleTask)
 # graph.submit("pulitest", 8004, )
 
+
+
+# SIMPLIFIED GRAPH DUMP:
+# {
+#     "tasks": [
+#         {
+#             "tasks": [
+#                 1, 
+#                 2, 
+#                 3
+#             ], 
+#             "name": "simpleGraph", 
+#             "type": "TaskGroup"
+#         }, 
+#         {
+#             "name": "first", 
+#             "type": "Task", 
+#         }, 
+#         {
+#             "name": "second", 
+#             "type": "Task", 
+#         }, 
+#         {
+#             "name": "third", 
+#             "type": "Task", 
+#         }
+#     ], 
+#     "name": "simpleGraph", 
+#     "meta": {}, 
+#     "user": "jsa", 
+#     "root": 0
+# }
+

@@ -5,6 +5,7 @@ A chained graph submission example.
 - A graph is created with only a name attribute (a default taskgroup will be created).
 - Graph's method addNewTask() will create a task and attach it to the graph
 - A chain of dependencies is added to the graph, the default end status is [DONE]
+    task1 > task4 > task3 > task2 > task5 > task6
 - Classic submission
 """
 
@@ -55,3 +56,66 @@ if __name__ == '__main__':
 
     # graph = Graph('simpleGraph', mainTG)
     # graph.submit("pulitest", 8004)
+
+# SIMPLIFIED GRAPH DUMP
+# chain is task1 > task4 > task3 > task2 > task5 > task6
+#
+# {
+#     "tasks": [
+#         {
+#             "tasks": [
+#                 1, 
+#                 2, 
+#                 3, 
+#                 4, 
+#                 5, 
+#                 6
+#             ], 
+#             "name": "simpleGraph", 
+#             "type": "TaskGroup"
+#         }, 
+#         {
+#             "name": "task1", 
+#             "dependencies": [], 
+#             "type": "Task", 
+#         }, 
+#         {
+#             "name": "task2", 
+#             "dependencies": [
+#                 [ 3, [ 3 ] ]
+#             ], 
+#             "type": "Task", 
+#         }, 
+#         {
+#             "name": "task3", 
+#             "dependencies": [
+#                 [ 4, [ 3 ] ]
+#             ], 
+#             "type": "Task", 
+#         }, 
+#         {
+#             "name": "task4", 
+#             "dependencies": [
+#                 [ 1, [ 3 ] ]
+#             ], 
+#             "type": "Task", 
+#         }, 
+#         {
+#             "name": "task5", 
+#             "dependencies": [
+#                 [ 2, [ 3 ] ]
+#             ], 
+#             "type": "Task", 
+#         }, 
+#         {
+#             "name": "task6", 
+#             "dependencies": [
+#                 [ 5, [ 3 ] ]
+#             ], 
+#             "type": "Task", 
+#         }
+#     ], 
+#     "name": "simpleGraph", 
+#     "user": "jsa", 
+#     "root": 0
+# }

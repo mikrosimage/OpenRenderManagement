@@ -72,3 +72,49 @@ if __name__ == '__main__':
 	# graph = Graph('toto', mainTG) # Did you know the name of the graph was never used ? :)
 
 	# graph.submit("pulitest", 8004, )
+
+# SIMPLIFIED GRAPH DUMP
+# {
+#     "tasks": [
+#         {
+#             "tasks": [
+#                 1, 
+#                 2, 
+#                 3, 
+#                 4
+#             ], 
+#             "name": "my job", 
+#             "type": "TaskGroup"
+#         }, 
+#         {
+#             "name": "task1", 
+#             "dependencies": [], 
+#             "type": "Task", 
+#         }, 
+#         {
+#             "name": "task2", 
+#             "dependencies": [
+#                 [ 1, [3] ]
+#             ], 
+#             "type": "Task", 
+#         }, 
+#         {
+#             "name": "task3", 
+#             "dependencies": [
+#                 [ 1, [3] ]
+#             ], 
+#             "type": "Task", 
+#         }, 
+#         {
+#             "name": "another task", 
+#             "dependencies": [
+#                 [ 2, [3]], 
+#                 [ 3, [3]]
+#             ], 
+#             "type": "Task", 
+#         }
+#     ], 
+#     "name": "my job", 
+#     "user": "jsa", 
+#     "root": 0
+# }

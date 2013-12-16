@@ -465,9 +465,7 @@ class Graph(object):
                     srcNodeId = dep[0]
                     srcNode = repr["tasks"][dep[0]]
                     statusList = dep[1]
-                    # print "    - src: %r (%r)" % (srcNode["name"], srcNode["type"])
-                    if srcNode["type"] is "Task":
-                        self.addDependencyToChildrenOf( srcNodeId, srcNode, statusList, node, repr )
+                    self.addDependencyToChildrenOf( srcNodeId, srcNode, statusList, node, repr )
 
 
         print "3. Preparing submission query..."

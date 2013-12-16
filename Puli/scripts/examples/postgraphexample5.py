@@ -38,7 +38,6 @@ if __name__ == '__main__':
                     (task4, tg1)] )
     graph.submit("pulitest", 8004)
 
-
     #
     # 3. a taskgroup waits the end of another taskgroup
     #

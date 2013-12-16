@@ -2,6 +2,7 @@ __author__ = "Olivier Derpierre "
 __date__ = "Jan 11, 2010"
 __version__ = (0, 2, 0)
 
+import sys
 import httplib
 import simplejson as json
 from puliclient import jobs
@@ -61,7 +62,6 @@ class HierarchicalDict(dict):
 
 class DependencyCycleError(Error):
     '''Raised when a dependency is detected among the dependency graph.'''
-
 
 class GraphSubmissionError(Error):
     '''Raised on a job submission error.'''

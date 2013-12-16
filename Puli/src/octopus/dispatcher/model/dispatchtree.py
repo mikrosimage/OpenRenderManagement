@@ -61,6 +61,14 @@ class DispatchTree(object):
             if (time.time()-startTimer) > timeout:
                 raise TimeoutException("TimeoutException occured: the dispatchTree might be too large to dump")
         result+="</table>"
+
+        result +="<h3>Rendernodes: %r</h3><table>" % len(self.renderNodes)
+        for i,curr in enumerate(self.renderNodes):
+            result += "<tr><td>%r</td><td>%r</td></tr>" % (i, self.renderNodes[curr])
+
+            if (time.time()-startTimer) > timeout:
+                raise TimeoutException("TimeoutException occured: the dispatchTree might be too large to dump")
+        result+="</table>"
         
         result +="<h3>PoolShares: (attribution de parc pour une tache fille du root, on attribue pas de poolshare aux autres)</h3><table>"
         for i,curr in enumerate(self.poolShares):
@@ -517,8 +525,12 @@ class DispatchTree(object):
         self.renderNodes[renderNode.name] = renderNode
 
     def onRenderNodeDestruction(self, rendernode):
-        del self.renderNodes[rendernode.name]
-        self.toArchiveElements.append(rendernode)
+        try:
+            del self.renderNodes[rendernode.name]
+            self.toArchiveElements.append(rendernode)
+        except KeyError, e:
+            # TOFIX: use of class method vs obj method in changeListener might generate a duplicate call
+            logger.warning("RN %s seems to have been deleted already." % rendernode.name)
 
     def onRenderNodeChange(self, rendernode, field, oldvalue, newvalue):
         if field == "performance":

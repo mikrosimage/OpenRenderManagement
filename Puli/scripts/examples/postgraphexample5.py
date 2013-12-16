@@ -14,7 +14,7 @@ if __name__ == '__main__':
     defaultDecomposer = "puliclient.contrib.generic.GenericDecomposer"
 
 	#
-    # 1. a task waits the end of a taskgroup --> ok
+    # 1. a task waits the end of a taskgroup
     #
     graph = Graph('1st case')
     tg1 = graph.addNewTaskGroup( name="TG1" )
@@ -25,7 +25,7 @@ if __name__ == '__main__':
     graph.submit("pulitest", 8004)
 
     #
-    # 2. a taskgroup waits the end of a task --> HS
+    # 2. a taskgroup waits the end of a task
     #
     graph = Graph('2nd case')
     tg1 = graph.addNewTaskGroup( name="TG1" )
@@ -40,7 +40,7 @@ if __name__ == '__main__':
 
 
     #
-    # 3. a taskgroup waits the end of another taskgroup --> HS
+    # 3. a taskgroup waits the end of another taskgroup
     #
     graph = Graph('3rd case')
     tg1 = graph.addNewTaskGroup( name="TG1" )

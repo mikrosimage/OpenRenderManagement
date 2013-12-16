@@ -374,6 +374,15 @@ class FolderNode(BaseNode):
         self.status = status
         return True
 
+    # TODO
+    # def getAllCommands(self):
+    #     """
+    #     Parse a hierarchy of the current FolderNode to retrieve all commands.
+    #     Used when checking dependencies of a TaskGroup.
+    #     :return a list of commands
+    #     """
+    #     pass
+
 
 class TaskNode(BaseNode):
 

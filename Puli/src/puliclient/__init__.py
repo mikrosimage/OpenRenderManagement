@@ -137,7 +137,7 @@ class Task(object):
 
     def decompose(self):
         if not self.decomposed:
-            print "decomposing", self.name
+            # print "decomposing", self.name
             self.decomposer(self)
             self.decomposed = True
         return self
@@ -257,7 +257,7 @@ class TaskGroup(object):
 
     def expand(self, hierarchy):
         if not self.expanded:
-            print "expanding", self.name
+            print "  In taskgroup: expanding ", self.name
             if self.expander:
                 self.expander(self)
             self.expanded = True
@@ -265,12 +265,13 @@ class TaskGroup(object):
         # children (since addTask is public)
         if hierarchy:
             for task in self.tasks:
-                print "decomposing task", task.name
+                print "    In taskgroup: decomposing ", task.name
                 task.decompose()
             for taskGroup in self.taskGroups:
-                print "expanding task", taskGroup.name
+                print "    In taskgroup: expanding ", taskGroup.name
                 taskGroup.expand(hierarchy)
         return self
+
 
     def setEnv(self, env):
         self.environment = env
@@ -433,25 +434,83 @@ class Graph(object):
 
 
     def submit(self, host="puliserver", port=8004):
+        """
+        Prepare a graph representation to be sent to the server. Several steps must be taken:
+        - parse graph to resolve dependencies like task -> taskgroup
+          a taskgroup cannot depend from a task, we must add the dependencies to all its tasks
+        - parse graph to expand/decompose tasks and taskgroups
+        - use GraphDumper class to get JSON representation
+        - submit data via http
+        """
 
+        # Expand or decompose the graph hierarchically
+        print "1. Expanding and decomposing hierarchy..."
         if isinstance(self.root, TaskGroup):
             self.root = self.root.expand(True)
         else:
             assert isinstance(self.root, Task)
             self.root = self.root.decompose()
 
+        # Create JSON representation
         repr = self.toRepresentation()
+
+        # Precompile dependencies on a taskgroup
+        print "2. Checking dependencies on taskgroups..."
+        for i,node in enumerate(repr["tasks"]):
+            # print "    node[%d] = %s (%s)" % (i, node["name"], node["type"])
+            if node["type"] is "TaskGroup" and len(node["dependencies"]) is not 0:
+                # Taskgroup with a dependency
+                print "  - Taskgroup %s has %d dependencies: %r" % (node["name"], len(node["dependencies"]), node["dependencies"])
+                for dep in node["dependencies"]:
+                    srcNodeId = dep[0]
+                    srcNode = repr["tasks"][dep[0]]
+                    statusList = dep[1]
+                    # print "    - src: %r (%r)" % (srcNode["name"], srcNode["type"])
+                    if srcNode["type"] is "Task":
+                        self.addDependencyToChildrenOf( srcNodeId, srcNode, statusList, node, repr )
+
+
+        print "3. Preparing submission query..."
         jsonRepr = json.dumps(repr)
 
         conn = httplib.HTTPConnection(host, port)
         conn.request('POST', '/graphs/', jsonRepr, {'Content-Length': len(jsonRepr)})
         response = conn.getresponse()
 
+        print "4. Getting result: %r" % response.status
         if response.status in (200, 201):
             return response.getheader('Location'), response.read()
         else:
             raise GraphSubmissionError((response.status, response.reason))
 
+    def addDependencyToChildrenOf(self, pDependencySrcId, pDependencySrc, pStatusList, pDependingNode, pRepr):
+        """
+        Used during job submission, this method will add a dependency of a particular node to all of its children.
+        This is used to enforce dependency of a Taskgroup: when a taskgroup depends on another task, we ensure 
+        that all tasks in the taskgroup hierarchy is really dependent of the task.
+        The following transformation will occur recursively:
+          -dependingNode.dependsOn( dependencySrc ) (this node is a taskgroup)
+          -becomes: all children of denpendingNode.dependsOn( dependencySrc )
+
+        :param pDependecySrcId: id of the node to which the hierarchy must depend on
+        :param pDependecySrc: ref to the node to which the hierarchy must depend on
+        :param pStatusList: list of statuses to wait for
+        :param pDependingNode: the node (initially a taskgroup) that depends on another node
+        """
+        currNode = pDependingNode
+        if "tasks" in currNode:
+            # On a taskgroup, parse children
+            for childId in currNode["tasks"]:
+                childNode = pRepr["tasks"][childId]
+                # print "        - children[%r]=%r" % (childId, childNode["name"])
+                self.addDependencyToChildrenOf( pDependencySrcId, pDependencySrc, pStatusList, childNode, pRepr )
+        else:
+            # On a task, create dependency
+            currNode["dependencies"].append( (pDependencySrcId, pStatusList) )
+            print "    - reporting dependency: %s -> %s" % (pDependencySrc["name"], currNode["name"])
+        pass
+    
+    
 
 def _hasCycles(node, visited_nodes):
     visited_nodes = visited_nodes + [node]

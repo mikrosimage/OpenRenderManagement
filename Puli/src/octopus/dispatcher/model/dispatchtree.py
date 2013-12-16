@@ -216,6 +216,8 @@ class DispatchTree(object):
                 nodes.add(node)
         del self.modifiedNodes[:]
         for node in nodes:
+            # logger.debug("Dependencies on %r = %r"% (node.name, node.checkDependenciesSatisfaction() ) )
+
             if isinstance(node, TaskNode):
                 if node.checkDependenciesSatisfaction():
                     for cmd in node.task.commands:
@@ -225,6 +227,22 @@ class DispatchTree(object):
                     for cmd in node.task.commands:
                         if cmd.status == CMD_READY:
                             cmd.status = CMD_BLOCKED
+
+            # TODO: may be needed to check dependencies on task groups
+            #       so far, a hack is done on the client side when submitting:
+            #       dependencies of a taksgroup are reported on each task of its heirarchy
+            #
+            # elif isinstance(node, FolderNode):
+            # 
+            #     if node.checkDependenciesSatisfaction():
+            #         for cmd in node.getAllCommands():
+            #             if cmd.status == CMD_BLOCKED:
+            #                 cmd.status = CMD_READY
+            #     else:
+            #         for cmd in node.getAllCommands():
+            #             if cmd.status == CMD_READY:
+            #                 cmd.status = CMD_BLOCKED
+
 
     def registerNewGraph(self, graph):
         user = graph['user']

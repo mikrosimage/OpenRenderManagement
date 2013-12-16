@@ -211,7 +211,7 @@ class Dispatcher(MainLoopApplication):
 
 
         self.dispatchTree.validateDependencies()
-        # LOGGER.info("%8.2f ms --> validate dependencies" % ( (time.time() - prevTimer)*1000 ) )
+        LOGGER.info("%8.2f ms --> validate dependencies" % ( (time.time() - prevTimer)*1000 ) )
         prevTimer = time.time()
 
 

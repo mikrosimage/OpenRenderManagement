@@ -2,8 +2,9 @@ __author__ = "Olivier Derpierre "
 __date__ = "Jan 11, 2010"
 __version__ = (0, 2, 0)
 
+import sys
 import httplib
-import json
+import simplejson as json
 from puliclient import jobs
 
 __all__ = ['jobs', 'Error', 'GraphSubmissionError', 'TaskAlreadyDecomposedError', 'Task', 'Graph', 'TaskGroup', 'Command']
@@ -26,6 +27,11 @@ __all__ += ['BLOCKED', 'READY', 'RUNNING', 'DONE', 'ERROR', 'CANCELED', 'PAUSED'
 class Error(Exception):
     '''Raised on any invalid action in the dispatcher API.'''
 
+class GraphError(Exception):
+    '''Raised on any invalid action in the dispatcher API.'''
+
+class ConnectionError(Exception):
+    '''Raised on any invalid connectino between edges in the graph.'''
 
 class HierarchicalDict(dict):
 
@@ -56,7 +62,6 @@ class HierarchicalDict(dict):
 
 class DependencyCycleError(Error):
     '''Raised when a dependency is detected among the dependency graph.'''
-
 
 class GraphSubmissionError(Error):
     '''Raised on a job submission error.'''
@@ -132,7 +137,7 @@ class Task(object):
 
     def decompose(self):
         if not self.decomposed:
-            print "decomposing", self.name
+            # print "decomposing", self.name
             self.decomposer(self)
             self.decomposed = True
         return self
@@ -140,7 +145,7 @@ class Task(object):
     def addCommand(self, name, arguments):
         self.commands.append(Command(name, self, arguments))
 
-    def dependsOn(self, task, statusList):
+    def dependsOn(self, task, statusList=[DONE]):
         self.dependencies[task] = statusList
 
     def setEnv(self, env):
@@ -174,7 +179,15 @@ class TaskGroup(object):
         taskGroup.requirements = task.requirements
         return taskGroup
 
-    def __init__(self, name, expander=None, arguments={}, tags={}, environment={}, timer=None, priority=0, dispatchKey=0):
+    def __init__(self,
+                    name, 
+                    expander=None, 
+                    arguments={}, 
+                    tags={}, 
+                    environment={}, 
+                    timer=None, 
+                    priority=0, 
+                    dispatchKey=0 ):
         self.expanderName = expander
         self.expander = expander
         self.expanded = False
@@ -192,7 +205,7 @@ class TaskGroup(object):
         self.tags = tags.copy()
         self.timer = timer
 
-    def dependsOn(self, task, statusList):
+    def dependsOn(self, task, statusList=[DONE]):
         self.dependencies[task] = statusList
 
     def addTask(self, task):
@@ -209,9 +222,42 @@ class TaskGroup(object):
         taskGroup.arguments.parent = self.arguments
         taskGroup.environment.parent = self.environment
 
+    def addNewTask(self, *args, **kwargs):
+        """
+        Creates a task and add it to the current TaskGroup.
+        :return a reference on the created item
+        """
+        try:
+            newTask = Task( *args, **kwargs )
+        except GraphError,e:
+            raise e
+
+        self.tasks.append( newTask )
+        newTask.arguments.parent = self.arguments
+        newTask.environment.parent = self.environment
+
+        return newTask
+
+    def addNewTaskGroup(self, *args, **kwargs):
+        """
+        Creates a task group and add it to the current TaskGroup.
+        :return a reference on the created item
+        """
+        try:
+            newTaskGroup = TaskGroup( *args, **kwargs )
+        except GraphError,e:
+            raise e
+
+        self.taskGroups.append( newTaskGroup )
+        newTaskGroup.arguments.parent = self.arguments
+        newTaskGroup.environment.parent = self.environment
+
+        return newTaskGroup
+
+
     def expand(self, hierarchy):
         if not self.expanded:
-            print "expanding", self.name
+            print "  In taskgroup: expanding ", self.name
             if self.expander:
                 self.expander(self)
             self.expanded = True
@@ -219,12 +265,13 @@ class TaskGroup(object):
         # children (since addTask is public)
         if hierarchy:
             for task in self.tasks:
-                print "decomposing task", task.name
+                print "    In taskgroup: decomposing ", task.name
                 task.decompose()
             for taskGroup in self.taskGroups:
-                print "expanding task", taskGroup.name
+                print "    In taskgroup: expanding ", taskGroup.name
                 taskGroup.expand(hierarchy)
         return self
+
 
     def setEnv(self, env):
         self.environment = env
@@ -234,10 +281,29 @@ class TaskGroup(object):
 
 
 class Graph(object):
-
-    def __init__(self, name, root, user=None, poolName=None, maxRN=-1):
+    """
+    """
+    def __init__(self, name, root=None, user=None, poolName=None, maxRN=-1):
+        """
+        Create a new graph object with given name and parameters.
+        If root is given, it will be attached to the graph (wether it is a task or a taskgroup).
+        It root is not specified a default taskgroup will be created as the root node.
+        :param name: a string describing the graph
+        :param root: optionnal node to be attached to the graph
+        :param user: the owner of the graph
+        :param poolName: a pool of rendernodes to use for this execution
+        :param maxRN: a max number of concurrent rendernodes to use
+        """
         self.name = unicode(name)
-        self.root = root
+
+        if root is None:
+            self.root = TaskGroup(name)
+        else:
+            if isinstance(root, Task) or isinstance(root, TaskGroup):
+                self.root = root
+            else:
+                raise GraphError("Invalid root element given.")
+
         self.poolName = poolName
         self.maxRN = maxRN
         self.meta = {}
@@ -247,29 +313,202 @@ class Graph(object):
         else:
             self.user = user
 
+    def addList(self, pElemList):
+        """
+        Add a list of nodes to the graph's root.
+        :param pElemList: list of nodes (task or taskgroup)
+        """
+        if isinstance(pElemList,(list,tuple)):
+            for node in pElemList:
+                self.add( node )
+        else:
+            raise GraphError("Invalid node list given.")
+
+    def add(self, pElem):
+        """
+        Adds a task or a taskgroup to the graph's root.
+        If the graph root is a task, an error is raised
+        :param pElem: the node to attach to the graph
+        :return a reference to the attached node
+        """
+        
+        if isinstance( self.root, Task) :
+            raise GraphError("Graph root is a task, new task can only be added to task groups")
+
+        if isinstance( pElem, Task) :
+            self.root.addTask( pElem )
+        elif isinstance( pElem, TaskGroup) :
+            self.root.addTaskGroup( pElem )
+        else:
+            raise GraphError("Invalid element given, only tasks or taskGroups can be added.")
+
+        return pElem
+
+    def addNewTask(self, *args, **kwargs):
+        """
+        Creates a new task and attach it to the graph's root.
+        If the graph root is a task, an error is raised
+        :return a reference to the attached node
+        """
+        if isinstance( self.root, Task) :
+            raise GraphError("Graph root is a task, new task can only be added to task groups")
+        return self.root.addNewTask( *args, **kwargs )
+
+    def addNewTaskGroup(self, *args, **kwargs):
+        """
+        Creates a new taskgroup and attach it to the graph's root.
+        If the graph root is a task, an error is raised
+        :return a reference to the attached node
+        """
+        if isinstance( self.root, Task) :
+            raise GraphError("Graph root is a task, new task can only be added to task groups")
+        return self.root.addNewTaskGroup( *args, **kwargs )
+
+
+    def addEdges(self, pEdgeList):
+        """
+        Create edges to the current graph.
+        Edges are given as a list of element, with each elem being a sequence of: sourceNode, destNode and status
+        example edge list: [ (taskA, taskB), (taskA, taskC, [ERROR,CANCELED]), ... ]
+        :param pEdgeList: List of elements indicating the source and dest node and a list of ending status (source, desti, [endStatus])
+        :return a boolean indicating if the connections have been executed corretly
+        """
+        for (i, edge) in enumerate(pEdgeList):
+
+            if len(edge) not in (2, 3):
+                if len(edge) < 2:
+                    msg = "Invalid connection for edge["+str(i)+"]="+str(edge)+": either source of destination was omitted. The edge description must at least have 2 parts"
+                    raise ConnectionError(msg)
+                if 3 < len(edge):
+                    msg = "Invalid connection for edge["+str(i)+"]="+str(edge)+": edge description can not have more thant 3 parts."
+                    raise ConnectionError(msg)
+
+            # Edge is correct here, it has 2 or 3 elements
+            if len(edge) == 2:
+                # no status given, considering default result status: [DONE]
+                statusList = [DONE]
+            else:
+                if isinstance(edge[2], list):
+                    statusList = edge[2]
+                else:
+                    msg = "Invalid connection for edge["+str(i)+"]="+str(edge)+": statuslist is not a proper list."
+                    raise ConnectionError(msg)
+
+            # Creating link
+            srcNode = edge[0]
+            destNode = edge[1]
+            destNode.dependencies[ srcNode ] = statusList
+
+        return True
+
+    def addChain(self, pEdgeChain, pEndStatusList=[DONE] ):
+        """
+        Create edges to the current graph.
+        Edges are given as a chain of element to link as a chain, example chain: [ taskA, taskB, taskC, ... ]
+        :param pEdgeList: List of elements indicating nodes to be chained in the given order
+        :param pEndStatusList: A list of end status to be defined for every connections
+        :return a boolean indicating if the connections have been executed corretly
+        """
+        if not isinstance(pEndStatusList, (list, tuple)):
+            raise ConnectionError("Invalid end status given, it must be a list of statuses.")
+
+        if not isinstance(pEdgeChain, (list, tuple)):
+            raise ConnectionError("Invalid edge chain given, it must be a list of Task or TaskGroup.")
+
+        # Loop over list by pair
+        for (srcNode, destNode) in zip( pEdgeChain[:-1], pEdgeChain[1:] ):
+            print ("Add dependency: %r -> %r with status in %r" % (srcNode, destNode, pEndStatusList))
+            destNode.dependencies[ srcNode ] = pEndStatusList
+        return True
+
+
     def toRepresentation(self):
         return GraphDumper().dumpGraph(self)
 
-    def submit(self, host, port):
 
+    def __repr__(self):
+        """
+        Returns the graph representation as JSON with a 4 spaces indentation
+        """
+        return json.dumps(self.toRepresentation(), indent=4)
+
+
+    def submit(self, host="puliserver", port=8004):
+        """
+        Prepare a graph representation to be sent to the server. Several steps must be taken:
+        - parse graph to resolve dependencies like task -> taskgroup
+          a taskgroup cannot depend from a task, we must add the dependencies to all its tasks
+        - parse graph to expand/decompose tasks and taskgroups
+        - use GraphDumper class to get JSON representation
+        - submit data via http
+        """
+
+        # Expand or decompose the graph hierarchically
+        print "1. Expanding and decomposing hierarchy..."
         if isinstance(self.root, TaskGroup):
             self.root = self.root.expand(True)
         else:
             assert isinstance(self.root, Task)
             self.root = self.root.decompose()
 
+        # Create JSON representation
         repr = self.toRepresentation()
+
+        # Precompile dependencies on a taskgroup
+        print "2. Checking dependencies on taskgroups..."
+        for i,node in enumerate(repr["tasks"]):
+            # print "    node[%d] = %s (%s)" % (i, node["name"], node["type"])
+            if node["type"] is "TaskGroup" and len(node["dependencies"]) is not 0:
+                # Taskgroup with a dependency
+                print "  - Taskgroup %s has %d dependencies: %r" % (node["name"], len(node["dependencies"]), node["dependencies"])
+                for dep in node["dependencies"]:
+                    srcNodeId = dep[0]
+                    srcNode = repr["tasks"][dep[0]]
+                    statusList = dep[1]
+                    self.addDependencyToChildrenOf( srcNodeId, srcNode, statusList, node, repr )
+
+
+        print "3. Preparing submission query..."
         jsonRepr = json.dumps(repr)
 
         conn = httplib.HTTPConnection(host, port)
         conn.request('POST', '/graphs/', jsonRepr, {'Content-Length': len(jsonRepr)})
         response = conn.getresponse()
 
+        print "4. Getting result: %r" % response.status
         if response.status in (200, 201):
             return response.getheader('Location'), response.read()
         else:
             raise GraphSubmissionError((response.status, response.reason))
 
+    def addDependencyToChildrenOf(self, pDependencySrcId, pDependencySrc, pStatusList, pDependingNode, pRepr):
+        """
+        Used during job submission, this method will add a dependency of a particular node to all of its children.
+        This is used to enforce dependency of a Taskgroup: when a taskgroup depends on another task, we ensure 
+        that all tasks in the taskgroup hierarchy is really dependent of the task.
+        The following transformation will occur recursively:
+          -dependingNode.dependsOn( dependencySrc ) (this node is a taskgroup)
+          -becomes: all children of denpendingNode.dependsOn( dependencySrc )
+
+        :param pDependecySrcId: id of the node to which the hierarchy must depend on
+        :param pDependecySrc: ref to the node to which the hierarchy must depend on
+        :param pStatusList: list of statuses to wait for
+        :param pDependingNode: the node (initially a taskgroup) that depends on another node
+        """
+        currNode = pDependingNode
+        if "tasks" in currNode:
+            # On a taskgroup, parse children
+            for childId in currNode["tasks"]:
+                childNode = pRepr["tasks"][childId]
+                # print "        - children[%r]=%r" % (childId, childNode["name"])
+                self.addDependencyToChildrenOf( pDependencySrcId, pDependencySrc, pStatusList, childNode, pRepr )
+        else:
+            # On a task, create dependency
+            currNode["dependencies"].append( (pDependencySrcId, pStatusList) )
+            print "    - reporting dependency: %s -> %s" % (pDependencySrc["name"], currNode["name"])
+        pass
+    
+    
 
 def _hasCycles(node, visited_nodes):
     visited_nodes = visited_nodes + [node]

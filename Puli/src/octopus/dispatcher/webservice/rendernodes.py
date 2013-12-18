@@ -274,15 +274,26 @@ class RenderNodeResetResource(BaseResource):
 
 
 class RenderNodeQuarantineResource(BaseResource):
-    #@queue
     def put(self):
+        """
+        Used to set a quarantine on a list of rendernodes. Quarantine rns have a flag "excluded"
+        that prevent them to be considered in assignement process.
+        example: curl -d '{"quarantine":true,"rns":["vfxpc64:9005"]}' -X PUT "http://pulitest:8004/rendernodes/quarantine/"
+        """
+
         dct = self.getBodyAsJSON()
         quarantine = dct["quarantine"]
-        logger.warning(quarantine)
+
+        rns = self.getDispatchTree().renderNodes
         for computerName in dct["rns"]:
-            renderNode = self.getDispatchTree().renderNodes[computerName]
-            logger.warning(renderNode.name)
+
+            if computerName not in rns:
+                logger.warning("following RN '%s' is not referenced, ignoring..." % computerName)
+                continue
+
+            renderNode = rns[computerName]
             renderNode.excluded = quarantine
+
             if not quarantine:
                 renderNode.history.clear()
                 renderNode.tasksHistory.clear()

@@ -204,6 +204,8 @@ class CommandDatesUpdater(object):
                 cmd.renderNode.tasksHistory.append(cmd.task.id)
                 cmd.renderNode.history.append(cmd.status)
         if cmd.status is CMD_DONE:
+            # TOFIX: handle CANCEL status and update end time when cancelling a 
+            # job so that it can be properly cleaned
             cmd.endTime = cmd.updateTime
             cmd.computeAvgTimeByFrame()
         # autoretry

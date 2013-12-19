@@ -1,0 +1,487 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>puliclient &mdash; OpenRenderManagement 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="OpenRenderManagement 1.6.1 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">OpenRenderManagement 1.6.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for puliclient</h1><div class="highlight"><pre>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s">&quot;Olivier Derpierre &quot;</span>
+<span class="n">__date__</span> <span class="o">=</span> <span class="s">&quot;Jan 11, 2010&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">httplib</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">puliclient</span> <span class="kn">import</span> <span class="n">jobs</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;jobs&#39;</span><span class="p">,</span> <span class="s">&#39;Error&#39;</span><span class="p">,</span> <span class="s">&#39;GraphSubmissionError&#39;</span><span class="p">,</span> <span class="s">&#39;TaskAlreadyDecomposedError&#39;</span><span class="p">,</span> <span class="s">&#39;Task&#39;</span><span class="p">,</span> <span class="s">&#39;Graph&#39;</span><span class="p">,</span> <span class="s">&#39;TaskGroup&#39;</span><span class="p">,</span> <span class="s">&#39;Command&#39;</span><span class="p">]</span>
+
+<span class="c"># -- Node status list</span>
+<span class="c">#</span>
+<span class="n">BLOCKED</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">READY</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">RUNNING</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">DONE</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">ERROR</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">CANCELED</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">PAUSED</span> <span class="o">=</span> <span class="mi">6</span>
+
+<span class="n">__all__</span> <span class="o">+=</span> <span class="p">[</span><span class="s">&#39;BLOCKED&#39;</span><span class="p">,</span> <span class="s">&#39;READY&#39;</span><span class="p">,</span> <span class="s">&#39;RUNNING&#39;</span><span class="p">,</span> <span class="s">&#39;DONE&#39;</span><span class="p">,</span> <span class="s">&#39;ERROR&#39;</span><span class="p">,</span> <span class="s">&#39;CANCELED&#39;</span><span class="p">,</span> <span class="s">&#39;PAUSED&#39;</span><span class="p">]</span>
+
+
+<span class="c"># -- Submission API</span>
+<span class="c">#</span>
+<div class="viewcode-block" id="Error"><a class="viewcode-back" href="../index.html#puliclient.Error">[docs]</a><span class="k">class</span> <span class="nc">Error</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Raised on any invalid action in the dispatcher API.&#39;&#39;&#39;</span>
+
+</div>
+<span class="k">class</span> <span class="nc">HierarchicalDict</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="nb">dict</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="n">parent</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">dict</span><span class="o">.</span><span class="n">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ancestors</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">]</span>
+        <span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span>
+        <span class="k">while</span> <span class="n">parent</span><span class="p">:</span>
+            <span class="n">ancestors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+            <span class="n">parent</span> <span class="o">=</span> <span class="n">parent</span><span class="o">.</span><span class="n">parent</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">ancestor</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">ancestors</span><span class="p">):</span>
+            <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">ancestor</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">DependencyCycleError</span><span class="p">(</span><span class="n">Error</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Raised when a dependency is detected among the dependency graph.&#39;&#39;&#39;</span>
+
+
+<div class="viewcode-block" id="GraphSubmissionError"><a class="viewcode-back" href="../index.html#puliclient.GraphSubmissionError">[docs]</a><span class="k">class</span> <span class="nc">GraphSubmissionError</span><span class="p">(</span><span class="n">Error</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Raised on a job submission error.&#39;&#39;&#39;</span>
+
+</div>
+<div class="viewcode-block" id="TaskAlreadyDecomposedError"><a class="viewcode-back" href="../index.html#puliclient.TaskAlreadyDecomposedError">[docs]</a><span class="k">class</span> <span class="nc">TaskAlreadyDecomposedError</span><span class="p">(</span><span class="n">Error</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Raised on task decomposition call on an already decomposed task.&#39;&#39;&#39;</span>
+
+</div>
+<div class="viewcode-block" id="Command"><a class="viewcode-back" href="../index.html#puliclient.Command">[docs]</a><span class="k">class</span> <span class="nc">Command</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">arguments</span><span class="o">=</span><span class="p">{}):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">description</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">task</span> <span class="o">=</span> <span class="n">task</span>
+        <span class="c">#self.arguments = HierarchicalDict(task.arguments, arguments)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">arguments</span> <span class="o">=</span> <span class="n">arguments</span>
+
+</div>
+<div class="viewcode-block" id="Task"><a class="viewcode-back" href="../index.html#puliclient.Task">[docs]</a><span class="k">class</span> <span class="nc">Task</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="n">_decomposer</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">_getDecomposer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_decomposer</span>
+
+    <span class="k">def</span> <span class="nf">_setDecomposer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">decomposer</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_decomposer</span> <span class="o">=</span> <span class="n">jobs</span><span class="o">.</span><span class="n">loadTaskDecomposer</span><span class="p">(</span><span class="n">decomposer</span><span class="p">)</span> <span class="k">if</span> <span class="n">decomposer</span> <span class="k">else</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">decomposed</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">commands</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">decomposer</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">_getDecomposer</span><span class="p">,</span> <span class="n">_setDecomposer</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">name</span><span class="p">,</span>
+                 <span class="n">arguments</span><span class="p">,</span>
+                 <span class="n">runner</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">dependencies</span><span class="o">=</span><span class="p">{},</span>
+                 <span class="n">maxRN</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                 <span class="n">priority</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                 <span class="n">dispatchKey</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                 <span class="n">environment</span><span class="o">=</span><span class="p">{},</span>
+                 <span class="n">validator</span><span class="o">=</span><span class="s">&#39;0&#39;</span><span class="p">,</span>
+                 <span class="n">minNbCores</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                 <span class="n">maxNbCores</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                 <span class="n">ramUse</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                 <span class="n">requirements</span><span class="o">=</span><span class="p">{},</span>
+                 <span class="n">lic</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">,</span>
+                 <span class="n">decomposer</span><span class="o">=</span><span class="s">&#39;puliclient.jobs.DefaultTaskDecomposer&#39;</span><span class="p">,</span>
+                 <span class="n">tags</span><span class="o">=</span><span class="p">{},</span>
+                 <span class="n">timer</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">decomposerName</span> <span class="o">=</span> <span class="n">decomposer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">decomposer</span> <span class="o">=</span> <span class="n">decomposer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">decomposed</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">canBeDecomposed</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">runner</span> <span class="o">=</span> <span class="n">runner</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="nb">unicode</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">arguments</span> <span class="o">=</span> <span class="n">HierarchicalDict</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="n">arguments</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">environment</span> <span class="o">=</span> <span class="n">HierarchicalDict</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="n">environment</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dependencies</span> <span class="o">=</span> <span class="n">dependencies</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxRN</span> <span class="o">=</span> <span class="n">maxRN</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">priority</span> <span class="o">=</span> <span class="n">priority</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dispatchKey</span> <span class="o">=</span> <span class="n">dispatchKey</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">validator</span> <span class="o">=</span> <span class="n">validator</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">requirements</span> <span class="o">=</span> <span class="n">requirements</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">minNbCores</span> <span class="o">=</span> <span class="n">minNbCores</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxNbCores</span> <span class="o">=</span> <span class="n">maxNbCores</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ramUse</span> <span class="o">=</span> <span class="n">ramUse</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">commands</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lic</span> <span class="o">=</span> <span class="n">lic</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tags</span> <span class="o">=</span> <span class="n">tags</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span> <span class="o">=</span> <span class="n">timer</span>
+
+<div class="viewcode-block" id="Task.decompose"><a class="viewcode-back" href="../index.html#puliclient.Task.decompose">[docs]</a>    <span class="k">def</span> <span class="nf">decompose</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">decomposed</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;decomposing&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">decomposer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">decomposed</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="bp">self</span>
+</div>
+<div class="viewcode-block" id="Task.addCommand"><a class="viewcode-back" href="../index.html#puliclient.Task.addCommand">[docs]</a>    <span class="k">def</span> <span class="nf">addCommand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">arguments</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">commands</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Command</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">arguments</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="Task.dependsOn"><a class="viewcode-back" href="../index.html#puliclient.Task.dependsOn">[docs]</a>    <span class="k">def</span> <span class="nf">dependsOn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">statusList</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dependencies</span><span class="p">[</span><span class="n">task</span><span class="p">]</span> <span class="o">=</span> <span class="n">statusList</span>
+</div>
+<div class="viewcode-block" id="Task.setEnv"><a class="viewcode-back" href="../index.html#puliclient.Task.setEnv">[docs]</a>    <span class="k">def</span> <span class="nf">setEnv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">env</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">environment</span> <span class="o">=</span> <span class="n">env</span>
+</div>
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&quot;Task(</span><span class="si">%r</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="TaskGroup"><a class="viewcode-back" href="../index.html#puliclient.TaskGroup">[docs]</a><span class="k">class</span> <span class="nc">TaskGroup</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="n">_expander</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">_getExpander</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expander</span>
+
+    <span class="k">def</span> <span class="nf">_setExpander</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expander</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_expander</span> <span class="o">=</span> <span class="n">jobs</span><span class="o">.</span><span class="n">loadTaskExpander</span><span class="p">(</span><span class="n">expander</span><span class="p">)</span> <span class="k">if</span> <span class="n">expander</span> <span class="k">else</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">expanded</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">taskGroups</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">expander</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">_getExpander</span><span class="p">,</span> <span class="n">_setExpander</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="TaskGroup.createFromTask"><a class="viewcode-back" href="../index.html#puliclient.TaskGroup.createFromTask">[docs]</a>    <span class="k">def</span> <span class="nf">createFromTask</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">task</span><span class="p">):</span>
+        <span class="n">taskGroup</span> <span class="o">=</span> <span class="n">cls</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">taskGroup</span><span class="o">.</span><span class="n">arguments</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">arguments</span>
+        <span class="n">taskGroup</span><span class="o">.</span><span class="n">dependencies</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">dependencies</span>
+        <span class="n">taskGroup</span><span class="o">.</span><span class="n">environment</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">environment</span>
+        <span class="n">taskGroup</span><span class="o">.</span><span class="n">requirements</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">requirements</span>
+        <span class="k">return</span> <span class="n">taskGroup</span>
+</div>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">expander</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">arguments</span><span class="o">=</span><span class="p">{},</span> <span class="n">tags</span><span class="o">=</span><span class="p">{},</span> <span class="n">environment</span><span class="o">=</span><span class="p">{},</span> <span class="n">timer</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dispatchKey</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">expanderName</span> <span class="o">=</span> <span class="n">expander</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">expander</span> <span class="o">=</span> <span class="n">expander</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">expanded</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">arguments</span> <span class="o">=</span> <span class="n">HierarchicalDict</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="n">arguments</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">environment</span> <span class="o">=</span> <span class="n">HierarchicalDict</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="n">environment</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">requirements</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dependencies</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxRN</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">priority</span> <span class="o">=</span> <span class="n">priority</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dispatchKey</span> <span class="o">=</span> <span class="n">dispatchKey</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span> <span class="o">=</span> <span class="s">&#39;octopus.dispatcher.strategies.FifoStrategy&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">taskGroups</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tags</span> <span class="o">=</span> <span class="n">tags</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span> <span class="o">=</span> <span class="n">timer</span>
+
+<div class="viewcode-block" id="TaskGroup.dependsOn"><a class="viewcode-back" href="../index.html#puliclient.TaskGroup.dependsOn">[docs]</a>    <span class="k">def</span> <span class="nf">dependsOn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">statusList</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dependencies</span><span class="p">[</span><span class="n">task</span><span class="p">]</span> <span class="o">=</span> <span class="n">statusList</span>
+</div>
+<div class="viewcode-block" id="TaskGroup.addTask"><a class="viewcode-back" href="../index.html#puliclient.TaskGroup.addTask">[docs]</a>    <span class="k">def</span> <span class="nf">addTask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">Task</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+        <span class="n">task</span><span class="o">.</span><span class="n">arguments</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">arguments</span>
+        <span class="n">task</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">environment</span>
+</div>
+<div class="viewcode-block" id="TaskGroup.addTaskGroup"><a class="viewcode-back" href="../index.html#puliclient.TaskGroup.addTaskGroup">[docs]</a>    <span class="k">def</span> <span class="nf">addTaskGroup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">taskGroup</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">taskGroup</span><span class="p">,</span> <span class="n">TaskGroup</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="n">taskGroup</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">taskGroups</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">taskGroups</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">taskGroup</span><span class="p">)</span>
+        <span class="n">taskGroup</span><span class="o">.</span><span class="n">arguments</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">arguments</span>
+        <span class="n">taskGroup</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">environment</span>
+</div>
+<div class="viewcode-block" id="TaskGroup.expand"><a class="viewcode-back" href="../index.html#puliclient.TaskGroup.expand">[docs]</a>    <span class="k">def</span> <span class="nf">expand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hierarchy</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">expanded</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;expanding&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">expander</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">expander</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">expanded</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="c"># we still need to expand/decompose</span>
+        <span class="c"># children (since addTask is public)</span>
+        <span class="k">if</span> <span class="n">hierarchy</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&quot;decomposing task&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">name</span>
+                <span class="n">task</span><span class="o">.</span><span class="n">decompose</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">taskGroup</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">taskGroups</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&quot;expanding task&quot;</span><span class="p">,</span> <span class="n">taskGroup</span><span class="o">.</span><span class="n">name</span>
+                <span class="n">taskGroup</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">hierarchy</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span>
+</div>
+<div class="viewcode-block" id="TaskGroup.setEnv"><a class="viewcode-back" href="../index.html#puliclient.TaskGroup.setEnv">[docs]</a>    <span class="k">def</span> <span class="nf">setEnv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">env</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">environment</span> <span class="o">=</span> <span class="n">env</span>
+</div>
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&quot;TaskNode(</span><span class="si">%r</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="Graph"><a class="viewcode-back" href="../index.html#puliclient.Graph">[docs]</a><span class="k">class</span> <span class="nc">Graph</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">root</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">poolName</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">maxRN</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="nb">unicode</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root</span> <span class="o">=</span> <span class="n">root</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">poolName</span> <span class="o">=</span> <span class="n">poolName</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxRN</span> <span class="o">=</span> <span class="n">maxRN</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">getpass</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">user</span> <span class="o">=</span> <span class="n">getpass</span><span class="o">.</span><span class="n">getuser</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">user</span> <span class="o">=</span> <span class="n">user</span>
+
+<div class="viewcode-block" id="Graph.toRepresentation"><a class="viewcode-back" href="../index.html#puliclient.Graph.toRepresentation">[docs]</a>    <span class="k">def</span> <span class="nf">toRepresentation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">GraphDumper</span><span class="p">()</span><span class="o">.</span><span class="n">dumpGraph</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Graph.submit"><a class="viewcode-back" href="../index.html#puliclient.Graph.submit">[docs]</a>    <span class="k">def</span> <span class="nf">submit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="n">TaskGroup</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">root</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="n">Task</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">root</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">decompose</span><span class="p">()</span>
+
+        <span class="nb">repr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">toRepresentation</span><span class="p">()</span>
+        <span class="n">jsonRepr</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="nb">repr</span><span class="p">)</span>
+
+        <span class="n">conn</span> <span class="o">=</span> <span class="n">httplib</span><span class="o">.</span><span class="n">HTTPConnection</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span>
+        <span class="n">conn</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s">&#39;POST&#39;</span><span class="p">,</span> <span class="s">&#39;/graphs/&#39;</span><span class="p">,</span> <span class="n">jsonRepr</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;Content-Length&#39;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">jsonRepr</span><span class="p">)})</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">getresponse</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="mi">201</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">getheader</span><span class="p">(</span><span class="s">&#39;Location&#39;</span><span class="p">),</span> <span class="n">response</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">GraphSubmissionError</span><span class="p">((</span><span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">reason</span><span class="p">))</span>
+
+</div></div>
+<span class="k">def</span> <span class="nf">_hasCycles</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">visited_nodes</span><span class="p">):</span>
+    <span class="n">visited_nodes</span> <span class="o">=</span> <span class="n">visited_nodes</span> <span class="o">+</span> <span class="p">[</span><span class="n">node</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">dependencies</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">visited_nodes</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">visited_nodes</span> <span class="o">+</span> <span class="p">[</span><span class="n">dep</span><span class="p">]</span>
+        <span class="n">cycle</span> <span class="o">=</span> <span class="n">_hasCycles</span><span class="p">(</span><span class="n">dep</span><span class="p">,</span> <span class="n">visited_nodes</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cycle</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">cycle</span>
+    <span class="k">return</span> <span class="bp">False</span>
+
+
+<span class="k">class</span> <span class="nc">GraphDumper</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">taskRepresentations</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">taskMem</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="nf">checkCycles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rootNode</span><span class="p">):</span>
+        <span class="n">cycle</span> <span class="o">=</span> <span class="n">_hasCycles</span><span class="p">(</span><span class="n">rootNode</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="k">if</span> <span class="n">cycle</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">DependencyCycleError</span><span class="p">(</span><span class="s">&#39;Detected a cycle in the dependencies of task </span><span class="si">%r</span><span class="s">: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">rootNode</span><span class="p">,</span> <span class="s">&quot; -&gt; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">t</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">cycle</span><span class="p">])))</span>
+
+    <span class="k">def</span> <span class="nf">dumpGraph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">graph</span><span class="p">):</span>
+        <span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">graph</span><span class="o">.</span><span class="n">root</span><span class="p">]</span>
+        <span class="n">unvisited_tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">graph</span><span class="o">.</span><span class="n">root</span><span class="p">]</span>
+        <span class="k">while</span> <span class="n">unvisited_tasks</span><span class="p">:</span>
+            <span class="n">task</span> <span class="o">=</span> <span class="n">unvisited_tasks</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">TaskGroup</span><span class="p">):</span>
+                <span class="n">unvisited_tasks</span> <span class="o">+=</span> <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">task</span><span class="o">.</span><span class="n">taskGroups</span> <span class="k">if</span> <span class="n">t</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">]</span>
+                <span class="n">unvisited_tasks</span> <span class="o">+=</span> <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">task</span><span class="o">.</span><span class="n">tasks</span> <span class="k">if</span> <span class="n">t</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">checkCycles</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addTask</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">root</span><span class="p">)</span>
+        <span class="nb">repr</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&#39;name&#39;</span><span class="p">:</span> <span class="n">graph</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s">&#39;meta&#39;</span><span class="p">:</span> <span class="n">graph</span><span class="o">.</span><span class="n">meta</span><span class="p">,</span>
+            <span class="s">&#39;root&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">getTaskIndex</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">root</span><span class="p">),</span>
+            <span class="s">&#39;tasks&#39;</span><span class="p">:</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">taskRepresentations</span><span class="p">[</span><span class="n">task</span><span class="p">]</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">],</span>
+            <span class="s">&#39;user&#39;</span><span class="p">:</span> <span class="n">graph</span><span class="o">.</span><span class="n">user</span><span class="p">,</span>
+            <span class="s">&#39;poolName&#39;</span><span class="p">:</span> <span class="n">graph</span><span class="o">.</span><span class="n">poolName</span><span class="p">,</span>
+            <span class="s">&#39;maxRN&#39;</span><span class="p">:</span> <span class="n">graph</span><span class="o">.</span><span class="n">maxRN</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="nb">repr</span>
+
+    <span class="k">def</span> <span class="nf">getTaskIndex</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">taskMem</span><span class="p">[</span><span class="n">task</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">addTask</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">addTask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">taskMem</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="s">&quot;Attempt to send task </span><span class="si">%r</span><span class="s"> twice.&quot;</span> <span class="o">%</span> <span class="n">task</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+        <span class="n">taskIndex</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">taskMem</span><span class="p">[</span><span class="n">task</span><span class="p">]</span> <span class="o">=</span> <span class="n">taskIndex</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">Task</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">taskRepresentations</span><span class="p">[</span><span class="n">task</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">computeTaskRepresentation</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">taskRepresentations</span><span class="p">[</span><span class="n">task</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">computeTaskGroupRepresentation</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">taskIndex</span>
+
+    <span class="k">def</span> <span class="nf">computeCommandRepresentation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span>
+                <span class="s">&#39;description&#39;</span><span class="p">:</span> <span class="n">command</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
+                <span class="s">&#39;type&#39;</span><span class="p">:</span> <span class="s">&#39;command&#39;</span><span class="p">,</span>
+                <span class="s">&#39;task&#39;</span><span class="p">:</span> <span class="n">command</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="s">&#39;arguments&#39;</span><span class="p">:</span> <span class="n">command</span><span class="o">.</span><span class="n">arguments</span>
+                <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">computeTaskRepresentation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s">&#39;name&#39;</span><span class="p">:</span> <span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s">&#39;type&#39;</span><span class="p">:</span> <span class="s">&#39;Task&#39;</span><span class="p">,</span>
+            <span class="s">&#39;runner&#39;</span><span class="p">:</span> <span class="n">task</span><span class="o">.</span><span class="n">runner</span><span class="p">,</span>
+            <span class="s">&#39;arguments&#39;</span><span class="p">:</span> <span class="n">task</span><span class="o">.</span><span class="n">arguments</span><span class="p">,</span>
+            <span class="s">&#39;environment&#39;</span><span class="p">:</span> <span class="n">task</span><span class="o">.</span><span class="n">environment</span><span class="p">,</span>
+            <span class="s">&#39;dependencies&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">getTaskIndex</span><span class="p">(</span><span class="n">dependency</span><span class="p">),</span> <span class="n">statusList</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">dependency</span><span class="p">,</span> <span class="n">statusList</span><span class="p">)</span> <span class="ow">in</span> <span class="n">task</span><span class="o">.</span><span class="n">dependencies</span><span class="o">.</span><span class="n">items</span><span class="p">()],</span>
+            <span class="s">&#39;maxRN&#39;</span><span class="p">:</span> <span class="n">task</span><span class="o">.</span><span class="n">maxRN</span><span class="p">,</span>
+            <span class="s">&#39;priority&#39;</span><span class="p">:</span> <span class="n">task</span><span class="o">.</span><span class="n">priority</span><span class="p">,</span>
+            <span class="s">&#39;dispatchKey&#39;</span><span class="p">:</span> <span class="n">task</span><span class="o">.</span><span class="n">dispatchKey</span><span class="p">,</span>
+            <span class="s">&#39;validationExpression&#39;</span><span class="p">:</span> <span class="n">task</span><span class="o">.</span><span class="n">validator</span><span class="p">,</span>
+            <span class="s">&#39;requirements&#39;</span><span class="p">:</span> <span class="n">task</span><span class="o">.</span><span class="n">requirements</span><span class="p">,</span>
+            <span class="s">&#39;minNbCores&#39;</span><span class="p">:</span> <span class="n">task</span><span class="o">.</span><span class="n">minNbCores</span><span class="p">,</span>
+            <span class="s">&#39;maxNbCores&#39;</span><span class="p">:</span> <span class="n">task</span><span class="o">.</span><span class="n">maxNbCores</span><span class="p">,</span>
+            <span class="s">&#39;ramUse&#39;</span><span class="p">:</span> <span class="n">task</span><span class="o">.</span><span class="n">ramUse</span><span class="p">,</span>
+            <span class="s">&#39;commands&#39;</span><span class="p">:</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">computeCommandRepresentation</span><span class="p">(</span><span class="n">command</span><span class="p">)</span> <span class="k">for</span> <span class="n">command</span> <span class="ow">in</span> <span class="n">task</span><span class="o">.</span><span class="n">commands</span><span class="p">],</span>
+            <span class="s">&#39;lic&#39;</span><span class="p">:</span> <span class="n">task</span><span class="o">.</span><span class="n">lic</span><span class="p">,</span>
+            <span class="s">&#39;licence&#39;</span><span class="p">:</span> <span class="n">task</span><span class="o">.</span><span class="n">lic</span><span class="p">,</span>
+            <span class="s">&#39;tags&#39;</span><span class="p">:</span> <span class="n">task</span><span class="o">.</span><span class="n">tags</span><span class="p">,</span>
+            <span class="s">&#39;timer&#39;</span><span class="p">:</span> <span class="n">task</span><span class="o">.</span><span class="n">timer</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">computeTaskGroupRepresentation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">taskGroup</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s">&#39;type&#39;</span><span class="p">:</span> <span class="s">&#39;TaskGroup&#39;</span><span class="p">,</span>
+            <span class="s">&#39;name&#39;</span><span class="p">:</span> <span class="n">taskGroup</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s">&#39;arguments&#39;</span><span class="p">:</span> <span class="n">taskGroup</span><span class="o">.</span><span class="n">arguments</span><span class="p">,</span>
+            <span class="s">&#39;environment&#39;</span><span class="p">:</span> <span class="n">taskGroup</span><span class="o">.</span><span class="n">environment</span><span class="p">,</span>
+            <span class="s">&#39;dependencies&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">getTaskIndex</span><span class="p">(</span><span class="n">dependency</span><span class="p">),</span> <span class="n">statusList</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">dependency</span><span class="p">,</span> <span class="n">statusList</span><span class="p">)</span> <span class="ow">in</span> <span class="n">taskGroup</span><span class="o">.</span><span class="n">dependencies</span><span class="o">.</span><span class="n">items</span><span class="p">()],</span>
+            <span class="s">&#39;requirements&#39;</span><span class="p">:</span> <span class="n">taskGroup</span><span class="o">.</span><span class="n">requirements</span><span class="p">,</span>
+            <span class="s">&#39;maxRN&#39;</span><span class="p">:</span> <span class="n">taskGroup</span><span class="o">.</span><span class="n">maxRN</span><span class="p">,</span>
+            <span class="s">&#39;priority&#39;</span><span class="p">:</span> <span class="n">taskGroup</span><span class="o">.</span><span class="n">priority</span><span class="p">,</span>
+            <span class="s">&#39;dispatchKey&#39;</span><span class="p">:</span> <span class="n">taskGroup</span><span class="o">.</span><span class="n">dispatchKey</span><span class="p">,</span>
+            <span class="s">&#39;strategy&#39;</span><span class="p">:</span> <span class="n">taskGroup</span><span class="o">.</span><span class="n">strategy</span><span class="p">,</span>
+            <span class="s">&#39;tasks&#39;</span><span class="p">:</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">getTaskIndex</span><span class="p">(</span><span class="n">task</span><span class="p">)</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">taskGroup</span><span class="o">.</span><span class="n">tasks</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">getTaskIndex</span><span class="p">(</span><span class="n">subtaskGroup</span><span class="p">)</span> <span class="k">for</span> <span class="n">subtaskGroup</span> <span class="ow">in</span> <span class="n">taskGroup</span><span class="o">.</span><span class="n">taskGroups</span><span class="p">],</span>
+            <span class="s">&#39;tags&#39;</span><span class="p">:</span> <span class="n">taskGroup</span><span class="o">.</span><span class="n">tags</span><span class="p">,</span>
+            <span class="s">&#39;timer&#39;</span><span class="p">:</span> <span class="n">taskGroup</span><span class="o">.</span><span class="n">timer</span><span class="p">,</span>
+        <span class="p">}</span>
+
+
+<span class="k">def</span> <span class="nf">cleanEnv</span><span class="p">(</span><span class="n">env</span><span class="p">):</span>
+    <span class="n">env</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">if</span> <span class="s">&#39;HOME&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">:</span>
+        <span class="k">del</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;HOME&#39;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">env</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">OpenRenderManagement 1.6.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Arnaud Chassagne, Jerome Samson.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b3.
+    </div>
+  </body>
+</html>

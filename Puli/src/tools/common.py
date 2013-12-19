@@ -441,7 +441,16 @@ class ConstraintFactory:
     """
     @staticmethod
     def makeQuery( pUserArguments, pUserOptions ):
-
+        '''
+        Parse arguments and options to create a proper http query string:
+        "constraint_user=jsa&constraint_id=152"
+        With command line args and options: "--constraint user=jsa -c id=152 -c id=156 -c id=188"
+        We create a useful query: "&constraint_user=jsa&constraint_id=152&constraint_id=156&constraint_id=188"
+        
+        :param pUserArguments: A list of strings representing user arguments
+        :param pUserOptions: A dic of strings representing user options
+        :returns: A string query or none if a constraint or update is not valid.
+        '''
         #
         # Creating corresponding query
         #

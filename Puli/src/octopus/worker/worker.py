@@ -57,6 +57,11 @@ class Worker(MainLoopApplication):
 
     @property
     def modifiedCommandWatchers(self):
+        """
+        an iterable list of the modified command watchers
+
+        :rtype: list of CommandWatcher
+        """
         return (watcher for watcher in self.commandWatchers.values() if watcher.modified)
 
     @property
@@ -288,7 +293,6 @@ class Worker(MainLoopApplication):
         Send info to the dispatcher about currently running command watcher.
         Called from the mainloop every time a command has been tagged "modified"
         req: PUT /rendernodes/<currentRN>/commands/<commandId>/
-        :param commandWatcher: A command watcher reference
         """
 
         maxRetry = max(1,config.WORKER_REQUEST_MAX_RETRY_COUNT)
@@ -360,7 +364,6 @@ class Worker(MainLoopApplication):
                     if paused:
                         self.status = rendernode.RN_PAUSED
                         self.isPaused = True
-
                         LOGGER.info("Worker has been put in paused mode")
                     else:
                         self.status = rendernode.RN_IDLE
@@ -489,15 +492,13 @@ class Worker(MainLoopApplication):
         """
         Send sys infos to the dispatcher, the request content holds the RN status only, it has to be kept
         very small to avoid nerwork flood.
-        :param req: PUT /rendernodes/<currentRN>/sysinfos
+        req: PUT /rendernodes/<currentRN>/sysinfos
         """
 
         # we don't need to send the whole dict of sysinfos
         #infos = self.fetchSysInfos()
         infos = {}
         infos['status'] = self.status
-        infos['isPaused'] = self.isPaused
-
         dct = json.dumps(infos)
         headers = {}
         headers['content-length'] = len(dct)
@@ -515,7 +516,7 @@ class Worker(MainLoopApplication):
         except httplib.BadStatusLine:
             LOGGER.exception('Sending sys infos has failed with a BadStatusLine error')
 
-        LOGGER.debug('Sys infos transmitted to the server: %r' % RN_STATUS_NAMES[self.status])
+        LOGGER.debug('Sys infos transmitted to the server: %r' % dct)
 
 
     def connect(self):

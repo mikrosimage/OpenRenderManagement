@@ -1,0 +1,197 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>octopus.worker.process &mdash; OpenRenderManagement 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="OpenRenderManagement 1.6.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">OpenRenderManagement 1.6.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for octopus.worker.process</h1><div class="highlight"><pre>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Used by Worker to spawn a new process.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="n">__author__</span>      <span class="o">=</span> <span class="s">&quot;Olivier Derpierre&quot;</span>
+<span class="n">__copyright__</span>   <span class="o">=</span> <span class="s">&quot;Copyright 2009, Mikros Image&quot;</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">resource</span>
+<span class="kn">from</span> <span class="nn">octopus.worker</span> <span class="kn">import</span> <span class="n">settings</span>
+
+<span class="n">LOGGER</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&quot;process&quot;</span><span class="p">)</span>
+<span class="n">CLOSE_FDS</span> <span class="o">=</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s">&#39;nt&#39;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">setlimits</span><span class="p">():</span>
+    <span class="c"># the use of os.setsid is necessary to create a processgroup properly for the commandwatcher</span>
+    <span class="c"># it creates a new session in which the cmdwatcher is the leader of the new process group</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">setsid</span><span class="p">()</span>
+
+    <span class="c"># set the limit of open files for ddd</span>
+    <span class="n">soft</span><span class="p">,</span> <span class="n">hard</span> <span class="o">=</span> <span class="n">resource</span><span class="o">.</span><span class="n">getrlimit</span><span class="p">(</span><span class="n">resource</span><span class="o">.</span><span class="n">RLIMIT_NOFILE</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">newSoft</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">LIMIT_OPEN_FILES</span><span class="p">,</span> <span class="n">hard</span><span class="p">)</span>
+        <span class="n">resource</span><span class="o">.</span><span class="n">setrlimit</span><span class="p">(</span><span class="n">resource</span><span class="o">.</span><span class="n">RLIMIT_NOFILE</span><span class="p">,</span> <span class="p">(</span><span class="n">newSoft</span><span class="p">,</span> <span class="n">hard</span><span class="p">))</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">,</span><span class="n">e</span><span class="p">:</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;Setting ressource limit failed: RLIMT_NOFILE [</span><span class="si">%r</span><span class="s">,</span><span class="si">%r</span><span class="s">] --&gt; [</span><span class="si">%r</span><span class="s">,</span><span class="si">%r</span><span class="s">]&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">soft</span><span class="p">,</span> <span class="n">hard</span><span class="p">,</span> <span class="n">settings</span><span class="o">.</span><span class="n">LIMIT_OPEN_FILES</span><span class="p">,</span> <span class="n">hard</span><span class="p">)</span> <span class="p">)</span>
+        <span class="k">raise</span> <span class="n">e</span>
+
+
+<div class="viewcode-block" id="spawnCommandWatcher"><a class="viewcode-back" href="../../../index.html#octopus.worker.process.spawnCommandWatcher">[docs]</a><span class="k">def</span> <span class="nf">spawnCommandWatcher</span><span class="p">(</span><span class="n">pidfile</span><span class="p">,</span> <span class="n">logfile</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">env</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    logfile is a file object</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">devnull</span> <span class="o">=</span> <span class="nb">file</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">devnull</span><span class="p">,</span> <span class="s">&quot;r&quot;</span><span class="p">)</span>
+    <span class="c"># normalize environment</span>
+    <span class="n">envN</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">env</span><span class="p">:</span>
+        <span class="n">envN</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">)]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+
+    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Starting subprocess, log: </span><span class="si">%r</span><span class="s">, args: </span><span class="si">%r</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">logfile</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span> <span class="p">)</span>        
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">pid</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">bufsize</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">stdin</span><span class="o">=</span><span class="n">devnull</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">logfile</span><span class="p">,</span>
+                           <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">,</span> <span class="n">close_fds</span><span class="o">=</span><span class="n">CLOSE_FDS</span><span class="p">,</span>
+                           <span class="n">preexec_fn</span><span class="o">=</span><span class="n">setlimits</span><span class="p">,</span> <span class="n">env</span><span class="o">=</span><span class="n">envN</span><span class="p">)</span><span class="o">.</span><span class="n">pid</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">,</span><span class="n">e</span><span class="p">:</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;Impossible to start subprocess: </span><span class="si">%r</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">e</span><span class="p">)</span>        
+        <span class="k">raise</span> <span class="n">e</span>
+
+    <span class="nb">file</span><span class="p">(</span><span class="n">pidfile</span><span class="p">,</span> <span class="s">&quot;w&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">pid</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">CommandWatcherProcess</span><span class="p">(</span><span class="n">pidfile</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
+
+</div>
+<span class="k">class</span> <span class="nc">CommandWatcherProcess</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pidfile</span><span class="p">,</span> <span class="n">pid</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pidfile</span> <span class="o">=</span> <span class="n">pidfile</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pid</span> <span class="o">=</span> <span class="n">pid</span>
+
+    <span class="k">def</span> <span class="nf">kill</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Kill the process.&#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s">&#39;nt&#39;</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">signal</span> <span class="kn">import</span> <span class="n">SIGTERM</span>
+            <span class="kn">from</span> <span class="nn">errno</span> <span class="kn">import</span> <span class="n">ESRCH</span>
+
+            <span class="c"># PHASE 1</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c"># do not kill the process, kill the whole process group!</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;Trying to kill process group </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pid</span><span class="p">))</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">killpg</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pid</span><span class="p">,</span> <span class="n">SIGTERM</span><span class="p">)</span>
+                <span class="k">return</span>
+            <span class="k">except</span> <span class="ne">OSError</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;A problem occured&quot;</span><span class="p">)</span>
+                <span class="c"># If the process is dead already, let it rest in peace.</span>
+                <span class="c"># Else, we have a problem, so reraise.</span>
+                <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">ESRCH</span><span class="p">:</span>
+                    <span class="k">raise</span>
+
+            <span class="c"># PHASE 2</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c"># the commandwatcher did not have time to setpgid yet, let&#39;s just kill the process</span>
+                <span class="c"># FIXME there still is room for a race condition there</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">kill</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pid</span><span class="p">,</span> <span class="n">SIGTERM</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">OSError</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+                <span class="c"># If the process is dead already, let it rest in peace.</span>
+                <span class="c"># Else, we have a problem, so reraise.</span>
+                <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">ESRCH</span><span class="p">:</span>
+                    <span class="k">raise</span>
+
+            <span class="c"># PHASE 3</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c"># attempt to fix a race condition:</span>
+                <span class="c"># if we kill the watcher but the watcher had the time to</span>
+                <span class="c"># create processgroup and start another process in between</span>
+                <span class="c"># phases 1 and 2, then attempt to kill the processgroup.</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">killpg</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pid</span><span class="p">,</span> <span class="n">SIGTERM</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">OSError</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+                <span class="c"># If the process is dead already, let it rest in peace.</span>
+                <span class="c"># Else, we have a problem, so reraise.</span>
+                <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">ESRCH</span><span class="p">:</span>
+                    <span class="k">raise</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">popen</span><span class="p">(</span><span class="s">&quot;taskkill /PID  </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">OpenRenderManagement 1.6.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Arnaud Chassagne, Jerome Samson.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b3.
+    </div>
+  </body>
+</html>

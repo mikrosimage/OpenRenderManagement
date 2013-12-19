@@ -11,25 +11,35 @@ Puli's documentation
 ------------------------------------------------
 
 .. automodule:: octopus.worker.worker
-	:members:
+  :members:
 .. automodule:: octopus.worker.workerwebservice
-	:members:
+  :members:
 .. automodule:: octopus.worker.model
-	:members:
+  :members:
 
 
 :mod:`octopus.worker.process` 
 ------------------------------------------------
 
 .. automodule:: octopus.worker.process
-	:members:
+  :members:
 
-	
+  
 
 :mod:`tools.common` 
 ------------------------------------------------
 
 .. automodule:: tools.common
+     :members:
+     :undoc-members:
+     :show-inheritance:
+
+
+:mod:`puliclient` 
+------------------------------------------------
+
+
+.. automodule:: puliclient
      :members:
      :undoc-members:
      :show-inheritance:

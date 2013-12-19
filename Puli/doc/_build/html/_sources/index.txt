@@ -3,22 +3,53 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to OpenRenderManagement's documentation!
+Puli's documentation
 ================================================
 
-Contents:
 
-.. toctree::
-   :maxdepth: 2
+:mod:`octopus.worker.worker` 
+------------------------------------------------
 
+.. automodule:: octopus.worker.worker
+  :members:
+.. automodule:: octopus.worker.workerwebservice
+  :members:
+.. automodule:: octopus.worker.model
+  :members:
+
+
+:mod:`octopus.worker.process` 
+------------------------------------------------
+
+.. automodule:: octopus.worker.process
+  :members:
+
+  
+
+:mod:`tools.common` 
+------------------------------------------------
 
 .. automodule:: tools.common
-	:members:
+     :members:
+     :undoc-members:
+     :show-inheritance:
 
-toto
+
+:mod:`puliclient` 
+------------------------------------------------
+
+.. code-block:: python
+    def oulala ( on a du code ):
+    pass
+
+.. automodule:: puliclient
+     :members:
+     :undoc-members:
+     :show-inheritance:
+
 
 Indices and tables
-==================
+================================================
 
 * :ref:`genindex`
 * :ref:`modindex`

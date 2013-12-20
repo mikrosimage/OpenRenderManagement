@@ -4,49 +4,20 @@
    contain the root `toctree` directive.
 
 Puli's documentation
-================================================
+**************************************************
 
+.. toctree::
+   :maxdepth: 2
 
-:mod:`octopus.worker.worker` 
-------------------------------------------------
+   user_guide
+   admin_guide
+   dev_guide
+   module_reference
 
-.. automodule:: octopus.worker.worker
-  :members:
-.. automodule:: octopus.worker.workerwebservice
-  :members:
-.. automodule:: octopus.worker.model
-  :members:
-
-
-:mod:`octopus.worker.process` 
-------------------------------------------------
-
-.. automodule:: octopus.worker.process
-  :members:
-
-  
-
-:mod:`tools.common` 
-------------------------------------------------
-
-.. automodule:: tools.common
-     :members:
-     :undoc-members:
-     :show-inheritance:
-
-
-:mod:`puliclient` 
-------------------------------------------------
-
-
-.. automodule:: puliclient
-     :members:
-     :undoc-members:
-     :show-inheritance:
 
 
 Indices and tables
-================================================
+**************************************************
 
 * :ref:`genindex`
 * :ref:`modindex`

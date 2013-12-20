@@ -1,53 +1,10 @@
 #!/usr/bin/python2.6
 # -*- coding: utf8 -*-
-
 """
-commons.py: Utility classes and static methods used in every tools
-
-CustomTable and descendant are a generic way to display information returned by a query.
-Usual query result is of the form:
-{
-    "item": 
-    [
-        {
-            "field1": val1, 
-            "field2": val2, 
-            ...
-        },
-        ...
-    ]
-
-    "summary":
-    {
-        "count": xx, 
-        "totalInDispatcher": xx, 
-        "requestTime": xx, 
-        "requestDate": xx
-    }
-}
-
-Any class inheriting CustomTable can define a list of column, each column handling the representation of a field and its header.
-From outside the class, a user can then delcare a table representation and call the main functions:
-    - displayHeader() to print header on stdout
-    - displayRow( "one item" ) to print each individual row on stdout
-    - displayFooter() to print the footer (i.e. summary info)
-
-The representation class will allow several attribute for each column
-    - field:        a data field (from query result) or a formula (any CustomTable formula method)
-    - label:        a text used for table header
-    - visible:      a flag indicating if the column will be printed
-    - dataFormat:   a format for the corresponding field, it uses the 'print' (and similar to POSIX print) function
-    - labelFormat:  idem for label info
-    - truncate:     Optionnal attribute, the max length that should be displayed (to avoid messing with columns alignment)
-    - transform:    Optionnal attribute, the name of a static method of the parent CustomTable class.
-                    It will preprocess the value before displaying it at a string (example: date format, status short name)
-
-The mecanism to calcultate a data or transform a data, is based on python's ability to store function addresses.
-Formulas and Transforms are defined as CustomTable static method.
-    - A formula will be defined in the "field" of the column, it is a tuple : the first item is the formula function, 
-      the remaining items are the parameters
-    - A transformation is defined as "transform" column, it is the address of a transform function
-
+.. module:: Common
+   :platform: Unix
+   :synopsis: Utility module, classes and static methods used in every command line tools.
+The custom table is a generic definition
 """
 __author__      = "Jérôme Samson"
 __copyright__   = "Copyright 2013, Mikros Image"
@@ -66,6 +23,48 @@ class CustomTable:
     """
     Utility class to display a table with field data. 
     Use in pul_query/pul_rn tools
+    CustomTable and descendant are a generic way to display information returned by a query.
+    Usual query result is of the form::
+      {
+          "item": 
+          [
+              {
+                  "field1": val1, 
+                  "field2": val2, 
+                  ...
+              },
+              ...
+          ]
+      
+          "summary":
+          {
+              "count": xx, 
+              "totalInDispatcher": xx, 
+              "requestTime": xx, 
+              "requestDate": xx
+          }
+      }
+
+    Any class inheriting CustomTable can define a list of column, each column handling the representation of a field and its header.
+    From outside the class, a user can then delcare a table representation and call the main functions:
+     :displayHeader: to print header on stdout
+     :displayRow: to print each individual row on stdout
+     :displayFooter: to print the footer (i.e. summary info)
+
+    The representation class will allow several attribute for each column:
+     :field: a data field (from query result) or a formula (any CustomTable formula method)
+     :label: a text used for table header
+     :visible: a flag indicating if the column will be printed
+     :dataFormat: a format for the corresponding field, it uses the 'print' (and similar to POSIX print) function
+     :labelFormat: idem for label info
+     :truncate: Optionnal attribute, the max length that should be displayed (to avoid messing with columns alignment)
+     :transform: Optionnal attribute, the name of a static method of the parent CustomTable class. It will preprocess the value before displaying it at a string (example: date format, status short name)
+
+    The mecanism to calcultate a data or transform a data, is based on python's ability to store function addresses.
+    Formulas and Transforms are defined as CustomTable static method.
+      - A formula will be defined in the "field" of the column, it is a tuple : the first item is the formula function, the remaining items are the parameters
+      - A transformation is defined as "transform" column, it is the address of a transform function
+
     """
     # @staticmethod
     # def truncateStr(pValue, pLen):
@@ -433,7 +432,7 @@ class RenderNodeTable( CustomTable ):
 
 class ConstraintFactory:
     """
-    Can parse arguments and options received as command line and create a proper http query string, i.e. :
+    Can parse arguments and options received as command line and create a proper http query string, i.e.:
     With command line args and options: "<tools> --constraint user=jsa 152 156 188"
     We create a useful query: "&constraint_user=jsa&constraint_id=152&constraint_id=156&constraint_id=188"
 

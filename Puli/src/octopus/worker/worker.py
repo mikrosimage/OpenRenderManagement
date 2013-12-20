@@ -58,14 +58,17 @@ class Worker(MainLoopApplication):
     @property
     def modifiedCommandWatchers(self):
         """
-        an iterable list of the modified command watchers
-
+        Property of the Worker class. An iterable list of the modified command watchers
         :rtype: list of CommandWatcher
         """
         return (watcher for watcher in self.commandWatchers.values() if watcher.modified)
 
     @property
     def finishedCommandWatchers(self):
+        """
+        Property of the Worker class. An iterable list of the finished command watchers
+        :rtype: list of CommandWatcher
+        """
         return (watcher for watcher in self.commandWatchers.values() if watcher.finished and not watcher.modified)
 
     def __init__(self, framework):

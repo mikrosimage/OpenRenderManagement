@@ -28,14 +28,14 @@ LOGGER = logging.getLogger("workerws")
 class WorkerWebService(Application):
     '''A tornado application that will communicate with the dispatcher via webservices
     Services are:
-        /commands
-        /commands/<id command>
-        /log
-        /log/command/<path>
-        /updatesysinfos
-        /pause
-        /ramInUse
-        /reconfig
+    /commands
+    /commands/<id command>
+    /log
+    /log/command/<path>
+    /updatesysinfos
+    /pause
+    /ramInUse
+    /reconfig
     '''
     def __init__(self, framework, port):
         super(WorkerWebService, self).__init__([

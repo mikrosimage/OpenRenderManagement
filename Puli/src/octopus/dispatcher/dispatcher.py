@@ -1,3 +1,8 @@
+"""
+.. module:: Dispatcher
+   :platform: Unix
+   :synopsis: A useful module indeed.
+"""
 
 from __future__ import with_statement
 
@@ -30,7 +35,6 @@ LOGGER = logging.getLogger('dispatcher')
 
 class Dispatcher(MainLoopApplication):
     '''The Dispatcher class is the core of the dispatcher application.
-
     It computes the assignments of commands to workers according to a
     DispatchTree and handles all the communications with the workers and
     clients.
@@ -90,7 +94,8 @@ class Dispatcher(MainLoopApplication):
         self.queue = Queue(maxsize=10000)
 
     def initPoolsDataFromBackend(self):
-        '''Loads pools and workers from appropriate backend.
+        '''
+        Loads pools and workers from appropriate backend.
         '''
         try:
             if settings.POOLS_BACKEND_TYPE == "file":

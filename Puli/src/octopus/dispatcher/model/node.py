@@ -187,6 +187,9 @@ class BaseNode(models.Model):
         names = [node.name for node in nodes]
         return "<Node name='%s' path='/%s'>" % (self.name, "/".join(names))
 
+    def __str__(self):
+        return "%s: maxRN=%d allocatedRN=%d" % (self.name, self.maxRN, self.allocatedRN)
+
     parent_value = property(lambda self: self._parent_value, setParentValue)
 
     def invalidate(self):
@@ -278,8 +281,6 @@ class FolderNode(BaseNode):
                 else:
                     if not stopFunc():
                         continue
-            else:
-                return
 
     def updateCompletionAndStatus(self):
         self.updateAllocation()

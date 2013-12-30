@@ -81,7 +81,9 @@ class Command(object):
 
 
 class Task(object):
-
+    """
+    A node of the node that can contain commands i.e. processes that will be executed on a rendernode.
+    """
     _decomposer = None
 
     def _getDecomposer(self):
@@ -136,6 +138,12 @@ class Task(object):
         self.timer = timer
 
     def decompose(self):
+        """
+        Call the task "decomposer", a utility class that will generate one or several command regarding decomposing method.
+        For instance given a start and end attributes, we will created a sequence of command.
+        :param name: a custom name for this command
+        :param arguments: dict of arguments for the specific command
+        """
         if not self.decomposed:
             # print "decomposing", self.name
             self.decomposer(self)
@@ -143,9 +151,19 @@ class Task(object):
         return self
 
     def addCommand(self, name, arguments):
+        """
+        Manually add a command on the current node.
+        :param name: a custom name for this command
+        :param arguments: dict of arguments for the specific command
+        """
         self.commands.append(Command(name, self, arguments))
 
     def dependsOn(self, task, statusList=[DONE]):
+        """
+        Create a dependency constraint between the current node and the given task at a particular status.
+        :param task: a task to dependsOn
+        :param statusList: a list of statuses to be reached (any of it) to validate the dependency
+        """
         self.dependencies[task] = statusList
 
     def setEnv(self, env):
@@ -156,6 +174,9 @@ class Task(object):
 
 
 class TaskGroup(object):
+    """
+    A node of a graph that can contain other nodes: taskgroups or tasks
+    """
 
     _expander = None
 
@@ -172,6 +193,11 @@ class TaskGroup(object):
 
     @classmethod
     def createFromTask(cls, task):
+        """
+        Creates a taskgroup from a task given in parameter
+        :param task: task model
+        :return a new taskgroup
+        """
         taskGroup = cls(task.name)
         taskGroup.arguments = task.arguments
         taskGroup.dependencies = task.dependencies
@@ -206,9 +232,18 @@ class TaskGroup(object):
         self.timer = timer
 
     def dependsOn(self, task, statusList=[DONE]):
+        """
+        Create a dependency constraint between the current node and the given task at a particular status.
+        :param task: a task to dependsOn
+        :param statusList: a list of statuses to be reached (any of it) to validate the dependency
+        """
         self.dependencies[task] = statusList
 
     def addTask(self, task):
+        """
+        Add the task given as parameter to the current TaskGroup.
+        :param task: task object to add to the hierarchy
+        """
         assert isinstance(task, Task)
         assert not task in self.tasks
         self.tasks.append(task)
@@ -216,6 +251,11 @@ class TaskGroup(object):
         task.environment.parent = self.environment
 
     def addTaskGroup(self, taskGroup):
+        """
+        Add the taskgroup given as parameter to the current TaskGroup.
+        :param taskGroup: taskgroup object to add to the hierarchy
+        """
+
         assert isinstance(taskGroup, TaskGroup)
         assert not taskGroup in self.taskGroups
         self.taskGroups.append(taskGroup)
@@ -256,6 +296,11 @@ class TaskGroup(object):
 
 
     def expand(self, hierarchy):
+        """
+        Expands a taskgroup hierarchy.
+        :param hierarchy: the hierarchy root node
+        :return a reference to itself
+        """
         if not self.expanded:
             print "  In taskgroup: expanding ", self.name
             if self.expander:
@@ -273,8 +318,12 @@ class TaskGroup(object):
         return self
 
 
-    def setEnv(self, env):
-        self.environment = env
+    def setEnv(self, pEnv):
+        """
+        Sets object given in param as the taskgroup environment
+        :param pEnv: the new environment
+        """
+        self.environment = pEnv
 
     def __repr__(self):
         return "TaskNode(%r)" % str(self.name)
@@ -282,6 +331,8 @@ class TaskGroup(object):
 
 class Graph(object):
     """
+    Data structure to submit to Puli server.
+    It describes one or several tasks that will be executer on the renderfarm.
     """
     def __init__(self, name, root=None, user=None, poolName=None, maxRN=-1):
         """
@@ -293,6 +344,7 @@ class Graph(object):
         :param user: the owner of the graph
         :param poolName: a pool of rendernodes to use for this execution
         :param maxRN: a max number of concurrent rendernodes to use
+        :raise GraphError exception
         """
         self.name = unicode(name)
 
@@ -317,6 +369,7 @@ class Graph(object):
         """
         Add a list of nodes to the graph's root.
         :param pElemList: list of nodes (task or taskgroup)
+        :raise GraphError exception
         """
         if isinstance(pElemList,(list,tuple)):
             for node in pElemList:
@@ -423,12 +476,15 @@ class Graph(object):
 
 
     def toRepresentation(self):
+        """
+        Returns the JSON graph representation
+        """
         return GraphDumper().dumpGraph(self)
 
 
     def __repr__(self):
         """
-        Returns the graph representation as JSON with a 4 spaces indentation
+        Prints the graph as JSON with a 4 spaces indentation
         """
         return json.dumps(self.toRepresentation(), indent=4)
 
@@ -522,6 +578,10 @@ def _hasCycles(node, visited_nodes):
 
 
 class GraphDumper():
+    """
+    Processes a graph to create a serialized json object to send to the server.
+    During the process, some validity checks can be done: no cycle, consistency etc
+    """
 
     def __init__(self):
         self.clear()

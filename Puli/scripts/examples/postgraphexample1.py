@@ -11,11 +11,11 @@ from puliclient import Task, Graph, GraphDumper
 
 if __name__ == '__main__':
 
-    defaultArgs =  { "cmd":"sleep 10", "start":1, "end":10, "packetSize":1, "prod":"test", "shot":"test" }
+    defaultArgs =  { "cmd":"sleep 30", "start":1, "end":10, "packetSize":1, "prod":"test", "shot":"test" }
     defaultDecomposer = "puliclient.contrib.generic.GenericDecomposer"
 
     # When creating a graph without a root task or taskgroup, a default taskgroup is created with the name of the graph
-    graph = Graph('simpleGraph')
+    graph = Graph('simpleGraph', poolName='default')
 
     # Each task will be decomposed an have its resulting commands attached
     graph.addNewTask( name="first", arguments=defaultArgs, decomposer=defaultDecomposer )

@@ -457,6 +457,9 @@ class TaskNode(BaseNode):
 
         if not self.invalidated:
             return
+        if self.task is None:
+            self.status = NODE_CANCELED
+            return
         completion = 0.0
         status = defaultdict(int)
         self.readyCommandCount = 0

@@ -33,7 +33,7 @@ if __name__ == '__main__':
     # tg2.addNewTask( name="task2.2", arguments=args, tags=tags, decomposer=decomposer )
 
     # print graph
-    graph.submit("puliserver", 8004)
+    graph.submit("pulitest", 8004)
 
 # PREVIOUS METHOD (still valid)
     # tg1 = TaskGroup( name = "tg1" )

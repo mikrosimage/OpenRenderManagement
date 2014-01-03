@@ -1,4 +1,4 @@
-Admin guide
+ADMIN GUIDE
 *********************************************
 
 Prequisites

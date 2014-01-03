@@ -1,3 +1,11 @@
+"""
+.. module:: puliclient
+    :platform: Unix
+    :synopsis: API to create and submit jobs on the renderfarm
+
+.. moduleauthor:: Olivier Derpierre
+
+"""
 __author__ = "Olivier Derpierre "
 __date__ = "Jan 11, 2010"
 __version__ = (0, 2, 0)
@@ -72,7 +80,13 @@ class TaskAlreadyDecomposedError(Error):
 
 
 class Command(object):
-
+    """
+    | The lowest level of execution of a graph. A command is basically a process to instanciate on a worker node.
+    | It consists of:
+    | - a description
+    | - a ref to its parent task
+    | - a dict of arguments to use for execution
+    """
     def __init__(self, description, task, arguments={}):
         self.description = description
         self.task = task
@@ -82,7 +96,7 @@ class Command(object):
 
 class Task(object):
     """
-    A node of the node that can contain commands i.e. processes that will be executed on a rendernode.
+    A node of the graph that can contain commands i.e. processes that will be executed on a rendernode.
     """
     _decomposer = None
 
@@ -114,6 +128,29 @@ class Task(object):
                  decomposer='puliclient.jobs.DefaultTaskDecomposer',
                  tags={},
                  timer=None):
+        """
+        A task contains one or more command to be executed on the render farm.
+
+        :param name: A simple text identifier
+        :type name: string
+        :param arguments: a dictionnary of arguments for the command
+        :param runner: a class that will be responsible for the job execution
+        :param dependencies: 
+        :param maxRN: the maximum number of workers to assign to this task
+        :param priority: [DEPRECATED]
+        :param dispatchKey: indicate the priority for this task
+        :param environment:  dict of env values
+        :param validator: -
+        :param minNbCores: -
+        :param maxNbCores: -
+        :param ramUse: -        
+        :param requirements: -        
+        :param lic: -        
+        :param decomposer: -
+        :param tags: - 
+        :param timer: -
+        """
+
         self.parent = None
         self.decomposerName = decomposer
         self.decomposer = decomposer
@@ -139,10 +176,10 @@ class Task(object):
 
     def decompose(self):
         """
-        Call the task "decomposer", a utility class that will generate one or several command regarding decomposing method.
-        For instance given a start and end attributes, we will created a sequence of command.
-        :param name: a custom name for this command
-        :param arguments: dict of arguments for the specific command
+        | Call the task "decomposer", a utility class that will generate one or several command regarding decomposing method.
+        | For instance given a start and end attributes, we will created a sequence of command.
+        
+        :return: a ref to itself
         """
         if not self.decomposed:
             # print "decomposing", self.name
@@ -153,6 +190,7 @@ class Task(object):
     def addCommand(self, name, arguments):
         """
         Manually add a command on the current node.
+
         :param name: a custom name for this command
         :param arguments: dict of arguments for the specific command
         """
@@ -161,6 +199,7 @@ class Task(object):
     def dependsOn(self, task, statusList=[DONE]):
         """
         Create a dependency constraint between the current node and the given task at a particular status.
+
         :param task: a task to dependsOn
         :param statusList: a list of statuses to be reached (any of it) to validate the dependency
         """
@@ -195,8 +234,9 @@ class TaskGroup(object):
     def createFromTask(cls, task):
         """
         Creates a taskgroup from a task given in parameter
+
         :param task: task model
-        :return a new taskgroup
+        :return: a new taskgroup
         """
         taskGroup = cls(task.name)
         taskGroup.arguments = task.arguments
@@ -233,8 +273,9 @@ class TaskGroup(object):
 
     def dependsOn(self, task, statusList=[DONE]):
         """
-        Create a dependency constraint between the current node and the given task at a particular status.
-        :param task: a task to dependsOn
+        Create a dependency constraint between the current node and the given task or taskGroup at a particular status.
+
+        :param task: a Task or a TaskGroup to dependsOn
         :param statusList: a list of statuses to be reached (any of it) to validate the dependency
         """
         self.dependencies[task] = statusList
@@ -242,6 +283,7 @@ class TaskGroup(object):
     def addTask(self, task):
         """
         Add the task given as parameter to the current TaskGroup.
+
         :param task: task object to add to the hierarchy
         """
         assert isinstance(task, Task)
@@ -253,7 +295,8 @@ class TaskGroup(object):
     def addTaskGroup(self, taskGroup):
         """
         Add the taskgroup given as parameter to the current TaskGroup.
-        :param taskGroup: taskgroup object to add to the hierarchy
+
+        :param taskGroup: a taskgroup to add to the hierarchy
         """
 
         assert isinstance(taskGroup, TaskGroup)
@@ -265,7 +308,11 @@ class TaskGroup(object):
     def addNewTask(self, *args, **kwargs):
         """
         Creates a task and add it to the current TaskGroup.
-        :return a reference on the created item
+
+        :param args: standard Task arguments
+        :param kwargs: keyword Task arguments        
+        :return: a reference on the created item
+        :raise: GraphError if task creation failed
         """
         try:
             newTask = Task( *args, **kwargs )
@@ -281,7 +328,11 @@ class TaskGroup(object):
     def addNewTaskGroup(self, *args, **kwargs):
         """
         Creates a task group and add it to the current TaskGroup.
-        :return a reference on the created item
+
+        :param args: standard Task arguments
+        :param kwargs: keyword Task arguments        
+        :return: a reference on the created item
+        :raise: GraphError if task group creation failed
         """
         try:
             newTaskGroup = TaskGroup( *args, **kwargs )
@@ -297,9 +348,12 @@ class TaskGroup(object):
 
     def expand(self, hierarchy):
         """
-        Expands a taskgroup hierarchy.
+        | Expands a taskgroup hierarchy.
+        | - first expand itself
+        | - then expand or decompose its children (taskgroup or tasks)
+
         :param hierarchy: the hierarchy root node
-        :return a reference to itself
+        :return: a reference to itself
         """
         if not self.expanded:
             print "  In taskgroup: expanding ", self.name
@@ -320,7 +374,8 @@ class TaskGroup(object):
 
     def setEnv(self, pEnv):
         """
-        Sets object given in param as the taskgroup environment
+        Sets taskgroup environment dict with the given param.
+
         :param pEnv: the new environment
         """
         self.environment = pEnv
@@ -331,20 +386,21 @@ class TaskGroup(object):
 
 class Graph(object):
     """
-    Data structure to submit to Puli server.
-    It describes one or several tasks that will be executer on the renderfarm.
+    | Data structure to submit to Puli server.  
+    | It describes one or several tasks that will be executer on the renderfarm.
     """
     def __init__(self, name, root=None, user=None, poolName=None, maxRN=-1):
         """
-        Create a new graph object with given name and parameters.
-        If root is given, it will be attached to the graph (wether it is a task or a taskgroup).
-        It root is not specified a default taskgroup will be created as the root node.
+        Create a new graph object with given name and parameters.  
+        If root is given, it will be attached to the graph (wether it is a task or a taskgroup).  
+        It root is not specified a default taskgroup will be created as the root node.  
         :param name: a string describing the graph
         :param root: optionnal node to be attached to the graph
         :param user: the owner of the graph
         :param poolName: a pool of rendernodes to use for this execution
         :param maxRN: a max number of concurrent rendernodes to use
-        :raise GraphError exception
+
+        :raises: GraphError
         """
         self.name = unicode(name)
 
@@ -368,8 +424,9 @@ class Graph(object):
     def addList(self, pElemList):
         """
         Add a list of nodes to the graph's root.
+
         :param pElemList: list of nodes (task or taskgroup)
-        :raise GraphError exception
+        :raise: GraphError
         """
         if isinstance(pElemList,(list,tuple)):
             for node in pElemList:
@@ -379,10 +436,13 @@ class Graph(object):
 
     def add(self, pElem):
         """
-        Adds a task or a taskgroup to the graph's root.
-        If the graph root is a task, an error is raised
+        Adds a task or a taskgroup to the graph's root.  
+        If the graph root is a task, an error is raised.
+
         :param pElem: the node to attach to the graph
-        :return a reference to the attached node
+        :type pElem: Task or TaskGroup
+        :return: a reference to the attached node
+        :raise: GraphError
         """
         
         if isinstance( self.root, Task) :
@@ -399,9 +459,13 @@ class Graph(object):
 
     def addNewTask(self, *args, **kwargs):
         """
-        Creates a new task and attach it to the graph's root.
-        If the graph root is a task, an error is raised
-        :return a reference to the attached node
+        | Creates a new task and attach it to the graph's root.
+        | If the graph root is a task, an error is raised.
+
+        :param args: standard Task arguments
+        :param kwargs: keyword Task arguments
+        :return: a reference to the attached node
+        :raise: GraphError
         """
         if isinstance( self.root, Task) :
             raise GraphError("Graph root is a task, new task can only be added to task groups")
@@ -409,9 +473,13 @@ class Graph(object):
 
     def addNewTaskGroup(self, *args, **kwargs):
         """
-        Creates a new taskgroup and attach it to the graph's root.
-        If the graph root is a task, an error is raised
-        :return a reference to the attached node
+        | Creates a new taskgroup and attach it to the graph's root.
+        | If the graph root is a task, an error is raised
+
+        :param args: standard TaskGroup arguments
+        :param kwargs: keyword TaskGroup arguments
+        :return: a reference to the attached node
+        :raise: GraphError
         """
         if isinstance( self.root, Task) :
             raise GraphError("Graph root is a task, new task can only be added to task groups")
@@ -420,11 +488,13 @@ class Graph(object):
 
     def addEdges(self, pEdgeList):
         """
-        Create edges to the current graph.
-        Edges are given as a list of element, with each elem being a sequence of: sourceNode, destNode and status
-        example edge list: [ (taskA, taskB), (taskA, taskC, [ERROR,CANCELED]), ... ]
+        | Create edges to the current graph.
+        | Edges are given as a list of element, with each elem being a sequence of: sourceNode, destNode and status
+        | example edge list: [ (taskA, taskB), (taskA, taskC, [ERROR,CANCELED]), ... ]
+        
         :param pEdgeList: List of elements indicating the source and dest node and a list of ending status (source, desti, [endStatus])
-        :return a boolean indicating if the connections have been executed corretly
+        :return: a boolean indicating if the connections have been executed corretly
+        :raise: ConnectionError
         """
         for (i, edge) in enumerate(pEdgeList):
 
@@ -456,11 +526,15 @@ class Graph(object):
 
     def addChain(self, pEdgeChain, pEndStatusList=[DONE] ):
         """
-        Create edges to the current graph.
-        Edges are given as a chain of element to link as a chain, example chain: [ taskA, taskB, taskC, ... ]
+        | Create edges to the current graph.
+        | Edges are given as a list of element to link as a chain, example chain: [ taskA, taskB, taskC, ... ]
+        | Elements to chain can be either Tasks or TaskGroups.
+        | A connection error is raised if the edge chain or status list are not properly formatted.
+
         :param pEdgeList: List of elements indicating nodes to be chained in the given order
         :param pEndStatusList: A list of end status to be defined for every connections
-        :return a boolean indicating if the connections have been executed corretly
+        :return: a boolean indicating if the connections have been executed corretly
+        :raise: ConnectionError
         """
         if not isinstance(pEndStatusList, (list, tuple)):
             raise ConnectionError("Invalid end status given, it must be a list of statuses.")
@@ -475,9 +549,11 @@ class Graph(object):
         return True
 
 
-    def toRepresentation(self):
+    def _toRepresentation(self):
         """
-        Returns the JSON graph representation
+        Creates a JSON representation of the graph using the GraphDumper Utility class.
+        
+        :rtype: string
         """
         return GraphDumper().dumpGraph(self)
 
@@ -485,18 +561,27 @@ class Graph(object):
     def __repr__(self):
         """
         Prints the graph as JSON with a 4 spaces indentation
+
+        :rtype: string
         """
-        return json.dumps(self.toRepresentation(), indent=4)
+        return json.dumps(self._toRepresentation(), indent=4)
 
 
     def submit(self, host="puliserver", port=8004):
         """
-        Prepare a graph representation to be sent to the server. Several steps must be taken:
-        - parse graph to resolve dependencies like task -> taskgroup
-          a taskgroup cannot depend from a task, we must add the dependencies to all its tasks
-        - parse graph to expand/decompose tasks and taskgroups
-        - use GraphDumper class to get JSON representation
-        - submit data via http
+        | Prepare a graph representation to be sent to the server.
+        | Several steps must be taken:
+        | - parse graph to resolve dependencies on taskgroups
+        | - parse graph to expand/decompose tasks and taskgroups
+        | - use GraphDumper class to serialize the graph to a JSON representation
+        | - submit data via http  
+
+        :param host: server name to connect to
+        :type host: string
+        :param port: server port to connect to
+        :type port: int
+        :return: the server response
+        :raise: GraphSubmissionError
         """
 
         # Expand or decompose the graph hierarchically
@@ -508,7 +593,7 @@ class Graph(object):
             self.root = self.root.decompose()
 
         # Create JSON representation
-        repr = self.toRepresentation()
+        repr = self._toRepresentation()
 
         # Precompile dependencies on a taskgroup
         print "2. Checking dependencies on taskgroups..."
@@ -521,7 +606,7 @@ class Graph(object):
                     srcNodeId = dep[0]
                     srcNode = repr["tasks"][dep[0]]
                     statusList = dep[1]
-                    self.addDependencyToChildrenOf( srcNodeId, srcNode, statusList, node, repr )
+                    self._addDependencyToChildrenOf( srcNodeId, srcNode, statusList, node, repr )
 
 
         print "3. Preparing submission query..."
@@ -537,17 +622,17 @@ class Graph(object):
         else:
             raise GraphSubmissionError((response.status, response.reason))
 
-    def addDependencyToChildrenOf(self, pDependencySrcId, pDependencySrc, pStatusList, pDependingNode, pRepr):
+    def _addDependencyToChildrenOf(self, pDependencySrcId, pDependencySrc, pStatusList, pDependingNode, pRepr):
         """
-        Used during job submission, this method will add a dependency of a particular node to all of its children.
+        Used during job submission, this method will add a dependency of a particular node to all of its children.  
         This is used to enforce dependency of a Taskgroup: when a taskgroup depends on another task, we ensure 
-        that all tasks in the taskgroup hierarchy is really dependent of the task.
+        that all tasks in the taskgroup hierarchy is really dependent of the task.  
         The following transformation will occur recursively:
-          -dependingNode.dependsOn( dependencySrc ) (this node is a taskgroup)
-          -becomes: all children of denpendingNode.dependsOn( dependencySrc )
+        - dependingNode.dependsOn( dependencySrc ) (this node is a taskgroup)
+        - becomes: all children of denpendingNode.dependsOn( dependencySrc )
 
         :param pDependecySrcId: id of the node to which the hierarchy must depend on
-        :param pDependecySrc: ref to the node to which the hierarchy must depend on
+        :param pDependecySrc: reference to the node to which the hierarchy must depend on
         :param pStatusList: list of statuses to wait for
         :param pDependingNode: the node (initially a taskgroup) that depends on another node
         """
@@ -557,7 +642,7 @@ class Graph(object):
             for childId in currNode["tasks"]:
                 childNode = pRepr["tasks"][childId]
                 # print "        - children[%r]=%r" % (childId, childNode["name"])
-                self.addDependencyToChildrenOf( pDependencySrcId, pDependencySrc, pStatusList, childNode, pRepr )
+                self._addDependencyToChildrenOf( pDependencySrcId, pDependencySrc, pStatusList, childNode, pRepr )
         else:
             # On a task, create dependency
             currNode["dependencies"].append( (pDependencySrcId, pStatusList) )

@@ -11,20 +11,29 @@ class MyTool:
     """
     Generic description of the class and usage presentation
     """
-
     def __init__( self, pParam1 ... ):
+        pass
+
+    def _privateMethod( self, pParam1 ... ):
         """
-        Description
+        Description on a single line
+
         :param pPram1: describe me
+        :type pParam1: type if necessary
+        :return:
+        :raise:
         """
         pass
 
-    def myMethode( self, pFirstParam, pSecondParam ):
+    def publicMethod( self, pFirstParam, pSecondParam ):
         """
-        Generic description of the method
-        :param pFirstParam: description of the param
-        :param pSecondParam: description of the param
-        :return: describe any returned data
+        | Generic description of the method
+        | On multiple lines for readibility
+
+        :param pPram1: describe me
+        :type pParam1: type if necessary
+        :return:
+        :raise:
         """
         return "myresult"
    

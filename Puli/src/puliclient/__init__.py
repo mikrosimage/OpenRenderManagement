@@ -12,7 +12,11 @@ __version__ = (0, 2, 0)
 
 import sys
 import httplib
-import simplejson as json
+try:
+    import simplejson as json
+except ImportError:
+    import json
+
 from puliclient import jobs
 
 __all__ = ['jobs', 'Error', 'GraphSubmissionError', 'TaskAlreadyDecomposedError', 'Task', 'Graph', 'TaskGroup', 'Command']
@@ -28,7 +32,6 @@ CANCELED = 5
 PAUSED = 6
 
 __all__ += ['BLOCKED', 'READY', 'RUNNING', 'DONE', 'ERROR', 'CANCELED', 'PAUSED']
-
 
 # -- Submission API
 #
@@ -173,6 +176,14 @@ class Task(object):
         self.lic = lic
         self.tags = tags.copy()
         self.timer = timer
+
+    def updateTags(self, pTags):
+        """
+        Updates the tag dicitonnary for this element.
+
+        :param pTags: a dict of tags (with existing or new values)
+        """
+        self.tags.update( pTags )
 
     def decompose(self):
         """
@@ -371,6 +382,13 @@ class TaskGroup(object):
                 taskGroup.expand(hierarchy)
         return self
 
+    def updateTags(self, pTags):
+        """
+        Updates the tag dicitonnary for this element.
+
+        :param pTags: a dict of tags (with existing or new values)
+        """
+        self.tags.update( pTags )
 
     def setEnv(self, pEnv):
         """
@@ -389,7 +407,7 @@ class Graph(object):
     | Data structure to submit to Puli server.  
     | It describes one or several tasks that will be executer on the renderfarm.
     """
-    def __init__(self, name, root=None, user=None, poolName=None, maxRN=-1):
+    def __init__( self, name, root=None, user=None, poolName=None, maxRN=-1, tags={} ):
         """
         Create a new graph object with given name and parameters.  
         If root is given, it will be attached to the graph (wether it is a task or a taskgroup).  
@@ -405,10 +423,11 @@ class Graph(object):
         self.name = unicode(name)
 
         if root is None:
-            self.root = TaskGroup(name)
+            self.root = TaskGroup(name, tags=tags)
         else:
             if isinstance(root, Task) or isinstance(root, TaskGroup):
                 self.root = root
+                self.root.updateTags(tags)
             else:
                 raise GraphError("Invalid root element given.")
 
@@ -732,6 +751,14 @@ class GraphDumper():
                 }
 
     def computeTaskRepresentation(self, task):
+        # FIXME JSA: conventionnal shot name is stored in tags{plan:name}
+        # We want to change this behaviour to store it in tags:{shot:name}
+        # So we hack the task repr to set the same value for both keys (to keep a retrocompatibility)
+        if ("shot" not in task.tags) and ("plan" in task.tags):
+            task.tags["shot"] = task.tags["plan"]
+        if ("plan" not in task.tags) and ("shot" in task.tags):
+            task.tags["plan"] = task.tags["shot"]
+
         return {
             'name': task.name,
             'type': 'Task',
@@ -755,6 +782,15 @@ class GraphDumper():
         }
 
     def computeTaskGroupRepresentation(self, taskGroup):
+
+        # FIXME JSA: conventionnal shot name is stored in tags{plan:name}
+        # We want to change this behaviour to store it in tags:{shot:name}
+        # So we hack the task repr to set the same value for both keys (to keep a retrocompatibility)
+        if ("shot" not in taskGroup.tags) and ("plan" in taskGroup.tags):
+            taskGroup.tags["shot"] = taskGroup.tags["plan"]
+        if ("plan" not in taskGroup.tags) and ("shot" in taskGroup.tags):
+            taskGroup.tags["plan"] = taskGroup.tags["shot"]
+
         return {
             'type': 'TaskGroup',
             'name': taskGroup.name,

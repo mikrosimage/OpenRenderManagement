@@ -17,35 +17,36 @@ from puliclient import *
 
 if __name__ == '__main__':
     
-    defaultArgs = { "cmd":"sleep 5", "start":1, "end":1, "packetSize":1, "prod":"test", "shot":"test" }
-    defaultDecomposer = "puliclient.contrib.generic.GenericDecomposer"
+    args =  { "cmd":"sleep 30", "start":1, "end":10, "packetSize":1 }
+    tags =  { "prod":"test", "shot":"test", "nbFrames":10 }
+    decomposer = "puliclient.contrib.generic.GenericDecomposer"
 
-    graph = Graph('multi-level')
+    graph = Graph('multi-level', tags=tags)
 
-    tg1 = graph.addNewTaskGroup( name="taskgroup1" )
-    tg1.addNewTask( name="task1.1", arguments=defaultArgs, decomposer=defaultDecomposer )
-    tg1.addNewTask( name="task1.2", arguments=defaultArgs, decomposer=defaultDecomposer )
-    tg1.addNewTask( name="task1.3", arguments=defaultArgs, decomposer=defaultDecomposer )
+    tg1 = graph.addNewTaskGroup( name="taskgroup1", tags=tags )
+    tg1.addNewTask( name="task1.1", arguments=args, decomposer=decomposer )
+    tg1.addNewTask( name="task1.2", arguments=args, decomposer=decomposer )
+    tg1.addNewTask( name="task1.3", arguments=args, decomposer=decomposer )
 
-    tg2 = graph.addNewTaskGroup( name="taskgroup2" )
-    tg2.addNewTask( name="task2.1", arguments=defaultArgs, decomposer=defaultDecomposer )
-    tg2.addNewTask( name="task2.2", arguments=defaultArgs, decomposer=defaultDecomposer )
+    # tg2 = graph.addNewTaskGroup( name="taskgroup2", tags=tags )
+    # tg2.addNewTask( name="task2.1", arguments=args, tags=tags, decomposer=decomposer )
+    # tg2.addNewTask( name="task2.2", arguments=args, tags=tags, decomposer=decomposer )
 
     # print graph
-    graph.submit("pulitest", 8004)
+    graph.submit("puliserver", 8004)
 
 # PREVIOUS METHOD (still valid)
     # tg1 = TaskGroup( name = "tg1" )
-    # sub1 = Task( name="t1.1", arguments=defaultArgs, decomposer=defaultDecomposer )
-    # sub2 = Task( name="t1.2", arguments=defaultArgs, decomposer=defaultDecomposer )
-    # sub3 = Task( name="t1.3", arguments=defaultArgs, decomposer=defaultDecomposer )
+    # sub1 = Task( name="t1.1", arguments=args, decomposer=decomposer )
+    # sub2 = Task( name="t1.2", arguments=args, decomposer=decomposer )
+    # sub3 = Task( name="t1.3", arguments=args, decomposer=decomposer )
     # tg1.addTask(sub1)
     # tg1.addTask(sub2)
     # tg1.addTask(sub3)
 
     # tg2 = TaskGroup( name = "tg2" )
-    # sub21 = Task( name="t2.1", arguments=defaultArgs, decomposer=defaultDecomposer )
-    # sub22 = Task( name="t2.2", arguments=defaultArgs, decomposer=defaultDecomposer )
+    # sub21 = Task( name="t2.1", arguments=args, decomposer=decomposer )
+    # sub22 = Task( name="t2.2", arguments=args, decomposer=decomposer )
     # tg2.addTask(sub21)
     # tg2.addTask(sub22)
 

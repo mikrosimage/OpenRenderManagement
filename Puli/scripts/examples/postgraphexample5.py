@@ -10,30 +10,31 @@ Graph with dependencies between a task and a taskgroup.
 from puliclient import Task, Graph, GraphDumper
 
 if __name__ == '__main__':
-    defaultArgs =  { "cmd":"sleep 8", "start":1, "end":3, "packetSize":1, "prod":"test", "shot":"test" }
-    defaultDecomposer = "puliclient.contrib.generic.GenericDecomposer"
+    args =  { "cmd":"sleep 30", "start":1, "end":10, "packetSize":1 }
+    tags =  { "prod":"test", "shot":"test" }
+    decomposer = "puliclient.contrib.generic.GenericDecomposer"
 
 	#
     # 1. a task waits the end of a taskgroup
     #
-    graph = Graph('1st case')
+    graph = Graph('1st case', tags=tags)
     tg1 = graph.addNewTaskGroup( name="TG1" )
-    tg1.addNewTask( name="task1", arguments=defaultArgs, decomposer=defaultDecomposer )
-    tg1.addNewTask( name="task2", arguments=defaultArgs, decomposer=defaultDecomposer )
-    task3 = graph.addNewTask( name="task3", arguments=defaultArgs, decomposer=defaultDecomposer )
+    tg1.addNewTask( name="task1", arguments=args, tags=tags, decomposer=decomposer )
+    tg1.addNewTask( name="task2", arguments=args, tags=tags, decomposer=decomposer )
+    task3 = graph.addNewTask( name="task3", arguments=args, tags=tags, decomposer=decomposer )
     graph.addEdges( [(tg1, task3)] )
     graph.submit("pulitest", 8004)
 
     #
     # 2. a taskgroup waits the end of a task
     #
-    graph = Graph('2nd case')
+    graph = Graph('2nd case', tags=tags)
     tg1 = graph.addNewTaskGroup( name="TG1" )
-    tg1.addNewTask( name="task1", arguments=defaultArgs, decomposer=defaultDecomposer )
-    tg1.addNewTask( name="task2", arguments=defaultArgs, decomposer=defaultDecomposer )
+    tg1.addNewTask( name="task1", arguments=args, tags=tags, decomposer=decomposer )
+    tg1.addNewTask( name="task2", arguments=args, tags=tags, decomposer=decomposer )
 
-    task3 = graph.addNewTask( name="task3", arguments=defaultArgs, decomposer=defaultDecomposer )
-    task4 = graph.addNewTask( name="task4", arguments=defaultArgs, decomposer=defaultDecomposer )
+    task3 = graph.addNewTask( name="task3", arguments=args, tags=tags, decomposer=decomposer )
+    task4 = graph.addNewTask( name="task4", arguments=args, tags=tags, decomposer=decomposer )
     graph.addEdges( [(task3, tg1),
                     (task4, tg1)] )
     graph.submit("pulitest", 8004)
@@ -41,14 +42,14 @@ if __name__ == '__main__':
     #
     # 3. a taskgroup waits the end of another taskgroup
     #
-    graph = Graph('3rd case')
+    graph = Graph('3rd case', tags=tags)
     tg1 = graph.addNewTaskGroup( name="TG1" )
-    tg1.addNewTask( name="task1", arguments=defaultArgs, decomposer=defaultDecomposer )
-    tg1.addNewTask( name="task2", arguments=defaultArgs, decomposer=defaultDecomposer )
+    tg1.addNewTask( name="task1", arguments=args, tags=tags, decomposer=decomposer )
+    tg1.addNewTask( name="task2", arguments=args, tags=tags, decomposer=decomposer )
 
     tg2 = graph.addNewTaskGroup( name="TG2" )
-    tg2.addNewTask( name="task3", arguments=defaultArgs, decomposer=defaultDecomposer )
-    tg2.addNewTask( name="task4", arguments=defaultArgs, decomposer=defaultDecomposer )
+    tg2.addNewTask( name="task3", arguments=args, tags=tags, decomposer=decomposer )
+    tg2.addNewTask( name="task4", arguments=args, tags=tags, decomposer=decomposer )
 
     graph.addEdges( [(tg2, tg1)] )
     graph.submit("pulitest", 8004)

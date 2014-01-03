@@ -14,20 +14,21 @@ from puliclient import *
 
 if __name__ == '__main__':
     
-    defaultArguments = { "cmd":"sleep 5", "start":1, "end":1, "packetSize":1, "prod":"test", "shot":"test" }
-    defaultDecomposer = "puliclient.contrib.generic.GenericDecomposer"
+    args =  { "cmd":"sleep 30", "start":1, "end":10, "packetSize":1 }
+    tags =  { "prod":"test", "shot":"test" }
+    decomposer = "puliclient.contrib.generic.GenericDecomposer"
 
     # When creating a graph without a root task or taskgroup, a default taskgroup is created with the name of the graph
-    graph = Graph('my job')
+    graph = Graph('my job', tags=tags)
 
     #
     # Several ways to create and add nodes
     #
 
     # Create nodes detached from the graph
-    task1 = Task(name="task1", arguments=defaultArguments, decomposer=defaultDecomposer)
-    task2 = Task(name="task2", arguments=defaultArguments, decomposer=defaultDecomposer)
-    task3 = Task(name="task3", arguments=defaultArguments, decomposer=defaultDecomposer)
+    task1 = Task(name="task1", arguments=args, tags=tags, decomposer=decomposer)
+    task2 = Task(name="task2", arguments=args, tags=tags, decomposer=decomposer)
+    task3 = Task(name="task3", arguments=args, tags=tags, decomposer=decomposer)
 
     # and add them in a list
     graph.addList( [task1, task2] )
@@ -37,8 +38,9 @@ if __name__ == '__main__':
 
     # Or add elem directly in the graph
     anotherTask = graph.addNewTask( name="another task",
-                      arguments={ "cmd":"sleep 10", "start":1, "end":1, "packetSize":1, "prod":"test", "shot":"test" },
-                      decomposer=defaultDecomposer )
+                      arguments=args,
+                      tags=tags,
+                      decomposer=decomposer )
 
     # Create complex dependencies like a diamond shaped graph 
     # NB: default end status is [DONE]
@@ -53,10 +55,10 @@ if __name__ == '__main__':
 
 
 # PREVIOUS METHOD (still valid)
-	# task1 = Task(name="task1", arguments=defaultArguments, decomposer=defaultDecomposer)
-	# task2 = Task(name="task2", arguments=defaultArguments, decomposer=defaultDecomposer)
-	# task3 = Task(name="task3", arguments=defaultArguments, decomposer=defaultDecomposer)
-	# anotherTask = Task(name="anotherTask", arguments=defaultArguments, decomposer=defaultDecomposer)
+	# task1 = Task(name="task1", arguments=args, decomposer=decomposer)
+	# task2 = Task(name="task2", arguments=args, decomposer=decomposer)
+	# task3 = Task(name="task3", arguments=args, decomposer=decomposer)
+	# anotherTask = Task(name="anotherTask", arguments=args, decomposer=decomposer)
 
 	# mainTG = TaskGroup( name="my job" )
 	# mainTG.addTask(task1)

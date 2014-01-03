@@ -7,10 +7,11 @@ Puli's documentation
 **************************************************
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    user_guide
    admin_guide
+   pipe_dev_guide
    dev_guide
    module_reference
 

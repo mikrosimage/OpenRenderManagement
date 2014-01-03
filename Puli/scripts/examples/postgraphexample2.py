@@ -14,16 +14,17 @@ from puliclient import Task, TaskGroup, Graph, DONE
 
 if __name__ == '__main__':
 
-    defaultArgs =  { "cmd":"sleep 5", "start":1, "end":1, "packetSize":1, "prod":"test", "shot":"test" }
-    defaultDecomposer = "puliclient.contrib.generic.GenericDecomposer"
+    args =  { "cmd":"sleep 30", "start":1, "end":10, "packetSize":1 }
+    tags =  { "prod":"test", "shot":"test" }
+    decomposer = "puliclient.contrib.generic.GenericDecomposer"
 
-    graph = Graph('simpleGraph')
-    task1 = graph.addNewTask(name="task1", arguments=defaultArgs, decomposer=defaultDecomposer)
-    task2 = graph.addNewTask(name="task2", arguments=defaultArgs, decomposer=defaultDecomposer)
-    task3 = graph.addNewTask(name="task3", arguments=defaultArgs, decomposer=defaultDecomposer)    
-    task4 = graph.addNewTask(name="task4", arguments=defaultArgs, decomposer=defaultDecomposer)    
-    task5 = graph.addNewTask(name="task5", arguments=defaultArgs, decomposer=defaultDecomposer)    
-    task6 = graph.addNewTask(name="task6", arguments=defaultArgs, decomposer=defaultDecomposer)    
+    graph = Graph('simpleGraph', tags=tags)
+    task1 = graph.addNewTask(name="task1", arguments=args, tags=tags, decomposer=decomposer)
+    task2 = graph.addNewTask(name="task2", arguments=args, tags=tags, decomposer=decomposer)
+    task3 = graph.addNewTask(name="task3", arguments=args, tags=tags, decomposer=decomposer)    
+    task4 = graph.addNewTask(name="task4", arguments=args, tags=tags, decomposer=decomposer)    
+    task5 = graph.addNewTask(name="task5", arguments=args, tags=tags, decomposer=decomposer)    
+    task6 = graph.addNewTask(name="task6", arguments=args, tags=tags, decomposer=decomposer)    
 
     # Create a chain of dependencies, execution order will be: 
     # task1 > task4 > task3 > task2 > task5 > task6
@@ -33,12 +34,12 @@ if __name__ == '__main__':
 
 
 # PREVIOUS METHOD (still valid)
-    # task1 = Task(name="task1", arguments=defaultArgs, decomposer=defaultDecomposer)
-    # task2 = Task(name="task2", arguments=defaultArgs, decomposer=defaultDecomposer)
-    # task3 = Task(name="task3", arguments=defaultArgs, decomposer=defaultDecomposer)
-    # task4 = Task(name="task4", arguments=defaultArgs, decomposer=defaultDecomposer)
-    # task5 = Task(name="task5", arguments=defaultArgs, decomposer=defaultDecomposer)
-    # task6 = Task(name="task6", arguments=defaultArgs, decomposer=defaultDecomposer)
+    # task1 = Task(name="task1", arguments=args, decomposer=decomposer)
+    # task2 = Task(name="task2", arguments=args, decomposer=decomposer)
+    # task3 = Task(name="task3", arguments=args, decomposer=decomposer)
+    # task4 = Task(name="task4", arguments=args, decomposer=decomposer)
+    # task5 = Task(name="task5", arguments=args, decomposer=decomposer)
+    # task6 = Task(name="task6", arguments=args, decomposer=decomposer)
 
     # mainTG = TaskGroup( name="group" )
     # mainTG.addTask(task1)

@@ -337,9 +337,9 @@ class Worker(MainLoopApplication):
 
         # Request error encountered "maxRetry" times, removing the command watcher to avoid
         # recalling this update in next main loop iter
-        if i == maxRetry:
-            LOGGER.exception('Update of command %d failed repeatedly, removing watcher.', commandWatcher.commandId )
-            self.removeCommandWatcher(commandWatcher)
+        # if i == maxRetry:
+        #     LOGGER.exception('Update of command %d failed repeatedly, removing watcher.', commandWatcher.commandId )
+        #     self.removeCommandWatcher(commandWatcher)
 
 
     def pauseWorker(self, paused, killproc):

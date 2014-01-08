@@ -356,9 +356,6 @@ class Dispatcher(MainLoopApplication):
         #            (rn, cmd) = entryPoint.dispatchIterator()
         ####
         for entryPoint in entryPoints:
-#            LOGGER.debug( "   - search RNs for =%r" % entryPoint.name )
-#            LOGGER.debug( "     - poolshares values=%r" % entryPoint.poolShares.values() )
-
             if any([poolShare.hasRenderNodesAvailable() for poolShare in entryPoint.poolShares.values()]):
                 try:
                     for (rn, com) in entryPoint.dispatchIterator(lambda: self.queue.qsize() > 0):

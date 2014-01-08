@@ -222,6 +222,8 @@ class RenderNodeSysInfosResource(BaseResource):
             renderNode.cores = int(dct["cores"])
         if "ram" in dct:
             renderNode.ram = int(dct["ram"])
+        if "systemFreeRam" in dct:
+            renderNode.systemFreeRam = int(dct["systemFreeRam"])
         if "speed" in dct:
             renderNode.speed = float(dct["speed"])
         if "performance" in dct:

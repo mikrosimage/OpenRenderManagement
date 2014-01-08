@@ -11,6 +11,9 @@ except ImportError:
     import json
 import httplib
 
+import subprocess
+from subprocess import PIPE
+
 from octopus.core.framework.mainloopapplication import MainLoopApplication
 from octopus.core.communication.requestmanager import RequestManager
 from octopus.core.enums import command as COMMAND
@@ -26,6 +29,9 @@ from octopus.worker.process import spawnCommandWatcher
 LOGGER = logging.getLogger("worker")
 COMPUTER_NAME_TEMPLATE = "%s:%d"
 
+KILOBYTES = 0
+MEGABYTES = 1
+GIGABYTES = 2
 
 class WorkerInternalException(Exception):
     """
@@ -136,6 +142,40 @@ class Worker(MainLoopApplication):
                 pass
         return int(memTotal) / 1024
 
+
+
+    def getFreeMem(self, pUnit=MEGABYTES ):
+        """
+        | Starts a shell process to retrieve amount of free memory on the worker's system.
+        | The amount of memory is transmitted in MEGABYTES, but can be specified to another unit
+        | To estimate this, we retrieve specific values in /proc/meminfo:
+        | Result = MemFree + Buffers + Cached
+
+        :param pUnit: An integer representing the unit to which the value is converted (DEFAULT is MEGABYTES).
+        :return : An integer representing the amount of FREE memory on the system
+        :raise : OSError if subprocess fails. Returns "-1" if no correct value can be retrieved.
+        """
+        
+        try:
+            freeMemStr = subprocess.Popen(["awk",
+                                            "/MemFree|Buffers|^Cached/ {free+=$2} END {print  free}",
+                                            "/proc/meminfo"], stdout=PIPE).communicate()[0]
+        except OSError, e:
+            LOGGER.warning("Error when retrievieng free memory: %r", e)
+
+        if freeMemStr == '':
+            return -1
+
+        freeMem = int(freeMemStr)
+
+        if pUnit is MEGABYTES:
+            freeMem = int( freeMem/1024 )
+        elif pUnit is GIGABYTES:
+            freeMem = int( freeMem/(1024*1024) )
+
+        return freeMem
+
+
     def getCpuInfo(self):
         if os.path.isfile('/proc/cpuinfo'):
             try:
@@ -193,6 +233,7 @@ class Worker(MainLoopApplication):
             self.getOpenglVersion()
             infos['cores'] = self.getNbCores()
             infos['ram'] = self.getTotalMemory()
+            infos['systemFreeRam'] = self.getFreeMem()
             self.updateSys = False
             # system info values:
             infos['caracteristics'] = {"os": platform.system().lower(),
@@ -491,6 +532,9 @@ class Worker(MainLoopApplication):
         # except:
         #     LOGGER.error("A problem occured : " + repr(sys.exc_info()))
 
+
+
+
     def sendSysInfosMessage(self):
         """
         Send sys infos to the dispatcher, the request content holds the RN status only, it has to be kept
@@ -502,6 +546,7 @@ class Worker(MainLoopApplication):
         #infos = self.fetchSysInfos()
         infos = {}
         infos['status'] = self.status
+        infos['systemFreeRam'] = self.getFreeMem()
         dct = json.dumps(infos)
         headers = {}
         headers['content-length'] = len(dct)

@@ -107,6 +107,12 @@ class RamInUseResource(BaseResource):
     """
     TO FIX: the method for retrieving mem used is not really correct. 
     We should use "free -m" or directly /proc/meminfo -> use = memtotal - (memfree + membuffer + memcache)
+
+    Par ex, pour calculer la memoire libre (en prenant en compte les buffers et le swap): 
+    awk '/MemFree|Buffers|^Cached/ {free+=$2} END {print  free}' /proc/meminfo
+
+    Pour avoir la memoire utilisee, soit memtotal-memlibre:
+    awk '/MemTotal/ {tot=$2} /MemFree|Buffers|^Cached/ {free+=$2} END {print tot-free}' /proc/meminfo
     """
     def get(self):
         process = subprocess.Popen("ps -e -o rss | awk '{sum+=$1} END {print sum/1024}'",

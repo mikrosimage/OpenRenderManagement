@@ -358,12 +358,21 @@ class Dispatcher(MainLoopApplication):
         for entryPoint in entryPoints:
             if any([poolShare.hasRenderNodesAvailable() for poolShare in entryPoint.poolShares.values()]):
                 try:
+
+                    # LOGGER.debug(">>>>> DBG ITERATOR")
+                    # for com in entryPoint.nuIterator():
+                    #     print "         %r " % com
+                    # for (rn, com) in entryPoint.dispatchIterator(lambda: True):
+                    #     print "         %r -> %r" % (com, rn.name)
+                    # LOGGER.debug("<<<<< END DBG ITERATOR")
+
                     for (rn, com) in entryPoint.dispatchIterator(lambda: self.queue.qsize() > 0):
                         assignments.append((rn, com))
                         # increment the allocatedRN for the poolshare
                         poolShare.allocatedRN += 1
                         # save the active poolshare of the rendernode
                         rn.currentpoolshare = poolShare
+
                 except NoRenderNodeAvailable:
                     pass
         assignmentDict = collections.defaultdict(list)

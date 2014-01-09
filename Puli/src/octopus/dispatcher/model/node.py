@@ -467,7 +467,7 @@ class TaskNode(BaseNode):
                 yield (renderNode, command)
             else:
                 # Pas de RN ou les RNS ne matchent pas les contraintes des jobs.
-                LOGGER.debug("Reservation failed for command %r" % command.name)
+                LOGGER.debug("Reservation failed for command %r" % command.id)
                 return
 
     def reserve_rendernode(self, command, ep):
@@ -484,9 +484,9 @@ class TaskNode(BaseNode):
                         return rendernode
 
             # stop iterating through RNs if none available
-            else:
-                LOGGER.debug("Unable to reserve rendernode (might not be able to run task)")
-                raise NoRenderNodeAvailable
+            # else:
+            #     LOGGER.debug("Unable to reserve rendernode (might not be able to run task)")
+            #     raise NoRenderNodeAvailable
 
         # Might not be necessary anymore because first loop is based on poolShare's hasRNSavailable method
         # It was not taking into account the tests before assignment: RN.canRun()

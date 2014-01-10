@@ -913,6 +913,7 @@ class PuliDB(object):
                 if int(parentId) in realTaskGroupsList.keys():
                   realTaskGroupsList[int(parentId)].addTask(realTaskGroupsList[int(id)])
                   realTaskGroupsList[int(id)].parent = realTaskGroupsList[int(parentId)]
+
             tree.tasks[int(id)] = realTaskGroupsList[int(id)]
 
         # set the parents of the tasks

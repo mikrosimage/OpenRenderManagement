@@ -909,8 +909,10 @@ class PuliDB(object):
         for num, dbTaskGroup in enumerate(taskGroups):
             id, name, parentId, user, priority, dispatcherKey, maxRN, environment, requirements, tags, strategy, archived, args = dbTaskGroup
             if parentId:
-                realTaskGroupsList[int(parentId)].addTask(realTaskGroupsList[int(id)])
-                realTaskGroupsList[int(id)].parent = realTaskGroupsList[int(parentId)]
+                #FIXME: try to avoid pb when reloading DB with inconsistencies
+                if int(parentId) in realTaskGroupsList.keys():
+                  realTaskGroupsList[int(parentId)].addTask(realTaskGroupsList[int(id)])
+                  realTaskGroupsList[int(id)].parent = realTaskGroupsList[int(parentId)]
             tree.tasks[int(id)] = realTaskGroupsList[int(id)]
 
         # set the parents of the tasks

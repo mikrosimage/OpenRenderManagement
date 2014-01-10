@@ -78,9 +78,13 @@ if [[ -d "${SOURCE}" && ! -L "${SOURCE}" ]] ; then
     exit 1
   fi
 
+  if [[ ! -f "${SOURCE}/tools" ]] ; then
+    echo "Error: origin folder does not contains the '${SOURCE}/tools' subfolder."
+    exit 1
+  fi
 
-  if [[ ! -f "${SOURCE}/scripts/puliserver" ]] ; then
-    echo "Error: origin folder does not contains the startup script: '${SOURCE}/scripts/puliserver'."
+  if [[ ! -f "${SOURCE}/scripts/startup/puliserver" ]] ; then
+    echo "Error: origin folder does not contains the startup script: '${SOURCE}/scripts/startup/puliserver'."
     exit 1
   fi
 
@@ -139,13 +143,11 @@ echo ""
 echo "Copying octopus source files..."
 rsync -rL --exclude "*.pyc" ${SOURCE}/src/octopus ${DESTINATION}/
 
-echo "Copying startup scripts files..."
+echo "Copying scripts files..."
 mkdir -p ${DESTINATION}/scripts
 rsync -rL --exclude "*.pyc" ${SOURCE}/scripts/dispatcherd.py ${DESTINATION}/scripts
-rsync -rL --exclude "*.pyc" ${SOURCE}/scripts/puliserver ${DESTINATION}/scripts
-
-echo "Copying puliser startup file..."
-rsync -rL --exclude "*.pyc" ${SOURCE}/scripts/puliserver /etc/init.d/
+rsync -rL --exclude "*.pyc" ${SOURCE}/scripts/pulicleaner ${DESTINATION}/scripts
+rsync -rL --exclude "*.pyc" ${SOURCE}/scripts/startup/puliserver /etc/init.d/
 
 echo "Creating config dir..."
 mkdir -p ${DESTINATION}/conf

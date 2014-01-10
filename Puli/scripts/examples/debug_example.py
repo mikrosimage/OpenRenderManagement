@@ -3,8 +3,8 @@
 from puliclient import Task, Graph
 
 
-args =  { "cmd":"sleep 10", "start":1, "end":2, "packetSize":1 }
-tags =  { "prod":"test", "shot":"test", "nbFrames":2 }
+args =  { "cmd":"sleep 10", "start":1, "end":200, "packetSize":1 }
+tags =  { "prod":"test", "shot":"test", "nbFrames":200 }
 decomposer = "puliclient.contrib.generic.GenericDecomposer"
 
 graph = Graph('debug', tags=tags)

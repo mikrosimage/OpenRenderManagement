@@ -334,9 +334,11 @@ class Worker(MainLoopApplication):
 
     def updateCommandWatcher(self, commandWatcher):
         """
-        Send info to the dispatcher about currently running command watcher.
-        Called from the mainloop every time a command has been tagged "modified"
-        req: PUT /rendernodes/<currentRN>/commands/<commandId>/
+        | Send info to the dispatcher about currently running command watcher.
+        | Called from the mainloop every time a command has been tagged "modified"
+        | req: PUT /rendernodes/<currentRN>/commands/<commandId>/
+
+        :param commandWatcher: the commandWatcher object we will send an update about
         """
 
         maxRetry = max(1,config.WORKER_REQUEST_MAX_RETRY_COUNT)
@@ -385,9 +387,12 @@ class Worker(MainLoopApplication):
 
     def pauseWorker(self, paused, killproc):
         """
-        Called from mainloop when checking killfile presence (also checked when registering).
-        Send a request to the dispatcher to update rendernode's state.
-        req: PUT /rendernodes/<currentRN>/paused/
+        | Called from mainloop when checking killfile presence (also checked when registering).
+        | Send a request to the dispatcher to update rendernode's state.
+        | req: PUT /rendernodes/<currentRN>/paused/
+
+        :param paused: boolean flag indicating the status to set for this worker
+        :param killproc: boolean flag indicating if all running processes must be killed or not
         """
         while True:
             url = "/rendernodes/%s/paused/" % (self.computerName)
@@ -441,6 +446,14 @@ class Worker(MainLoopApplication):
                     continue
 
     def mainLoop(self):
+        """
+        | Worker main loop:
+        | - check kill file and set new status (paused, toberestartted...)
+        | - update every modified command watcher for this RN
+        | - remove finished commandWatchers for this RN
+        | - clean "dead" commandWatchers ("dead" means a timeout val is set on the command and RUNNING time is more thant timeout val)
+        | - check ping delay and resync with server if enough time elapsed
+        """
         # try:
         now = time.time()
 
@@ -537,9 +550,11 @@ class Worker(MainLoopApplication):
 
     def sendSysInfosMessage(self):
         """
-        Send sys infos to the dispatcher, the request content holds the RN status only, it has to be kept
-        very small to avoid nerwork flood.
-        req: PUT /rendernodes/<currentRN>/sysinfos
+        | Send sys infos to the dispatcher, the request content holds the RN status only, it has to be kept
+        | very small to avoid nerwork flood.
+        | req: PUT /rendernodes/<currentRN>/sysinfos
+
+        :raise : Exception
         """
 
         # we don't need to send the whole dict of sysinfos

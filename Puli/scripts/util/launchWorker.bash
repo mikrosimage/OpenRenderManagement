@@ -1,12 +1,12 @@
 #!/bin/bash
 
 PULIHOST=$1
-PORT=$2
+WORKERPORT=$2
 
-pidfile=/tmp/worker$PORT.pid
-killfile=/tmp/render/kill$PORT
+pidfile=/tmp/worker$WORKERPORT.pid
+killfile=/tmp/render/kill$WORKERPORT
 
-echo "Starting worker: `hostname -f`:$PORT on $PULIHOST"
+echo "Starting worker: `hostname -f`:$WORKERPORT on $PULIHOST"
 
 export PYTHONPATH=/s/apps/lin/eval/puli/distrib/OpenRenderManagement/Puli/src:${PYTHONPATH}
-/s/apps/lin/eval/puli/distrib/OpenRenderManagement/Puli/scripts/workerd.py -s $PULIHOST -p $PORT -C -D -P $pidfile -K $killfile
+/s/apps/lin/eval/puli/distrib/OpenRenderManagement/Puli/scripts/workerd.py -s $PULIHOST -p $WORKERPORT -C -D -P $pidfile -K $killfile

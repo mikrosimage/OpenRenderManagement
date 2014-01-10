@@ -11,8 +11,8 @@ from puliclient import Task, Graph, GraphDumper
 
 if __name__ == '__main__':
 
-    args =  { "cmd":"sleep 30", "start":1, "end":10, "packetSize":1 }
-    tags =  { "prod":"test", "shot":"test", "nbFrames":10 }
+    args =  { "cmd":"sleep 10", "start":1, "end":200, "packetSize":1 }
+    tags =  { "prod":"test", "shot":"test", "nbFrames":200 }
     decomposer = "puliclient.contrib.generic.GenericDecomposer"
 
     simpleTask = Task( name="todo", arguments=args, tags=tags, decomposer=decomposer )

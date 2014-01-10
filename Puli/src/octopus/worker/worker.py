@@ -11,6 +11,9 @@ except ImportError:
     import json
 import httplib
 
+import subprocess
+from subprocess import PIPE
+
 from octopus.core.framework.mainloopapplication import MainLoopApplication
 from octopus.core.communication.requestmanager import RequestManager
 from octopus.core.enums import command as COMMAND
@@ -26,6 +29,9 @@ from octopus.worker.process import spawnCommandWatcher
 LOGGER = logging.getLogger("worker")
 COMPUTER_NAME_TEMPLATE = "%s:%d"
 
+KILOBYTES = 0
+MEGABYTES = 1
+GIGABYTES = 2
 
 class WorkerInternalException(Exception):
     """
@@ -57,10 +63,18 @@ class Worker(MainLoopApplication):
 
     @property
     def modifiedCommandWatchers(self):
+        """
+        Property of the Worker class. An iterable list of the modified command watchers
+        :rtype: list of CommandWatcher
+        """
         return (watcher for watcher in self.commandWatchers.values() if watcher.modified)
 
     @property
     def finishedCommandWatchers(self):
+        """
+        Property of the Worker class. An iterable list of the finished command watchers
+        :rtype: list of CommandWatcher
+        """
         return (watcher for watcher in self.commandWatchers.values() if watcher.finished and not watcher.modified)
 
     def __init__(self, framework):
@@ -128,6 +142,40 @@ class Worker(MainLoopApplication):
                 pass
         return int(memTotal) / 1024
 
+
+
+    def getFreeMem(self, pUnit=MEGABYTES ):
+        """
+        | Starts a shell process to retrieve amount of free memory on the worker's system.
+        | The amount of memory is transmitted in MEGABYTES, but can be specified to another unit
+        | To estimate this, we retrieve specific values in /proc/meminfo:
+        | Result = MemFree + Buffers + Cached
+
+        :param pUnit: An integer representing the unit to which the value is converted (DEFAULT is MEGABYTES).
+        :return : An integer representing the amount of FREE memory on the system
+        :raise : OSError if subprocess fails. Returns "-1" if no correct value can be retrieved.
+        """
+        
+        try:
+            freeMemStr = subprocess.Popen(["awk",
+                                            "/MemFree|Buffers|^Cached/ {free+=$2} END {print  free}",
+                                            "/proc/meminfo"], stdout=PIPE).communicate()[0]
+        except OSError, e:
+            LOGGER.warning("Error when retrievieng free memory: %r", e)
+
+        if freeMemStr == '':
+            return -1
+
+        freeMem = int(freeMemStr)
+
+        if pUnit is MEGABYTES:
+            freeMem = int( freeMem/1024 )
+        elif pUnit is GIGABYTES:
+            freeMem = int( freeMem/(1024*1024) )
+
+        return freeMem
+
+
     def getCpuInfo(self):
         if os.path.isfile('/proc/cpuinfo'):
             try:
@@ -185,6 +233,7 @@ class Worker(MainLoopApplication):
             self.getOpenglVersion()
             infos['cores'] = self.getNbCores()
             infos['ram'] = self.getTotalMemory()
+            infos['systemFreeRam'] = self.getFreeMem()
             self.updateSys = False
             # system info values:
             infos['caracteristics'] = {"os": platform.system().lower(),
@@ -285,10 +334,11 @@ class Worker(MainLoopApplication):
 
     def updateCommandWatcher(self, commandWatcher):
         """
-        Send info to the dispatcher about currently running command watcher.
-        Called from the mainloop every time a command has been tagged "modified"
-        req: PUT /rendernodes/<currentRN>/commands/<commandId>/
-        :param commandWatcher: A command watcher reference
+        | Send info to the dispatcher about currently running command watcher.
+        | Called from the mainloop every time a command has been tagged "modified"
+        | req: PUT /rendernodes/<currentRN>/commands/<commandId>/
+
+        :param commandWatcher: the commandWatcher object we will send an update about
         """
 
         maxRetry = max(1,config.WORKER_REQUEST_MAX_RETRY_COUNT)
@@ -330,16 +380,19 @@ class Worker(MainLoopApplication):
 
         # Request error encountered "maxRetry" times, removing the command watcher to avoid
         # recalling this update in next main loop iter
-        if i == maxRetry:
-            LOGGER.exception('Update of command %d failed repeatedly, removing watcher.', commandWatcher.commandId )
-            self.removeCommandWatcher(commandWatcher)
+        # if i == maxRetry:
+        #     LOGGER.exception('Update of command %d failed repeatedly, removing watcher.', commandWatcher.commandId )
+        #     self.removeCommandWatcher(commandWatcher)
 
 
     def pauseWorker(self, paused, killproc):
         """
-        Called from mainloop when checking killfile presence (also checked when registering).
-        Send a request to the dispatcher to update rendernode's state.
-        req: PUT /rendernodes/<currentRN>/paused/
+        | Called from mainloop when checking killfile presence (also checked when registering).
+        | Send a request to the dispatcher to update rendernode's state.
+        | req: PUT /rendernodes/<currentRN>/paused/
+
+        :param paused: boolean flag indicating the status to set for this worker
+        :param killproc: boolean flag indicating if all running processes must be killed or not
         """
         while True:
             url = "/rendernodes/%s/paused/" % (self.computerName)
@@ -360,7 +413,6 @@ class Worker(MainLoopApplication):
                     if paused:
                         self.status = rendernode.RN_PAUSED
                         self.isPaused = True
-
                         LOGGER.info("Worker has been put in paused mode")
                     else:
                         self.status = rendernode.RN_IDLE
@@ -394,6 +446,14 @@ class Worker(MainLoopApplication):
                     continue
 
     def mainLoop(self):
+        """
+        | Worker main loop:
+        | - check kill file and set new status (paused, toberestartted...)
+        | - update every modified command watcher for this RN
+        | - remove finished commandWatchers for this RN
+        | - clean "dead" commandWatchers ("dead" means a timeout val is set on the command and RUNNING time is more thant timeout val)
+        | - check ping delay and resync with server if enough time elapsed
+        """
         # try:
         now = time.time()
 
@@ -485,19 +545,23 @@ class Worker(MainLoopApplication):
         # except:
         #     LOGGER.error("A problem occured : " + repr(sys.exc_info()))
 
+
+
+
     def sendSysInfosMessage(self):
         """
-        Send sys infos to the dispatcher, the request content holds the RN status only, it has to be kept
-        very small to avoid nerwork flood.
-        :param req: PUT /rendernodes/<currentRN>/sysinfos
+        | Send sys infos to the dispatcher, the request content holds the RN status only, it has to be kept
+        | very small to avoid nerwork flood.
+        | req: PUT /rendernodes/<currentRN>/sysinfos
+
+        :raise : Exception
         """
 
         # we don't need to send the whole dict of sysinfos
         #infos = self.fetchSysInfos()
         infos = {}
         infos['status'] = self.status
-        infos['isPaused'] = self.isPaused
-
+        infos['systemFreeRam'] = self.getFreeMem()
         dct = json.dumps(infos)
         headers = {}
         headers['content-length'] = len(dct)
@@ -515,7 +579,7 @@ class Worker(MainLoopApplication):
         except httplib.BadStatusLine:
             LOGGER.exception('Sending sys infos has failed with a BadStatusLine error')
 
-        LOGGER.debug('Sys infos transmitted to the server: %r' % RN_STATUS_NAMES[self.status])
+        LOGGER.debug('Sys infos transmitted to the server: %r' % dct)
 
 
     def connect(self):

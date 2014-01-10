@@ -49,7 +49,7 @@ class FifoStrategy(BaseStrategy):
         pass
 
     def __str__(self):
-        return "FairStrategy"
+        return "FifoStrategy"
 
 
 class AsIsStrategy(BaseStrategy):

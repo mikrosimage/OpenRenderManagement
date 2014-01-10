@@ -14,5 +14,6 @@ downloads/
 tests/
 src/*.egg-info
 .idea/
+Puli/doc/_build
 Puli/src/tornado
 Puli/src/puliclient/contrib

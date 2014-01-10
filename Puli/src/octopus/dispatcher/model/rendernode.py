@@ -37,6 +37,7 @@ class RenderNode(models.Model):
     usedCoresNumber = models.DictField(as_item_list=True)
     ramSize = models.IntegerField()
     freeRam = models.IntegerField()
+    systemFreeRam = models.IntegerField()
     usedRam = models.DictField(as_item_list=True)
     speed = models.FloatField()
     commands = models.ModelDictField()
@@ -66,7 +67,8 @@ class RenderNode(models.Model):
         self.licenseManager = None
         self.freeCoresNumber = int(coresNumber)
         self.usedCoresNumber = {}
-        self.freeRam = int(ramSize)
+        self.freeRam = int(ramSize) # ramSize-usedRam i.e. the amount of RAM used if several commands running concurrently
+        self.systemFreeRam = int(ramSize) # the RAM available on the system (updated each ping)
         self.usedRam = {}
 
         self.speed = speed
@@ -391,29 +393,21 @@ class RenderNode(models.Model):
             if self.freeCoresNumber != self.coresNumber:
                 return False
 
-        freeRam = self.ramSize
-        # if needed, ask the rendernode how much ram is currently in use
-        # to check whether we can launch the command or not
+        #
+        # RAM requirement: we check task requirement with the amount of free RAM reported at last ping (systemFreeRam)
+        #
         if command.task.ramUse != 0:
-            try:
-                r = requests.get("http://%s/ramInUse" % self.name, timeout=2)
-                if r.status_code == requests.codes.ok:
-                    freeRam = freeRam - float(r.text)
-            except requests.exceptions.Timeout:
-                LOGGER.warning("Timeout occured while trying to get ram in use on %s" % self.name)
-                return False
-            except requests.exceptions.ConnectionError:
-                LOGGER.warning("Connection error while trying to get ram in use on %s" % self.name)
+            # LOGGER.debug("RAM constraint defined on task %r -> min %d MB, current systemFreeRam is %d MB" % 
+            #                 ( command.task.id, command.task.ramUse, self.systemFreeRam) )
+            if self.systemFreeRam < command.task.ramUse:
+                LOGGER.warning("Not enough ram on %s. %d needed, %d avail." % (self.name, int(command.task.ramUse), self.systemFreeRam))
                 return False
 
-        if freeRam < command.task.ramUse:
-            LOGGER.warning("Not enough ram on %s. %d needed, %d avail." % (self.name, int(command.task.ramUse), int(freeRam)))
-            return False
-
-        # timer requirements
-        # the timer is on the task and is the same for all commands
+        #
+        # timer requirements: a timer is on the task and is the same for all commands
+        #
         if command.task.timer is not None:
-            LOGGER.warning("Command has a timer : %s" % (datetime.datetime.fromtimestamp(command.task.timer)))
+            # LOGGER.debug("Current command %r has a timer : %s" % (command.id, datetime.datetime.fromtimestamp(command.task.timer) ) )
             if time.time() < command.task.timer:
                 LOGGER.warning("Prevented execution of command %d because of timer present (%s)" % (command.id, datetime.datetime.fromtimestamp(command.task.timer)))
                 return False

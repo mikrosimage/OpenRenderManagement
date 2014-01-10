@@ -13,7 +13,6 @@ LOGGER = logging.getLogger("dispatcher.dispatchtree")
 class NoRenderNodeAvailable(BaseException):
     '''Raised to interrupt the dispatch iteration on an entry point node.'''
 
-
 class DependencyListField(models.Field):
     def to_json(self, node):
         return [[dep.id, statusList] for (dep, statusList) in node.dependencies]
@@ -160,10 +159,10 @@ class BaseNode(models.Model):
     def dispatchIterator(self):
         raise NotImplementedError
 
-    def computeDispatch(self):
-        if self.poolShares:
-            return list(self.dispatchIterator())
-        return []
+    # def computeDispatch(self):
+    #     if self.poolShares:
+    #         return list(self.dispatchIterator())
+    #     return []
 
     def updateAllocation(self):
         '''
@@ -186,6 +185,9 @@ class BaseNode(models.Model):
             parent = parent.parent
         names = [node.name for node in nodes]
         return "<Node name='%s' path='/%s'>" % (self.name, "/".join(names))
+
+    def __str__(self):
+        return "%s: maxRN=%d allocatedRN=%d" % (self.name, self.maxRN, self.allocatedRN)
 
     parent_value = property(lambda self: self._parent_value, setParentValue)
 
@@ -254,16 +256,36 @@ class FolderNode(BaseNode):
             except AttributeError:
                 pass
 
+
+    # def nuIterator(self, ep=None):
+    #     print "Dispatching FolderNode %s" % (self.name)
+    #     for child in self.children:
+    #         for command in child.nuIterator(ep):
+    #             yield command
+
     ##
     # @return yields (node, command) tuples
     #
     def dispatchIterator(self, stopFunc, ep=None):
         if ep is None:
             ep = self
-        while True:
+
+        #
+        # Normally, we would loop until no readycommandcount for this entrypoint OR if loop children ended
+        # However we remove the loop children limit, we have to stop iteration when there are still commands 
+        # ready but can not be started due to match constraint... 
+        # So we count the nb of iteration done, it can't be more than the number of readycommands
+        #
+        for i in range(0, self.readyCommandCount):
+            # On veut iterer tant qu'il y a des commandes ready...
+            # MAIS il faut pouvoir interrompre le parcours si les commandes ready ne peuvent pas etre assignees
+            # (a cause de la RAM ou autre contrainte).
+            # Donc on considere qu'on ne peut pas passer plus de fois dans ce noeud qu'il contient
+            # de commandes ready initialement (le nb de cmd READY doit rester juste du coup)...
             if self.readyCommandCount == 0:
                 return
             self.strategy.update(self, ep)
+
             for child in self.children:
                 try:
                     for assignment in child.dispatchIterator(stopFunc, ep):
@@ -278,8 +300,11 @@ class FolderNode(BaseNode):
                 else:
                     if not stopFunc():
                         continue
-            else:
-                return
+            # HACK
+            # This "else" clause slows assignment by stopping iterator after a small number of assignement
+            # found. Only for jobs with multiple level of taskgroups.
+            # else:
+            #     return
 
     def updateCompletionAndStatus(self):
         self.updateAllocation()
@@ -374,6 +399,15 @@ class FolderNode(BaseNode):
         self.status = status
         return True
 
+    # TODO
+    # def getAllCommands(self):
+    #     """
+    #     Parse a hierarchy of the current FolderNode to retrieve all commands.
+    #     Used when checking dependencies of a TaskGroup.
+    #     :return a list of commands
+    #     """
+    #     pass
+
 
 class TaskNode(BaseNode):
 
@@ -401,9 +435,17 @@ class TaskNode(BaseNode):
         if task is not None:
             self.timer = task.timer
 
+
+    # def nuIterator(self, ep=None):
+    #     print "Dispatching TaskNode %s" % (self.name)
+    #     for command in self.task.commands:
+    #         yield command
+        
+
     def dispatchIterator(self, stopFunc, ep=None):
         if ep is None:
             ep = self
+
         if self.readyCommandCount == 0:
             return
         if self.paused:
@@ -424,6 +466,8 @@ class TaskNode(BaseNode):
                     ep = ep.parent
                 yield (renderNode, command)
             else:
+                # Pas de RN ou les RNS ne matchent pas les contraintes des jobs.
+                LOGGER.debug("Reservation failed for command %r" % command.id)
                 return
 
     def reserve_rendernode(self, command, ep):
@@ -438,6 +482,14 @@ class TaskNode(BaseNode):
                         rendernode.addAssignment(command)
                         #rendernode.reserveRessources(command)
                         return rendernode
+
+            # stop iterating through RNs if none available
+            # else:
+            #     LOGGER.debug("Unable to reserve rendernode (might not be able to run task)")
+            #     raise NoRenderNodeAvailable
+
+        # Might not be necessary anymore because first loop is based on poolShare's hasRNSavailable method
+        # It was not taking into account the tests before assignment: RN.canRun()
         if not [poolShare for poolShare in ep.poolShares.values() if poolShare.hasRenderNodesAvailable()]:
             raise NoRenderNodeAvailable
         return None
@@ -446,6 +498,9 @@ class TaskNode(BaseNode):
         self.updateAllocation()
 
         if not self.invalidated:
+            return
+        if self.task is None:
+            self.status = NODE_CANCELED
             return
         completion = 0.0
         status = defaultdict(int)

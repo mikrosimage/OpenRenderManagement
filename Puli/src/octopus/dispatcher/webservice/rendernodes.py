@@ -222,6 +222,8 @@ class RenderNodeSysInfosResource(BaseResource):
             renderNode.cores = int(dct["cores"])
         if "ram" in dct:
             renderNode.ram = int(dct["ram"])
+        if "systemFreeRam" in dct:
+            renderNode.systemFreeRam = int(dct["systemFreeRam"])
         if "speed" in dct:
             renderNode.speed = float(dct["speed"])
         if "performance" in dct:
@@ -236,7 +238,7 @@ class RenderNodeSysInfosResource(BaseResource):
                 logger.info("status reported is %d" % renderNode.status)
 
             if renderNode.status != int(dct["status"]):
-                logger.warning("The status reported (%r) is different from the status on dispatcher (%r)" % (RN_STATUS_NAMES[dct["status"]],RN_STATUS_NAMES[renderNode.status]))
+                logger.warning("The status reported by %s = %r is different from the status on dispatcher %r" % (renderNode.name, RN_STATUS_NAMES[dct["status"]],RN_STATUS_NAMES[renderNode.status]))
 
         if "isPaused" in dct and "status" in dct:
             logger.debug("reported for %r: remoteStatus=%r remoteIsPaused=%r" % (renderNode.name, RN_STATUS_NAMES[dct["status"]], dct['isPaused']) )

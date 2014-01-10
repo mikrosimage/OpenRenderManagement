@@ -1,3 +1,8 @@
+"""
+.. module:: Dispatcher
+   :platform: Unix
+   :synopsis: A useful module indeed.
+"""
 
 from __future__ import with_statement
 
@@ -30,7 +35,6 @@ LOGGER = logging.getLogger('dispatcher')
 
 class Dispatcher(MainLoopApplication):
     '''The Dispatcher class is the core of the dispatcher application.
-
     It computes the assignments of commands to workers according to a
     DispatchTree and handles all the communications with the workers and
     clients.
@@ -90,7 +94,8 @@ class Dispatcher(MainLoopApplication):
         self.queue = Queue(maxsize=10000)
 
     def initPoolsDataFromBackend(self):
-        '''Loads pools and workers from appropriate backend.
+        '''
+        Loads pools and workers from appropriate backend.
         '''
         try:
             if settings.POOLS_BACKEND_TYPE == "file":
@@ -211,7 +216,7 @@ class Dispatcher(MainLoopApplication):
 
 
         self.dispatchTree.validateDependencies()
-        # LOGGER.info("%8.2f ms --> validate dependencies" % ( (time.time() - prevTimer)*1000 ) )
+        LOGGER.info("%8.2f ms --> validate dependencies" % ( (time.time() - prevTimer)*1000 ) )
         prevTimer = time.time()
 
 
@@ -272,13 +277,16 @@ class Dispatcher(MainLoopApplication):
         assignments = []
 
         # first create a set of entrypoints that are not done nor cancelled nor blocked nor paused and that have at least one command ready
-        entryPoints = set([poolShare.node for poolShare in self.dispatchTree.poolShares.values() if poolShare.node.status not in [NODE_BLOCKED, NODE_DONE, NODE_CANCELED, NODE_PAUSED] and poolShare.node.readyCommandCount > 0])
+        # FIXME: hack to avoid getting the 'graphs' poolShare node in entryPoints, need to avoid it more nicely...
+        entryPoints = set([poolShare.node for poolShare in self.dispatchTree.poolShares.values() if poolShare.node.status not in [NODE_BLOCKED, NODE_DONE, NODE_CANCELED, NODE_PAUSED] and poolShare.node.readyCommandCount > 0 and poolShare.node.name != 'graphs'])
+
         # don't proceed to the calculation if no rns availables in the requested pools
         rnsBool = False
         for pool, nodesiterator in groupby(entryPoints, lambda x: x.poolShares.values()[0].pool):
             rnsAvailables = set([rn for rn in pool.renderNodes if rn.status not in [RN_UNKNOWN, RN_PAUSED, RN_WORKING]])
             if len(rnsAvailables):
                 rnsBool = True
+
         if not rnsBool:
             return []
 
@@ -287,8 +295,10 @@ class Dispatcher(MainLoopApplication):
 
         # update the value of the maxrn for the poolshares (parallel dispatching)
         for pool, nodesiterator in groupby(entryPoints, lambda x: x.poolShares.values()[0].pool):
+
             # we are treating every active node of the pool
             nodesList = [node for node in nodesiterator]
+
             # the new maxRN value is calculated based on the number of active jobs of the pool, and the number of online rendernodes of the pool
             rnsNotOffline = set([rn for rn in pool.renderNodes if rn.status not in [RN_UNKNOWN, RN_PAUSED]])
             rnsSize = len(rnsNotOffline)
@@ -310,9 +320,9 @@ class Dispatcher(MainLoopApplication):
 
             # then sort by dispatchKey (priority)
             nodesList = sorted(nodesList, key=lambda x: x.dispatchKey, reverse=True)
-
             for dk, nodeIterator in groupby(nodesList, lambda x: x.dispatchKey):
                 nodes = [node for node in nodeIterator]
+
                 # for each priority, if there is only one node, set the maxRN to -1
                 if len(nodes) == 1:
                     nodes[0].poolShares.values()[0].maxRN = -1
@@ -348,17 +358,27 @@ class Dispatcher(MainLoopApplication):
         for entryPoint in entryPoints:
             if any([poolShare.hasRenderNodesAvailable() for poolShare in entryPoint.poolShares.values()]):
                 try:
+
+                    # LOGGER.debug(">>>>> DBG ITERATOR")
+                    # for com in entryPoint.nuIterator():
+                    #     print "         %r " % com
+                    # for (rn, com) in entryPoint.dispatchIterator(lambda: True):
+                    #     print "         %r -> %r" % (com, rn.name)
+                    # LOGGER.debug("<<<<< END DBG ITERATOR")
+
                     for (rn, com) in entryPoint.dispatchIterator(lambda: self.queue.qsize() > 0):
                         assignments.append((rn, com))
                         # increment the allocatedRN for the poolshare
                         poolShare.allocatedRN += 1
                         # save the active poolshare of the rendernode
                         rn.currentpoolshare = poolShare
+
                 except NoRenderNodeAvailable:
                     pass
         assignmentDict = collections.defaultdict(list)
         for (rn, com) in assignments:
             assignmentDict[rn].append(com)
+
         return assignmentDict.items()
 
     def updateRenderNodes(self):
@@ -420,7 +440,6 @@ class Dispatcher(MainLoopApplication):
             self.threadPool.putRequest(request)
 
     def _assignmentFailed(self, request, failures):
-        LOGGER.info("Assignment failure detected: %r match could not be send." % len(failures))
         for assignment in failures:
             rendernode, command = assignment
             rendernode.clearAssignment(command)

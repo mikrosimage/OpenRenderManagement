@@ -26,7 +26,17 @@ LOGGER = logging.getLogger("workerws")
 
 
 class WorkerWebService(Application):
-
+    '''A tornado application that will communicate with the dispatcher via webservices
+    Services are:
+    /commands
+    /commands/<id command>
+    /log
+    /log/command/<path>
+    /updatesysinfos
+    /pause
+    /ramInUse
+    /reconfig
+    '''
     def __init__(self, framework, port):
         super(WorkerWebService, self).__init__([
             (r'/commands/?$', CommandsResource, dict(framework=framework)),
@@ -43,6 +53,8 @@ class WorkerWebService(Application):
         self.listen(port, "0.0.0.0")
         self.framework = framework
         self.port = port
+
+
 
 
 class BaseResource(RequestHandler):
@@ -95,6 +107,12 @@ class RamInUseResource(BaseResource):
     """
     TO FIX: the method for retrieving mem used is not really correct. 
     We should use "free -m" or directly /proc/meminfo -> use = memtotal - (memfree + membuffer + memcache)
+
+    Par ex, pour calculer la memoire libre (en prenant en compte les buffers et le swap): 
+    awk '/MemFree|Buffers|^Cached/ {free+=$2} END {print  free}' /proc/meminfo
+
+    Pour avoir la memoire utilisee, soit memtotal-memlibre:
+    awk '/MemTotal/ {tot=$2} /MemFree|Buffers|^Cached/ {free+=$2} END {print tot-free}' /proc/meminfo
     """
     def get(self):
         process = subprocess.Popen("ps -e -o rss | awk '{sum+=$1} END {print sum/1024}'",

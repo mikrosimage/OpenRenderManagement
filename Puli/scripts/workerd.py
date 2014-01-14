@@ -124,6 +124,16 @@ def setup_logging(options):
 def main():
     options = process_args()
     setup_logging(options)
+
+    logging.getLogger('daemon').info( "" )
+    logging.getLogger('daemon').info( "-----------------------------------------------" )
+    logging.getLogger('daemon').info( "Starting worker on %s:%d.", settings.ADDRESS, settings.PORT)
+    logging.getLogger('daemon').info( "-----------------------------------------------" )
+    logging.getLogger('daemon').info( " command = %s" % " ".join(sys.argv) )
+    logging.getLogger('daemon').info( "  daemon = %r" % options.DAEMONIZE )
+    logging.getLogger('daemon').info( " console = %r" % options.CONSOLE )
+    logging.getLogger('daemon').info( "  server = %s:%s" % (settings.DISPATCHER_ADDRESS, settings.DISPATCHER_PORT) )
+    
     workerApplication = make_worker()
     if options.DAEMONIZE:
         daemonize(settings.RUN_AS)

@@ -1,5 +1,13 @@
 #Fchier d'environnement pour le puliworker.service (systemd)
 
-HOST="puliserver"
-PORT="8000"
-PYTHONPATH="/s/apps/lin/puli:$PYTHONPATH"
+#
+# TEST MODE
+#
+PYTHONPATH="/s/apps/lin/eval/puli/distrib/OpenRenderManagement/Puli/src:$PYTHONPATH"
+PORT="8004"
+
+#
+# PROD MODE
+#
+#PYTHONPATH="/s/apps/lin/puli:$PYTHONPATH"
+#PORT="8004"

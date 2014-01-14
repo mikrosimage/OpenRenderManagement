@@ -1,5 +1,17 @@
 #Fchier d'environnement pour le puliworker.service (systemd)
 
-HOST="puliserver"
-PORT="8000"
-PYTHONPATH="/s/apps/lin/puli:$PYTHONPATH"
+HOST="puliserver"   # DISPATCHER SERVER TO CONNECT TO
+PORT="8000"         # INTERNAL WORKER PORT
+
+
+#
+# TEST
+#
+PYTHONPATH="/s/apps/lin/eval/puli/distrib/OpenRenderManagement/Puli/src:$PYTHONPATH"
+PIDFILE="/var/run/puli/worker.pid"
+
+#
+# PROD
+#
+#PYTHONPATH="/s/apps/lin/puli:$PYTHONPATH"
+PIDFILE="-P /var/run/puli/worker.pid"

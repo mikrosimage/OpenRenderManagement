@@ -79,10 +79,9 @@ class Worker(MainLoopApplication):
 
     def __init__(self, framework):
         super(Worker, self).__init__(self)
-        LOGGER.info("")
-        LOGGER.info("-----------------------------------------------")
-        LOGGER.info("Starting worker on %s:%d.", settings.ADDRESS, settings.PORT)
-        LOGGER.info("-----------------------------------------------")
+        LOGGER.info("---")
+        LOGGER.info("Initializing worker")
+        LOGGER.info("---")
         self.framework = framework
         self.data = None
         self.requestManager = RequestManager(settings.DISPATCHER_ADDRESS,
@@ -97,7 +96,7 @@ class Worker(MainLoopApplication):
         self.httpconn = httplib.HTTPConnection(settings.DISPATCHER_ADDRESS, settings.DISPATCHER_PORT)
         self.PID_DIR = os.path.dirname(settings.PIDFILE)
         if not os.path.isdir(self.PID_DIR):
-            LOGGER.warning("Worker pid directory does not exist, creating...")
+            LOGGER.warning("Worker pid directory %s does not exist, creating..." % self.PID_DIR)
             try:
                 os.makedirs(self.PID_DIR, 0777)
                 LOGGER.info("Worker pid directory created.")

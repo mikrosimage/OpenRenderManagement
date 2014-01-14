@@ -5,9 +5,14 @@ After=network.target
 [Service]
 User=render
 Type=forking
-EnvironmentFile=/etc/sysconfig/puliworker
-PIDFile=/var/run/puliworker/worker.pid
-ExecStart=/usr/bin/python /s/apps/lin/puli/scripts/workerd.py -p ${PORT} -s ${HOST} -d
+EnvironmentFile=/etc/sysconfig/puliserver
+PIDFile=/var/run/puli/dispatcher.pid
+
+# TEST MODE
+ExecStart=/usr/bin/python /s/apps/lin/eval/puli/distrib/OpenRenderManagement/Puli/scripts/dispatcherd.py -p ${PORT} -d
+
+# PROD MODE
+# ExecStart=/usr/bin/python /s/apps/lin/puli/scripts/dispatcherd.py -p ${PORT} -d
 
 [Install]
 WantedBy=multi-user.target

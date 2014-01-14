@@ -262,7 +262,8 @@ def pollRestartFile():
 
             # stop the worker
             logging.info( "Stopping the worker" )
-            subprocess.call(["/usr/bin/sudo", "/etc/init.d/puliworker", "stop"])
+            # subprocess.call(["/usr/bin/sudo", "/etc/init.d/puliworker", "stop"])
+            subprocess.call(["/usr/bin/sudo", "systemctl stop puliworker.service", "stop"])
 
             # remove killfile and restartfile
             logging.info( "Removing files: %s, %s" % (options.RESTART_FILE, options.KILL_FILE) )
@@ -271,7 +272,9 @@ def pollRestartFile():
 
             # start the worker
             logging.info( "Starting the worker" )
-            subprocess.call(["/usr/bin/sudo", "/etc/init.d/puliworker", "start"])
+            # subprocess.call(["/usr/bin/sudo", "/etc/init.d/puliworker", "start"])
+            subprocess.call(["/usr/bin/sudo", "systemctl start puliworker.service", "stop"])
+
         except Exception, e:
             logging.error("Impossible to restart the worker properly: %r", e)
 

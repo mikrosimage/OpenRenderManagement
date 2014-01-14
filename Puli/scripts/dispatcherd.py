@@ -79,8 +79,11 @@ def process_args():
     parser.add_option("-D", "--debug", action="store_true", dest="DEBUG", help="changes the default log level to DEBUG")
     parser.add_option("-C", "--console", action="store_true", dest="CONSOLE", default=False, help="output logs to the console")
     options, args = parser.parse_args()
+
     # override defaults with settings from file
     if args:
+        print "args:%s" % " ".join(args)
+        
         settings.loadSettingsFile(args[0])
     # override settings with options
     for setting in dir(settings):
@@ -132,6 +135,15 @@ def make_dispatcher():
 def main():
     options = process_args()
     setup_logging(options)
+
+    logging.getLogger('daemon').info( "" )
+    logging.getLogger('daemon').info( "-----------------------------------------------" )
+    logging.getLogger('daemon').info( "Starting PULI server on port:%d.", settings.PORT)
+    logging.getLogger('daemon').info( "-----------------------------------------------" )
+    logging.getLogger('daemon').info( " command = %s" % " ".join(sys.argv) )
+    logging.getLogger('daemon').info( "  daemon = %r" % options.DAEMONIZE )
+    logging.getLogger('daemon').info( " console = %r" % options.CONSOLE )
+    logging.getLogger('daemon').info( "    port = %s" % settings.PORT )
 
     if options.DAEMONIZE:
         daemonize(settings.RUN_AS)

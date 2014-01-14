@@ -1,0 +1,13 @@
+[Unit]
+Description=Puliworker
+After=network.target
+
+[Service]
+User=render
+Type=forking
+EnvironmentFile=/etc/sysconfig/puliworker
+PIDFile=/var/run/puliworker/worker.pid
+ExecStart=/usr/bin/python /s/apps/lin/puli/scripts/workerd.py -p ${PORT} -s ${HOST} -d
+
+[Install]
+WantedBy=multi-user.target

@@ -490,9 +490,13 @@ class Worker(MainLoopApplication):
 
         # if the worker is paused and marked to be restarted, create restartfile
         if self.isPaused and self.toberestarted:
-            LOGGER.warning("Restarting...")
-            rf = open("/tmp/render/restartfile", 'w')
-            rf.close()
+            if not os.path.isfile(settings.RESTARTFILE):
+                LOGGER.warning("Creating restartfile.")
+                rf = open(settings.RESTARTFILE, 'w')
+                rf.close()
+            else:
+                LOGGER.warning("Waiting for restart.")
+
 
         #
         # Waits for any child process, non-blocking (this is necessary to clean up finished process properly)

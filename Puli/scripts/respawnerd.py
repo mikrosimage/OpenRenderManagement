@@ -34,6 +34,7 @@ import pwd
 import atexit
 import signal
 import sys
+import optparse
 
 # Default daemon parameters.
 # File mode creation mask of the daemon.
@@ -254,29 +255,50 @@ def createDaemon():
 
 
 def pollRestartFile():
-    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s',
-                        filename="/var/log/puli/respawner.log",
-                        level=logging.DEBUG
-                        )
 
-    restartfile = "/tmp/render/restartfile"
     if os.path.isfile(restartfile):
-        # stop the worker
-        logging.info("Stopping the worker")
-        subprocess.call(["/usr/bin/sudo", "/etc/init.d/puliworker", "stop"])
-        # remove killfile and restartfile
-        logging.info("Cleaning files")
-        os.remove(restartfile)
-        os.remove("/tmp/render/killfile")
-        # start the worker
-        logging.info("Starting the worker")
-        subprocess.call(["/usr/bin/sudo", "/etc/init.d/puliworker", "start"])
+        try:
+            global logging, options
+
+            # stop the worker
+            logging.info( "Stopping the worker" )
+            subprocess.call(["/usr/bin/sudo", "/etc/init.d/puliworker", "stop"])
+
+            # remove killfile and restartfile
+            logging.info( "Removing files: %s, %s" % (options.RESTART_FILE, options.KILL_FILE) )
+            os.remove( options.RESTART_FILE )
+            os.remove( options.KILL_FILE )
+
+            # start the worker
+            logging.info( "Starting the worker" )
+            subprocess.call(["/usr/bin/sudo", "/etc/init.d/puliworker", "start"])
+        except Exception, e:
+            logging.error("Impossible to restart the worker properly: %r", e)
+
+
+
+def process_args():
+    parser = optparse.OptionParser()
+
+    parser.add_option("-K", "--kill-file", action="store", dest="KILL_FILE", help="change the kill file", default="/tmp/render/killfile")
+    parser.add_option("-R", "--restart-file", action="store", dest="RESTART_FILE)", help="change the restart file", default="/tmp/render/restartfile")
+    parser.add_option("-D", "--refresh-delay", action="store", dest="REFRESH_DELAY", help="set a refresh in seconds", default=5)
+
+    return parser.parse_args()
+
 
 if __name__ == '__main__':
 
-    # retCode = createDaemon()
-    daemonize("render")
+    logging.basicConfig( format='%(asctime)s - %(levelname)s - %(message)s',
+                         filename="/var/log/puli/respawner.log",
+                         level=logging.DEBUG )
+
+    logging.info("Parse options and arguments.")
+    options, args = process_args()
+
+    retCode = createDaemon()
+    # daemonize("render")
     
-    while 1:
+    while True:
         pollRestartFile()
-        time.sleep(30)
+        time.sleep( options.REFRESH_DELAY )

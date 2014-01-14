@@ -1,0 +1,14 @@
+[Unit]
+Description=Pulirespawner
+After=network.target
+
+[Service]
+User=render
+Type=forking
+EnvironmentFile=/etc/sysconfig/pulirespawner
+PIDFile=/var/run/puli/respawner.pid
+
+ExecStart=/usr/bin/python /s/apps/lin/puli/scripts/respawnerd.py -R ${RESTARTFILE} -K ${KILLFILE} -D ${DELAY]
+
+[Install]
+WantedBy=multi-user.target

@@ -74,6 +74,7 @@ def process_args():
 
     parser.add_option("-P", "--pid-file", action="store", dest="PIDFILE", help="change the pid file")
     parser.add_option("-K", "--kill-file", action="store", dest="KILLFILE", help="change the kill file")
+    parser.add_option("-R", "--restart-file", action="store", dest="RESTARTFILE", help="change the restart file")
     parser.add_option("-W", "--commandwatchers-pid-dir", action="store", dest="PID_DIR", help="change the directory where pid files for command watchers are stored")
 
     parser.add_option("-d", "--daemon", action="store_true", dest="DAEMONIZE", default=False, help="daemonize the dispatcher")

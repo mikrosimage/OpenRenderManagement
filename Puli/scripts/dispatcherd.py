@@ -82,8 +82,6 @@ def process_args():
 
     # override defaults with settings from file
     if args:
-        print "args:%s" % " ".join(args)
-        
         settings.loadSettingsFile(args[0])
     # override settings with options
     for setting in dir(settings):

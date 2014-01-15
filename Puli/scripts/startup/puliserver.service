@@ -1,5 +1,5 @@
 [Unit]
-Description=Puliworker
+Description=Puli server
 After=network.target
 
 [Service]
@@ -8,11 +8,11 @@ Type=forking
 EnvironmentFile=/etc/sysconfig/puliserver
 PIDFile=/var/run/puli/dispatcher.pid
 
-# TEST MODE
-ExecStart=/usr/bin/python /s/apps/lin/eval/puli/distrib/OpenRenderManagement/Puli/scripts/dispatcherd.py -p ${PORT} -d
+# TEST
+ExecStart=/usr/bin/python2.6 /s/apps/lin/eval/puli/distrib/OpenRenderManagement/Puli/scripts/dispatcherd.py -p ${PORT} -d -D
 
 # PROD MODE
-# ExecStart=/usr/bin/python /s/apps/lin/puli/scripts/dispatcherd.py -p ${PORT} -d
+#ExecStart=/usr/bin/python2.6 /s/apps/lin/puli/scripts/dispatcherd.py -p ${PORT} -d
 
 [Install]
 WantedBy=multi-user.target

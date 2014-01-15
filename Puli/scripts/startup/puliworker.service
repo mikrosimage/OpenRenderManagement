@@ -11,12 +11,12 @@ PIDFile=/var/run/puli/worker.pid
 #
 # TEST
 #
-ExecStart=/usr/bin/python /s/apps/lin/eval/puli/distrib/OpenRenderManagement/Puli/scripts/workerd.py -p ${PORT} -s ${HOST} -P ${PIDFILE} -d
+#ExecStart=/usr/bin/python2.6 /s/apps/lin/eval/puli/distrib/OpenRenderManagement/Puli/scripts/workerd.py -p ${PORT} -s ${HOST} -P ${PIDFILE} -d
 
 #
 # PROD
 #
-# ExecStart=/usr/bin/python /s/apps/lin/puli/scripts/workerd.py -p ${PORT} -s ${HOST} -P ${PIDFILE} -d
+ExecStart=/usr/bin/python2.6 /s/apps/lin/puli/scripts/workerd.py -p ${PORT} -s ${HOST} -P ${PIDFILE} -d
 
 
 [Install]

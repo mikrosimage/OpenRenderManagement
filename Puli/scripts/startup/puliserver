@@ -9,5 +9,5 @@ PORT="8004"
 #
 # PROD MODE
 #
-#PYTHONPATH="/s/apps/lin/puli:$PYTHONPATH"
-#PORT="8004"
+# PYTHONPATH="/s/apps/lin/puli:$PYTHONPATH"
+# PORT="8004"

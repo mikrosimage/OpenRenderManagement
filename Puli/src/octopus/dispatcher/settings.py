@@ -47,7 +47,7 @@ RUN_AS = None
 LOGDIR = "/s/apps/lin/eval/puli/distrib/OpenRenderManagement/logs"
 CONFDIR = "/s/apps/lin/eval/puli/distrib/OpenRenderManagement/Puli/etc/puli"
 
-PIDFILE = "dispatcher.pid"
+PIDFILE = "/var/run/puli/dispatcher.pid"  # service control pid file
 
 
 #

@@ -58,12 +58,12 @@ DISPATCHER_ADDRESS = "puliserver"
 #
 # Definition des fichiers de surveillance
 #
-#PIDFILE = "/var/run/puliworker/worker.pid"
-PIDFILE = "/tmp/worker.pid"
-KILLFILE = "/tmp/render/killfile"
+PIDFILE = "/var/run/puli/worker.pid"  # service control pid file
+
+KILLFILE = "/tmp/render/killfile"        # indicate if the worker needs to be paused, kill and paused or resumed
+RESTARTFILE = "/tmp/render/restartfile"  # indicate if the worker must be restarted by the respawner
 
 RUN_AS = ""
 LOGDIR = "/var/log/puli"
 
 LIMIT_OPEN_FILES = 32768
-

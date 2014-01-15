@@ -1,86 +1,15 @@
-#!/bin/bash
+#Fchier d'environnement pour le puliworker.service (systemd)
+
+RESTARTFILE="/tmp/render/restartfile"
+KILLFILE="/tmp/render/killfile"
+DELAY=5
+
 #
-# /etc/init.d/pulirespawner
+# TEST
 #
-### BEGIN INIT INFO
-# Provides:          pulirespawner
-# Required-Start:    $syslog rpcbind $remote_fs autofs checkautofs
-# Should-Start: 
-# Required-Stop: 
-# Should-Stop: 
-# Default-Start:     3 5
-# Default-Stop:      0 1 2 6
-# Short-Description: puli respawner
-# Description:       Puliworker remote manager
-### END INIT INFO
+# PYTHONPATH="/s/apps/lin/eval/puli/distrib/OpenRenderManagement/Puli/src:$PYTHONPATH"
 
-# init script variables
-SERVICE=$(basename $0)
-PIDDIR="/var/run/${SERVICE}"
-PIDFILE="${PIDDIR}/${SERVICE}.pid"
-PULI_USER="render"
-export HOME="/homes/render"
-
-# Python/Puli variables
-export PYTHONPATH=/s/apps/lin/puli:${PYTHONPATH}
-RESPAWNER_BIN=/s/apps/lin/puli/scripts/respawner.py
-
-# Test if python script is available on automounted share.
-test -x ${RESPAWNER_BIN} || { echo "${RESPAWNER_BIN} not installed"; 
-	if [ "$1" = "stop" ]; then exit 0;
-	else exit 5; fi; }
-
-if [ ! -d ${PIDDIR} ]; then
-  mkdir ${PIDDIR}
-  chown ${PULI_USER} ${PIDDIR}
-fi
-
-. /etc/rc.status
-# Reset status of this service
-rc_reset
-
-case "$1" in
-    start)
-	echo -n "Starting ${SERVICE}..."
-        ## Start daemon with startproc(8). If this fails
-	## the return value is set appropriately by startproc.
-        /sbin/startproc -p ${PIDFILE} -s -u${PULI_USER} "${RESPAWNER_BIN}" 
-	#>> /dev/null 2>&1
-	sleep 2s
-
-	# Remember status and be verbose.
-        rc_status -v
-	;;
-    stop)
-	echo -n "Shutting down ${SERVICE}..."
-	## Stop daemon with killproc(8) and if this fails
-	## killproc sets the return value according to LSB.
-	/sbin/killproc -TERM -p ${PIDFILE} python 
-
-	# Remember status and be verbose
-	rc_status -v
-        ;;
-    restart)
-	## Stop the service and regardless of whether it was
-	## running or not, start it again.
-	$0 stop
-	$0 start
-
-	# Remember status and be quiet
-	rc_status
-	;;
-    status)
-	echo -n "Checking for service ${SERVICE}..."
-	## Check status with checkproc(8), if process is running
-	## checkproc will return with exit status 0.
-	/sbin/checkproc -p ${PIDFILE} python
-
-	# Remember status and be verbose
-	rc_status -v
-	;;
-    *)
-	echo "Usage: ${SERVICE} {start|stop|status|restart}"
-	exit 1
-	;;
-esac
-rc_exit
+#
+# PROD
+#
+PYTHONPATH="/s/apps/lin/puli:$PYTHONPATH"

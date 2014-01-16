@@ -14,7 +14,8 @@ function echo_blue {
 
 
 # Folder containing new script version
-SOURCE_FOLDER=/s/apps/lin/eval/puli/distrib/OpenRenderManagement/Puli/scripts/startup
+#SOURCE_FOLDER=/s/apps/lin/eval/puli/distrib/OpenRenderManagement/Puli/scripts/startup
+SOURCE_FOLDER=/s/apps/lin/puli/scripts/startup
 
 # Where to place pid files for the puli services
 PID_DIR=/var/run/puli
@@ -55,7 +56,7 @@ if [ -f "/etc/init.d/pulirespawner" ] ; then
 fi
 
 echo "     - Check exisiting processes \"respawner.py\" and \"workerd.py\""
-RESPAWN_PID=$(ps aux | grep respawnerd.py | grep -v grep | awk '{print $2}' | xargs)
+RESPAWN_PID=$(ps aux | grep respawner | grep -v grep | awk '{print $2}' | xargs)
 WORKER_PID=$(ps aux | grep workerd.py | grep -v grep | awk '{print $2}' | xargs)
 
 # Check existing services

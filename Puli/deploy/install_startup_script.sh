@@ -78,10 +78,13 @@ else
 fi
 
 echo ""
-echo_blue "4/5 Start new services"
-sudo systemctl --system daemon-reload
-sudo systemctl start puliworker.service
-sudo systemctl start pulirespawner.service
+echo_blue "5/6 Restart services"
+systemctl --system daemon-reload
+systemctl stop puliworker.service
+systemctl stop pulirespawner.service
+
+systemctl start puliworker.service
+systemctl start pulirespawner.service
 sleep 1s
 
 echo ""

@@ -128,9 +128,29 @@ class Task(object):
                  ramUse=0,
                  requirements={},
                  lic="",
-                 decomposer='puliclient.jobs.DefaultTaskDecomposer',
+                 decomposer=None,
                  tags={},
                  timer=None):
+
+    # def __init__(self,
+    #              name,
+    #              arguments,
+    #              runner=None,
+    #              dependencies={},
+    #              maxRN=0,
+    #              priority=0,
+    #              dispatchKey=0,
+    #              environment={},
+    #              validator='0',
+    #              minNbCores=1,
+    #              maxNbCores=0,
+    #              ramUse=0,
+    #              requirements={},
+    #              lic="",
+    #              decomposer='puliclient.jobs.DefaultTaskDecomposer',
+    #              tags={},
+    #              timer=None):
+
         """
         A task contains one or more command to be executed on the render farm.
 
@@ -189,12 +209,13 @@ class Task(object):
         """
         | Call the task "decomposer", a utility class that will generate one or several command regarding decomposing method.
         | For instance given a start and end attributes, we will created a sequence of command.
+        | if the task has no decomposer defined (when user manually add commands), simply "visit" the task
         
         :return: a ref to itself
         """
         if not self.decomposed:
-            # print "decomposing", self.name
-            self.decomposer(self)
+            if  self.decomposer is not None:
+                self.decomposer(self)
             self.decomposed = True
         return self
 

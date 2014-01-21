@@ -128,7 +128,7 @@ class Task(object):
                  ramUse=0,
                  requirements={},
                  lic="",
-                 decomposer='puliclient.jobs.DefaultTaskDecomposer',
+                 decomposer=None,
                  tags={},
                  timer=None):
         """
@@ -185,18 +185,21 @@ class Task(object):
         """
         self.tags.update( pTags )
 
-    def decompose(self):
+
+  def decompose(self):
         """
         | Call the task "decomposer", a utility class that will generate one or several command regarding decomposing method.
         | For instance given a start and end attributes, we will created a sequence of command.
+        | if the task has no decomposer defined (when user manually add commands), simply "visit" the task
         
         :return: a ref to itself
         """
         if not self.decomposed:
-            # print "decomposing", self.name
-            self.decomposer(self)
+            if  self.decomposer is not None:
+                self.decomposer(self)
             self.decomposed = True
         return self
+
 
     def addCommand(self, name, arguments):
         """

@@ -63,7 +63,6 @@ class IntegerParameter(CommandRunnerParameter):
         if arguments[self.name]:
             arguments[self.name] = int(arguments[self.name])
 
-
 class CommandRunnerMetaclass(type):
 
     def __init__(self, name, bases, attributes):
@@ -92,8 +91,11 @@ class CommandRunner(object):
 
 
     def validate(self, arguments):
+        print "validating against: %r" % self.parameters
         for parameter in self.parameters:
             parameter.validate(arguments)
+
+
 
 
 class TaskExpander(object):
@@ -115,8 +117,21 @@ class DefaultTaskDecomposer(TaskDecomposer):
 
     def __init__(self, task):
         super(DefaultTaskDecomposer, self).__init__(task)
-        self.addCommand(task.name, {})
+        # self.addCommand(task.name, {})
 
+        print "No decomposer given for a task \"%s\", using DefaultTaskDecomposer to create default command." % task.name
+        if hasattr(task, 'arguments') and task.arguments is not None:
+            # If exists we retrieve task's arguments to use them on the command
+            cmdArgs = task.arguments.copy()
+            if 'start' in cmdArgs and 'end' in cmdArgs:
+                cmdName = "%s_%s_%s" % ( task.name, str(cmdArgs['start']), str(cmdArgs['end']) )
+                self.addCommand(cmdName, cmdArgs)
+            else:
+                self.addCommand(task.name+"_1_1", cmdArgs)
+        else:
+            # Create an empty command anyway --> probably unecessary
+            print "WARNING: No arguments given for the task \"%s\", it is necessary to do this ? (we are creating an empty command anyway..." % task.name
+            self.addCommand(task.name+"_1_1", {})
 
 class JobTypeImportError(ImportError):
     """Raised when an error occurs while loading a job type through the load function."""

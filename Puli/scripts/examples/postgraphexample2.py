@@ -14,13 +14,13 @@ from puliclient import Task, TaskGroup, Graph, DONE
 
 if __name__ == '__main__':
 
-    args =  { "cmd":"sleep 30", "start":1, "end":10, "packetSize":1 }
+    args =  { "cmd":"sleep 30", "start":1, "end":10 }
     tags =  { "prod":"test", "shot":"test" }
     decomposer = "puliclient.contrib.generic.GenericDecomposer"
 
     graph = Graph('simpleGraph', tags=tags)
     task1 = graph.addNewTask(name="task1", arguments=args, tags=tags, decomposer=decomposer)
-    task2 = graph.addNewTask(name="task2", arguments=args, tags=tags, decomposer=decomposer)
+    task2 = graph.addNewTask(name="task2", arguments=args, tags=tags)
     task3 = graph.addNewTask(name="task3", arguments=args, tags=tags, decomposer=decomposer)    
     task4 = graph.addNewTask(name="task4", arguments=args, tags=tags, decomposer=decomposer)    
     task5 = graph.addNewTask(name="task5", arguments=args, tags=tags, decomposer=decomposer)    

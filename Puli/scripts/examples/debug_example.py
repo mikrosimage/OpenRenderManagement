@@ -3,14 +3,20 @@
 from puliclient import Task, Graph
 
 
-args =  { "cmd":"sleep 10", "start":1, "end":200, "packetSize":1 }
-tags =  { "prod":"test", "shot":"test", "nbFrames":200 }
-decomposer = "puliclient.contrib.generic.GenericDecomposer"
+tags =  { "prod":"test", "shot":"test" }
 
-# import pudb;pu.db
-task = Task( name="task", arguments=args, tags=tags, runner="puliclient.contrib.generic.GenericRunner", dispatchKey=-5 )
-task.addCommand( 'i am sleepy', args )
 
-graph = Graph('debug', tags=tags, root=task )
+task = Task(
+                name="dis is whada want", 
+                arguments={},
+                tags=tags,
+                runner="puliclient.contrib.puliDbg.sleep.DebugRunner",
+                dispatchKey=5
+            )
 
+task.addCommand( 'ls', { 'cmd':'ls' } )
+task.addCommand( 'sleep_10', { 'cmd':'sleep 10', 'start':2, 'end':5 } )
+
+
+graph = Graph('debug', tags=tags, root=task, poolName='default' )
 graph.submit("pulitest", 8004)

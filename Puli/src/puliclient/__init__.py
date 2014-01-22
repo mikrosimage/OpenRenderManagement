@@ -128,7 +128,7 @@ class Task(object):
                  ramUse=0,
                  requirements={},
                  lic="",
-                 decomposer=None,
+                 decomposer='puliclient.jobs.DefaultTaskDecomposer',
                  tags={},
                  timer=None):
         """
@@ -186,7 +186,7 @@ class Task(object):
         self.tags.update( pTags )
 
 
-  def decompose(self):
+    def decompose(self):
         """
         | Call the task "decomposer", a utility class that will generate one or several command regarding decomposing method.
         | For instance given a start and end attributes, we will created a sequence of command.

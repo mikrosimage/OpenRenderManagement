@@ -716,6 +716,7 @@ class Worker(MainLoopApplication):
         ]
         args.extend(('%s=%s' % (str(name), str(value)) for (name, value) in command.arguments.items()))
 
+        import pudb;pu.db
         try:
             watcherProcess = spawnCommandWatcher(pidFile, logFile, args, command.environment)
             newCommandWatcher.processObj = watcherProcess

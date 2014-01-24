@@ -15,53 +15,150 @@ class CommandError(Exception):
 class ValidationError(CommandError):
     '''Raised on a validation error'''
 
+class RangeError(CommandError):
+    '''Raised on a validation error where a value given is out of authorized range'''
+
 
 class CommandRunnerParameter(object):
     '''Base class for formal command runner parameter.'''
 
     name = None
+    isMandatory = False
 
-    def __init__(self, **kwargs):
-        if 'default' in kwargs:
+    def __init__(self, default=None, mandatory=None, **kwargs):
+        if default is not None:
             self.hasDefault = True
-            self.defaultValue = kwargs['default']
+            self.defaultValue = default
         else:
             self.hasDefault = False
             self.defaultValue = None
 
+        if mandatory is not None:
+            self.isMandatory = True
+
+        # Set range values if given in args, still need to be validated against value
+        # TODO specialize it in typed parameter classes
+        if 'min' in kwargs:
+            self.minValue = kwargs['min']
+        if 'max' in kwargs:
+            self.maxValue = kwargs['max']
+
 
     def validate(self, arguments):
+        if not self.name in arguments and self.isMandatory:
+            raise ValidationError("Mandatory argument \"%s\" is not defined in command arguments" % self.name)
+
         if not self.name in arguments and self.hasDefault:
             arguments[self.name] = self.defaultValue
+
+
+    def __repr__(self):
+        return "CommandRunnerParameter(name=%r, default=%r, mandatory=%r)" % (self.name, self.defaultValue, self.isMandatory)
+
+    def __str__(self):
+        return "%r (default=%r, mandatory=%r)" % (self.name, self.defaultValue, self.isMandatory)
 
 
 class StringParameter(CommandRunnerParameter):
     '''A command runner parameter class that converts the argument value to a string.'''
 
     def validate(self, arguments):
-        super(StringParameter, self).validate(arguments)
-        if arguments[self.name]:
-            arguments[self.name] = str(arguments[self.name])
+
+        try:
+            super(StringParameter, self).validate(arguments)
+            if arguments[self.name]:
+                # try:
+                arguments[self.name] = str(arguments[self.name])
+                # except Exception, e:
+                #     print "Error when parameter conversion %s: %r" % (self.name, e)
+                #     raise ValidationError("StringParameter cannot be converted to str")
+        except Exception, e:
+            raise e
+
+    # def __repr__(self):
+    #     return "StringParameter(name=%r, default=%r, mandatory=%r)" % (self.name, self.defaultValue, self.isMandatory)
 
 class StringListParameter(CommandRunnerParameter):
 
     def validate(self, arguments):
-        super(StringListParameter, self).validate(arguments)
-        arguments[self.name] = [str(v) for v in arguments[self.name]]
+        try:
+            super(StringListParameter, self).validate(arguments)
+
+            arguments[self.name] = [str(v) for v in arguments[self.name]]
+        except Exception, e:
+            raise e
 
 class BooleanParameter(CommandRunnerParameter):
 
     def validate(self, arguments):
-        super(BooleanParameter, self).validate(arguments)
-        arguments[self.name] = bool(arguments[self.name])
+        try:
+            super(BooleanParameter, self).validate(arguments)
+            arguments[self.name] = bool(arguments[self.name])
+        except Exception, e:
+            raise e
 
 class IntegerParameter(CommandRunnerParameter):
     '''A command runner parameter class that converts the argument value to an integer value.'''
 
+    minValue = None
+    maxValue = None
+
     def validate(self, arguments):
-        super(IntegerParameter, self).validate(arguments)
-        if arguments[self.name]:
-            arguments[self.name] = int(arguments[self.name])
+        try:
+            # Base class will check if argument is present or ensure it has its default value
+            super(IntegerParameter, self).validate(arguments)
+
+            if arguments[self.name]:
+                newVal = int(arguments[self.name])
+                # Validate range if defined
+                if self.minValue is not None and newVal < self.minValue:
+                    raise RangeError("Argument \"%s\"=%d is less than minimum: %d" % (
+                                        self.name, 
+                                        newVal, 
+                                        self.minValue) )
+
+                if self.maxValue is not None and self.maxValue < newVal:
+                    raise RangeError("Argument \"%s\"=%d is more than maximum: %d" % (
+                                        self.name, 
+                                        self.maxValue,
+                                        newVal ) )
+
+                arguments[self.name] = newVal
+        except Exception, e:
+            raise e
+
+
+class FloatParameter(CommandRunnerParameter):
+    '''A command runner parameter class that converts the argument value to an float value.'''
+
+    minValue = None
+    maxValue = None
+
+    def validate(self, arguments):
+        try:
+            super(FloatParameter, self).validate(arguments)
+            
+            if arguments[self.name]:
+                newVal = float(arguments[self.name])
+                # Validate range if defined
+                if self.minValue is not None and newVal < self.minValue:
+                    raise RangeError("Argument \"%s\"=%d is less than minimum: %d" % (
+                                        self.name, 
+                                        newVal, 
+                                        self.minValue) )
+
+                if self.maxValue is not None and self.maxValue < newVal:
+                    raise RangeError("Argument \"%s\"=%d is more than maximum: %d" % (
+                                        self.name, 
+                                        self.maxValue,
+                                        newVal ) )
+
+                arguments[self.name] = newVal
+
+        except Exception, e:
+            raise e
+
+
 
 class CommandRunnerMetaclass(type):
 

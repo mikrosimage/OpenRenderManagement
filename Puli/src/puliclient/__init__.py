@@ -116,7 +116,8 @@ class Task(object):
     def __init__(self,
                  name,
                  arguments,
-                 runner=None,
+                 runner,
+                 decomposer=None,
                  dependencies={},
                  maxRN=0,
                  priority=0,
@@ -128,9 +129,11 @@ class Task(object):
                  ramUse=0,
                  requirements={},
                  lic="",
-                 decomposer='puliclient.jobs.DefaultTaskDecomposer',
                  tags={},
                  timer=None):
+
+                 # decomposer='puliclient.jobs.DefaultTaskDecomposer',
+
         """
         A task contains one or more command to be executed on the render farm.
 

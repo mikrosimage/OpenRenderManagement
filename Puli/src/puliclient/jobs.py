@@ -6,7 +6,7 @@ Created on Jan 11, 2010
 
 import sys
 import traceback
-
+import logging
 
 class CommandError(Exception):
     '''Raised to signal failure of a CommandRunner execution.'''
@@ -127,6 +127,18 @@ class IntegerParameter(CommandRunnerParameter):
         except Exception, e:
             raise e
 
+    def __repr__(self):
+        return "IntParameter(name=%r, default=%r, mandatory=%r, minValue=%r, maxValue=%r )" % (
+                    self.name, 
+                    self.defaultValue, 
+                    self.isMandatory,
+                    self.minValue,
+                    self.maxValue,
+                    )
+
+    def __str__(self):
+        return "%r (default=%r, mandatory=%r, range=[%r,%r])" % (self.name, self.defaultValue, self.isMandatory, self.minValue, self.maxValue)
+
 
 class FloatParameter(CommandRunnerParameter):
     '''A command runner parameter class that converts the argument value to an float value.'''
@@ -158,6 +170,18 @@ class FloatParameter(CommandRunnerParameter):
         except Exception, e:
             raise e
 
+    def __repr__(self):
+        return "FloatParameter(name=%r, default=%r, mandatory=%r, minValue=%r, maxValue=%r )" % (
+                    self.name, 
+                    self.defaultValue, 
+                    self.isMandatory,
+                    self.minValue,
+                    self.maxValue,
+                    )
+
+    def __str__(self):
+        return "%r (default=%r, mandatory=%r, range=[%r,%r])" % (self.name, self.defaultValue, self.isMandatory, self.minValue, self.maxValue)
+
 
 
 class CommandRunnerMetaclass(type):
@@ -188,8 +212,12 @@ class CommandRunner(object):
 
 
     def validate(self, arguments):
-        print "validating against: %r" % self.parameters
+        # print "validating against: %r" % self.parameters
+        if len(self.parameters) > 0:
+            logging.getLogger().info("Validating %d parameter(s):" % len(self.parameters))
+
         for parameter in self.parameters:
+            logging.getLogger().info("  - %s" % parameter)
             parameter.validate(arguments)
 
 

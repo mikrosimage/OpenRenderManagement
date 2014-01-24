@@ -16,6 +16,7 @@ import logging
 import sys
 import os
 import time
+from datetime import timedelta
 import traceback
 import httplib as http
 try:
@@ -48,7 +49,8 @@ class CmdThreader(Thread):
     #
     def __init__(self, cmd, methodName, arguments, updateCompletion, updateMessage):
         Thread.__init__(self)
-        self.logger = logging.getLogger("worker.CmdThreader")
+
+        self.logger = logging.getLogger()
         self.logger.debug("cmd = %s" % cmd)
         self.logger.debug("methodName = %s" % methodName)
         self.cmd = cmd
@@ -76,7 +78,7 @@ class CmdThreader(Thread):
     #
     def stop(self):
         self.stopped = COMMAND_STOPPED
-        self.logger.debug("abrupt termination for thread \"%s\"" % self.methodName)
+        self.logger.warning("Abrupt termination for thread \"%s\"" % self.methodName)
         Thread.__stop(self)
 
 
@@ -102,14 +104,17 @@ class CommandWatcher(object):
         self.completion = 0.0
         self.message = "loading command script"
         self.arguments = arguments
+        self.runner = runner
 
         self.finalState = CMD_DONE
-        self.logger = logging.getLogger("cmdwatcher")
+        self.logger = logging.getLogger()
 
         self.runnerErrorInExec = None
         self.runnerErrorInPostExec = None
 
         # check that the job type is a registered one
+        self.logger.info("Loading runner: %s" % runner)
+
         from puliclient.jobs import loadCommandRunner, JobTypeImportError
         try:
             runnerClass = loadCommandRunner(runner)
@@ -119,6 +124,10 @@ class CommandWatcher(object):
             sys.exit(1)
         except ImportError, e:
             self.logger.exception("Command runner loading failed: %r" % e )
+            self.updateCommandStatus(CMD_ERROR)
+            sys.exit(1)
+        except Exception, e:
+            self.logger.exception("Unexpected error in loaded runner: %r" % e )
             self.updateCommandStatus(CMD_ERROR)
             sys.exit(1)
 
@@ -137,7 +146,7 @@ class CommandWatcher(object):
     ## The main actions.
     #
     def mainActions(self):
-
+        startDate = time.time()
         try:
             self.job.validate(self.arguments)
         except Exception:
@@ -147,14 +156,25 @@ class CommandWatcher(object):
             return
 
         try:
+            self.logger.info("Starting command: %r" % self.id)
             self.executeScript()
+        except Exception:
+            self.logger.exception("Caught some unexpected exception (%s) while starting command %d." % (self.id))
+            self.finalState = CMD_ERROR
+            self.updateCommandStatusAndCompletion(self.finalState, True)
+            return
+
+        try:
+            self.execScriptChecker()
         except Exception:
             self.logger.exception("Caught some unexpected exception (%s) while executing command %d." % (self.id))
             self.finalState = CMD_ERROR
             self.updateCommandStatusAndCompletion(self.finalState, True)
             return
 
-        self.execScriptChecker()
+        elapsedTime = time.time() - startDate
+        self.logger.info("Finished command %r, elapsed time: %s " % (self.id, timedelta(seconds=int(elapsedTime))))
+
 
     ## Creates a thread for the script corresponding to the provided action name.
     # @param action the name of the action to thread (jobtype script method)
@@ -281,6 +301,8 @@ class CommandWatcher(object):
                 self.logger.error(line)
             self.finalState = CMD_ERROR
             self.runnerErrorInExec = str(self.threadList[EXEC].errorInfo)
+        else:
+            self.logger.debug("No more threads to check")
 
         self.updateCommandStatusAndCompletion(self.finalState, True)
 
@@ -333,11 +355,10 @@ if __name__ == "__main__":
     closeFileDescriptors()
 
     logger = logging.getLogger()
-    logger.setLevel(logging.ERROR)
+    logger.setLevel(logging.INFO)
 
     handler = logging.StreamHandler(sys.stderr)
-    handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
-    handler.setFormatter(logging.Formatter("# [%(levelname)s] %(message)s"))
+    handler.setFormatter(logging.Formatter("# [%(levelname)s] %(asctime)s - %(message)s"))
     logger.addHandler(handler)
 
     CommandWatcher(workerPort, id, runner, validationExpression, argumentsDict)

@@ -4,7 +4,7 @@ Created on Sep 28, 2011
 @author: Arnaud Chassagne
 '''
 import os
-from puliclient.jobs import TaskDecomposer, CommandRunner
+from puliclient.jobs import TaskDecomposer, CommandRunner, StringParameter
 from puliclient.contrib.helper.helper import PuliActionHelper
 
 START = "start"
@@ -31,6 +31,8 @@ class GenericDecomposer(TaskDecomposer):
 
 
 class GenericRunner(CommandRunner):
+    cmd = StringParameter( mandatory = True )
+
     def execute(self, arguments, updateCompletion, updateMessage):
         # init the helper
         helper = PuliActionHelper(cleanTemp=True)

@@ -108,6 +108,8 @@ class BaseNode(models.Model):
         return base
 
     def addDependency(self, node, acceptedStatus):
+        # TODO dependencies should be set for restricted node statutes only: DONE, ERROR and CANCELED
+
         if not acceptedStatus:
             return
         if self is node:
@@ -121,6 +123,8 @@ class BaseNode(models.Model):
                 node.reverseDependencies.append(self)
 
     def checkDependenciesSatisfaction(self):
+        # TODO dependencies should be set for restricted node statutes only: DONE, ERROR and CANCELED
+
         if self.dispatcher.cycle == self.lastDependenciesSatisfactionDispatchCycle:
             return self.lastDependenciesSatisfaction
 
@@ -570,6 +574,7 @@ class TaskNode(BaseNode):
         self.invalidated = False
 
     def checkDependenciesSatisfaction(self):
+        # TODO dependencies should be set for restricted node statutes only: DONE, ERROR and CANCELED
         taskNodes = [taskNode
                      for taskNode in self.dispatcher.dispatchTree.nodes.values()
                      if isinstance(taskNode, TaskNode) and taskNode.task == self.task]

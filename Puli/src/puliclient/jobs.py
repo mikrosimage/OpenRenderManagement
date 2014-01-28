@@ -249,6 +249,7 @@ class DefaultTaskDecomposer(TaskDecomposer):
             # If exists we retrieve task's arguments to use them on the command
             cmdArgs = task.arguments.copy()
             if 'start' in cmdArgs and 'end' in cmdArgs:
+                # TODO properly decompose command -> cf GenericDecomposer
                 cmdName = "%s_%s_%s" % ( task.name, str(cmdArgs['start']), str(cmdArgs['end']) )
                 self.addCommand(cmdName, cmdArgs)
             else:
@@ -257,6 +258,8 @@ class DefaultTaskDecomposer(TaskDecomposer):
             # Create an empty command anyway --> probably unecessary
             print "WARNING: No arguments given for the task \"%s\", it is necessary to do this ? (we are creating an empty command anyway..." % task.name
             self.addCommand(task.name+"_1_1", {})
+
+
 
 class JobTypeImportError(ImportError):
     """Raised when an error occurs while loading a job type through the load function."""

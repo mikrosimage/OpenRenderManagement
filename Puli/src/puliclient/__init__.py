@@ -8,9 +8,12 @@
 """
 __author__ = "Olivier Derpierre "
 __date__ = "Jan 11, 2010"
-__version__ = (0, 2, 0)
+__version__ = (0, 3, 0)
 
 import sys
+import os
+import subprocess
+
 import httplib
 try:
     import simplejson as json
@@ -116,8 +119,8 @@ class Task(object):
     def __init__(self,
                  name,
                  arguments,
-                 runner,
-                 decomposer=None,
+                 runner='puliclient.contrib.generic.GenericRunner',
+                 decomposer='puliclient.jobs.DefaultTaskDecomposer',
                  dependencies={},
                  maxRN=0,
                  priority=0,
@@ -132,7 +135,8 @@ class Task(object):
                  tags={},
                  timer=None):
 
-                 # decomposer='puliclient.jobs.DefaultTaskDecomposer',
+                 # decomposer=None,
+
 
         """
         A task contains one or more command to be executed on the render farm.
@@ -592,23 +596,14 @@ class Graph(object):
         return json.dumps(self._toRepresentation(), indent=4)
 
 
-    def submit(self, host="puliserver", port=8004):
+
+    def prepareGraphRepresentation(self):
         """
-        | Prepare a graph representation to be sent to the server.
+        | Prepare a graph representation to be sent to the server or executed locally.
         | Several steps must be taken:
         | - parse graph to resolve dependencies on taskgroups
         | - parse graph to expand/decompose tasks and taskgroups
-        | - use GraphDumper class to serialize the graph to a JSON representation
-        | - submit data via http  
-
-        :param host: server name to connect to
-        :type host: string
-        :param port: server port to connect to
-        :type port: int
-        :return: the server response
-        :raise: GraphSubmissionError
         """
-
         # Expand or decompose the graph hierarchically
         print "1. Expanding and decomposing hierarchy..."
         if isinstance(self.root, TaskGroup):
@@ -633,19 +628,266 @@ class Graph(object):
                     statusList = dep[1]
                     self._addDependencyToChildrenOf( srcNodeId, srcNode, statusList, node, repr )
 
+        return repr
 
-        print "3. Preparing submission query..."
+
+
+    def submit(self, host="puliserver", port=8004):
+        """
+        | Prepare a graph representation and send it to the server.
+        | - prepare graph
+        | - use GraphDumper class to serialize the graph to a JSON representation
+        | - submit data via http  
+
+        :param host: server name to connect to
+        :type host: string
+        :param port: server port to connect to
+        :type port: int
+        :return: the server response
+        :raise: GraphSubmissionError
+        """
+
+        print "Prepare graph..."
+        repr = self.prepareGraphRepresentation()
+        # # Expand or decompose the graph hierarchically
+        # print "1. Expanding and decomposing hierarchy..."
+        # if isinstance(self.root, TaskGroup):
+        #     self.root = self.root.expand(True)
+        # else:
+        #     assert isinstance(self.root, Task)
+        #     self.root = self.root.decompose()
+
+        # # Create JSON representation
+        # repr = self._toRepresentation()
+
+        # # Precompile dependencies on a taskgroup
+        # print "2. Checking dependencies on taskgroups..."
+        # for i,node in enumerate(repr["tasks"]):
+        #     # print "    node[%d] = %s (%s)" % (i, node["name"], node["type"])
+        #     if node["type"] is "TaskGroup" and len(node["dependencies"]) is not 0:
+        #         # Taskgroup with a dependency
+        #         print "  - Taskgroup %s has %d dependencies: %r" % (node["name"], len(node["dependencies"]), node["dependencies"])
+        #         for dep in node["dependencies"]:
+        #             srcNodeId = dep[0]
+        #             srcNode = repr["tasks"][dep[0]]
+        #             statusList = dep[1]
+        #             self._addDependencyToChildrenOf( srcNodeId, srcNode, statusList, node, repr )
+
+
+        print "Submit query..."
         jsonRepr = json.dumps(repr)
 
         conn = httplib.HTTPConnection(host, port)
         conn.request('POST', '/graphs/', jsonRepr, {'Content-Length': len(jsonRepr)})
         response = conn.getresponse()
 
-        print "4. Getting result: %r" % response.status
+        print "Get result: %r" % response.status
         if response.status in (200, 201):
             return response.getheader('Location'), response.read()
         else:
             raise GraphSubmissionError((response.status, response.reason))
+
+
+    def execute(self):
+        """
+        | Prepare a graph representation to execute locally.
+
+        :return: the result code
+        :raise: GraphExecError
+        
+        """
+        NODE_STATUS = (BLOCKED,
+                        READY,
+                        RUNNING,
+                        DONE,
+                        ERROR,
+                        CANCELED,
+                        PAUSED) = range(7)
+
+
+        print("Prepare graph...")
+        repr = self.prepareGraphRepresentation()
+
+        print json.dumps(repr, indent=2)
+
+        # import pudb;pu.db
+
+        # parse graph to create exec order list
+        executionList = []
+        # result = flattenGraph( repr )
+        i=1
+        for node in repr["tasks"]:
+
+            if node["type"] == "TaskGroup":
+                # Parse children
+                print "TG - %s" % node["name"]
+
+            elif node["type"] == "Task":
+                print "T - %s" % node["name"]
+
+                # # Check dependencies
+                # if "dependencies" in node.keys():
+                #     for dep in node["dependencies"]:
+                #         print "DEP FOUND: taskid=%r statuses=%r" % (dep[0],dep[1])
+
+                # Parse commands
+                for command in node["commands"]:
+                    print "  C - %r" % command["description"]
+                    command["taskid"] = i
+                    command["runner"] = node["runner"]
+                    command["validationExpression"] = node["validationExpression"]
+                    command["tags"] = node["tags"]
+                    command["environment"] = node["environment"]
+
+                    command["status"] = BLOCKED
+                    
+                    if "dependencies" in node.keys() and 0<len(node["dependencies"]):
+                        command["dependencies"] = node["dependencies"]
+                    else:
+                        command["status"] = READY
+                        command["dependencies"] = None
+                    
+                    # proxy = {}
+                    # proxy["description"] = command["description"]
+                    # proxy["task"] = command["task"]
+                    # proxy["taskid"] = command["taskid"]
+                    # executionList.append( proxy )
+
+                    executionList.append( command )
+
+                i += 1
+
+
+        print ""
+        print "EXEC LIST:" 
+        for node in executionList:
+            print str(node['description'])+ " - " + str(node['dependencies'])
+
+        print ""
+        while True:
+
+            # print "exec ready nodes"
+            readyCommands = ( command for command in executionList if command["status"] == READY )
+            for command in readyCommands:
+                # print command
+
+                # TODO tester le retour de commande
+                result = self.execNode( command )
+                command["status"] = DONE
+
+
+            # check dep
+            # print "update dependencies..."
+            nbReadyAfterCheck = 0
+            blockedCommands = ( command for command in executionList if command["status"] == BLOCKED )
+            for command in blockedCommands :
+
+                # print "dep:%r" % command["dependencies"]
+                targetId = command["dependencies"][0][0]
+                statuses = command["dependencies"][0][1]
+
+                for node in executionList:
+                    if node["taskid"]== targetId and node["status"] in statuses:
+                        command["status"] = READY
+                        nbReadyAfterCheck += 1
+
+            if nbReadyAfterCheck == 0:
+                print "---"
+                print "FINISHED: no command set ready after dependency check."
+                print ""
+                break
+
+
+    def execNode( self, pCommand ):
+        """
+        
+        """
+
+        print "Starting command %s" % pCommand["description"]
+
+        from octopus.commandwatcher import commandwatcher
+
+        taskId = pCommand["taskid"]
+        runner = pCommand["runner"]
+        validationExpression = pCommand["validationExpression"]
+
+
+        # outputFile = "/tmp/exec%s.log" % pCommand["description"]
+        # outputFile = "/tmp/exec.log"
+        scriptFile = commandwatcher.__file__
+        pythonExecutable = sys.executable
+        # logFile = file(outputFile, "a")
+
+        args = [
+            pythonExecutable,
+            "-u",
+            scriptFile,
+            "",
+            "0",
+            "1",
+            runner,
+            validationExpression,
+        ]
+        args.extend(('%s=%s' % (str(name), str(value)) for (name, value) in pCommand["arguments"].items()))
+
+        try:
+
+            # normalize environment
+            envN = {}
+            envN["PYTHONPATH"] = "/s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli/src"
+            for key in pCommand["environment"]:
+                envN[str(key)] = str(pCommand["environment"][key])
+
+            # print("Starting subprocess, log: %r, args: %r" % (logFile, args) )
+            try:
+
+                proc = subprocess.Popen(args, bufsize=-1, stdin=None, stdout=None,
+                           stderr=None, close_fds=True,
+                           env=envN)
+
+                 # stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                # proc = subprocess.Popen(args, bufsize=-1, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, env=envN)
+                # proc = subprocess.Popen(args, bufsize=-1, stdout=logFile, stderr=subprocess.STDOUT, close_fds=True, env=envN)
+                proc.wait()
+
+            except Exception,e:
+                print("Impossible to start subprocess: %r" % e)
+                raise e
+
+        except Exception, e:
+            print("Error spawning command watcher %r", e)
+            raise e
+
+
+        #
+        # SIMPLE WAY
+        #
+        # print ""
+        # print("Loading runner: %s" % pCommand['runner'])
+        # from puliclient.jobs import loadCommandRunner, JobTypeImportError
+        # try:
+        #     runnerClass = loadCommandRunner( pCommand["runner"] )
+        # except Exception,e:
+        #     print("oops -> %r" %e)
+
+        # job = runnerClass()
+
+        # print("Validating arguments: %r" % pCommand["arguments"])
+        # job.validate( pCommand["arguments"] )
+
+        # print("Starting command: %r" % pCommand['description'])
+        # job.execute( pCommand["arguments"], self.updateCompletion , self.updateMessage )
+
+
+    def updateCompletion( self, pCompletion ):
+        print("Completion set: %r" % pCompletion)
+
+
+    def updateMessage(self, pMessage):
+        print("Message set: %r" % pMessage)
+
+
+
 
     def _addDependencyToChildrenOf(self, pDependencySrcId, pDependencySrc, pStatusList, pDependingNode, pRepr):
         """

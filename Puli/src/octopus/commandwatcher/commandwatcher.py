@@ -191,6 +191,10 @@ class CommandWatcher(object):
     # @param status
     #
     def updateCommandStatus(self, status):
+
+        if self.workerPort is "0":
+            return
+
         self.logger.debug('Updating status: %s' % status)
         dct = json.dumps({"id": self.id, "status": status})
         headers = {}
@@ -201,6 +205,10 @@ class CommandWatcher(object):
             self.logger.debug('Updating status has failed with a BadStatusLine error')
 
     def updateValidatorResult(self, msg, errorInfos):
+
+        if self.workerPort is "0":
+            return
+
         self.logger.debug('Updating msg and errorInfos : %s,%s' % (msg, str(errorInfos)))
         dct = json.dumps({"id": self.id, "validatorMessage": msg, "errorInfos": errorInfos})
         headers = {}
@@ -211,6 +219,10 @@ class CommandWatcher(object):
             self.logger.debug('Updating  msg and errorInfos has failed with a BadStatusLine error')
 
     def updateCommandStatusAndCompletion(self, status, retry=False):
+
+        if self.workerPort is "0":
+            return
+
         self.logger.debug('Updating status: %s' % status)
         completion = self.completion
         self.logger.debug('Updating completion: %s' % completion)
@@ -247,6 +259,9 @@ class CommandWatcher(object):
     ## Updates the completion of the command.
     #
     def updateCommandCompletion(self):
+        if self.workerPort is "0":
+            return
+
         completion = self.completion
         self.logger.debug('Updating completion: %s' % completion)
         dct = json.dumps({"id": self.id,
@@ -274,7 +289,9 @@ class CommandWatcher(object):
 
         while not(self.threadList[EXEC].stopped):
             tmpTime = time.time()
-            self.updateCommandCompletion()
+
+            if self.workerPort is not 0:
+                self.updateCommandCompletion()
 
             if timeOut is not None:
                 if timeOut < 0:
@@ -304,7 +321,8 @@ class CommandWatcher(object):
         else:
             self.logger.debug("No more threads to check")
 
-        self.updateCommandStatusAndCompletion(self.finalState, True)
+        if self.workerPort is not 0:
+            self.updateCommandStatusAndCompletion(self.finalState, True)
 
     ## Kills all processes launched by the command.
     #
@@ -334,6 +352,7 @@ def closeFileDescriptors():
 
 
 if __name__ == "__main__":
+
     try:
         logFile = sys.argv[1]
         workerPort = sys.argv[2]
@@ -346,10 +365,15 @@ if __name__ == "__main__":
             arglist = argument.split("=")
             key = arglist[0]
             value = '='.join(arglist[1:])
-            #key, value = argument.split("=")
             argumentsDict[key] = value
     except:
         print "Usage : commandwatcher.py /path/to/the/log/file workerPort id runnerscript argument1=value1,argument2=value2...",
+        print ""
+        print "Executes and monitor a given script in a separate thread. Completion and message updates are periodically sent back"
+        print "to the workerd process to notify puliserver."
+        print ""
+        print "NOTE: If worker port is \"0\", it means the commandwatcher is intended to be used locally only."
+        print "      In this case completion and message updates are ignore as everything is logged."
         raise
 
     closeFileDescriptors()
@@ -357,6 +381,7 @@ if __name__ == "__main__":
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
 
+    # handler = logging.StreamHandler(sys.stdout)
     handler = logging.StreamHandler(sys.stderr)
     handler.setFormatter(logging.Formatter("# [%(levelname)s] %(asctime)s - %(message)s"))
     logger.addHandler(handler)

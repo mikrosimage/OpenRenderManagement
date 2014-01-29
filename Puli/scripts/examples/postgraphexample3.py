@@ -14,7 +14,7 @@ from puliclient import *
 
 if __name__ == '__main__':
     
-    args =  { "cmd":"sleep 30", "start":1, "end":10, "packetSize":1 }
+    args =  { "cmd":"sleep 10", "start":1, "end":2, "packetSize":1 }
     tags =  { "prod":"test", "shot":"test" }
     decomposer = "puliclient.contrib.generic.GenericDecomposer"
 
@@ -51,8 +51,8 @@ if __name__ == '__main__':
             (task3, anotherTask)
             ] )
 
-    graph.submit("pulitest", 8004)
-
+    # graph.submit("pulitest", 8004)
+    graph.execute()
 
 # PREVIOUS METHOD (still valid)
 	# task1 = Task(name="task1", arguments=args, decomposer=decomposer)

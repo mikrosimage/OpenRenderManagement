@@ -11,13 +11,14 @@ import logging
 class CommandError(Exception):
     '''Raised to signal failure of a CommandRunner execution.'''
 
-
 class ValidationError(CommandError):
     '''Raised on a validation error'''
 
 class RangeError(CommandError):
     '''Raised on a validation error where a value given is out of authorized range'''
 
+class JobTypeImportError(ImportError):
+    '''Raised when an error occurs while loading a job type through the load function'''
 
 class CommandRunnerParameter(object):
     '''Base class for formal command runner parameter.'''
@@ -139,7 +140,6 @@ class IntegerParameter(CommandRunnerParameter):
     def __str__(self):
         return "%r (default=%r, mandatory=%r, range=[%r,%r])" % (self.name, self.defaultValue, self.isMandatory, self.minValue, self.maxValue)
 
-
 class FloatParameter(CommandRunnerParameter):
     '''A command runner parameter class that converts the argument value to an float value.'''
 
@@ -198,7 +198,6 @@ class CommandRunnerMetaclass(type):
                 parameters.append(arg)
         self.parameters = parameters
 
-
 class CommandRunner(object):
 
     __metaclass__ = CommandRunnerMetaclass
@@ -210,26 +209,33 @@ class CommandRunner(object):
     def execute(self, arguments, updateCompletion, updateMessage):
         raise NotImplementedError
 
-
     def validate(self, arguments):
-        # print "validating against: %r" % self.parameters
+        logger = logging.getLogger('puli.commandwatcher')
         if len(self.parameters) > 0:
-            logging.getLogger().info("Validating %d parameter(s):" % len(self.parameters))
+            logger.info("Validating %d parameter(s):" % len(self.parameters))
 
         for parameter in self.parameters:
-            logging.getLogger().info("  - %s" % parameter)
+            logger.info("  - %s" % parameter)
             parameter.validate(arguments)
 
+class DefaultCommandRunner(CommandRunner):
 
+    def __init__( self ):
+        super(DefaultCommandRunner, self).__init__( task )
+        pass
 
+    pass
 
 class TaskExpander(object):
 
     def __init__(self, taskGroup):
         pass
 
-
 class TaskDecomposer(object):
+    """
+    | Base class for Decomposer hierarchy.
+    | Implements a minimalist "addCommand" method.
+    """
 
     def __init__(self, task):
         self.task = task
@@ -237,33 +243,56 @@ class TaskDecomposer(object):
     def addCommand(self, name, args):
         self.task.addCommand(name, args)
 
-
 class DefaultTaskDecomposer(TaskDecomposer):
+    """
+    | Default decomposesr called when no decomposer given for a task. It will use the PuliActionHelper to create one
+    | or several commands on a task. PuliActionHelper's decompose method will have the following behaviour:
+    |   - if "framesList" is defined: 
+    |         create a command for each frame indicated (frameList is a string with frame numbers separated by spaces)
+    |   - else:
+    |         try to use start/end/packetSize attributes to create several commands (frames grouped by packetSize)
+    |
+    | If no "arguments" dict is given, print a warning and create a single command with empty arguments.
+    """
+
+    # DEFAULT FIELDS USED TO DECOMPOSE A TASK
+    START_LABEL="start"
+    END_LABEL="end"
+    PACKETSIZE_LABEL="packetSize"
+    FRAMESLIST_LABEL="framesList"
 
     def __init__(self, task):
         super(DefaultTaskDecomposer, self).__init__(task)
-        # self.addCommand(task.name, {})
 
-        print "No decomposer given for a task \"%s\", using DefaultTaskDecomposer to create default command." % task.name
-        if hasattr(task, 'arguments') and task.arguments is not None:
-            # If exists we retrieve task's arguments to use them on the command
-            cmdArgs = task.arguments.copy()
-            if 'start' in cmdArgs and 'end' in cmdArgs:
-                # TODO properly decompose command -> cf GenericDecomposer
-                cmdName = "%s_%s_%s" % ( task.name, str(cmdArgs['start']), str(cmdArgs['end']) )
-                self.addCommand(cmdName, cmdArgs)
-            else:
-                self.addCommand(task.name+"_1_1", cmdArgs)
+        if task.arguments is not None:
+            start = ( task.arguments[self.START_LABEL] if self.START_LABEL in task.arguments.keys() else 1 )
+            end = ( task.arguments[self.END_LABEL] if self.END_LABEL in task.arguments.keys() else 1 )
+            packetSize = ( task.arguments[self.PACKETSIZE_LABEL] if self.PACKETSIZE_LABEL in task.arguments.keys() else 1 )
+            framesList = ( task.arguments[self.FRAMESLIST_LABEL] if self.FRAMESLIST_LABEL in task.arguments.keys() else "" )
+
+            # print "Decompose args: start=%r, end=%r, packetSize=%r, callback=%r, frameList=%s" % (start, end, packetSize, self, framesList)
+
+            from puliclient.contrib.helper.helper import PuliActionHelper
+            PuliActionHelper().decompose( start=start, end=end, packetSize=packetSize, callback=self, framesList=framesList )
+
         else:
             # Create an empty command anyway --> probably unecessary
             print "WARNING: No arguments given for the task \"%s\", it is necessary to do this ? (we are creating an empty command anyway..." % task.name
             self.addCommand(task.name+"_1_1", {})
 
 
+    def addCommand(self, packetStart, packetEnd):
+        cmdArgs = self.task.arguments.copy()
+        cmdArgs[self.START_LABEL] = packetStart
+        cmdArgs[self.END_LABEL] = packetEnd
 
-class JobTypeImportError(ImportError):
-    """Raised when an error occurs while loading a job type through the load function."""
-    pass
+        cmdName = "%s_%s_%s" % (self.task.name, str(packetStart), str(packetEnd))
+        self.task.addCommand(cmdName, cmdArgs)
+
+
+
+
+
 
 
 def _load(name, motherClass):
@@ -300,4 +329,3 @@ def loadTaskDecomposer(name):
 
 def loadCommandRunner(name):
     return _load(name, CommandRunner)
-

@@ -175,15 +175,16 @@ class Dispatcher(MainLoopApplication):
                     self.dispatchTree.toModifyElements)
 
     def mainLoop(self):
-        '''Dispatcher main loop iteration.
-        Periodically called with tornado'sinternal callback mecanism, the frequency is defined by config: CORE.MASTER_UPDATE_INTERVAL
-        During this process, the dispatcher will:
-          - update completion and status for all jobs in dispatchTree
-          - update status of renderNodes
-          - validate inter tasks dependencies
-          - update the DB with recorded changes in the model
-          - compute new assignments and send them to the proper rendernodes
-          - release all finished jobs/rns
+        '''
+        | Dispatcher main loop iteration.
+        | Periodically called with tornado'sinternal callback mecanism, the frequency is defined by config: CORE.MASTER_UPDATE_INTERVAL
+        | During this process, the dispatcher will:
+        |   - update completion and status for all jobs in dispatchTree
+        |   - update status of renderNodes
+        |   - validate inter tasks dependencies
+        |   - update the DB with recorded changes in the model
+        |   - compute new assignments and send them to the proper rendernodes
+        |   - release all finished jobs/rns
         '''
         
         # JSA DEBUG: timer pour profiler les etapes       

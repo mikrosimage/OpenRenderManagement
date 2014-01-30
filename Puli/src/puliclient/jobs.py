@@ -219,12 +219,34 @@ class CommandRunner(object):
             parameter.validate(arguments)
 
 class DefaultCommandRunner(CommandRunner):
+    
+    cmd = StringParameter( mandatory = True )
+    timeout = IntegerParameter( default=0 )
 
     def __init__( self ):
         super(DefaultCommandRunner, self).__init__( task )
         pass
 
-    pass
+    def execute(self, arguments, updateCompletion, updateMessage):
+        '''
+        | Simple execution using the helper. Default argument "cmd" is expected (mandatory)
+        | to start the execution with the current env.
+        '''
+        cmd = arguments[ 'cmd' ]
+        timeout = arguments['timeout']
+
+        print 'Running command "%s"' % cmd
+        helper = PuliActionHelper(cleanTemp=True)
+
+        updateCompletion(0)
+
+        if arguments['timeout'] == 0:
+            helper.execute( cmd.split(" "), env=os.environ )
+        else:
+            helper.executeWithTimeout( cmd.split(" "), env=os.environ, timeout )
+
+        updateCompletion(1)
+
 
 class TaskExpander(object):
 
@@ -282,6 +304,12 @@ class DefaultTaskDecomposer(TaskDecomposer):
 
 
     def addCommand(self, packetStart, packetEnd):
+        '''
+        Default method to add a command with this TaskDecomposer.
+
+        :param packetStart: Integer representing the first frame
+        :param packetEnd: Integer representing the last frame
+        '''
         cmdArgs = self.task.arguments.copy()
         cmdArgs[self.START_LABEL] = packetStart
         cmdArgs[self.END_LABEL] = packetEnd

@@ -151,8 +151,8 @@ class Worker(MainLoopApplication):
         | Result = MemFree + Buffers + Cached
 
         :param pUnit: An integer representing the unit to which the value is converted (DEFAULT is MEGABYTES).
-        :return : An integer representing the amount of FREE memory on the system
-        :raise : OSError if subprocess fails. Returns "-1" if no correct value can be retrieved.
+        :return: An integer representing the amount of FREE memory on the system
+        :raise: OSError if subprocess fails. Returns "-1" if no correct value can be retrieved.
         """
         
         try:

@@ -39,8 +39,3 @@ IN PROGRESS - Module reference
 
 
 
-:mod:`puliclient` 
-=============================================
-
-.. automodule:: puliclient
-     :members:

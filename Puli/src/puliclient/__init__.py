@@ -835,7 +835,7 @@ class Graph(object):
         | - Create CommandWatcherObject in current exec
 
         :param pCommand: a dict containing the command's description and arguments
-        :raise : GraphExecInterrupt when a keyboard interrupt is raised by the user
+        :raise: GraphExecInterrupt when a keyboard interrupt is raised by the user
         """
 
         print ""

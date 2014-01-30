@@ -10,12 +10,11 @@ from puliclient import Task, Graph
 
 tags =  { "prod":"test", "shot":"test" }
 
-runner='puliclient.contrib.commandlinerunner.CommandLineRunner'
-arguments={ 'args':'echo I AM RUNNIIIINNG !!!' }
+arguments={ 'cmd':'echo RUUUUUNN !!!' }
 
 graph = Graph('debug', tags=tags, poolName='default' )
 
-graph.addNewTask( "DO_SOMETHING", tags=tags, arguments=arguments, runner=runner )
+graph.addNewTask( "DO_SOMETHING", tags=tags, arguments=arguments )
 
 # graph.submit("puliserver", 8004)
 graph.execute()

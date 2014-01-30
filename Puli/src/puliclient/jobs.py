@@ -4,9 +4,11 @@ Created on Jan 11, 2010
 @author: Olivier Derpierre
 '''
 
+import os
 import sys
 import traceback
 import logging
+
 
 class CommandError(Exception):
     '''Raised to signal failure of a CommandRunner execution.'''
@@ -125,7 +127,9 @@ class IntegerParameter(CommandRunnerParameter):
                                         newVal ) )
 
                 arguments[self.name] = newVal
-        except Exception, e:
+        except RangeError, e:
+            raise e
+        except ValidationError, e:
             raise e
 
     def __repr__(self):
@@ -221,11 +225,7 @@ class CommandRunner(object):
 class DefaultCommandRunner(CommandRunner):
     
     cmd = StringParameter( mandatory = True )
-    timeout = IntegerParameter( default=0 )
-
-    def __init__( self ):
-        super(DefaultCommandRunner, self).__init__( task )
-        pass
+    timeout = IntegerParameter( default=0 , min=0 )
 
     def execute(self, arguments, updateCompletion, updateMessage):
         '''
@@ -236,6 +236,7 @@ class DefaultCommandRunner(CommandRunner):
         timeout = arguments['timeout']
 
         print 'Running command "%s"' % cmd
+        from puliclient.contrib.helper.helper import PuliActionHelper
         helper = PuliActionHelper(cleanTemp=True)
 
         updateCompletion(0)
@@ -243,7 +244,7 @@ class DefaultCommandRunner(CommandRunner):
         if arguments['timeout'] == 0:
             helper.execute( cmd.split(" "), env=os.environ )
         else:
-            helper.executeWithTimeout( cmd.split(" "), env=os.environ, timeout )
+            helper.executeWithTimeout( cmd.split(" "), env=os.environ, timeout=timeout )
 
         updateCompletion(1)
 

@@ -161,8 +161,8 @@ class CommandWatcher(object):
         startDate = time.time()
         try:
             self.job.validate(self.arguments)
-        except Exception:
-            logger.exception("Caught some unexpected exception while validating command %d." % (self.id))
+        except Exception,e:
+            logger.warning("Caught exception (%r) while starting command %d." % (e, self.id))
             self.finalState = CMD_ERROR
             self.updateCommandStatusAndCompletion(self.finalState, True)
             return self.finalState
@@ -171,7 +171,7 @@ class CommandWatcher(object):
             logger.info("Starting command: %r" % self.id)
             self.executeScript()
         except Exception, e:
-            logger.exception("Caught some unexpected exception (%r) while starting command %d." % (e, self.id))
+            logger.warning("Caught exception (%r) while starting command %d." % (e, self.id))
             self.finalState = CMD_ERROR
             self.updateCommandStatusAndCompletion(self.finalState, True)
             return self.finalState
@@ -179,7 +179,7 @@ class CommandWatcher(object):
         try:
             self.execScriptChecker()
         except Exception, e:
-            logger.exception("Caught some unexpected exception (%r) while executing command %d." % (e, self.id))
+            logger.warning("Caught exception (%r) while executing command %d." % (e, self.id))
             self.finalState = CMD_ERROR
             self.updateCommandStatusAndCompletion(self.finalState, True)
             return self.finalState

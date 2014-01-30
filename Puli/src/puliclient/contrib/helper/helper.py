@@ -24,6 +24,8 @@ import env.templates.nukeVar as nukeVar
 NUKE_VERSION = "nuke"
 ENV_MAYA_LOCATION = "MAYA_LOCATION"
 
+class TimeoutError ( Exception ):
+    ''' Raised when helper execution is too long. '''
 
 class PuliActionHelper(object):
     MikrosEnv = mikrosEnv.MikrosEnv()
@@ -33,6 +35,9 @@ class PuliActionHelper(object):
         if cleanTemp:
             cleanLib.cleanTempDir()
         self.mikUtils = mikrosEnv.MikrosEnv()
+
+
+
 
     def decompose(self, start, end, packetSize, callback, framesList=""):
         packetSize = int(packetSize)
@@ -187,7 +192,7 @@ class PuliActionHelper(object):
         if thread.is_alive():
             self.process.terminate()
             thread.join()
-            raise Exception("Execution has taken more than allowed time (%d)" % timeout)
+            raise TimeoutError("Execution has taken more than allowed time (%d)" % timeout)
 
     def buildMayaCommand(self, mikserActionScript, arguments, additionalArguments, env):
         if self.isLinux():

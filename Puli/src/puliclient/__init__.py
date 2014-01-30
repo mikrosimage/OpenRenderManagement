@@ -101,10 +101,16 @@ class TaskAlreadyDecomposedError(Error):
 class Command(object):
     """
     | The lowest level of execution of a graph. A command is basically a process to instanciate on a worker node.
+    | It will use the "runner" class of its parent task for its execution.
+    |
     | It consists of:
     | - a description
     | - a ref to its parent task
-    | - a dict of arguments to use for execution
+    | - a dict of arguments to use for execution (of the task's runner)
+    |
+    | A default runner can handle the following arguments:
+    | - cmd: a string indicating a command line to execute
+    | - timeout: a positive integer indicating the max number of second that the command can run before being interrupted
     """
     def __init__(self, description, task, arguments={}):
         self.description = description
@@ -131,7 +137,7 @@ class Task(object):
     def __init__(self,
                  name,
                  arguments,
-                 runner='puliclient.contrib.generic.GenericRunner',
+                 runner='puliclient.jobs.DefaultCommandRunner',
                  decomposer='puliclient.jobs.DefaultTaskDecomposer',
                  dependencies={},
                  maxRN=0,
@@ -157,7 +163,8 @@ class Task(object):
         :type name: string
         :param arguments: a dictionnary of arguments for the command
         :param runner: a class that will be responsible for the job execution
-        :param dependencies: 
+        :param decomposer: a class responsible to create commands relative to this task
+        :param dependencies: a list of nodes and result status from which the current task depends on
         :param maxRN: the maximum number of workers to assign to this task
         :param priority: [DEPRECATED]
         :param dispatchKey: indicate the priority for this task
@@ -165,12 +172,11 @@ class Task(object):
         :param validator: -
         :param minNbCores: -
         :param maxNbCores: -
-        :param ramUse: -        
-        :param requirements: -        
-        :param lic: -        
-        :param decomposer: -
+        :param ramUse: the amount of RAM needed on a render node to be assigned with a command of this task
+        :param requirements: -
+        :param lic: a flag indicating one or several licence token to reserve for each command
         :param tags: - 
-        :param timer: -
+        :param timer: a date to wait before assigning commands of the current task 
         """
 
         self.parent = None

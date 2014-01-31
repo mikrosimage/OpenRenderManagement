@@ -157,7 +157,10 @@ class Task(object):
 
 
         """
-        A task contains one or more command to be executed on the render farm.
+        | A task contains one or more command to be executed on the render farm.
+        | The parameters that will be used to create commands (decomposing) are the following:
+        | arguments, runner and decomposer
+        | Other params are mainly used on the Task, to handle matching and dispatching on the server.
 
         :param name: A simple text identifier
         :type name: string

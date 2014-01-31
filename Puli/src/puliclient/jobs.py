@@ -231,20 +231,61 @@ class DefaultCommandRunner(CommandRunner):
         '''
         | Simple execution using the helper. Default argument "cmd" is expected (mandatory)
         | to start the execution with the current env.
+        |
+        | If a command is defined on a range, the cmd will be executed several time using start/end arguments.
+        | The command can use several standard replacement values:
+        | %%MI_FRAME%% -> replaced by the current frame value
+        | %%MI_START%% -> replaced by the index of the first frame of the range
+        | %%MI_END%% -> replaced by the index of the last frame of the range
+        |
+        | For instance if a command is defined like this:
+        |   - start = "10"
+        |   - end = "15"
+        |   - cmd = "nuke -x -F %%MI_FRAME%% ma_comp.nk"
+        |     or cmd = "nuke -x -F %%MI_START%%-%%MI_END%% ma_comp.nk"
+        |
+        | The runner will produce the following execution:
+        | nuke -x -F 10 ma_comp.nk
+        | nuke -x -F 11 ma_comp.nk
+        | nuke -x -F 12 ma_comp.nk
+        | nuke -x -F 13 ma_comp.nk
+        | nuke -x -F 14 ma_comp.nk
+        | nuke -x -F 15 ma_comp.nk
+
         '''
+
         cmd = arguments[ 'cmd' ]
         timeout = arguments['timeout']
 
-        print 'Running command "%s"' % cmd
         from puliclient.contrib.helper.helper import PuliActionHelper
         helper = PuliActionHelper(cleanTemp=True)
 
         updateCompletion(0)
 
-        if arguments['timeout'] == 0:
-            helper.execute( cmd.split(" "), env=os.environ )
+        # If start and end are defnied in arguments, we need to iterate several times
+        if 'start' in arguments.keys() \
+            and 'end' in arguments.keys() :
+
+            print 'Executing command on a range of frames [%d-%d]' % (arguments['start'], arguments['end'])
+            for frame in range( arguments['start'], arguments['end']+1 ):
+                currCommand = cmd.replace("%%MI_FRAME%%", str(frame))
+                currCommand = currCommand.replace("%%MI_START%%", str(arguments['start']))
+                currCommand = currCommand.replace("%%MI_END%%", str(arguments['end']))
+
+                # print "Command for current frame: %s" % currCommand
+
+                if arguments['timeout'] == 0:
+                    helper.execute( currCommand.split(" "), env=os.environ )
+                else:
+                    helper.executeWithTimeout( currCommand.split(" "), env=os.environ, timeout=timeout )
+
+        # Else it is a single block command, no need to iterate
         else:
-            helper.executeWithTimeout( cmd.split(" "), env=os.environ, timeout=timeout )
+            print "Command: %s" % cmd
+            if arguments['timeout'] == 0:
+                helper.execute( cmd.split(" "), env=os.environ )
+            else:
+                helper.executeWithTimeout( cmd.split(" "), env=os.environ, timeout=timeout )
 
         updateCompletion(1)
 

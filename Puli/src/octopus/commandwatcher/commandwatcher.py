@@ -16,6 +16,7 @@ import logging
 import sys
 import os
 import time
+from datetime import timedelta
 import traceback
 import httplib as http
 try:
@@ -36,6 +37,18 @@ COMMAND_CRASHED = 2
 COMMAND_FAILED = 3
 
 
+logger = logging.getLogger('puli.commandwatcher')
+logger.setLevel(logging.INFO)
+
+handler = logging.StreamHandler(sys.stdout)
+
+FORMAT = '# [%(levelname)s] %(asctime)s - %(message)s'
+DATE_FORMAT = '%b %d %H:%M:%S'
+
+handler.setFormatter( logging.Formatter(fmt=FORMAT, datefmt=DATE_FORMAT) )
+logger.addHandler(handler)
+
+
 ## This class is used to thread a command.
 #
 class CmdThreader(Thread):
@@ -48,7 +61,8 @@ class CmdThreader(Thread):
     #
     def __init__(self, cmd, methodName, arguments, updateCompletion, updateMessage):
         Thread.__init__(self)
-        self.logger = logging.getLogger("worker.CmdThreader")
+
+        self.logger = logging.getLogger()
         self.logger.debug("cmd = %s" % cmd)
         self.logger.debug("methodName = %s" % methodName)
         self.cmd = cmd
@@ -76,7 +90,7 @@ class CmdThreader(Thread):
     #
     def stop(self):
         self.stopped = COMMAND_STOPPED
-        self.logger.debug("abrupt termination for thread \"%s\"" % self.methodName)
+        self.logger.warning("Abrupt termination for thread \"%s\"" % self.methodName)
         Thread.__stop(self)
 
 
@@ -102,23 +116,30 @@ class CommandWatcher(object):
         self.completion = 0.0
         self.message = "loading command script"
         self.arguments = arguments
+        self.runner = runner
 
         self.finalState = CMD_DONE
-        self.logger = logging.getLogger("cmdwatcher")
 
         self.runnerErrorInExec = None
         self.runnerErrorInPostExec = None
 
         # check that the job type is a registered one
+        runnerLabel = runner.rsplit('.', 1)[1:][0]
+        logger.info("Loading class: \"%s\"" % runnerLabel)
+
         from puliclient.jobs import loadCommandRunner, JobTypeImportError
         try:
             runnerClass = loadCommandRunner(runner)
         except JobTypeImportError, e:
-            self.logger.error("Command runner loading failed: %r" % e )
+            logger.error("Command runner loading failed: %r" % e )
             self.updateCommandStatus(CMD_ERROR)
             sys.exit(1)
         except ImportError, e:
-            self.logger.exception("Command runner loading failed: %r" % e )
+            logger.exception("Command runner loading failed: %r" % e )
+            self.updateCommandStatus(CMD_ERROR)
+            sys.exit(1)
+        except Exception, e:
+            logger.exception("Unexpected error in loaded runner: %r" % e )
             self.updateCommandStatus(CMD_ERROR)
             sys.exit(1)
 
@@ -131,30 +152,41 @@ class CommandWatcher(object):
             self.mainActions()
         except Exception:
             self.updateCommandStatus(CMD_ERROR)
-            self.logger.exception("CommandWatcher failed. This is a bug, please report it.")
+            logger.exception("CommandWatcher failed. This is a bug, please report it.")
             sys.exit(1)
 
     ## The main actions.
     #
     def mainActions(self):
-
+        startDate = time.time()
         try:
             self.job.validate(self.arguments)
-        except Exception:
-            self.logger.exception("Caught some unexpected exception while validating command %d." % (self.id))
+        except Exception,e:
+            logger.warning("Caught exception (%r) while starting command %d." % (e, self.id))
             self.finalState = CMD_ERROR
             self.updateCommandStatusAndCompletion(self.finalState, True)
-            return
+            return self.finalState
 
         try:
+            logger.info("Starting command: %r" % self.id)
             self.executeScript()
-        except Exception:
-            self.logger.exception("Caught some unexpected exception (%s) while executing command %d." % (self.id))
+        except Exception, e:
+            logger.warning("Caught exception (%r) while starting command %d." % (e, self.id))
             self.finalState = CMD_ERROR
             self.updateCommandStatusAndCompletion(self.finalState, True)
-            return
+            return self.finalState
 
-        self.execScriptChecker()
+        try:
+            self.execScriptChecker()
+        except Exception, e:
+            logger.warning("Caught exception (%r) while executing command %d." % (e, self.id))
+            self.finalState = CMD_ERROR
+            self.updateCommandStatusAndCompletion(self.finalState, True)
+            return self.finalState
+
+        elapsedTime = time.time() - startDate
+        logger.info("Finished command %r (status %r), elapsed time: %s " % (self.id, CMD_STATUS_NAME[self.finalState], timedelta(seconds=int(elapsedTime))))
+
 
     ## Creates a thread for the script corresponding to the provided action name.
     # @param action the name of the action to thread (jobtype script method)
@@ -171,29 +203,42 @@ class CommandWatcher(object):
     # @param status
     #
     def updateCommandStatus(self, status):
-        self.logger.debug('Updating status: %s' % status)
+
+        if self.workerPort is "0":
+            return
+
+        logger.debug('Updating status: %s' % status)
         dct = json.dumps({"id": self.id, "status": status})
         headers = {}
         headers['Content-Length'] = len(dct)
         try:
             self.requestManager.put("/commands/%d/" % self.id, dct, headers)
         except http.BadStatusLine:
-            self.logger.debug('Updating status has failed with a BadStatusLine error')
+            logger.debug('Updating status has failed with a BadStatusLine error')
 
     def updateValidatorResult(self, msg, errorInfos):
-        self.logger.debug('Updating msg and errorInfos : %s,%s' % (msg, str(errorInfos)))
+
+        if self.workerPort is "0":
+            return
+
+        logger.debug('Updating msg and errorInfos : %s,%s' % (msg, str(errorInfos)))
         dct = json.dumps({"id": self.id, "validatorMessage": msg, "errorInfos": errorInfos})
         headers = {}
         headers['Content-Length'] = len(dct)
         try:
             self.requestManager.put("/commands/%d/" % self.id, dct, headers)
         except http.BadStatusLine:
-            self.logger.debug('Updating  msg and errorInfos has failed with a BadStatusLine error')
+            logger.debug('Updating  msg and errorInfos has failed with a BadStatusLine error')
 
     def updateCommandStatusAndCompletion(self, status, retry=False):
-        self.logger.debug('Updating status: %s' % status)
+
+        if self.workerPort is "0":
+            # sys.exit(1)
+            return
+
+        logger.debug('Updating status: %s' % status)
         completion = self.completion
-        self.logger.debug('Updating completion: %s' % completion)
+        logger.debug('Updating completion: %s' % completion)
 
         body = json.dumps({"id": self.id, "status": status, "completion": completion, "message": self.message})
         headers = {}
@@ -207,12 +252,12 @@ class CommandWatcher(object):
             if response.status == 202:
                 return
             elif response.status == 404:
-                self.logger.debug("Command is not registered anymore on the worker")
+                logger.debug("Command is not registered anymore on the worker")
             else:
-                self.logger("Unexpected response to status update request: %d %s" % (response.status, response.reason))
+                logger("Unexpected response to status update request: %d %s" % (response.status, response.reason))
 
         def onError(request, error):
-            self.logger.debug("Update request failed: %s", error)
+            logger.debug("Update request failed: %s", error)
 
         delay = 0.5
         request = Request('PUT', '/commands/%d/' % self.id, headers, body)
@@ -227,8 +272,11 @@ class CommandWatcher(object):
     ## Updates the completion of the command.
     #
     def updateCommandCompletion(self):
+        if self.workerPort is "0":
+            return
+
         completion = self.completion
-        self.logger.debug('Updating completion: %s' % completion)
+        logger.debug('Updating completion: %s' % completion)
         dct = json.dumps({"id": self.id,
                           "completion": completion,
                           "message": self.message})
@@ -237,7 +285,7 @@ class CommandWatcher(object):
         try:
             self.requestManager.put("/commands/%d/" % self.id, dct, headers)
         except http.BadStatusLine:
-            self.logger.debug('Updating completion has failed with a BadStatusLine error')
+            logger.debug('Updating completion has failed with a BadStatusLine error')
 
     ## Threads the post execution of the corresponding runner.
     #
@@ -248,17 +296,19 @@ class CommandWatcher(object):
     ## Controls the execution of the main command.
     #
     def execScriptChecker(self):
-        self.logger.debug("Checking Execution...")
+        logger.debug("Checking Execution...")
 
         timeOut = self.job.scriptTimeOut
 
         while not(self.threadList[EXEC].stopped):
             tmpTime = time.time()
-            self.updateCommandCompletion()
+
+            if self.workerPort is not 0:
+                self.updateCommandCompletion()
 
             if timeOut is not None:
                 if timeOut < 0:
-                    self.logger.error("execute Script timeout reached !")
+                    logger.error("execute Script timeout reached !")
                     self.finalState = CMD_ERROR
 
             if self.finalState == CMD_ERROR or self.finalState == CMD_CANCELED:
@@ -272,17 +322,20 @@ class CommandWatcher(object):
 
         if self.threadList[EXEC].stopped == COMMAND_FAILED:
             self.finalState = CMD_ERROR
-            self.logger.error("Error: %s", self.threadList[EXEC].errorInfo)
+            logger.error("Error: %s", self.threadList[EXEC].errorInfo)
             self.runnerErrorInExec = str(self.threadList[EXEC].errorInfo)
         elif self.threadList[EXEC].stopped == COMMAND_CRASHED:
-            self.logger.error("Job script raised some unexpected exception :")
+            logger.error("Job script raised some unexpected exception :")
             error = str(self.threadList[EXEC].errorInfo) or ("None")
             for line in error.strip().split("\n"):
-                self.logger.error(line)
+                logger.error(line)
             self.finalState = CMD_ERROR
             self.runnerErrorInExec = str(self.threadList[EXEC].errorInfo)
+        else:
+            logger.debug("No more threads to check")
 
-        self.updateCommandStatusAndCompletion(self.finalState, True)
+        if self.workerPort is not 0:
+            self.updateCommandStatusAndCompletion(self.finalState, True)
 
     ## Kills all processes launched by the command.
     #
@@ -312,6 +365,7 @@ def closeFileDescriptors():
 
 
 if __name__ == "__main__":
+
     try:
         logFile = sys.argv[1]
         workerPort = sys.argv[2]
@@ -319,25 +373,48 @@ if __name__ == "__main__":
         runner = sys.argv[4]
         validationExpression = sys.argv[5]
         rawArguments = sys.argv[6:]
+        
+        # ARGH !
+        # Receiveing arguments as string and loosing type info...
+        # Change this to receive a serialized dict and use ast.literal_eval to load it properly
         argumentsDict = {}
         for argument in rawArguments:
             arglist = argument.split("=")
             key = arglist[0]
             value = '='.join(arglist[1:])
-            #key, value = argument.split("=")
             argumentsDict[key] = value
+
+        # import ast
+        # argumentsDict = {}
+        # argumentsDict = ast.literal_eval(rawArguments[0])
+
     except:
-        print "Usage : commandwatcher.py /path/to/the/log/file workerPort id runnerscript argument1=value1,argument2=value2...",
+        # print "Usage : commandwatcher.py /path/to/the/log/file workerPort id runnerscript argument1=value1,argument2=value2...",
+        print "Usage : commandwatcher.py /path/to/the/log/file workerPort id runnerscript \"{'argument1':'strvalue1', 'argument2'=intvalue2... }\"",
+        print ""
+        print "Executes and monitor a given script in a separate thread. Completion and message updates are periodically sent back"
+        print "to the workerd process to notify puliserver."
+        print ""
+        print "NOTE: If worker port is \"0\", it means the commandwatcher is intended to be used locally only."
+        print "      In this case completion and message updates are ignore as everything is logged."
         raise
 
     closeFileDescriptors()
 
-    logger = logging.getLogger()
-    logger.setLevel(logging.ERROR)
+    # logger = logging.getLogger()
+    # logger.setLevel(logging.INFO)
 
-    handler = logging.StreamHandler(sys.stderr)
-    handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
-    handler.setFormatter(logging.Formatter("# [%(levelname)s] %(message)s"))
-    logger.addHandler(handler)
+    # handler = logging.StreamHandler(sys.stderr)
+    
+    # FORMAT = '# [%(levelname)s] %(asctime)s - %(message)s'
+    # DATE_FORMAT = '%b %d %H:%M:%S'
 
-    CommandWatcher(workerPort, id, runner, validationExpression, argumentsDict)
+    # handler.setFormatter( logging.Formatter(fmt=FORMAT, datefmt=DATE_FORMAT) )
+    # logger.addHandler(handler)
+
+    try:
+        CommandWatcher(workerPort, id, runner, validationExpression, argumentsDict)
+    except KeyboardInterrupt, e:
+        print("\n")
+        logger.warning("Exit event caught: exiting CommandWatcher...\n")
+        sys.exit(0)

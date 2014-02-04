@@ -6,6 +6,8 @@ NODE_STATUS = (NODE_BLOCKED,
                 NODE_CANCELED,
                 NODE_PAUSED) = range(7)
 
+# TODO dependencies should be set for restricted node statutes only: DONE, ERROR and CANCELED
+
 NODE_STATUS_NAMES = ("BLOCKED",
                       "READY",
                       "RUNNING",

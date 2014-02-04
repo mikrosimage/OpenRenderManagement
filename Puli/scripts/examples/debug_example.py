@@ -1,16 +1,21 @@
 #!/usr/bin/python
 # coding: utf-8
+
+
+
 from puliclient import Task, Graph
 
+# command = "nuke -x -F %%MI_FRAME%% ma_comp.nk"
+# command = "nuke -x -F %%MI_START%%-%%MI_END%% ma_comp.nk"
 
-args =  { "cmd":"sleep 10", "start":1, "end":200, "packetSize":1 }
-tags =  { "prod":"test", "shot":"test", "nbFrames":200 }
-decomposer = "puliclient.contrib.generic.GenericDecomposer"
+# command = "echo currFrame=%%MI_FRAME%% in [%%MI_START%%-%%MI_END%%]"
+# command = "echo \"comId=$PULI_COMMAND_ID task=$PULI_TASK_NAME log=$PULI_LOG\""
+command = "env | grep ^PULI"
 
-# import pudb;pu.db
-task = Task( name="task", arguments=args, tags=tags, runner="puliclient.contrib.generic.GenericRunner", dispatchKey=-5 )
-task.addCommand( 'i am sleepy', args )
+arguments={ 'args':command, 'start':1, 'end':2 , 'packetSize':1}
+tags =  { "prod":"test", "shot":"test" }
 
-graph = Graph('debug', tags=tags, root=task )
-
-graph.submit("pulitest", 8004)
+graph = Graph('debug', tags=tags, poolName='default' )
+task1 = graph.addNewTask( "TASK_1", tags=tags, arguments=arguments, runner="puliclient.contrib.commandlinerunner.CommandLineRunner" )
+graph.submit( "pulitest", 8004)
+#graph.execute()

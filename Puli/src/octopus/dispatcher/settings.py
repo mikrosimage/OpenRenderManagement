@@ -44,8 +44,8 @@ RUN_AS = None
 #CONFDIR = "/opt/puli/conf"
 
 # DEV ENV
-LOGDIR = "/s/apps/lin/eval/puli/distrib/OpenRenderManagement/logs"
-CONFDIR = "/s/apps/lin/eval/puli/distrib/OpenRenderManagement/Puli/etc/puli"
+LOGDIR = "/s/apps/lin/vfx_test_apps/OpenRenderManagement/logs"
+CONFDIR = "/s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli/etc/puli"
 
 PIDFILE = "/var/run/puli/dispatcher.pid"  # service control pid file
 

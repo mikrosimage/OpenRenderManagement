@@ -266,18 +266,25 @@ class DefaultCommandRunner(CommandRunner):
         if 'start' in arguments.keys() \
             and 'end' in arguments.keys() :
 
-            print 'Executing command on a range of frames [%d-%d]' % (arguments['start'], arguments['end'])
+            print 'Executing command on a range of frames [%r-%r]' % (arguments['start'], arguments['end'])
+            completion = 0.0
+            completionIncrement = 1.0 / float( (arguments['end']+1) - arguments['start'] )
+
             for frame in range( arguments['start'], arguments['end']+1 ):
+                print "==== Frame %d ====" % frame
+
                 currCommand = cmd.replace("%%MI_FRAME%%", str(frame))
                 currCommand = currCommand.replace("%%MI_START%%", str(arguments['start']))
                 currCommand = currCommand.replace("%%MI_END%%", str(arguments['end']))
-
-                # print "Command for current frame: %s" % currCommand
 
                 if arguments['timeout'] == 0:
                     helper.execute( currCommand.split(" "), env=os.environ )
                 else:
                     helper.executeWithTimeout( currCommand.split(" "), env=os.environ, timeout=timeout )
+
+                completion += completionIncrement
+                updateCompletion( completion )
+                print "Updating completion %f " % completion
 
         # Else it is a single block command, no need to iterate
         else:

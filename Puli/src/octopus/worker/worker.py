@@ -627,6 +627,7 @@ class Worker(MainLoopApplication):
     def addCommandApply(self, ticket, commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment):
         if not self.isPaused:
             try:
+
                 newCommand = Command(commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment=environment)
                 self.commands[commandId] = newCommand
                 self.addCommandWatcher(newCommand)
@@ -704,6 +705,13 @@ class Worker(MainLoopApplication):
                 if err != errno.EEXIST:
                     raise
 
+
+        #JSA Fix :  add several info in env to be used by the runner
+        command.environment["PULI_COMMAND_ID"] = command.id
+        command.environment["PULI_TASK_NAME"] = command.taskName
+        command.environment["PULI_TASK_ID"] = command.relativePathToLogDir
+        command.environment["PULI_LOG"] = outputFile
+
         args = [
             pythonExecutable,
             "-u",
@@ -714,7 +722,12 @@ class Worker(MainLoopApplication):
             command.runner,
             command.validationExpression,
         ]
+
+        # ARGH ! 
+        # loosing type of arguments by serializing as string
+        # better be using ast.literal_eval to serialize and reload arguments
         args.extend(('%s=%s' % (str(name), str(value)) for (name, value) in command.arguments.items()))
+        # args.append( str(command.arguments) )
 
         try:
             watcherProcess = spawnCommandWatcher(pidFile, logFile, args, command.environment)

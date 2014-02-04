@@ -373,14 +373,24 @@ if __name__ == "__main__":
         runner = sys.argv[4]
         validationExpression = sys.argv[5]
         rawArguments = sys.argv[6:]
+        
+        # ARGH !
+        # Receiveing arguments as string and loosing type info...
+        # Change this to receive a serialized dict and use ast.literal_eval to load it properly
         argumentsDict = {}
         for argument in rawArguments:
             arglist = argument.split("=")
             key = arglist[0]
             value = '='.join(arglist[1:])
             argumentsDict[key] = value
+
+        # import ast
+        # argumentsDict = {}
+        # argumentsDict = ast.literal_eval(rawArguments[0])
+
     except:
-        print "Usage : commandwatcher.py /path/to/the/log/file workerPort id runnerscript argument1=value1,argument2=value2...",
+        # print "Usage : commandwatcher.py /path/to/the/log/file workerPort id runnerscript argument1=value1,argument2=value2...",
+        print "Usage : commandwatcher.py /path/to/the/log/file workerPort id runnerscript \"{'argument1':'strvalue1', 'argument2'=intvalue2... }\"",
         print ""
         print "Executes and monitor a given script in a separate thread. Completion and message updates are periodically sent back"
         print "to the workerd process to notify puliserver."

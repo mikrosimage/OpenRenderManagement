@@ -335,21 +335,26 @@ class DefaultTaskDecomposer(TaskDecomposer):
     def __init__(self, task):
         super(DefaultTaskDecomposer, self).__init__(task)
 
-        if task.arguments is not None:
-            start = ( task.arguments[self.START_LABEL] if self.START_LABEL in task.arguments.keys() else 1 )
-            end = ( task.arguments[self.END_LABEL] if self.END_LABEL in task.arguments.keys() else 1 )
-            packetSize = ( task.arguments[self.PACKETSIZE_LABEL] if self.PACKETSIZE_LABEL in task.arguments.keys() else 1 )
-            framesList = ( task.arguments[self.FRAMESLIST_LABEL] if self.FRAMESLIST_LABEL in task.arguments.keys() else "" )
+        if task.arguments is None:
+            # Create an empty command anyway --> probably unecessary
+            print "WARNING: No arguments given for the task \"%s\", it is necessary to do this ? (we are creating an empty command anyway..." % task.name
+            self.addCommand(task.name+"_1_1", {})
 
-            # print "Decompose args: start=%r, end=%r, packetSize=%r, callback=%r, frameList=%s" % (start, end, packetSize, self, framesList)
+        elif all( key in task.arguments for key in (self.START_LABEL, self.END_LABEL, self.PACKETSIZE_LABEL) ) \
+            or self.FRAMESLIST_LABEL in task.arguments:
+            # if stanadrd attributes exist in arguments, use the PuliHelper to decompose accordingly
+
+            start = task.arguments.get(self.START_LABEL, 1)
+            end = task.arguments.get(self.END_LABEL, 1)
+            packetSize = task.arguments.get(self.PACKETSIZE_LABEL, 1)
+            framesList = task.arguments.get(self.FRAMESLIST_LABEL, "")
 
             from puliclient.contrib.helper.helper import PuliActionHelper
             PuliActionHelper().decompose( start=start, end=end, packetSize=packetSize, callback=self, framesList=framesList )
 
         else:
-            # Create an empty command anyway --> probably unecessary
-            print "WARNING: No arguments given for the task \"%s\", it is necessary to do this ? (we are creating an empty command anyway..." % task.name
-            self.addCommand(task.name+"_1_1", {})
+            # If arguments given but no standard behaviour, simply transmit task arguments to single command
+            self.addCommand(task.name+"_1_1", task.arguments)
 
 
     def addCommand(self, packetStart, packetEnd):

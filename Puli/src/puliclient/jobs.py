@@ -338,7 +338,7 @@ class DefaultTaskDecomposer(TaskDecomposer):
         if task.arguments is None:
             # Create an empty command anyway --> probably unecessary
             print "WARNING: No arguments given for the task \"%s\", it is necessary to do this ? (we are creating an empty command anyway..." % task.name
-            self.addCommand(task.name+"_1_1", {})
+            self.task.addCommand(task.name+"_1_1", {})
 
         elif all( key in task.arguments for key in (self.START_LABEL, self.END_LABEL, self.PACKETSIZE_LABEL) ) \
             or self.FRAMESLIST_LABEL in task.arguments:
@@ -354,19 +354,21 @@ class DefaultTaskDecomposer(TaskDecomposer):
 
         else:
             # If arguments given but no standard behaviour, simply transmit task arguments to single command
-            self.addCommand(task.name+"_1_1", task.arguments)
+            self.task.addCommand(task.name+"_1_1", task.arguments)
 
 
     def addCommand(self, packetStart, packetEnd):
         '''
-        Default method to add a command with this TaskDecomposer.
+        Default method to add a command with DefaultTaskDecomposer.
 
         :param packetStart: Integer representing the first frame
         :param packetEnd: Integer representing the last frame
         '''
         cmdArgs = self.task.arguments.copy()
-        cmdArgs[self.START_LABEL] = packetStart
-        cmdArgs[self.END_LABEL] = packetEnd
+        if packetStart is not None:
+            cmdArgs[self.START_LABEL] = packetStart
+        if packeEnd is not None:
+            cmdArgs[self.END_LABEL] = packetEnd
 
         cmdName = "%s_%s_%s" % (self.task.name, str(packetStart), str(packetEnd))
         self.task.addCommand(cmdName, cmdArgs)

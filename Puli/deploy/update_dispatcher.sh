@@ -43,7 +43,10 @@ do
              SOURCE=$OPTARG
              ;;
          d)
-             DESTINATION=$OPTARG
+             BASE_DESTINATION=`basename $OPTARG`
+             DIR_DESTINATION=`dirname $OPTARG`
+
+             DESTINATION=${DIR_DESTINATION}/${BASE_DESTINATION}
              ;;
          q)
              QUIET=0
@@ -75,11 +78,6 @@ if [[ -d "${SOURCE}" && ! -L "${SOURCE}" ]] ; then
 
   if [[ ! -d "${SOURCE}/scripts" ]] ; then
     echo "Error: origin folder does not contains the '${SOURCE}/scripts' subfolder."
-    exit 1
-  fi
-
-  if [[ ! -f "${SOURCE}/tools" ]] ; then
-    echo "Error: origin folder does not contains the '${SOURCE}/tools' subfolder."
     exit 1
   fi
 
@@ -146,8 +144,9 @@ rsync -rL --exclude "*.pyc" ${SOURCE}/src/octopus ${DESTINATION}/
 echo "Copying scripts files..."
 mkdir -p ${DESTINATION}/scripts
 rsync -rL --exclude "*.pyc" ${SOURCE}/scripts/dispatcherd.py ${DESTINATION}/scripts
+rsync -rL --exclude "*.pyc" ${SOURCE}/scripts/respawnerd.py ${DESTINATION}/scripts
 rsync -rL --exclude "*.pyc" ${SOURCE}/scripts/pulicleaner ${DESTINATION}/scripts
-rsync -rL --exclude "*.pyc" ${SOURCE}/scripts/startup/puliserver /etc/init.d/
+# rsync -rL --exclude "*.pyc" ${SOURCE}/scripts/startup/puliserver /etc/init.d/
 
 echo "Creating config dir..."
 mkdir -p ${DESTINATION}/conf
@@ -155,6 +154,7 @@ mkdir -p ${DESTINATION}/conf
 echo "Copying conf file..."
 rsync -rL --exclude "*.pyc" ${SOURCE}/etc/puli/licences.lst ${DESTINATION}/conf
 rsync -rL --exclude "*.pyc" ${SOURCE}/etc/puli/workers.lst ${DESTINATION}/conf
+rsync -rL --exclude "*.pyc" ${SOURCE}/etc/puli/config.ini ${DESTINATION}/conf
 rsync -rL --exclude "*.pyc" ${SOURCE}/etc/puli/pools ${DESTINATION}/conf
 
 if [[ -f "${BACKUP_FOLDER}/octopus/dispatcher/settings.py" ]] ; then

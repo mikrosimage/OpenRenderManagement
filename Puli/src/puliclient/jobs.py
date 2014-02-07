@@ -367,7 +367,7 @@ class DefaultTaskDecomposer(TaskDecomposer):
         cmdArgs = self.task.arguments.copy()
         if packetStart is not None:
             cmdArgs[self.START_LABEL] = packetStart
-        if packeEnd is not None:
+        if packetEnd is not None:
             cmdArgs[self.END_LABEL] = packetEnd
 
         cmdName = "%s_%s_%s" % (self.task.name, str(packetStart), str(packetEnd))

@@ -76,6 +76,11 @@ if [[ -d "${SOURCE}" && ! -L "${SOURCE}" ]] ; then
     exit 1
   fi
 
+  if [[ ! -d "${SOURCE}/src/tools" ]] ; then
+    echo "Error: origin folder does not contains the puliserver core 'src/tools' subfolder."
+    exit 1
+  fi
+
   if [[ ! -d "${SOURCE}/scripts" ]] ; then
     echo "Error: origin folder does not contains the '${SOURCE}/scripts' subfolder."
     exit 1
@@ -140,6 +145,7 @@ fi
 echo ""
 echo "Copying octopus source files..."
 rsync -rL --exclude "*.pyc" ${SOURCE}/src/octopus ${DESTINATION}/
+rsync -rL --exclude "*.pyc" ${SOURCE}/src/tools ${DESTINATION}/
 
 echo "Copying scripts files..."
 mkdir -p ${DESTINATION}/scripts

@@ -39,13 +39,23 @@ PORT = 8004
 ADDRESS = getLocalAddress()
 RUN_AS = None
 
-# TEST/PROD ENV
-#LOGDIR = "/opt/puli/logs"
-#CONFDIR = "/opt/puli/conf"
+
+#
+# DEV/EVAL/PROD ENV
+#
+
+# EVAL ENV
+# BASEDIR = "/s/apps/lin/vfx_test_apps/"
 
 # DEV ENV
-LOGDIR = "/s/apps/lin/vfx_test_apps/OpenRenderManagement/logs"
-CONFDIR = "/s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli/etc/puli"
+BASEDIR = "/datas/jsa/"
+
+LOGDIR = BASEDIR + "OpenRenderManagement/logs"
+CONFDIR = BASEDIR + "OpenRenderManagement/Puli/etc/puli"
+
+# PROD
+#LOGDIR = "/opt/puli/logs"
+#CONFDIR = "/opt/puli/conf"
 
 PIDFILE = "/var/run/puli/dispatcher.pid"  # service control pid file
 

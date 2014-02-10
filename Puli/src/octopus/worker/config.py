@@ -13,6 +13,11 @@ __copyright__   = "Copyright 2013, Mikros Image"
 
 
 #
+# PROCESS BEHAVIOUR
+# 
+LIST_ALLOWED_PROCESSES_WHEN_PAUSING_WORKER = ['python', 'python2.6', 'bash', 'sshd', 'respawnerd', 'workerd']
+
+#
 # COMUNICATION BEHAVIOUR
 # 
 WORKER_SYSINFO_DELAY = 8                           # interval between 2 heartbeats to the server

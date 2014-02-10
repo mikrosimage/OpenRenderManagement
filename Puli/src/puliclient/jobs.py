@@ -268,16 +268,16 @@ class DefaultCommandRunner(CommandRunner):
 
             print 'Executing command on a range of frames [%r-%r]' % (arguments['start'], arguments['end'])
             completion = 0.0
-            completionIncrement = 1.0 / float( (arguments['end']+1) - arguments['start'] )
+            completionIncrement = 1.0 / float( (int(arguments['end'])+1) - int(arguments['start']) )
 
-            for frame in range( arguments['start'], arguments['end']+1 ):
+            for frame in range( int(arguments['start']), int(arguments['end'])+1 ):
                 print "==== Frame %d ====" % frame
 
                 currCommand = cmd.replace("%%MI_FRAME%%", str(frame))
                 currCommand = currCommand.replace("%%MI_START%%", str(arguments['start']))
                 currCommand = currCommand.replace("%%MI_END%%", str(arguments['end']))
 
-                if arguments['timeout'] == 0:
+                if int(arguments['timeout']) == 0:
                     helper.execute( currCommand.split(" "), env=os.environ )
                 else:
                     helper.executeWithTimeout( currCommand.split(" "), env=os.environ, timeout=timeout )
@@ -289,7 +289,7 @@ class DefaultCommandRunner(CommandRunner):
         # Else it is a single block command, no need to iterate
         else:
             print "Command: %s" % cmd
-            if arguments['timeout'] == 0:
+            if int(arguments['timeout']) == 0:
                 helper.execute( cmd.split(" "), env=os.environ )
             else:
                 helper.executeWithTimeout( cmd.split(" "), env=os.environ, timeout=timeout )
@@ -367,7 +367,7 @@ class DefaultTaskDecomposer(TaskDecomposer):
         cmdArgs = self.task.arguments.copy()
         if packetStart is not None:
             cmdArgs[self.START_LABEL] = packetStart
-        if packeEnd is not None:
+        if packetEnd is not None:
             cmdArgs[self.END_LABEL] = packetEnd
 
         cmdName = "%s_%s_%s" % (self.task.name, str(packetStart), str(packetEnd))

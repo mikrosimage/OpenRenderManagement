@@ -434,7 +434,7 @@ class Worker(MainLoopApplication):
         processToKill = []
         for processItem in renderProcessList:
             items = processItem.split(' ')
-            if len(items) == 2 and items[1] not in ['python', 'bash', 'sshd', 'respawner.py']:
+            if len(items) == 2 and items[1] not in config.LIST_ALLOWED_PROCESSES_WHEN_PAUSING_WORKER : #['python', 'bash', 'sshd', 'respawner.py']:
                 processToKill.append(items[0])
                 LOGGER.info("Found ghost process %s %s" % (items[0], items[1]))
         if len(processToKill) != 0:

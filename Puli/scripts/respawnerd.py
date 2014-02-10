@@ -121,6 +121,7 @@ def pollRestartFile( pFile ):
                 # stop the worker
                 logging.info( "Stopping the worker" )
                 # subprocess.call(["/usr/bin/sudo", "/etc/init.d/puliworker", "stop"])
+                # subprocess.call(["systemctl", "stop", "puliworker.service"])
                 subprocess.call(["/usr/bin/sudo", "systemctl", "stop", "puliworker.service"])
 
                 # remove killfile and restartfile
@@ -133,6 +134,7 @@ def pollRestartFile( pFile ):
                 # start the worker
                 logging.info( "Starting the worker" )
                 # subprocess.call(["/usr/bin/sudo", "/etc/init.d/puliworker", "start"])
+                # subprocess.call(["systemctl", "start", "puliworker.service"])
                 subprocess.call(["/usr/bin/sudo", "systemctl", "start", "puliworker.service"])
 
             except Exception, e:
@@ -146,7 +148,7 @@ def process_args():
 
     parser.add_option("-K", "--kill-file", action="store", dest="KILL_FILE", help="change the kill file", default="/tmp/render/killfile")
     parser.add_option("-R", "--restart-file", action="store", dest="RESTART_FILE", help="change the restart file", default="/tmp/render/restartfile")
-    parser.add_option("-D", "--refresh-delay", action="store", dest="REFRESH_DELAY", type="int", help="set a refresh in seconds", default=5)
+    parser.add_option("-D", "--delay", action="store", dest="REFRESH_DELAY", type="int", help="set a refresh in seconds", default=5)
 
     return parser.parse_args()
 

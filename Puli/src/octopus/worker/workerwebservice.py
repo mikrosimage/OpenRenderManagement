@@ -88,6 +88,8 @@ class PauseResource(BaseResource):
             if content != "0":
                 if not os.path.isdir(os.path.dirname(killfile)):
                     os.makedirs(os.path.dirname(killfile))
+                    # change rights to the folder
+                    os.chmod(os.path.dirname(killfile), 0777)
                 f = open(killfile, 'w')
                 # if -1, kill all current rendering processes
                 # if -2, schedule the worker for a restart
@@ -105,10 +107,10 @@ class PauseResource(BaseResource):
 
 class RamInUseResource(BaseResource):
     """
-    TO FIX: the method for retrieving mem used is not really correct. 
+    TO FIX: the method for retrieving mem used is not really correct.
     We should use "free -m" or directly /proc/meminfo -> use = memtotal - (memfree + membuffer + memcache)
 
-    Par ex, pour calculer la memoire libre (en prenant en compte les buffers et le swap): 
+    Par ex, pour calculer la memoire libre (en prenant en compte les buffers et le swap):
     awk '/MemFree|Buffers|^Cached/ {free+=$2} END {print  free}' /proc/meminfo
 
     Pour avoir la memoire utilisee, soit memtotal-memlibre:
@@ -146,8 +148,8 @@ class CommandsResource(BaseResource):
         try:
             # self.framework.addOrder(self.framework.application.addCommandApply, **dct)
             ret = self.framework.application.addCommandApply( None,
-                    dct['commandId'], 
-                    dct['runner'], 
+                    dct['commandId'],
+                    dct['runner'],
                     dct['arguments'],
                     dct['validationExpression'],
                     dct['taskName'],
@@ -239,4 +241,3 @@ class WorkerReconfig(BaseResource):
         self.framework.application.reloadConfig()
 
 
-        

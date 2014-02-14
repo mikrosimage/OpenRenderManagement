@@ -1,0 +1,5 @@
+#!/bin/bash
+export PYTHONPATH=/s/apps/lin/puli/:${PYTHONPATH}
+export PATH=/s/apps/lin/puli/tools/:${PATH}
+
+/s/apps/lin/puli/tools/pul_query "$@"

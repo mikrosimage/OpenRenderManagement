@@ -276,8 +276,8 @@ class FolderNode(BaseNode):
 
         #
         # Normally, we would loop until no readycommandcount for this entrypoint OR if loop children ended
-        # However we remove the loop children limit, we have to stop iteration when there are still commands 
-        # ready but can not be started due to match constraint... 
+        # However we remove the loop children limit, we have to stop iteration when there are still commands
+        # ready but can not be started due to match constraint...
         # So we count the nb of iteration done, it can't be more than the number of readycommands
         #
         for i in range(0, self.readyCommandCount):
@@ -420,7 +420,9 @@ class TaskNode(BaseNode):
 
     @property
     def tags(self):
-        return self.task.tags
+        if self.task is not None:
+            return self.task.tags
+        return None
 
     ##
     # @param id an integer, unique for this node
@@ -444,7 +446,7 @@ class TaskNode(BaseNode):
     #     print "Dispatching TaskNode %s" % (self.name)
     #     for command in self.task.commands:
     #         yield command
-        
+
 
     def dispatchIterator(self, stopFunc, ep=None):
         if ep is None:

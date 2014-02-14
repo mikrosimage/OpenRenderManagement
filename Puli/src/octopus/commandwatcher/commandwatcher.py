@@ -14,6 +14,7 @@ from threading import Thread
 from puliclient.jobs import CommandError
 import logging
 import sys
+import inspect
 import os
 import time
 from datetime import timedelta
@@ -59,7 +60,7 @@ class CmdThreader(Thread):
     # @param cmd name of the jobtype script
     # @param methodName name of the jobtype method
     #
-    def __init__(self, cmd, methodName, arguments, updateCompletion, updateMessage):
+    def __init__(self, cmd, methodName, arguments, updateCompletion, updateMessage, updateStats):
         Thread.__init__(self)
 
         self.logger = logging.getLogger()
@@ -71,13 +72,23 @@ class CmdThreader(Thread):
         self.arguments = arguments
         self.updateCompletion = updateCompletion
         self.updateMessage = updateMessage
+        self.updateStats = updateStats
 
     ## Runs the specified method of the command.
     #
     def run(self):
         try:
             self.stopped = COMMAND_RUNNING
-            getattr(self.cmd, self.methodName)(self.arguments, self.updateCompletion, self.updateMessage)
+
+            # 
+            # HACK: inspect method args to see if updateStats must be passed as argument or not
+            #
+            constructArgs = [ self.arguments, self.updateCompletion, self.updateMessage ]
+            if 'updateStats' in inspect.getargspec( getattr(self.cmd, self.methodName) ).args:
+                constructArgs.append( self.updateStats )
+
+            getattr(self.cmd, self.methodName)( *constructArgs )
+
             self.stopped = COMMAND_STOPPED
         except CommandError, e:
             self.errorInfo = str(e)
@@ -98,9 +109,11 @@ class CmdThreader(Thread):
 #
 class CommandWatcher(object):
 
-    intervalTimeExec = 3
+    intervalTimeExec = 5
+    maxRefreshDataDelay = 30
     intervalTimePostExec = 3
     threadList = {}
+    lastUpdateDate = time.time()
 
     ## Creates a new CmdWatcher.
     #
@@ -113,10 +126,16 @@ class CommandWatcher(object):
         self.id = id
         self.requestManager = RequestManager("127.0.0.1", workerPort)
         self.workerPort = workerPort
-        self.completion = 0.0
-        self.message = "loading command script"
         self.arguments = arguments
         self.runner = runner
+
+        self.completion = 0.0
+        self.message = "loading command script"
+        self.stats = {}
+
+        self.completionHasChanged = True
+        self.messageHasChanged = True
+        self.statsHasChanged = True
 
         self.finalState = CMD_DONE
 
@@ -192,7 +211,7 @@ class CommandWatcher(object):
     # @param action the name of the action to thread (jobtype script method)
     #
     def threadAction(self, action):
-        tmpThread = CmdThreader(self.job, action, self.arguments, self.updateCompletionCallback, self.updateMessageCallback)
+        tmpThread = CmdThreader(self.job, action, self.arguments, self.updateCompletionCallback, self.updateMessageCallback, self.updateCustomStatsCallback)
         tmpThread.setName('jobMain')
         # add this thread to the list
         self.threadList[action] = tmpThread
@@ -207,7 +226,6 @@ class CommandWatcher(object):
         if self.workerPort is "0":
             return
 
-        logger.debug('Updating status: %s' % status)
         dct = json.dumps({"id": self.id, "status": status})
         headers = {}
         headers['Content-Length'] = len(dct)
@@ -217,11 +235,14 @@ class CommandWatcher(object):
             logger.debug('Updating status has failed with a BadStatusLine error')
 
     def updateValidatorResult(self, msg, errorInfos):
+        """
+        FIXME: NEVER CALLED ??! WTF
+        """
 
         if self.workerPort is "0":
             return
 
-        logger.debug('Updating msg and errorInfos : %s,%s' % (msg, str(errorInfos)))
+        # logger.debug('Updating msg and errorInfos : %s,%s' % (msg, str(errorInfos)))
         dct = json.dumps({"id": self.id, "validatorMessage": msg, "errorInfos": errorInfos})
         headers = {}
         headers['Content-Length'] = len(dct)
@@ -233,14 +254,9 @@ class CommandWatcher(object):
     def updateCommandStatusAndCompletion(self, status, retry=False):
 
         if self.workerPort is "0":
-            # sys.exit(1)
             return
 
-        logger.debug('Updating status: %s' % status)
-        completion = self.completion
-        logger.debug('Updating completion: %s' % completion)
-
-        body = json.dumps({"id": self.id, "status": status, "completion": completion, "message": self.message})
+        body = json.dumps({"id": self.id, "status": status, "completion": self.completion, "message": self.message})
         headers = {}
         headers['Content-Length'] = len(body)
         headers['Content-Type'] = 'application/json'
@@ -272,20 +288,49 @@ class CommandWatcher(object):
     ## Updates the completion of the command.
     #
     def updateCommandCompletion(self):
+        """
+        Sends info to the server every intervalTimeExec (several seconds).
+        Info sent is a dict with: commandid, completion and message
+
+        FIXED: 
+        Update checks if the data has change between last update to avoid sending same value to frequently.
+        A maxRefreshDataDelay will force a resend even if data is identicial to ensure server consistency.
+        """
         if self.workerPort is "0":
             return
 
-        completion = self.completion
-        logger.debug('Updating completion: %s' % completion)
-        dct = json.dumps({"id": self.id,
-                          "completion": completion,
-                          "message": self.message})
+        elapsedTimeSinceLastUpdate = time.time() - self.lastUpdateDate
+        
+        # If no change since last update AND the last update is not too old --> exit without sending update
+        if elapsedTimeSinceLastUpdate < self.maxRefreshDataDelay:
+            if not self.messageHasChanged and not self.completionHasChanged and not self.statsHasChanged :
+                logger.debug('Nothing changed, no need to update')
+                return
+        else:
+            logger.debug('Maximum refresh delay reached (%rs), force refresh even if nothing has changed' % self.maxRefreshDataDelay)
+
+
+        data = {}
+        if self.completionHasChanged:
+            data["completion"] = self.completion
+        if self.messageHasChanged:
+            data["message"] = self.message
+        if self.statsHasChanged and self.stats is not {}:
+            data["stats"] = self.stats
+
+        dct = json.dumps( data )
         headers = {}
         headers['Content-Length'] = len(dct)
         try:
             self.requestManager.put("/commands/%d/" % self.id, dct, headers)
         except http.BadStatusLine:
             logger.debug('Updating completion has failed with a BadStatusLine error')
+
+        # Reset update flags
+        self.messageHasChanged = False
+        self.completionHasChanged = False
+        self.statsHasChanged = False
+        self.lastUpdateDate = time.time()
 
     ## Threads the post execution of the corresponding runner.
     #
@@ -344,10 +389,33 @@ class CommandWatcher(object):
         self.threadList[EXEC].stop()
 
     def updateCompletionCallback(self, completion):
-        self.completion = completion
+
+        if completion != self.completion:
+            self.completion = completion
+            self.completionHasChanged = True
+        # else:
+        #     logger.debug( "Completion updated from runner but value is identical as previous update." )
 
     def updateMessageCallback(self, message):
-        self.message = message
+        if message != self.message:
+            self.message = message
+            self.messageHasChanged = True
+        # else:
+        #     logger.debug( "Message updated from runner but value is identical as previous update." )
+
+    def updateCustomStatsCallback(self, pStats):
+        """
+        IPC between the runner thread and the commandwatcher.
+        It is used to report custom data from the runner class (generally datas extracted from the process log) to the dispatcher.
+        As the data can be large, a flag is maintained indicating if a change occured and if the data has already been updated on the server.
+        """
+        # TODO
+        # evaluate diff betwenn the new val and previous val
+        # if value is updated: change flag is set to True
+        self.stats = pStats
+        self.statsHasChanged = True
+        # logger.debug( "Stats dict updated from runner." )
+
 
 
 def closeFileDescriptors():

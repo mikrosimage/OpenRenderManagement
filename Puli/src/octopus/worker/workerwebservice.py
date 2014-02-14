@@ -167,18 +167,38 @@ class CommandsResource(BaseResource):
 
 class CommandResource(BaseResource):
     def put(self, id):
+        """
+        | Usually called from a commandwatcher to set new values relative to a command.
+        | Only called when a value has changed or and long delay has been reached (see commandwatcher).
+        |
+        | URL: PUT http://host:port/commands/<id>
+        |
+        | Several kind of updates are handled:
+        | - validation: validation process when a command starts (to be defined, might not be necessary nor used)
+        | - update info of the command:
+        |     - status: integer indicating the command status
+        |     - completion: a float indicating command progress
+        |     - message: information string (only used for display but not in pulback)
+        |     - stats: a custom dict to report useful stats from the command
+        """
         #TODO check error and set error response
         self.setRnId(self.request)
         rawArgs = self.getBodyAsJSON()
-        if 'status' in rawArgs or 'completion' in rawArgs:
+
+        if 'status' in rawArgs \
+            or 'completion' in rawArgs \
+            or 'message' in rawArgs \
+            or 'stats' in rawArgs:
             args = {
                 'commandId': int(id),
                 'status': rawArgs.get('status', None),
                 'message': rawArgs.get('message', None),
-                'completion': rawArgs.get('completion', None)
+                'completion': rawArgs.get('completion', None),
+                'stats': rawArgs.get('stats', None)
             }
             self.framework.addOrder(self.framework.application.updateCommandApply, **args)
-        else:
+
+        elif 'validatorMessage' in rawArgs or 'errorInfos' in rawArgs:
             # validator message case
             args = {
                 'commandId': int(id),
@@ -186,6 +206,8 @@ class CommandResource(BaseResource):
                 'errorInfos': rawArgs.get('errorInfos', None)
             }
             self.framework.addOrder(self.framework.application.updateCommandValidationApply, **args)
+
+        # Success
         self.set_status(202)
 
     def delete(self, id):

@@ -527,5 +527,13 @@ class Dispatcher(MainLoopApplication):
             if command.validatorMessage:
                 command.status = enums.CMD_ERROR
 
+        # Stats info received and not none. Means we need to update it on the command.
+        # If stats received is none, no change on the worker, we do not update the command.
+        if "stats" in dct and dct["stats"] is not None:
+            # LOGGER.debug("Updating stats on server: %r" % dct["stats"] )
+            command.stats = dct["stats"]
+
+
+
     def queueWorkload(self, workload):
         self.queue.put(workload)

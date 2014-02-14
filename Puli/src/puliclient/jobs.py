@@ -210,7 +210,7 @@ class CommandRunner(object):
     parameters = []
 
 
-    def execute(self, arguments, updateCompletion, updateMessage):
+    def execute(self, arguments, updateCompletion, updateMessage, updateStats):
         raise NotImplementedError
 
     def validate(self, arguments):

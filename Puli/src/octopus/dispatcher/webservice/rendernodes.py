@@ -149,8 +149,8 @@ class RenderNodeCommandsResource(BaseResource):
         # except TypeError, e:
         #     return Http400(repr(e.args))
         updateDict = self.getBodyAsJSON()
-        #
         updateDict['renderNodeName'] = computerName
+
         try:
             self.framework.application.updateCommandApply(updateDict)
         except KeyError, e:

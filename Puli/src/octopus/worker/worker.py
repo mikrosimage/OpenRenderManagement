@@ -327,6 +327,9 @@ class Worker(MainLoopApplication):
             dct["validatorMessage"] = command.validatorMessage
         if command.errorInfos is not None:
             dct["errorInfos"] = command.errorInfos
+        if hasattr(command, 'stats'):
+            dct["stats"] = command.stats
+
         dct['message'] = command.message
         dct['id'] = command.id
         return dct
@@ -348,6 +351,7 @@ class Worker(MainLoopApplication):
             url = "/rendernodes/%s/commands/%d/" % (self.computerName, commandWatcher.commandId)
             body = json.dumps(self.buildUpdateDict(commandWatcher.command))
             headers = {'Content-Length': len(body)}
+
             try:
                 self.httpconn.request('PUT', url, body, headers)
                 response = self.httpconn.getresponse()
@@ -606,7 +610,7 @@ class Worker(MainLoopApplication):
             if err != ENOENT:
                 raise
 
-    def updateCompletionAndStatus(self, commandId, completion, status, message):
+    def updateCompletionAndStatus(self, commandId, completion, status, message, stats=None):
         try:
             commandWatcher = self.commandWatchers[commandId]
         except KeyError:
@@ -623,6 +627,11 @@ class Worker(MainLoopApplication):
                 commandWatcher.command.status = status
                 if COMMAND.isFinalStatus(status):
                     commandWatcher.finished = True
+
+            # Add a stats dict that will allow runner to send back useful data on the server.
+            # Data can be large, need to avoid to send it every command update. 
+            # The stats value is None when no update need to be updated on the server.
+            commandWatcher.command.stats = stats
 
     def addCommandApply(self, ticket, commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment):
         if not self.isPaused:
@@ -652,9 +661,9 @@ class Worker(MainLoopApplication):
         self.updateCompletionAndStatus(commandId, 0, COMMAND.CMD_CANCELED, "killed")
         LOGGER.info("Stopped command %r", commandId)
 
-    def updateCommandApply(self, ticket, commandId, status, completion, message):
-        self.updateCompletionAndStatus(commandId, completion, status, message)
-        LOGGER.info("Updated command id=%r status=%r completion=%r message=%r" % (commandId, status, completion, message))
+    def updateCommandApply(self, ticket, commandId, status, completion, message, stats):
+        self.updateCompletionAndStatus(commandId, completion, status, message, stats)
+        # LOGGER.info("Updated command id=%r status=%r completion=%r message=%r stats=%r" % (commandId, status, completion, message, stats))
 
     def updateCommandValidationApply(self, ticket, commandId, validatorMessage, errorInfos):
         try:

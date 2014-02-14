@@ -4,6 +4,8 @@ Created on Sep 28, 2011
 @author: Arnaud Chassagne
 '''
 import os
+import time
+
 from puliclient.jobs import TaskDecomposer, CommandRunner, StringParameter
 from puliclient.contrib.helper.helper import PuliActionHelper
 
@@ -33,11 +35,12 @@ class GenericDecomposer(TaskDecomposer):
 class GenericRunner(CommandRunner):
     cmd = StringParameter( mandatory = True )
 
-    def execute(self, arguments, updateCompletion, updateMessage):
+    def execute(self, arguments, updateCompletion, updateMessage, updateStats ):
         # init the helper
         helper = PuliActionHelper(cleanTemp=True)
         cmd = arguments[CMD]
+
         print 'Running command "%s"' % cmd
-        updateCompletion(0)
+        updateCompletion(0.0)
         helper.execute(cmd.split(" "), env=os.environ)
         updateCompletion(1)

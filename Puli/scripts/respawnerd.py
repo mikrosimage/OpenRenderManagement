@@ -34,26 +34,31 @@ import pwd
 import atexit
 import signal
 import sys
+import optparse
 
 # Default daemon parameters.
 # File mode creation mask of the daemon.
 
-UMASK = 0
+# UMASK = 0
 
 # Default working directory for the daemon.
 
-WORKDIR = '/'
+# WORKDIR = '/'
 
-# Default maximum for the number of available file descriptors.
+# # Default maximum for the number of available file descriptors.
 
-MAXFD = 1024
+# MAXFD = 1024
 
-# The standard I/O file descriptors are redirected to /dev/null by default.
+# PID file 
+PIDFILE = "/var/run/puli/respawner.pid"
 
-if hasattr(os, 'devnull'):
-    REDIRECT_TO = os.devnull
-else:
-    REDIRECT_TO = '/dev/null'
+
+# # The standard I/O file descriptors are redirected to /dev/null by default.
+
+# if hasattr(os, 'devnull'):
+#     REDIRECT_TO = os.devnull
+# else:
+#     REDIRECT_TO = '/dev/null'
 
 def daemonize(username=""):
     """
@@ -63,18 +68,23 @@ def daemonize(username=""):
 
     if os.fork() != 0:
         os._exit(0)
+
     os.setsid()
+    
     if username:
         uid = pwd.getpwnam(username)[2]
         os.setuid(uid)
+    
     if os.fork() != 0:
         os._exit(0)
+
     # create the pidfile
-    pidfile = file("/tmp/pulirespawner.pid", "w")
+    pidfile = file( PIDFILE, "w" )
     pidfile.write("%d\n" % os.getpid())
     pidfile.close()
+
     # register a cleanup callback
-    pidfile = os.path.abspath("/tmp/pulirespawner.pid")
+    pidfile = os.path.abspath( PIDFILE )
     def delpidfile():
         os.remove(pidfile)
     atexit.register(delpidfile)
@@ -82,7 +92,8 @@ def daemonize(username=""):
         os.remove(pidfile)
         sys.exit()
     signal.signal(signal.SIGTERM, delpidfileonSIGTERM)
-    #
+
+    # Redirect standard ios
     os.chdir("/")
     f = os.open(os.devnull, os.O_RDONLY)
     os.dup2(f, sys.stdin.fileno())
@@ -95,188 +106,73 @@ def daemonize(username=""):
     os.close(f)
 
 
-def createDaemon():
+def pollRestartFile( pFile ):
     """
-    Detach a process from the controlling terminal and run it in the
-    background as a daemon.
-    """
+    Called periodically (every REFRESH_DELAY) to check if the restart file exists.
+    If it does, it restarts the puliworker service (using systemd)
 
+    :param pFile: absolute path of the "restart file" to check
+    :raise Exception: when the worker cannot be restarted (however in daemon mode exception are dumped in /var/log/messages only)
+    """
     try:
+        if os.path.isfile( pFile ):
+            try:
 
-        # Fork a child process so the parent can exit.  This returns control to
-        # the command-line or shell.  It also guarantees that the child will not
-        # be a process group leader, since the child receives a new process ID
-        # and inherits the parent's process group ID.  This step is required
-        # to insure that the next call to os.setsid is successful.
+                # stop the worker
+                logging.info( "Stopping the worker" )
+                # subprocess.call(["/usr/bin/sudo", "/etc/init.d/puliworker", "stop"])
+                # subprocess.call(["systemctl", "stop", "puliworker.service"])
+                subprocess.call(["/usr/bin/sudo", "systemctl", "stop", "puliworker.service"])
 
-        pid = os.fork()
-    except OSError, e:
-        raise Exception('%s [%d]' % (e.strerror, e.errno))
+                # remove killfile and restartfile
+                logging.info("Removing comtrol files:" )
+                logging.info("  RESTART_FILE = %s" % options.RESTART_FILE )
+                logging.info("     KILL_FILE = %s" % options.KILL_FILE )
+                os.remove( options.RESTART_FILE )
+                os.remove( options.KILL_FILE )
 
-    if pid == 0:  # The first child.
+                # start the worker
+                logging.info( "Starting the worker" )
+                # subprocess.call(["/usr/bin/sudo", "/etc/init.d/puliworker", "start"])
+                # subprocess.call(["systemctl", "start", "puliworker.service"])
+                subprocess.call(["/usr/bin/sudo", "systemctl", "start", "puliworker.service"])
 
-        # To become the session leader of this new session and the process group
-        # leader of the new process group, we call os.setsid().  The process is
-        # also guaranteed not to have a controlling terminal.
-
-        os.setsid()
-
-        # Is ignoring SIGHUP necessary?
-        #
-        # It's often suggested that the SIGHUP signal should be ignored before
-        # the second fork to avoid premature termination of the process.  The
-        # reason is that when the first child terminates, all processes, e.g.
-        # the second child, in the orphaned group will be sent a SIGHUP.
-        #
-        # "However, as part of the session management system, there are exactly
-        # two cases where SIGHUP is sent on the death of a process:
-        #
-        #   1) When the process that dies is the session leader of a session that
-        #      is attached to a terminal device, SIGHUP is sent to all processes
-        #      in the foreground process group of that terminal device.
-        #   2) When the death of a process causes a process group to become
-        #      orphaned, and one or more processes in the orphaned group are
-        #      stopped, then SIGHUP and SIGCONT are sent to all members of the
-        #      orphaned group." [2]
-        #
-        # The first case can be ignored since the child is guaranteed not to have
-        # a controlling terminal.  The second case isn't so easy to dismiss.
-        # The process group is orphaned when the first child terminates and
-        # POSIX.1 requires that every STOPPED process in an orphaned process
-        # group be sent a SIGHUP signal followed by a SIGCONT signal.  Since the
-        # second child is not STOPPED though, we can safely forego ignoring the
-        # SIGHUP signal.  In any case, there are no ill-effects if it is ignored.
-        #
-        # import signal           # Set handlers for asynchronous events.
-        # signal.signal(signal.SIGHUP, signal.SIG_IGN)
-
-        try:
-
-            # Fork a second child and exit immediately to prevent zombies.  This
-            # causes the second child process to be orphaned, making the init
-            # process responsible for its cleanup.  And, since the first child is
-            # a session leader without a controlling terminal, it's possible for
-            # it to acquire one by opening a terminal in the future (System V-
-            # based systems).  This second fork guarantees that the child is no
-            # longer a session leader, preventing the daemon from ever acquiring
-            # a controlling terminal.
-
-            pid = os.fork()  # Fork a second child.
-        except OSError, e:
-            raise Exception('%s [%d]' % (e.strerror, e.errno))
-
-        if pid == 0:  # The second child.
-
-            # Since the current working directory may be a mounted filesystem, we
-            # avoid the issue of not being able to unmount the filesystem at
-            # shutdown time by changing it to the root directory.
-
-            os.chdir(WORKDIR)
-
-            # We probably don't want the file mode creation mask inherited from
-            # the parent, so we give the child complete control over permissions.
-
-            os.umask(UMASK)
-        else:
-
-            # exit() or _exit()?  See below.
-
-            os._exit(0)  # Exit parent (the first child) of the second child.
-    else:
-
-        # exit() or _exit()?
-        # _exit is like exit(), but it doesn't call any functions registered
-        # with atexit (and on_exit) or any registered signal handlers.  It also
-        # closes any open file descriptors.  Using exit() may cause all stdio
-        # streams to be flushed twice and any temporary files may be unexpectedly
-        # removed.  It's therefore recommended that child branches of a fork()
-        # and the parent branch(es) of a daemon use _exit().
-
-        os._exit(0)  # Exit parent of the first child.
-
-    # Close all open file descriptors.  This prevents the child from keeping
-    # open any file descriptors inherited from the parent.  There is a variety
-    # of methods to accomplish this task.  Three are listed below.
-    #
-    # Try the system configuration variable, SC_OPEN_MAX, to obtain the maximum
-    # number of open file descriptors to close.  If it doesn't exists, use
-    # the default value (configurable).
-    #
-    # try:
-    #    maxfd = os.sysconf("SC_OPEN_MAX")
-    # except (AttributeError, ValueError):
-    #    maxfd = MAXFD
-    #
-    # OR
-    #
-    # if (os.sysconf_names.has_key("SC_OPEN_MAX")):
-    #    maxfd = os.sysconf("SC_OPEN_MAX")
-    # else:
-    #    maxfd = MAXFD
-    #
-    # OR
-    #
-    # Use the getrlimit method to retrieve the maximum file descriptor number
-    # that can be opened by this process.  If there is not limit on the
-    # resource, use the default value.
-    #
-
-    import resource  # Resource usage information.
-    maxfd = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
-    if maxfd == resource.RLIM_INFINITY:
-        maxfd = MAXFD
-
-    # Iterate through and close all file descriptors.
-
-    for fd in range(0, maxfd):
-        try:
-            os.close(fd)
-        except OSError:
-            # ERROR, fd wasn't open to begin with (ignored)
-            pass
-
-    # Redirect the standard I/O file descriptors to the specified file.  Since
-    # the daemon has no controlling terminal, most daemons redirect stdin,
-    # stdout, and stderr to /dev/null.  This is done to prevent side-effects
-    # from reads and writes to the standard I/O file descriptors.
-
-    # This call to open is guaranteed to return the lowest file descriptor,
-    # which will be 0 (stdin), since it was closed above.
-
-    os.open(REDIRECT_TO, os.O_RDWR)  # standard input (0)
-
-    # Duplicate standard input to standard output and standard error.
-
-    os.dup2(0, 1)  # standard output (1)
-    os.dup2(0, 2)  # standard error (2)
-
-    return 0
+            except Exception, e:
+                logging.error("Impossible to restart the worker properly: %r", e)
+    except Exception, e:
+        logging.error("Error checking the restartfile: %r", e)
 
 
-def pollRestartFile():
-    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s',
-                        filename="/var/log/puli/respawner.log",
-                        level=logging.DEBUG
-                        )
+def process_args():
+    parser = optparse.OptionParser()
 
-    restartfile = "/tmp/render/restartfile"
-    if os.path.isfile(restartfile):
-        # stop the worker
-        logging.info("Stopping the worker")
-        subprocess.call(["/usr/bin/sudo", "/etc/init.d/puliworker", "stop"])
-        # remove killfile and restartfile
-        logging.info("Cleaning files")
-        os.remove(restartfile)
-        os.remove("/tmp/render/killfile")
-        # start the worker
-        logging.info("Starting the worker")
-        subprocess.call(["/usr/bin/sudo", "/etc/init.d/puliworker", "start"])
+    parser.add_option("-K", "--kill-file", action="store", dest="KILL_FILE", help="change the kill file", default="/tmp/render/killfile")
+    parser.add_option("-R", "--restart-file", action="store", dest="RESTART_FILE", help="change the restart file", default="/tmp/render/restartfile")
+    parser.add_option("-D", "--delay", action="store", dest="REFRESH_DELAY", type="int", help="set a refresh in seconds", default=5)
+
+    return parser.parse_args()
+
 
 if __name__ == '__main__':
 
-    # retCode = createDaemon()
-    daemonize("render")
-    
-    while 1:
-        pollRestartFile()
-        time.sleep(30)
+    logging.basicConfig( format='%(asctime)s - %(levelname)s - %(message)s',
+                         filename="/var/log/puli/respawner.log",
+                         level=logging.DEBUG )
+
+    logging.info("")
+    logging.info("----------------------------------")
+    logging.info("Parse options and arguments.")
+    options, args = process_args()
+
+    print type(options.REFRESH_DELAY)
+
+    logging.info("Create daemon.")
+    daemonize()
+
+    logging.info("Start monitoring:")
+    logging.info("  REFRESH_DELAY = %s" % options.REFRESH_DELAY )
+    logging.info("   RESTART_FILE = %s" % options.RESTART_FILE )
+    logging.info("      KILL_FILE = %s" % options.KILL_FILE )
+    while True:
+        pollRestartFile( options.RESTART_FILE )
+        time.sleep( options.REFRESH_DELAY )

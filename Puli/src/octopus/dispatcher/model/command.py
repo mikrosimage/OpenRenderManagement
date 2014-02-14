@@ -29,6 +29,7 @@ class Command(models.Model):
     arguments = models.DictField()
     status = models.IntegerField()
     message = models.StringField()
+    stats = models.DictField()       # Stats updated by the runner and stored on server
     completion = models.FloatField()
     renderNode = models.ModelField(allow_null=True)
     creationTime = models.FloatField()
@@ -40,7 +41,8 @@ class Command(models.Model):
     retryCount = models.IntegerField()
     retryRnList = models.ListField()
 
-    def __init__(self, id, description, task, arguments, status=CMD_READY, completion=None, renderNode=None, creationTime=None, startTime=None, updateTime=None, endTime=None, message=""):
+    def __init__(self, id, description, task, arguments, status=CMD_READY, completion=None, renderNode=None, creationTime=None, startTime=None, updateTime=None, endTime=None, stats={}, message=""):
+
         from octopus.dispatcher.model import Task
         models.Model.__init__(self)
         if task:
@@ -50,6 +52,7 @@ class Command(models.Model):
             self.description = str(description)
             self.task = task
             self.arguments = arguments
+            self.stats = stats
             self.status = int(status)
             self.completion = 0.
             self.renderNode = None
@@ -66,6 +69,7 @@ class Command(models.Model):
             self.description = str(description)
             self.task = task
             self.arguments = arguments
+            self.stats = stats
             self.status = int(status)
             self.completion = float(completion)
             self.renderNode = renderNode

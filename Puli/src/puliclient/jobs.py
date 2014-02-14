@@ -4,64 +4,188 @@ Created on Jan 11, 2010
 @author: Olivier Derpierre
 '''
 
+import os
 import sys
 import traceback
+import logging
 
 
 class CommandError(Exception):
     '''Raised to signal failure of a CommandRunner execution.'''
 
-
 class ValidationError(CommandError):
     '''Raised on a validation error'''
 
+class RangeError(CommandError):
+    '''Raised on a validation error where a value given is out of authorized range'''
+
+class JobTypeImportError(ImportError):
+    '''Raised when an error occurs while loading a job type through the load function'''
 
 class CommandRunnerParameter(object):
     '''Base class for formal command runner parameter.'''
 
     name = None
+    isMandatory = False
 
-    def __init__(self, **kwargs):
-        if 'default' in kwargs:
+    def __init__(self, default=None, mandatory=None, **kwargs):
+        if default is not None:
             self.hasDefault = True
-            self.defaultValue = kwargs['default']
+            self.defaultValue = default
         else:
             self.hasDefault = False
             self.defaultValue = None
 
+        if mandatory is not None:
+            self.isMandatory = True
+
+        # Set range values if given in args, still need to be validated against value
+        # TODO specialize it in typed parameter classes
+        if 'min' in kwargs:
+            self.minValue = kwargs['min']
+        if 'max' in kwargs:
+            self.maxValue = kwargs['max']
+
 
     def validate(self, arguments):
+        if not self.name in arguments and self.isMandatory:
+            raise ValidationError("Mandatory argument \"%s\" is not defined in command arguments" % self.name)
+
         if not self.name in arguments and self.hasDefault:
             arguments[self.name] = self.defaultValue
+
+
+    def __repr__(self):
+        return "CommandRunnerParameter(name=%r, default=%r, mandatory=%r)" % (self.name, self.defaultValue, self.isMandatory)
+
+    def __str__(self):
+        return "%r (default=%r, mandatory=%r)" % (self.name, self.defaultValue, self.isMandatory)
 
 
 class StringParameter(CommandRunnerParameter):
     '''A command runner parameter class that converts the argument value to a string.'''
 
     def validate(self, arguments):
-        super(StringParameter, self).validate(arguments)
-        if arguments[self.name]:
-            arguments[self.name] = str(arguments[self.name])
+
+        try:
+            super(StringParameter, self).validate(arguments)
+            if arguments[self.name]:
+                # try:
+                arguments[self.name] = str(arguments[self.name])
+                # except Exception, e:
+                #     print "Error when parameter conversion %s: %r" % (self.name, e)
+                #     raise ValidationError("StringParameter cannot be converted to str")
+        except Exception, e:
+            raise e
+
+    # def __repr__(self):
+    #     return "StringParameter(name=%r, default=%r, mandatory=%r)" % (self.name, self.defaultValue, self.isMandatory)
 
 class StringListParameter(CommandRunnerParameter):
 
     def validate(self, arguments):
-        super(StringListParameter, self).validate(arguments)
-        arguments[self.name] = [str(v) for v in arguments[self.name]]
+        try:
+            super(StringListParameter, self).validate(arguments)
+
+            arguments[self.name] = [str(v) for v in arguments[self.name]]
+        except Exception, e:
+            raise e
 
 class BooleanParameter(CommandRunnerParameter):
 
     def validate(self, arguments):
-        super(BooleanParameter, self).validate(arguments)
-        arguments[self.name] = bool(arguments[self.name])
+        try:
+            super(BooleanParameter, self).validate(arguments)
+            arguments[self.name] = bool(arguments[self.name])
+        except Exception, e:
+            raise e
 
 class IntegerParameter(CommandRunnerParameter):
     '''A command runner parameter class that converts the argument value to an integer value.'''
 
+    minValue = None
+    maxValue = None
+
     def validate(self, arguments):
-        super(IntegerParameter, self).validate(arguments)
-        if arguments[self.name]:
-            arguments[self.name] = int(arguments[self.name])
+        try:
+            # Base class will check if argument is present or ensure it has its default value
+            super(IntegerParameter, self).validate(arguments)
+
+            if arguments[self.name]:
+                newVal = int(arguments[self.name])
+                # Validate range if defined
+                if self.minValue is not None and newVal < self.minValue:
+                    raise RangeError("Argument \"%s\"=%d is less than minimum: %d" % (
+                                        self.name, 
+                                        newVal, 
+                                        self.minValue) )
+
+                if self.maxValue is not None and self.maxValue < newVal:
+                    raise RangeError("Argument \"%s\"=%d is more than maximum: %d" % (
+                                        self.name, 
+                                        self.maxValue,
+                                        newVal ) )
+
+                arguments[self.name] = newVal
+        except RangeError, e:
+            raise e
+        except ValidationError, e:
+            raise e
+
+    def __repr__(self):
+        return "IntParameter(name=%r, default=%r, mandatory=%r, minValue=%r, maxValue=%r )" % (
+                    self.name, 
+                    self.defaultValue, 
+                    self.isMandatory,
+                    self.minValue,
+                    self.maxValue,
+                    )
+
+    def __str__(self):
+        return "%r (default=%r, mandatory=%r, range=[%r,%r])" % (self.name, self.defaultValue, self.isMandatory, self.minValue, self.maxValue)
+
+class FloatParameter(CommandRunnerParameter):
+    '''A command runner parameter class that converts the argument value to an float value.'''
+
+    minValue = None
+    maxValue = None
+
+    def validate(self, arguments):
+        try:
+            super(FloatParameter, self).validate(arguments)
+            
+            if arguments[self.name]:
+                newVal = float(arguments[self.name])
+                # Validate range if defined
+                if self.minValue is not None and newVal < self.minValue:
+                    raise RangeError("Argument \"%s\"=%d is less than minimum: %d" % (
+                                        self.name, 
+                                        newVal, 
+                                        self.minValue) )
+
+                if self.maxValue is not None and self.maxValue < newVal:
+                    raise RangeError("Argument \"%s\"=%d is more than maximum: %d" % (
+                                        self.name, 
+                                        self.maxValue,
+                                        newVal ) )
+
+                arguments[self.name] = newVal
+
+        except Exception, e:
+            raise e
+
+    def __repr__(self):
+        return "FloatParameter(name=%r, default=%r, mandatory=%r, minValue=%r, maxValue=%r )" % (
+                    self.name, 
+                    self.defaultValue, 
+                    self.isMandatory,
+                    self.minValue,
+                    self.maxValue,
+                    )
+
+    def __str__(self):
+        return "%r (default=%r, mandatory=%r, range=[%r,%r])" % (self.name, self.defaultValue, self.isMandatory, self.minValue, self.maxValue)
+
 
 
 class CommandRunnerMetaclass(type):
@@ -78,7 +202,6 @@ class CommandRunnerMetaclass(type):
                 parameters.append(arg)
         self.parameters = parameters
 
-
 class CommandRunner(object):
 
     __metaclass__ = CommandRunnerMetaclass
@@ -87,13 +210,91 @@ class CommandRunner(object):
     parameters = []
 
 
-    def execute(self, arguments, updateCompletion, updateMessage):
+    def execute(self, arguments, updateCompletion, updateMessage, updateStats):
         raise NotImplementedError
 
-
     def validate(self, arguments):
+        logger = logging.getLogger('puli.commandwatcher')
+        if len(self.parameters) > 0:
+            logger.info("Validating %d parameter(s):" % len(self.parameters))
+
         for parameter in self.parameters:
+            logger.info("  - %s" % parameter)
             parameter.validate(arguments)
+
+class DefaultCommandRunner(CommandRunner):
+    
+    cmd = StringParameter( mandatory = True )
+    timeout = IntegerParameter( default=0 , min=0 )
+
+    def execute(self, arguments, updateCompletion, updateMessage):
+        '''
+        | Simple execution using the helper. Default argument "cmd" is expected (mandatory)
+        | to start the execution with the current env.
+        |
+        | If a command is defined on a range, the cmd will be executed several time using start/end arguments.
+        | The command can use several standard replacement values:
+        | %%MI_FRAME%% -> replaced by the current frame value
+        | %%MI_START%% -> replaced by the index of the first frame of the range
+        | %%MI_END%% -> replaced by the index of the last frame of the range
+        |
+        | For instance if a command is defined like this:
+        |   - start = "10"
+        |   - end = "15"
+        |   - cmd = "nuke -x -F %%MI_FRAME%% ma_comp.nk"
+        |     or cmd = "nuke -x -F %%MI_START%%-%%MI_END%% ma_comp.nk"
+        |
+        | The runner will produce the following execution:
+        | nuke -x -F 10 ma_comp.nk
+        | nuke -x -F 11 ma_comp.nk
+        | nuke -x -F 12 ma_comp.nk
+        | nuke -x -F 13 ma_comp.nk
+        | nuke -x -F 14 ma_comp.nk
+        | nuke -x -F 15 ma_comp.nk
+
+        '''
+
+        cmd = arguments[ 'cmd' ]
+        timeout = arguments['timeout']
+
+        from puliclient.contrib.helper.helper import PuliActionHelper
+        helper = PuliActionHelper(cleanTemp=True)
+
+        updateCompletion(0)
+
+        # If start and end are defnied in arguments, we need to iterate several times
+        if 'start' in arguments.keys() \
+            and 'end' in arguments.keys() :
+
+            print 'Executing command on a range of frames [%r-%r]' % (arguments['start'], arguments['end'])
+            completion = 0.0
+            completionIncrement = 1.0 / float( (int(arguments['end'])+1) - int(arguments['start']) )
+
+            for frame in range( int(arguments['start']), int(arguments['end'])+1 ):
+                print "==== Frame %d ====" % frame
+
+                currCommand = cmd.replace("%%MI_FRAME%%", str(frame))
+                currCommand = currCommand.replace("%%MI_START%%", str(arguments['start']))
+                currCommand = currCommand.replace("%%MI_END%%", str(arguments['end']))
+
+                if int(arguments['timeout']) == 0:
+                    helper.execute( currCommand.split(" "), env=os.environ )
+                else:
+                    helper.executeWithTimeout( currCommand.split(" "), env=os.environ, timeout=timeout )
+
+                completion += completionIncrement
+                updateCompletion( completion )
+                print "Updating completion %f " % completion
+
+        # Else it is a single block command, no need to iterate
+        else:
+            print "Command: %s" % cmd
+            if int(arguments['timeout']) == 0:
+                helper.execute( cmd.split(" "), env=os.environ )
+            else:
+                helper.executeWithTimeout( cmd.split(" "), env=os.environ, timeout=timeout )
+
+        updateCompletion(1)
 
 
 class TaskExpander(object):
@@ -101,8 +302,11 @@ class TaskExpander(object):
     def __init__(self, taskGroup):
         pass
 
-
 class TaskDecomposer(object):
+    """
+    | Base class for Decomposer hierarchy.
+    | Implements a minimalist "addCommand" method.
+    """
 
     def __init__(self, task):
         self.task = task
@@ -110,17 +314,69 @@ class TaskDecomposer(object):
     def addCommand(self, name, args):
         self.task.addCommand(name, args)
 
-
 class DefaultTaskDecomposer(TaskDecomposer):
+    """
+    | Default decomposesr called when no decomposer given for a task. It will use the PuliActionHelper to create one
+    | or several commands on a task. PuliActionHelper's decompose method will have the following behaviour:
+    |   - if "framesList" is defined: 
+    |         create a command for each frame indicated (frameList is a string with frame numbers separated by spaces)
+    |   - else:
+    |         try to use start/end/packetSize attributes to create several commands (frames grouped by packetSize)
+    |
+    | If no "arguments" dict is given, print a warning and create a single command with empty arguments.
+    """
+
+    # DEFAULT FIELDS USED TO DECOMPOSE A TASK
+    START_LABEL="start"
+    END_LABEL="end"
+    PACKETSIZE_LABEL="packetSize"
+    FRAMESLIST_LABEL="framesList"
 
     def __init__(self, task):
         super(DefaultTaskDecomposer, self).__init__(task)
-        self.addCommand(task.name, {})
+
+        if task.arguments is None:
+            # Create an empty command anyway --> probably unecessary
+            print "WARNING: No arguments given for the task \"%s\", it is necessary to do this ? (we are creating an empty command anyway..." % task.name
+            self.task.addCommand(task.name+"_1_1", {})
+
+        elif all( key in task.arguments for key in (self.START_LABEL, self.END_LABEL, self.PACKETSIZE_LABEL) ) \
+            or self.FRAMESLIST_LABEL in task.arguments:
+            # if stanadrd attributes exist in arguments, use the PuliHelper to decompose accordingly
+
+            start = task.arguments.get(self.START_LABEL, 1)
+            end = task.arguments.get(self.END_LABEL, 1)
+            packetSize = task.arguments.get(self.PACKETSIZE_LABEL, 1)
+            framesList = task.arguments.get(self.FRAMESLIST_LABEL, "")
+
+            from puliclient.contrib.helper.helper import PuliActionHelper
+            PuliActionHelper().decompose( start=start, end=end, packetSize=packetSize, callback=self, framesList=framesList )
+
+        else:
+            # If arguments given but no standard behaviour, simply transmit task arguments to single command
+            self.task.addCommand(task.name+"_1_1", task.arguments)
 
 
-class JobTypeImportError(ImportError):
-    """Raised when an error occurs while loading a job type through the load function."""
-    pass
+    def addCommand(self, packetStart, packetEnd):
+        '''
+        Default method to add a command with DefaultTaskDecomposer.
+
+        :param packetStart: Integer representing the first frame
+        :param packetEnd: Integer representing the last frame
+        '''
+        cmdArgs = self.task.arguments.copy()
+        if packetStart is not None:
+            cmdArgs[self.START_LABEL] = packetStart
+        if packetEnd is not None:
+            cmdArgs[self.END_LABEL] = packetEnd
+
+        cmdName = "%s_%s_%s" % (self.task.name, str(packetStart), str(packetEnd))
+        self.task.addCommand(cmdName, cmdArgs)
+
+
+
+
+
 
 
 def _load(name, motherClass):
@@ -157,4 +413,3 @@ def loadTaskDecomposer(name):
 
 def loadCommandRunner(name):
     return _load(name, CommandRunner)
-

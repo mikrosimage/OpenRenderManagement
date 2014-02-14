@@ -74,6 +74,7 @@ def process_args():
 
     parser.add_option("-P", "--pid-file", action="store", dest="PIDFILE", help="change the pid file")
     parser.add_option("-K", "--kill-file", action="store", dest="KILLFILE", help="change the kill file")
+    parser.add_option("-R", "--restart-file", action="store", dest="RESTARTFILE", help="change the restart file")
     parser.add_option("-W", "--commandwatchers-pid-dir", action="store", dest="PID_DIR", help="change the directory where pid files for command watchers are stored")
 
     parser.add_option("-d", "--daemon", action="store_true", dest="DAEMONIZE", default=False, help="daemonize the dispatcher")
@@ -123,6 +124,16 @@ def setup_logging(options):
 def main():
     options = process_args()
     setup_logging(options)
+
+    logging.getLogger('daemon').info( "" )
+    logging.getLogger('daemon').info( "-----------------------------------------------" )
+    logging.getLogger('daemon').info( "Starting worker on %s:%d.", settings.ADDRESS, settings.PORT)
+    logging.getLogger('daemon').info( "-----------------------------------------------" )
+    logging.getLogger('daemon').info( " command = %s" % " ".join(sys.argv) )
+    logging.getLogger('daemon').info( "  daemon = %r" % options.DAEMONIZE )
+    logging.getLogger('daemon').info( " console = %r" % options.CONSOLE )
+    logging.getLogger('daemon').info( "  server = %s:%s" % (settings.DISPATCHER_ADDRESS, settings.DISPATCHER_PORT) )
+    
     workerApplication = make_worker()
     if options.DAEMONIZE:
         daemonize(settings.RUN_AS)

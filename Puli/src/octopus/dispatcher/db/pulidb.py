@@ -140,6 +140,7 @@ class Commands(SQLObject):
     endTime = DateTimeCol()
     assignedRNId = IntCol()
     message = UnicodeCol()
+    stats = UnicodeCol()
     archived = BoolCol()
     args = UnicodeCol()
 
@@ -360,6 +361,7 @@ class PuliDB(object):
                           Commands.q.endTime.fieldName: self.getDateFromTimeStamp(element.endTime),
                           Commands.q.assignedRNId.fieldName: element.renderNode.id if element.renderNode else None,
                           Commands.q.message.fieldName: element.message,
+                          Commands.q.stats.fieldName: str(element.stats),
                           Commands.q.archived.fieldName: False,
                           Commands.q.args.fieldName: str(element.arguments)}
                 conn.query(conn.sqlrepr(Insert(Commands.q, values=fields)))
@@ -422,6 +424,7 @@ class PuliDB(object):
                               Commands.q.completion.fieldName: element.completion,
                               Commands.q.startTime.fieldName: startTime,
                               Commands.q.updateTime.fieldName: updateTime,
+                              Commands.q.stats.fieldName: str(element.stats),
                               Commands.q.endTime.fieldName: endTime}
                     if element.renderNode:
                         fields[Commands.q.assignedRNId.fieldName] = element.renderNode.id
@@ -778,15 +781,20 @@ class PuliDB(object):
                   Commands.q.endTime,
                   Commands.q.assignedRNId,
                   Commands.q.message,
+                  Commands.q.stats,
                   Commands.q.archived,
                   Commands.q.args]
         commands = conn.queryAll(conn.sqlrepr(Select(fields, where=(Commands.q.archived == False))))
 
         print "%s -- req for cmd complete %s --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)), len(commands))
+        # import pudb;pu.db
         for num, dbCmd in enumerate(commands):
-            id, description, taskId, status, completion, creationTime, startTime, updateTime, endTime, assignedRNId, message, archived, args = dbCmd
+            id, description, taskId, status, completion, creationTime, startTime, updateTime, endTime, assignedRNId, message, stats, archived, args = dbCmd
             if args is None:
                 args = "{}"
+            if stats is None:
+                stats = "{}"
+
             realCmd = Command(id,
                               description,
                               None,
@@ -798,6 +806,7 @@ class PuliDB(object):
                               self.getTimeStampFromDate(startTime),
                               self.getTimeStampFromDate(updateTime),
                               self.getTimeStampFromDate(endTime),
+                              eval(stats),
                               message)
             assert not(status in [2, 3, 4] and realCmd.renderNode is None)
             cmdTaskIdList[taskId].append(realCmd)
@@ -913,6 +922,7 @@ class PuliDB(object):
                 if int(parentId) in realTaskGroupsList.keys():
                   realTaskGroupsList[int(parentId)].addTask(realTaskGroupsList[int(id)])
                   realTaskGroupsList[int(id)].parent = realTaskGroupsList[int(parentId)]
+
             tree.tasks[int(id)] = realTaskGroupsList[int(id)]
 
         # set the parents of the tasks

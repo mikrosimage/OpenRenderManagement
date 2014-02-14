@@ -88,6 +88,8 @@ class PauseResource(BaseResource):
             if content != "0":
                 if not os.path.isdir(os.path.dirname(killfile)):
                     os.makedirs(os.path.dirname(killfile))
+                    # change rights to the folder
+                    os.chmod(os.path.dirname(killfile), 0777)
                 f = open(killfile, 'w')
                 # if -1, kill all current rendering processes
                 # if -2, schedule the worker for a restart
@@ -105,10 +107,10 @@ class PauseResource(BaseResource):
 
 class RamInUseResource(BaseResource):
     """
-    TO FIX: the method for retrieving mem used is not really correct. 
+    TO FIX: the method for retrieving mem used is not really correct.
     We should use "free -m" or directly /proc/meminfo -> use = memtotal - (memfree + membuffer + memcache)
 
-    Par ex, pour calculer la memoire libre (en prenant en compte les buffers et le swap): 
+    Par ex, pour calculer la memoire libre (en prenant en compte les buffers et le swap):
     awk '/MemFree|Buffers|^Cached/ {free+=$2} END {print  free}' /proc/meminfo
 
     Pour avoir la memoire utilisee, soit memtotal-memlibre:
@@ -146,8 +148,8 @@ class CommandsResource(BaseResource):
         try:
             # self.framework.addOrder(self.framework.application.addCommandApply, **dct)
             ret = self.framework.application.addCommandApply( None,
-                    dct['commandId'], 
-                    dct['runner'], 
+                    dct['commandId'],
+                    dct['runner'],
                     dct['arguments'],
                     dct['validationExpression'],
                     dct['taskName'],
@@ -167,18 +169,38 @@ class CommandsResource(BaseResource):
 
 class CommandResource(BaseResource):
     def put(self, id):
+        """
+        | Usually called from a commandwatcher to set new values relative to a command.
+        | Only called when a value has changed or and long delay has been reached (see commandwatcher).
+        |
+        | URL: PUT http://host:port/commands/<id>
+        |
+        | Several kind of updates are handled:
+        | - validation: validation process when a command starts (to be defined, might not be necessary nor used)
+        | - update info of the command:
+        |     - status: integer indicating the command status
+        |     - completion: a float indicating command progress
+        |     - message: information string (only used for display but not in pulback)
+        |     - stats: a custom dict to report useful stats from the command
+        """
         #TODO check error and set error response
         self.setRnId(self.request)
         rawArgs = self.getBodyAsJSON()
-        if 'status' in rawArgs or 'completion' in rawArgs:
+
+        if 'status' in rawArgs \
+            or 'completion' in rawArgs \
+            or 'message' in rawArgs \
+            or 'stats' in rawArgs:
             args = {
                 'commandId': int(id),
                 'status': rawArgs.get('status', None),
                 'message': rawArgs.get('message', None),
-                'completion': rawArgs.get('completion', None)
+                'completion': rawArgs.get('completion', None),
+                'stats': rawArgs.get('stats', None)
             }
             self.framework.addOrder(self.framework.application.updateCommandApply, **args)
-        else:
+
+        elif 'validatorMessage' in rawArgs or 'errorInfos' in rawArgs:
             # validator message case
             args = {
                 'commandId': int(id),
@@ -186,6 +208,8 @@ class CommandResource(BaseResource):
                 'errorInfos': rawArgs.get('errorInfos', None)
             }
             self.framework.addOrder(self.framework.application.updateCommandValidationApply, **args)
+
+        # Success
         self.set_status(202)
 
     def delete(self, id):
@@ -239,4 +263,3 @@ class WorkerReconfig(BaseResource):
         self.framework.application.reloadConfig()
 
 
-        

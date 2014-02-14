@@ -79,10 +79,9 @@ class Worker(MainLoopApplication):
 
     def __init__(self, framework):
         super(Worker, self).__init__(self)
-        LOGGER.info("")
-        LOGGER.info("-----------------------------------------------")
-        LOGGER.info("Starting worker on %s:%d.", settings.ADDRESS, settings.PORT)
-        LOGGER.info("-----------------------------------------------")
+        LOGGER.info("---")
+        LOGGER.info("Initializing worker")
+        LOGGER.info("---")
         self.framework = framework
         self.data = None
         self.requestManager = RequestManager(settings.DISPATCHER_ADDRESS,
@@ -97,7 +96,7 @@ class Worker(MainLoopApplication):
         self.httpconn = httplib.HTTPConnection(settings.DISPATCHER_ADDRESS, settings.DISPATCHER_PORT)
         self.PID_DIR = os.path.dirname(settings.PIDFILE)
         if not os.path.isdir(self.PID_DIR):
-            LOGGER.warning("Worker pid directory does not exist, creating...")
+            LOGGER.warning("Worker pid directory %s does not exist, creating..." % self.PID_DIR)
             try:
                 os.makedirs(self.PID_DIR, 0777)
                 LOGGER.info("Worker pid directory created.")
@@ -152,8 +151,8 @@ class Worker(MainLoopApplication):
         | Result = MemFree + Buffers + Cached
 
         :param pUnit: An integer representing the unit to which the value is converted (DEFAULT is MEGABYTES).
-        :return : An integer representing the amount of FREE memory on the system
-        :raise : OSError if subprocess fails. Returns "-1" if no correct value can be retrieved.
+        :return: An integer representing the amount of FREE memory on the system
+        :raise: OSError if subprocess fails. Returns "-1" if no correct value can be retrieved.
         """
         
         try:
@@ -328,6 +327,9 @@ class Worker(MainLoopApplication):
             dct["validatorMessage"] = command.validatorMessage
         if command.errorInfos is not None:
             dct["errorInfos"] = command.errorInfos
+        if hasattr(command, 'stats'):
+            dct["stats"] = command.stats
+
         dct['message'] = command.message
         dct['id'] = command.id
         return dct
@@ -349,6 +351,7 @@ class Worker(MainLoopApplication):
             url = "/rendernodes/%s/commands/%d/" % (self.computerName, commandWatcher.commandId)
             body = json.dumps(self.buildUpdateDict(commandWatcher.command))
             headers = {'Content-Length': len(body)}
+
             try:
                 self.httpconn.request('PUT', url, body, headers)
                 response = self.httpconn.getresponse()
@@ -435,7 +438,7 @@ class Worker(MainLoopApplication):
         processToKill = []
         for processItem in renderProcessList:
             items = processItem.split(' ')
-            if len(items) == 2 and items[1] not in ['python', 'bash', 'sshd', 'respawner.py']:
+            if len(items) == 2 and items[1] not in config.LIST_ALLOWED_PROCESSES_WHEN_PAUSING_WORKER : #['python', 'bash', 'sshd', 'respawner.py']:
                 processToKill.append(items[0])
                 LOGGER.info("Found ghost process %s %s" % (items[0], items[1]))
         if len(processToKill) != 0:
@@ -490,9 +493,13 @@ class Worker(MainLoopApplication):
 
         # if the worker is paused and marked to be restarted, create restartfile
         if self.isPaused and self.toberestarted:
-            LOGGER.warning("Restarting...")
-            rf = open("/tmp/render/restartfile", 'w')
-            rf.close()
+            if not os.path.isfile(settings.RESTARTFILE):
+                LOGGER.warning("Creating restartfile.")
+                rf = open(settings.RESTARTFILE, 'w')
+                rf.close()
+            else:
+                LOGGER.warning("Waiting for restart.")
+
 
         #
         # Waits for any child process, non-blocking (this is necessary to clean up finished process properly)
@@ -603,7 +610,7 @@ class Worker(MainLoopApplication):
             if err != ENOENT:
                 raise
 
-    def updateCompletionAndStatus(self, commandId, completion, status, message):
+    def updateCompletionAndStatus(self, commandId, completion, status, message, stats=None):
         try:
             commandWatcher = self.commandWatchers[commandId]
         except KeyError:
@@ -621,9 +628,15 @@ class Worker(MainLoopApplication):
                 if COMMAND.isFinalStatus(status):
                     commandWatcher.finished = True
 
+            # Add a stats dict that will allow runner to send back useful data on the server.
+            # Data can be large, need to avoid to send it every command update. 
+            # The stats value is None when no update need to be updated on the server.
+            commandWatcher.command.stats = stats
+
     def addCommandApply(self, ticket, commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment):
         if not self.isPaused:
             try:
+
                 newCommand = Command(commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment=environment)
                 self.commands[commandId] = newCommand
                 self.addCommandWatcher(newCommand)
@@ -648,9 +661,9 @@ class Worker(MainLoopApplication):
         self.updateCompletionAndStatus(commandId, 0, COMMAND.CMD_CANCELED, "killed")
         LOGGER.info("Stopped command %r", commandId)
 
-    def updateCommandApply(self, ticket, commandId, status, completion, message):
-        self.updateCompletionAndStatus(commandId, completion, status, message)
-        LOGGER.info("Updated command id=%r status=%r completion=%r message=%r" % (commandId, status, completion, message))
+    def updateCommandApply(self, ticket, commandId, status, completion, message, stats):
+        self.updateCompletionAndStatus(commandId, completion, status, message, stats)
+        # LOGGER.info("Updated command id=%r status=%r completion=%r message=%r stats=%r" % (commandId, status, completion, message, stats))
 
     def updateCommandValidationApply(self, ticket, commandId, validatorMessage, errorInfos):
         try:
@@ -701,6 +714,13 @@ class Worker(MainLoopApplication):
                 if err != errno.EEXIST:
                     raise
 
+
+        #JSA Fix :  add several info in env to be used by the runner
+        command.environment["PULI_COMMAND_ID"] = command.id
+        command.environment["PULI_TASK_NAME"] = command.taskName
+        command.environment["PULI_TASK_ID"] = command.relativePathToLogDir
+        command.environment["PULI_LOG"] = outputFile
+
         args = [
             pythonExecutable,
             "-u",
@@ -711,7 +731,12 @@ class Worker(MainLoopApplication):
             command.runner,
             command.validationExpression,
         ]
+
+        # ARGH ! 
+        # loosing type of arguments by serializing as string
+        # better be using ast.literal_eval to serialize and reload arguments
         args.extend(('%s=%s' % (str(name), str(value)) for (name, value) in command.arguments.items()))
+        # args.append( str(command.arguments) )
 
         try:
             watcherProcess = spawnCommandWatcher(pidFile, logFile, args, command.environment)

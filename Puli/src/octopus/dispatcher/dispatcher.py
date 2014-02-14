@@ -175,15 +175,16 @@ class Dispatcher(MainLoopApplication):
                     self.dispatchTree.toModifyElements)
 
     def mainLoop(self):
-        '''Dispatcher main loop iteration.
-        Periodically called with tornado'sinternal callback mecanism, the frequency is defined by config: CORE.MASTER_UPDATE_INTERVAL
-        During this process, the dispatcher will:
-          - update completion and status for all jobs in dispatchTree
-          - update status of renderNodes
-          - validate inter tasks dependencies
-          - update the DB with recorded changes in the model
-          - compute new assignments and send them to the proper rendernodes
-          - release all finished jobs/rns
+        '''
+        | Dispatcher main loop iteration.
+        | Periodically called with tornado'sinternal callback mecanism, the frequency is defined by config: CORE.MASTER_UPDATE_INTERVAL
+        | During this process, the dispatcher will:
+        |   - update completion and status for all jobs in dispatchTree
+        |   - update status of renderNodes
+        |   - validate inter tasks dependencies
+        |   - update the DB with recorded changes in the model
+        |   - compute new assignments and send them to the proper rendernodes
+        |   - release all finished jobs/rns
         '''
         
         # JSA DEBUG: timer pour profiler les etapes       
@@ -525,6 +526,14 @@ class Dispatcher(MainLoopApplication):
             command.errorInfos = dct['errorInfos']
             if command.validatorMessage:
                 command.status = enums.CMD_ERROR
+
+        # Stats info received and not none. Means we need to update it on the command.
+        # If stats received is none, no change on the worker, we do not update the command.
+        if "stats" in dct and dct["stats"] is not None:
+            # LOGGER.debug("Updating stats on server: %r" % dct["stats"] )
+            command.stats = dct["stats"]
+
+
 
     def queueWorkload(self, workload):
         self.queue.put(workload)

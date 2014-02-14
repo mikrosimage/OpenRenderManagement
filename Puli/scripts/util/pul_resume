@@ -1,0 +1,7 @@
+#!/bin/bash
+export PYTHONPATH=/s/apps/lin/puli/:${PYTHONPATH}
+export PATH=/s/apps/lin/puli/tools/:${PATH}
+
+cd /s/apps/lin/puli/tools/
+/s/apps/lin/puli/tools/pul_resume "$@"
+cd -

@@ -41,6 +41,7 @@ class GraphViewBuilder(object):
         return [node]
 
     def processDependencies(self, dependencies):
+        # TODO dependencies should be set for restricted node statutes only: DONE, ERROR and CANCELED
         for task, taskdeps in dependencies.items():
             node = task.nodes['graph_rule']
             for deptask, statuslist in taskdeps.items():

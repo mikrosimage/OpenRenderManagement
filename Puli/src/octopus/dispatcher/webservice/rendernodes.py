@@ -52,6 +52,9 @@ class RenderNodeResource(BaseResource):
 
     #@queue
     def post(self, computerName):
+        """
+        A worker send a request to get registered on the server.
+        """
         computerName = computerName.lower()
         if computerName.startswith(('1', '2')):
             return Http403(message="Cannot register a RenderNode without a name", content="Cannot register a RenderNode without a name")
@@ -79,7 +82,12 @@ class RenderNodeResource(BaseResource):
             pools = dct['pools']
             caracteristics = dct['caracteristics']
             name, port = computerName.split(":", 1)
-            renderNode = RenderNode(None, computerName, cores, speed, name, port, ram, caracteristics)
+
+            puliversion = dct.get('puliversion',"unknown")
+            createDate = dct.get('createDate',time.time())
+
+            renderNode = RenderNode(None, computerName, cores, speed, name, port, ram, caracteristics, puliversion=puliversion, createDate=createDate)
+
             renderNode.status = status
             poolList = []
             # check the existence of the pools

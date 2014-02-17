@@ -33,6 +33,8 @@ def loadSettingsFile(filename):
 
 ## SETTINGS ###########################################################
 
+VERSION = "1.6.4"
+
 DEBUG = False
 
 PORT = 8004

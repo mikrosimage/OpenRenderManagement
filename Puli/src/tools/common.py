@@ -416,6 +416,22 @@ class RenderNodeTable( CustomTable ):
                 "labelFormat":  " %-4s "
             },
             {
+                "field":        "createDate", 
+                "label":        "CREATE", 
+                "visible":      True, 
+                "dataFormat":   " %-15s",
+                "labelFormat":  " %-15s",
+                "transform":    CustomTable.dateToStr
+            },
+            {
+                "field":        "registerDate", 
+                "label":        "REGISTER", 
+                "visible":      True, 
+                "dataFormat":   " %-15s",
+                "labelFormat":  " %-15s",
+                "transform":    CustomTable.dateToStr
+            },
+            {
                 "field":        "lastAliveTime", 
                 "label":        "LAST PING", 
                 "visible":      True, 

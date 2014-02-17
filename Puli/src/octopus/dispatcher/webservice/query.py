@@ -244,7 +244,7 @@ class RenderNodeQueryResource(BaseResource, IQueryNode):
 
 
     ADDITIONNAL_SUPPORTED_FIELDS = ['']
-    DEFAULT_FIELDS = ['id', 'name', 'host', 'port', 'ramSize', 'coresNumber', 'speed', 'status', 'lastAliveTime' ]
+    DEFAULT_FIELDS = ['id', 'name', 'host', 'port', 'ramSize', 'coresNumber', 'speed', 'status', 'lastAliveTime', 'createDate', 'registerDate' ]
 
 
 

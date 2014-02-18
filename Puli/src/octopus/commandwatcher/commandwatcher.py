@@ -411,8 +411,9 @@ class CommandWatcher(object):
         As the data can be large, a flag is maintained indicating if a change occured and if the data has already been updated on the server.
         """
         # TODO
-        # evaluate diff betwenn the new val and previous val
-        # if value is updated: change flag is set to True
+        #  - evaluate diff betwenn the new val and previous val
+        #    if value is updated: change flag is set to True
+        #  - check if data size when dumped to text is less than 64k i.e. if it can fit in DB backend, otherwise reject update
 
         if type(pStats) is dict:
             self.stats = pStats

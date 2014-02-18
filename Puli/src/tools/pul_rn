@@ -81,9 +81,19 @@ def handle_request(response):
             print "Error loading json: " + str(e)
             sys.exit()
 
-        # Sorting data according to table description
-        _data['items'] = sorted(_data['items'], key=lambda row : row[options.sortField], reverse=options.reverseOrder)
+        if len(_data['items']) is 0:
+            print ""
+            print "Empty result list received."
+            print ""
+            sys.exit()
 
+        # Sorting data according to table description
+        if options.sortField in _data['items'][0].keys():
+            _data['items'] = sorted(_data['items'], key=lambda row : row[options.sortField], reverse=options.reverseOrder)
+            pass
+        else:
+            print ""
+            print "WARNING: impossible to sort using \"%s\", the field does not exist." % options.sortField
 
         # Display data according to given args
         if options.json:
@@ -121,8 +131,44 @@ def process_args():
     Manages arguments parsing definition and help information
     '''
 
-    usage = "usage: %prog [general options] [restriction list] [output option]"
-    desc=""" """
+    usage = "usage: %prog [general options] [output option]"
+    desc=""" 
+Displays information about the render nodes registered in the farm.
+To restrict the display to render nodes of interest, a list of zero or more restriction options may be supplied.
+
+Here is the complete list of fields that can be retrieved:
+
+GENERIC:
+  - id             unique int identifier
+  - name           representing machine's hostname and port
+  - puliversion    a string indicating the worker version number (from worker settings)
+
+SYSTEM:  
+  - ramSize        physical RAM size in MB
+  - systemFreeRam  the RAM available on the system (updated each ping)
+  - coresNumber    number of cores
+  - speed          cpu clock speed in GHz
+  - host           node hostname (without domain name)
+  - port           node port
+
+STATE INFO:
+  - status         index of statuses in: [ Unknown, Booting, Paused, Idle, Assigned, Working, Finishing ]
+                   or "short" names: [ U, B, P, I, A, W, F ]
+  - excluded       flag indicating if the node has been set to quarantine
+  - createDate     timestamp indicating when the worker process started
+  - registerDate   timestamp indicating when the worker registered on the server
+  - lastAliveTime  timestamp indicating when the worker was last updated on the server
+  - performance    custom performance index
+
+
+Here is the list of field on which a constraint can be set and the expected filter type:
+  - name:           a string representing a regexp
+  - status:         int
+  - speed:          float
+  - ramSize:        int
+  - coresNumber:    int
+
+    """
 
     parser = OptionParser(usage=usage, description=desc, version="%prog 0.1", formatter=PlainHelpFormatter() )
 

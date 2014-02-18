@@ -39,7 +39,7 @@ COMMAND_FAILED = 3
 
 
 logger = logging.getLogger('puli.commandwatcher')
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 handler = logging.StreamHandler(sys.stdout)
 
@@ -256,7 +256,8 @@ class CommandWatcher(object):
         if self.workerPort is "0":
             return
 
-        body = json.dumps({"id": self.id, "status": status, "completion": self.completion, "message": self.message})
+        body = json.dumps({"id": self.id, "status": status, "completion": self.completion, "message": self.message, "stats" : self.stats})
+
         headers = {}
         headers['Content-Length'] = len(body)
         headers['Content-Type'] = 'application/json'
@@ -414,7 +415,6 @@ class CommandWatcher(object):
         # if value is updated: change flag is set to True
         self.stats = pStats
         self.statsHasChanged = True
-        # logger.debug( "Stats dict updated from runner." )
 
 
 

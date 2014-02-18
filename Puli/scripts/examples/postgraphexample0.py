@@ -11,11 +11,11 @@ from puliclient import Task, Graph, GraphDumper
 
 if __name__ == '__main__':
 
-    args =  { "cmd":"sleep 5", "start":1, "end":10, "packetSize":1 }
-    tags =  { "prod":"test", "shot":"test", "nbFrames":10 }
+    args =  { "cmd":"sleep 20", "start":1, "end":100, "packetSize":1 }
+    tags =  { "prod":"test", "shot":"test", "nbFrames":100 }
     decomposer = "puliclient.contrib.generic.GenericDecomposer"
 
     simpleTask = Task( name="todo", arguments=args, tags=tags, decomposer=decomposer )
 
-    graph = Graph('simpleGraph', poolName='default', tags=tags, root=simpleTask)
-    graph.submit("pulitest", 8004)
+    graph = Graph('simpleGraph', poolName='DDD_katana', tags=tags, root=simpleTask)
+    graph.submit("puliserver", 8004)

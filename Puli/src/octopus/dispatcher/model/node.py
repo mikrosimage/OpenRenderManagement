@@ -390,18 +390,29 @@ class FolderNode(BaseNode):
             child.setPaused(paused)
 
     def resetCompletion(self):
+
         self.completion = 0
         for child in self.children:
             child.resetCompletion()
 
-    def setStatus(self, status):
-        '''Propagates a target status update request.
-        @see doc/design/node-status-update.txt
+    def setStatus(self, pStatus, pCascadeUpdate=False):
         '''
+        | Propagates a target status update request.
+        | @see doc/design/node-status-update.txt
+
+        :param pStatus: New status value to assign to the current node
+        :param pCascadeUpdate: Flag indicating if the depending nodes need to be updated in cascade
+        '''
+        if pCascadeUpdate:
+            for dependingNode in self.reverseDependencies:
+                dependingNode.setStatus( pStatus, pCascadeUpdate )
+
         for child in self.children:
-            child.setStatus(status)
-        self.status = status
+            child.setStatus(pStatus, pCascadeUpdate)
+
+        self.status = pStatus
         return True
+
 
     # TODO
     # def getAllCommands(self):
@@ -591,22 +602,33 @@ class TaskNode(BaseNode):
         self.invalidate()
 
     def resetCompletion(self):
+
+
         self.completion = 0
         for command in self.task.commands:
             command.completion = 0
 
-    def setStatus(self, status):
+    def setStatus(self, pStatus, pCascadeUpdate = False):
         '''
-        Update commands in order to reach the required status.
+        | Update commands in order to reach the required status.
+        | If proper param is given, depending node will receive the same status.
+
+        :param pStatus: New status value to assign to the current node
+        :param pCascadeUpdate: Flag indicating if the depending node need to be updated in cascade
         '''
-        if status == NODE_CANCELED and self.status != NODE_DONE:
+
+        if pCascadeUpdate:
+            for dependingNode in self.reverseDependencies:
+                dependingNode.setStatus( pStatus )
+
+        if pStatus == NODE_CANCELED and self.status != NODE_DONE:
             for command in self.task.commands:
                 command.cancel()
-        elif status == NODE_READY and self.status != NODE_RUNNING:
+        elif pStatus == NODE_READY and self.status != NODE_RUNNING:
             if any(isRunningStatus(command.status) for command in self.task.commands):
                 return False
             for command in self.task.commands:
                 command.setReadyStatus()
-        elif status in (NODE_DONE, NODE_ERROR, NODE_BLOCKED, NODE_RUNNING):
+        elif pStatus in (NODE_DONE, NODE_ERROR, NODE_BLOCKED, NODE_RUNNING):
             return False
         return True

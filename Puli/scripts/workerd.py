@@ -129,6 +129,7 @@ def main():
     logging.getLogger('daemon').info( "-----------------------------------------------" )
     logging.getLogger('daemon').info( "Starting worker on %s:%d.", settings.ADDRESS, settings.PORT)
     logging.getLogger('daemon').info( "-----------------------------------------------" )
+    logging.getLogger('daemon').info( " version = %s" % settings.VERSION )
     logging.getLogger('daemon').info( " command = %s" % " ".join(sys.argv) )
     logging.getLogger('daemon').info( "  daemon = %r" % options.DAEMONIZE )
     logging.getLogger('daemon').info( " console = %r" % options.CONSOLE )

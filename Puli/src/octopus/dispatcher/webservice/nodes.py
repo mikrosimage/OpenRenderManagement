@@ -102,11 +102,18 @@ class NodeStatusResource(NodesResource):
     ##@queue
     def put(self, nodeId):
         '''
-        Pushes an order to change the status of the given node.
-        Returns the ticket for this order.
+        | Pushes an order to change the status of the given node.
+        | Several cases are handled in the same webservice --> need to be refactored
+        | - user wants to update all commands with error status in the specified node
+        | - user wants to change the status of the specified node
+        | - user wants to change the status of the specified node and all of its dependencies (cascadeUpdate, default is true)
+
+        :param nodeId: id of the node to update
+        :return: the ticket for this order.
         '''
-        # import pudb; pu.db
+        
         data = self.getBodyAsJSON()
+
         try:
             nodeStatus = data['status']
         except:
@@ -115,7 +122,10 @@ class NodeStatusResource(NodesResource):
             arguments = self.request.arguments
             nodeId = int(nodeId)
             node = self._findNode(nodeId)
+
+            #
             # handles the case of retry all commands on error
+            #
             if "cmdStatus" in arguments.keys() and nodeStatus == NODE_READY:
                 filterfunc = lambda command: command.status in [int(s) for s in arguments['cmdStatus']]
                 # get the list of commands that are in the requested status
@@ -142,18 +152,24 @@ class NodeStatusResource(NodesResource):
                 else:
                     msg = "No commands were restarted."
                 self.writeCallback("Done. %s" % msg)
+
+            #
             # handles the 'general' setStatus
+            #
             else:
+                cascadeUpdate = bool( data.get('cascade', True) )
                 nodeStatus = int(nodeStatus)
+
                 if node.status in [NODE_ERROR, NODE_CANCELED, NODE_DONE] and nodeStatus == NODE_READY:
                     node.resetCompletion()
                 if nodeStatus not in NODE_STATUS:
                     raise Http400("Invalid status value %r" % nodeStatus)
                 else:
-                    if node.setStatus(nodeStatus):
+                    if node.setStatus(nodeStatus, cascadeUpdate):
                         self.writeCallback("Status set to %r" % nodeStatus)
                     else:
                         self.writeCallback("Status was not changed.")
+
 
 
 class NodePausedResource(NodesResource):

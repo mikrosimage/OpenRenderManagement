@@ -109,7 +109,7 @@ class CmdThreader(Thread):
 #
 class CommandWatcher(object):
 
-    intervalTimeExec = 5
+    intervalTimeExec = 2
     maxRefreshDataDelay = 30
     intervalTimePostExec = 3
     threadList = {}

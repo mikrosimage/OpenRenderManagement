@@ -12,7 +12,7 @@ from octopus.core.communication import HttpResponse, Http400, Http404, Http403, 
 # from octopus.core.enums.rendernode import RN_PAUSED, RN_IDLE, RN_UNKNOWN, RN_BOOTING, RN_ASSIGNED
 from octopus.core.enums.rendernode import *
 
-from octopus.core import enums
+from octopus.core import enums, singletonstats, singletonconfig
 from octopus.dispatcher.model import RenderNode
 from octopus.core.framework import BaseResource, queue
 
@@ -55,6 +55,9 @@ class RenderNodeResource(BaseResource):
         """
         A worker send a request to get registered on the server.
         """
+        if singletonconfig.get('CORE','GET_STATS'):
+            singletonstats.theStats.cycleCounts['add_rns'] += 1
+
         computerName = computerName.lower()
         if computerName.startswith(('1', '2')):
             return Http403(message="Cannot register a RenderNode without a name", content="Cannot register a RenderNode without a name")
@@ -151,6 +154,10 @@ class RenderNodeCommandsResource(BaseResource):
 
         Returns "200 OK" on success, or "404 Bad Request" if the provided json data is not valid.
         '''
+
+        if singletonconfig.get('CORE','GET_STATS'):
+            singletonstats.theStats.cycleCounts['update_commands'] += 1
+
         computerName = computerName.lower()
         # try:
         #     updateDict = self.sanitizeUpdateDict(self.getBodyAsJSON())

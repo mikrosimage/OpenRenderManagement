@@ -17,17 +17,22 @@ try:
 except ImportError:
     import json
 
+# from octopus.core import tools
+from octopus.core import singletonconfig, singletonstats
+
 from octopus.core.threadpool import ThreadPool, makeRequests, NoResultsPending
+from octopus.core.framework import MainLoopApplication
+
 from octopus.dispatcher.model import (DispatchTree, FolderNode, RenderNode,
                                       Pool, PoolShare, enums)
 from octopus.dispatcher.strategies import FifoStrategy
-from octopus.core.framework import MainLoopApplication
-from octopus.dispatcher.db.pulidb import PuliDB
+
 from octopus.dispatcher import settings
+from octopus.dispatcher.db.pulidb import PuliDB
+from octopus.dispatcher.model.enums import *
 from octopus.dispatcher.poolman.filepoolman import FilePoolManager
 from octopus.dispatcher.poolman.wspoolman import WebServicePoolManager
 from octopus.dispatcher.licenses.licensemanager import LicenseManager
-from octopus.dispatcher.model.enums import *
 
 
 LOGGER = logging.getLogger('dispatcher')
@@ -58,7 +63,11 @@ class Dispatcher(MainLoopApplication):
 
         self.threadPool = ThreadPool(16, 0, 0, None)
 
-        LOGGER.warning('Settings: DEBUG = %s, ADDRESS = %s, PORT = %s', settings.DEBUG, settings.ADDRESS, settings.PORT)
+        #
+        # Class holding custom infos on the dispatcher.
+        # This data can be periodically flushed in a specific log file for later use
+        #
+        
 
         self.cycle = 1
         self.dispatchTree = DispatchTree()
@@ -188,8 +197,13 @@ class Dispatcher(MainLoopApplication):
         '''
         
         # JSA DEBUG: timer pour profiler les etapes       
+
         loopStartTime = time.time()
-        prevTimer = time.time()
+        prevTimer = loopStartTime
+
+        if singletonconfig.get('CORE','GET_STATS'):
+            singletonstats.theStats.cycleDate = loopStartTime
+
         LOGGER.info("")
         LOGGER.info("-----------------------------------------------------")
         LOGGER.info(" Start dispatcher process cycle.")
@@ -207,43 +221,65 @@ class Dispatcher(MainLoopApplication):
 
         # Update of allocation is done when parsing the tree for completion and status update (done partially for invalidated node only i.e. when needed)
         self.dispatchTree.updateCompletionAndStatus()
-        # LOGGER.info("%8.2f ms --> update completion status" % ( (time.time() - prevTimer)*1000 ) )
+        if singletonconfig.get('CORE','GET_STATS'):
+            singletonstats.theStats.cycleTimers['update_tree'] = time.time() - prevTimer
+        LOGGER.info("%8.2f ms --> update completion status" % ( (time.time() - prevTimer)*1000 ) )
         prevTimer = time.time()
 
-
+        # Update render nodes
         self.updateRenderNodes()
+        if singletonconfig.get('CORE','GET_STATS'):
+            singletonstats.theStats.cycleTimers['update_rn'] = time.time() - prevTimer
         LOGGER.info("%8.2f ms --> update render node" % ( (time.time() - prevTimer)*1000 ) )
         prevTimer = time.time()
 
-
+        # Validate dependencies
         self.dispatchTree.validateDependencies()
+        if singletonconfig.get('CORE','GET_STATS'):
+            singletonstats.theStats.cycleTimers['update_dependencies'] = time.time() - prevTimer
         LOGGER.info("%8.2f ms --> validate dependencies" % ( (time.time() - prevTimer)*1000 ) )
         prevTimer = time.time()
 
 
         # update db
         self.updateDB()
-
+        if singletonconfig.get('CORE','GET_STATS'):
+            singletonstats.theStats.cycleTimers['update_db'] = time.time() - prevTimer
         LOGGER.info("%8.2f ms --> update DB" % ( (time.time() - prevTimer)*1000 ) )
         prevTimer = time.time()
 
         # compute and send command assignments to rendernodes
         assignments = self.computeAssignments()
-        self.sendAssignments(assignments)
+        if singletonconfig.get('CORE','GET_STATS'):
+            singletonstats.theStats.cycleTimers['compute_assignment'] = time.time() - prevTimer
+        LOGGER.info("%8.2f ms --> compute assignements." % ( (time.time() - prevTimer)*1000)  )
+        prevTimer = time.time()
 
-        LOGGER.info("%8.2f ms --> compute and send %r assignements." % ( (time.time() - prevTimer)*1000, len(assignments) )  )
+        self.sendAssignments(assignments)
+        if singletonconfig.get('CORE','GET_STATS'):
+            singletonstats.theStats.cycleTimers['send_assignment'] = time.time() - prevTimer
+            singletonstats.theStats.cycleCounts['num_assignments'] = len(assignments)
+        LOGGER.info("%8.2f ms --> send %r assignements." % ( (time.time() - prevTimer)*1000, len(assignments) )  )
         prevTimer = time.time()
 
         # call the release finishing status on all rendernodes
         for renderNode in self.dispatchTree.renderNodes.values():
             renderNode.releaseFinishingStatus()
-
-        # LOGGER.info("%8.2f ms --> releaseFinishingStatus" % ( (time.time() - prevTimer)*1000 ) )
+        if singletonconfig.get('CORE','GET_STATS'):
+            singletonstats.theStats.cycleTimers['release_finishing'] = time.time() - prevTimer
+        LOGGER.info("%8.2f ms --> releaseFinishingStatus" % ( (time.time() - prevTimer)*1000 ) )
         prevTimer = time.time()
 
         loopDuration = (time.time() - loopStartTime)*1000
-        LOGGER.info( "%8.2f ms --> cycle ended. " % loopDuration )
+        LOGGER.info( "%8.3f ms --> cycle ended. " % loopDuration )
         LOGGER.info("-----------------------------------------------------")
+
+        # TODO: process average and sums of datas in stats, if flush time, send it to disk
+        if singletonconfig.get('CORE','GET_STATS'):
+            singletonstats.theStats.cycleTimers['time_elapsed'] = time.time() - loopStartTime
+            singletonstats.theStats.aggregate()
+
+
 
     def updateDB(self):
 
@@ -270,6 +306,11 @@ class Dispatcher(MainLoopApplication):
 
     def computeAssignments(self):
         '''Computes and returns a list of (rendernode, command) assignments.'''
+
+        # LOGGER.info("@ -----------------------------------------------------")
+        # LOGGER.info("@ COMPUTE ASSIGNMENT")
+        # LOGGER.info("@-----------------------------------------------------")
+
         from .model.node import NoRenderNodeAvailable
         # if no rendernodes available, return
         if not any(rn.isAvailable() for rn in self.dispatchTree.renderNodes.values()):
@@ -280,6 +321,11 @@ class Dispatcher(MainLoopApplication):
         # first create a set of entrypoints that are not done nor cancelled nor blocked nor paused and that have at least one command ready
         # FIXME: hack to avoid getting the 'graphs' poolShare node in entryPoints, need to avoid it more nicely...
         entryPoints = set([poolShare.node for poolShare in self.dispatchTree.poolShares.values() if poolShare.node.status not in [NODE_BLOCKED, NODE_DONE, NODE_CANCELED, NODE_PAUSED] and poolShare.node.readyCommandCount > 0 and poolShare.node.name != 'graphs'])
+
+        # LOGGER.info("@ - getting entryPoints (%d)" % len(entryPoints))
+        # for item in entryPoints:
+        #     LOGGER.info("@      -node:%r -pool:%r" % (item.name, item.poolShares.values()) )
+
 
         # don't proceed to the calculation if no rns availables in the requested pools
         rnsBool = False
@@ -297,12 +343,17 @@ class Dispatcher(MainLoopApplication):
         # update the value of the maxrn for the poolshares (parallel dispatching)
         for pool, nodesiterator in groupby(entryPoints, lambda x: x.poolShares.values()[0].pool):
 
+            # LOGGER.info("@      -foreach group of pool:%r" % (pool.name) )
+
             # we are treating every active node of the pool
             nodesList = [node for node in nodesiterator]
+            # LOGGER.info("@           -nodes:%r" % (nodesList) )
+
 
             # the new maxRN value is calculated based on the number of active jobs of the pool, and the number of online rendernodes of the pool
             rnsNotOffline = set([rn for rn in pool.renderNodes if rn.status not in [RN_UNKNOWN, RN_PAUSED]])
             rnsSize = len(rnsNotOffline)
+            # LOGGER.info("@           -nb rns awake:%r" % (len(rnsNotOffline)) )
 
             # if we have a userdefined maxRN for some nodes, remove them from the list and substracts their maxRN from the pool's size
             l = nodesList[:]  # duplicate the list to be safe when removing elements

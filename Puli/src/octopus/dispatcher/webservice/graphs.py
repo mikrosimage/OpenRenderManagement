@@ -2,7 +2,7 @@
 import logging
 
 from octopus.core.communication import *
-
+from octopus.core import singletonconfig, singletonstats
 from octopus.core.framework import BaseResource, queue
 
 logger = logging.getLogger("dispatcher.webservice")
@@ -11,6 +11,10 @@ logger = logging.getLogger("dispatcher.webservice")
 class GraphesResource(BaseResource):
     # @queue
     def post(self):
+
+        if singletonconfig.get('CORE','GET_STATS'):
+            singletonstats.theStats.cycleCounts['add_graphs'] += 1
+
         try:
             nodes = self.dispatcher.handleNewGraphRequestApply(self.getBodyAsJSON())
         except Exception, e:

@@ -72,7 +72,6 @@ def load( pFilePath ):
 
 	# parse pour creer cleanconf
 	parse()
-	# print "DBG: conf = %r" % conf
 
 def reload():
 	"""

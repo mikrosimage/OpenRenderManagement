@@ -91,7 +91,11 @@ class Worker(MainLoopApplication):
         self.port = settings.PORT
         self.computerName = COMPUTER_NAME_TEMPLATE % (settings.ADDRESS,
                                                       settings.PORT)
+
+        self.createDate = time.time()
         self.lastSysInfosMessageTime = 0
+        self.registerDate = 0
+
 
         self.httpconn = httplib.HTTPConnection(settings.DISPATCHER_ADDRESS, settings.DISPATCHER_PORT)
         self.PID_DIR = os.path.dirname(settings.PIDFILE)
@@ -279,7 +283,14 @@ class Worker(MainLoopApplication):
     def registerWorker(self):
         '''Register the worker in the dispatcher.'''
         self.updateSys = True
+        self.registerDate = time.time()
+
         infos = self.fetchSysInfos()
+
+        # Add specific info when registering (initially it was the same info at regiter and periodic utpdate
+        infos["createDate"]=self.createDate
+        infos["puliversion"]=settings.VERSION
+
         dct = json.dumps(infos)
         # FIXME if a command is currently running on this worker, notify the dispatcher
         # if len(self.commands.items()):

@@ -26,3 +26,4 @@ class Workload(object):
             raise self.result
         else:
             return self.result
+

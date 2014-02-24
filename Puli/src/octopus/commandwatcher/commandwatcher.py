@@ -39,7 +39,7 @@ COMMAND_FAILED = 3
 
 
 logger = logging.getLogger('puli.commandwatcher')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 handler = logging.StreamHandler(sys.stdout)
 
@@ -411,10 +411,15 @@ class CommandWatcher(object):
         As the data can be large, a flag is maintained indicating if a change occured and if the data has already been updated on the server.
         """
         # TODO
-        # evaluate diff betwenn the new val and previous val
-        # if value is updated: change flag is set to True
-        self.stats = pStats
-        self.statsHasChanged = True
+        #  - evaluate diff betwenn the new val and previous val
+        #    if value is updated: change flag is set to True
+        #  - check if data size when dumped to text is less than 64k i.e. if it can fit in DB backend, otherwise reject update
+
+        if type(pStats) is dict:
+            self.stats = pStats
+            self.statsHasChanged = True
+        else:
+            logger.warning("Impossible to update stats: dictionnary expected but \"%r\" was received" % type(pStats) )
 
 
 

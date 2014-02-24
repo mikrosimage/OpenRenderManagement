@@ -100,6 +100,15 @@ def handle_request(response):
             sys.exit()
 
 
+        # Sorting data according to table description
+        if options.sortField in _data['items'][0].keys():
+            _data['items'] = sorted(_data['items'], key=lambda row : row[options.sortField], reverse=options.reverseOrder)
+            pass
+        else:
+            print ""
+            print "WARNING: impossible to sort using \"%s\", the field does not exist." % options.sortField
+
+
         # Display data according to given args
         if options.json:
             print json.dumps( _data, indent=4 )
@@ -242,6 +251,9 @@ Reminder: Possible values for a job status
 
     parser.add_option("-t", "--tree",   action="store_true", dest="tree", help="Returns full tree of tasks (not commands)", default=False)
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help="Verbose mode [%default]", default=False)
+
+    parser.add_option("-o", "--sort", action="store", dest="sortField", help="Sort items with the given field [%default]", default='id')
+    parser.add_option("-r", "--reverse-order", action="store_true", dest="reverseOrder", help="Sort item in reverse order [%default]", default=False)
 
     parser.add_option("-s", "--server", action="store", dest="hostname", help="Specified a target host to send the request")
     parser.add_option("-p", "--port", action="store", dest="port", help="Specified a target port")

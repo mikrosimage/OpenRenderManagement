@@ -105,6 +105,10 @@ class CustomTable:
         return str(datetime.strftime( datetime.fromtimestamp( float(pValue) ), Settings.date_format ))
 
     @staticmethod
+    def preciseDateToStr(pValue):
+        return str(datetime.strftime( datetime.fromtimestamp( float(pValue) ), Settings.precise_date_format ))
+
+    @staticmethod
     def percentToFloat(pValue):
         return float(pValue) * 100.0
 
@@ -416,12 +420,28 @@ class RenderNodeTable( CustomTable ):
                 "labelFormat":  " %-4s "
             },
             {
+                "field":        "createDate", 
+                "label":        "CREATE", 
+                "visible":      True, 
+                "dataFormat":   " %-15s",
+                "labelFormat":  " %-15s",
+                "transform":    CustomTable.preciseDateToStr
+            },
+            {
+                "field":        "registerDate", 
+                "label":        "REGISTER", 
+                "visible":      True, 
+                "dataFormat":   " %-15s",
+                "labelFormat":  " %-15s",
+                "transform":    CustomTable.preciseDateToStr
+            },
+            {
                 "field":        "lastAliveTime", 
                 "label":        "LAST PING", 
                 "visible":      True, 
                 "dataFormat":   " %-15s",
                 "labelFormat":  " %-15s",
-                "transform":    CustomTable.dateToStr
+                "transform":    CustomTable.preciseDateToStr
             },
 
         ]

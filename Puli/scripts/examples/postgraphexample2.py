@@ -14,7 +14,7 @@ from puliclient import Task, TaskGroup, Graph, DONE
 
 if __name__ == '__main__':
 
-    args =  { "cmd":"sleep 30", "start":1, "end":10 }
+    args =  { "cmd":"sleep 30", "start":1, "end":10, "packetSize":1 }
     tags =  { "prod":"test", "shot":"test" }
     decomposer = "puliclient.contrib.generic.GenericDecomposer"
 
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     # task1 > task4 > task3 > task2 > task5 > task6
     graph.addChain( [task1, task4, task3, task2, task5, task6] )
 
-    graph.submit(host="pulitest")
+    graph.submit(host="puliserver")
 
 
 # PREVIOUS METHOD (still valid)

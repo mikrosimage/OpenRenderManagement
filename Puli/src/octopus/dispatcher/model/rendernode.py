@@ -31,15 +31,21 @@ logging.getLogger('requests.packages.urllib3.connectionpool').setLevel(logging.W
 #
 class RenderNode(models.Model):
 
+    # Sys infos
     name = models.StringField()
+    speed = models.FloatField()
     coresNumber = models.IntegerField()
+    ramSize = models.IntegerField()
+
+    # Dynamic sys infos
     freeCoresNumber = models.IntegerField()
     usedCoresNumber = models.DictField(as_item_list=True)
-    ramSize = models.IntegerField()
     freeRam = models.IntegerField()
     systemFreeRam = models.IntegerField()
     usedRam = models.DictField(as_item_list=True)
-    speed = models.FloatField()
+
+    # Worker state
+    puliversion = models.StringField()
     commands = models.ModelDictField()
     status = models.IntegerField()
     host = models.StringField()
@@ -47,11 +53,16 @@ class RenderNode(models.Model):
     pools = models.ModelListField(indexField='name')
     caracteristics = models.DictField()
     isRegistered = models.BooleanField()
-    lastAliveTime = models.FloatField()
     performance = models.FloatField()
     excluded = models.BooleanField()
 
-    def __init__(self, id, name, coresNumber, speed, ip, port, ramSize, caracteristics=None, performance=0.0):
+    # Timers
+    createDate = models.FloatField()
+    registerDate = models.FloatField()
+    lastAliveTime = models.FloatField()
+    
+
+    def __init__(self, id, name, coresNumber, speed, ip, port, ramSize, caracteristics=None, performance=0.0, puliversion="", createDate=None):
         '''Constructs a new Rendernode.
 
         :parameters:
@@ -89,6 +100,15 @@ class RenderNode(models.Model):
         self.history = deque( maxlen=singletonconfig.get('CORE','RN_NB_ERRORS_TOLERANCE') )
         self.tasksHistory = deque(maxlen=15)
         self.excluded = False
+
+        # Init new data
+        self.puliversion = puliversion
+        if createDate is None:
+            self.createDate = time.time()
+        else:
+            self.createDate = createDate
+            
+        self.registerDate = time.time()
 
         # Flag linked to the worker flag "isPaused". Handles the case when a worker is set paused but a command is still running (finishing)
         # the RN on the dispatcher must be flag not to be assigned (i.e. in isAvailable property)

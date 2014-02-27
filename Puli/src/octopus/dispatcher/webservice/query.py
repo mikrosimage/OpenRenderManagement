@@ -70,7 +70,7 @@ __all__ = []
 logger = logging.getLogger('query')
 
 class QueryResource(BaseResource, IQueryNode):
-    ADDITIONNAL_SUPPORTED_FIELDS = ['pool']
+    ADDITIONNAL_SUPPORTED_FIELDS = ['pool', 'userDefinedMaxRn']
     DEFAULT_FIELDS = ['id','user','name', 'tags:prod', 'tags:shot', \
                      'status', 'completion', 'dispatchKey', \
                      'startTime', 'creationTime', 'endTime', 'updateTime', \
@@ -89,6 +89,9 @@ class QueryResource(BaseResource, IQueryNode):
         """
         currTask = {}
         for currArg in pAttributes:
+            #
+            # Get value of additionnally supported field
+            #
             if currArg.startswith("tags:"):
                 # Attribute name references a "tags" item
                 tag = unicode(currArg[5:])
@@ -97,6 +100,13 @@ class QueryResource(BaseResource, IQueryNode):
             elif currArg == "pool":
                 # Attribute 'pool' is a specific item
                 currTask[currArg] = pNode.poolShares.keys()[0].name
+            elif currArg == "userDefinedMaxRn":
+                # Attribute 'userDefiniedMaxRN' is a specific item
+                currTask[currArg] = pNode.poolShares.values()[0].userDefinedMaxRN
+
+            #
+            # Get value of standard field
+            #
             else:
                 # Attribute is a standard attribute of a Node
                 currTask[currArg] =  getattr(pNode, currArg, 'undefined')
@@ -160,8 +170,7 @@ class QueryResource(BaseResource, IQueryNode):
                         if not hasattr(nodes[0],currAttribute):
                             if currAttribute not in QueryResource.ADDITIONNAL_SUPPORTED_FIELDS :
                                 logger.warning('Error retrieving data, invalid attribute requested : %s', currAttribute )
-                                # raise HTTPError(404, "Invalid attribute requested: %s" % currAttribute)
-                                raise HTTPError( 500, "Invalid attribute requested:"+str(currAttribute) )
+                                raise HTTPError( 500, "Invalid attribute requested: %s" % (currAttribute) )
             else:
                 # Using default result attributes
                 args['attr'] = QueryResource.DEFAULT_FIELDS
@@ -243,8 +252,8 @@ class RenderNodeQueryResource(BaseResource, IQueryNode):
     """
 
 
-    ADDITIONNAL_SUPPORTED_FIELDS = ['']
-    DEFAULT_FIELDS = ['id', 'name', 'host', 'port', 'ramSize', 'coresNumber', 'speed', 'status', 'lastAliveTime', 'createDate', 'registerDate' ]
+    ADDITIONNAL_SUPPORTED_FIELDS = ['caracteristics:mikdistrib', 'caracteristics:distribname', 'caracteristics:openglversion']
+    DEFAULT_FIELDS = ['id', 'name', 'host', 'port', 'ramSize', 'coresNumber', 'speed', 'status', 'lastAliveTime', 'createDate', 'registerDate', 'puliversion', 'pools' ]
 
 
 
@@ -257,15 +266,20 @@ class RenderNodeQueryResource(BaseResource, IQueryNode):
         """
         result = {}
         for currArg in pAttributes:
-            # if currArg.startswith("tags:"):
-            #     # Attribute name references a "tags" item
-            #     tag = unicode(currArg[5:])
-            #     value = unicode(pNode.tags.get(tag,''))
-            #     currTask[tag] = value
-            # elif currArg == "pool":
-            #     # Attribute name is a specific item
-            #     currTask[currArg] = pNode.poolShares.keys()[0].name
-            # else:
+            #
+            # Get value of additionnally supported field
+            #
+            if currArg.startswith("caracteristics:"):
+                # Attribute name references a "tags" item
+                caract = unicode(currArg[15:])
+                value = unicode(pRenderNode.caracteristics.get(caract,''))
+                result[caract] = value
+            elif currArg == "pools":
+                # Attribute name is a specific item
+                result[currArg] = [ pool.name for pool in pRenderNode.pools ]
+                # result[currArg] = ",".join( str(pRenderNode.pools))
+
+            else:
                 # Attribute is a standard attribute of a Node
                 result[currArg] =  getattr(pRenderNode, currArg, 'undefined')
 

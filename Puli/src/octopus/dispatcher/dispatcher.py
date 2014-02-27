@@ -307,9 +307,9 @@ class Dispatcher(MainLoopApplication):
     def computeAssignments(self):
         '''Computes and returns a list of (rendernode, command) assignments.'''
 
-        # LOGGER.info("@ -----------------------------------------------------")
-        # LOGGER.info("@ COMPUTE ASSIGNMENT")
-        # LOGGER.info("@-----------------------------------------------------")
+        LOGGER.debug("@ -----------------------------------------------------")
+        LOGGER.debug("@ COMPUTE ASSIGNMENT")
+        LOGGER.debug("@-----------------------------------------------------")
 
         from .model.node import NoRenderNodeAvailable
         # if no rendernodes available, return
@@ -322,9 +322,9 @@ class Dispatcher(MainLoopApplication):
         # FIXME: hack to avoid getting the 'graphs' poolShare node in entryPoints, need to avoid it more nicely...
         entryPoints = set([poolShare.node for poolShare in self.dispatchTree.poolShares.values() if poolShare.node.status not in [NODE_BLOCKED, NODE_DONE, NODE_CANCELED, NODE_PAUSED] and poolShare.node.readyCommandCount > 0 and poolShare.node.name != 'graphs'])
 
-        # LOGGER.info("@ - getting entryPoints (%d)" % len(entryPoints))
-        # for item in entryPoints:
-        #     LOGGER.info("@      -node:%r -pool:%r" % (item.name, item.poolShares.values()) )
+        LOGGER.debug("@ - getting entryPoints (%d)" % len(entryPoints))
+        for item in entryPoints:
+            LOGGER.debug("@      -node:%r -pool:%r" % (item.name, item.poolShares.values()) )
 
 
         # don't proceed to the calculation if no rns availables in the requested pools
@@ -343,17 +343,17 @@ class Dispatcher(MainLoopApplication):
         # update the value of the maxrn for the poolshares (parallel dispatching)
         for pool, nodesiterator in groupby(entryPoints, lambda x: x.poolShares.values()[0].pool):
 
-            # LOGGER.info("@      -foreach group of pool:%r" % (pool.name) )
+            LOGGER.debug("@ - foreach group of pool:%r" % (pool.name) )
 
             # we are treating every active node of the pool
             nodesList = [node for node in nodesiterator]
-            # LOGGER.info("@           -nodes:%r" % (nodesList) )
+            LOGGER.debug("@   - nodes:%r" % (nodesList) )
 
 
             # the new maxRN value is calculated based on the number of active jobs of the pool, and the number of online rendernodes of the pool
             rnsNotOffline = set([rn for rn in pool.renderNodes if rn.status not in [RN_UNKNOWN, RN_PAUSED]])
             rnsSize = len(rnsNotOffline)
-            # LOGGER.info("@           -nb rns awake:%r" % (len(rnsNotOffline)) )
+            LOGGER.debug("@   -nb rns awake:%r" % (len(rnsNotOffline)) )
 
             # if we have a userdefined maxRN for some nodes, remove them from the list and substracts their maxRN from the pool's size
             l = nodesList[:]  # duplicate the list to be safe when removing elements
@@ -373,7 +373,9 @@ class Dispatcher(MainLoopApplication):
             # then sort by dispatchKey (priority)
             nodesList = sorted(nodesList, key=lambda x: x.dispatchKey, reverse=True)
             for dk, nodeIterator in groupby(nodesList, lambda x: x.dispatchKey):
+
                 nodes = [node for node in nodeIterator]
+                LOGGER.debug("@   - for each dispatchKey val: %d - %r" % (dk, [node for node.name in nodeIterator]) )
 
                 # for each priority, if there is only one node, set the maxRN to -1
                 if len(nodes) == 1:
@@ -381,10 +383,15 @@ class Dispatcher(MainLoopApplication):
                     continue
                 # else, if a priority has been set, divide the available RNs between the nodes (parallel dispatching)
                 elif dk != 0:
+                    #######
+                    ###
+                    ### TO CHECK ici on pourrait definir une quantite allouee proportionnelle a la prio du job...
+                    ###
                     newmaxRN = rnsSize // len(nodes)
                     newremainingRN = rnsSize % len(nodes)
                     for node in nodes:
                         node.poolShares.values()[0].maxRN = newmaxRN
+                        LOGGER.debug("@   setting newMaxRN : node %s = %d" % (node, newMaxRN) )
                         if newremainingRN > 0:
                             node.poolShares.values()[0].maxRN += 1
                             newremainingRN -= 1
@@ -430,6 +437,9 @@ class Dispatcher(MainLoopApplication):
         assignmentDict = collections.defaultdict(list)
         for (rn, com) in assignments:
             assignmentDict[rn].append(com)
+
+        for assign in assignmentDict:
+            LOGGER.debug("@ assignment: %r" % assign)
 
         return assignmentDict.items()
 

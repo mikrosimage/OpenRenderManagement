@@ -109,6 +109,10 @@ class CustomTable:
         return str(datetime.strftime( datetime.fromtimestamp( float(pValue) ), Settings.precise_date_format ))
 
     @staticmethod
+    def listToStr(pValue):
+        return ",".join(pValue)
+
+    @staticmethod
     def percentToFloat(pValue):
         return float(pValue) * 100.0
 
@@ -189,7 +193,7 @@ class CustomTable:
 
                 except KeyError, e:
                     print "Error displaying column %r --> %r" % ( column, e )
-                    sys.exit()
+                    raise e
 
         # Once all columns are processed, display the full line
         if pDepth == 0:
@@ -252,7 +256,7 @@ class JobTable( CustomTable ):
                 "visible":      True, 
                 "dataFormat":   " %-30s",
                 "labelFormat":  " %-30s",
-                "truncate":     50,
+                "truncate":     30,
             },
             {
                 "field":        "prod", 
@@ -420,6 +424,13 @@ class RenderNodeTable( CustomTable ):
                 "labelFormat":  " %-4s "
             },
             {
+                "field":        "puliversion", 
+                "label":        "VERSION", 
+                "visible":      True, 
+                "dataFormat":   " %-10s",
+                "labelFormat":  " %-10s",
+            },
+            {
                 "field":        "createDate", 
                 "label":        "CREATE", 
                 "visible":      True, 
@@ -443,7 +454,14 @@ class RenderNodeTable( CustomTable ):
                 "labelFormat":  " %-15s",
                 "transform":    CustomTable.preciseDateToStr
             },
-
+            {
+                "field":        "pools", 
+                "label":        "POOLS", 
+                "visible":      True, 
+                "dataFormat":   " %-8s",
+                "labelFormat":  " %-8s",
+                "transform":    CustomTable.listToStr
+            },
         ]
 
 

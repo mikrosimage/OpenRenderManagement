@@ -37,7 +37,7 @@ if __name__ == '__main__':
 
     simpleTask = Task( name="todo", arguments=args, tags=tags, decomposer=decomposer )
 
-    graph = Graph('simpleGraph', poolName='default', tags=tags, root=simpleTask)
+    graph = Graph(options.jobname, poolName='default', tags=tags, root=simpleTask)
 
     if options.dump:
         print graph

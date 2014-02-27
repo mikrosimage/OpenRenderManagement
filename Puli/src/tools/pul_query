@@ -79,7 +79,10 @@ def handle_request(response):
     if VERBOSE: print "DEBUG - Response: " + str(response)
 
     if response.error:
-        print "Error:", response.error
+        print ""
+        print "Error:   %s" % response.error
+        print "         %s" % response.body
+        print ""
     else:
 
         if response.body == "":

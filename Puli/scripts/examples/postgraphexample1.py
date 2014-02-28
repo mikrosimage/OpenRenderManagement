@@ -31,7 +31,7 @@ if __name__ == '__main__':
     #
     # Create custom graph
     #
-    args =  { "cmd":"sleep 30", "start":1, "end":10, "packetSize":1 }
+    args =  { "cmd":"sleep 30", "start":1, "end":15, "packetSize":1 }
     tags =  { "prod":"test", "shot":"test" }
     decomposer = "puliclient.contrib.generic.GenericDecomposer"
 
@@ -43,8 +43,6 @@ if __name__ == '__main__':
     graph.addNewTask( name="first", arguments=args, tags=tags, decomposer=decomposer, lic='shave' )
     graph.addNewTask( name="second", arguments=args, tags=tags, decomposer=decomposer )
     graph.addNewTask( name="third", arguments=args, tags=tags, decomposer=decomposer )
-
-    graph.submit("pulitest", 8004)
 
     if options.dump:
         print graph

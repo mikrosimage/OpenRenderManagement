@@ -31,11 +31,11 @@ if __name__ == '__main__':
     #
     # Create custom graph
     #
-    args =  { "cmd":"sleep 15", "start":1, "end":100, "packetSize":1 }
-    tags =  { "prod":"test", "shot":"test", "nbFrames":100 }
+    args =  { "cmd":"sleep 30", "start":1, "end":10, "packetSize":1 }
+    tags =  { "prod":"test", "shot":"test", "nbFrames":10 }
     decomposer = "puliclient.contrib.generic.GenericDecomposer"
 
-    simpleTask = Task( name="todo", arguments=args, tags=tags, decomposer=decomposer )
+    simpleTask = Task( name=options.jobname, arguments=args, tags=tags, decomposer=decomposer )
 
     graph = Graph(options.jobname, poolName='default', tags=tags, root=simpleTask)
 

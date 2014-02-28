@@ -343,7 +343,7 @@ class Dispatcher(MainLoopApplication):
         # update the value of the maxrn for the poolshares (parallel dispatching)
         for pool, nodesiterator in groupby(entryPoints, lambda x: x.poolShares.values()[0].pool):
 
-            LOGGER.debug("@ - foreach group of pool:%r" % (pool.name) )
+            LOGGER.debug("@ - foreach set of nodes on a pool:%r" % (pool.name) )
 
             # we are treating every active node of the pool
             nodesList = [node for node in nodesiterator]
@@ -372,10 +372,17 @@ class Dispatcher(MainLoopApplication):
 
             # then sort by dispatchKey (priority)
             nodesList = sorted(nodesList, key=lambda x: x.dispatchKey, reverse=True)
+            
+            # prepare dks to respect proportions
+            totalDispatchKeyValueForPool = 0
+
             for dk, nodeIterator in groupby(nodesList, lambda x: x.dispatchKey):
 
+                totalDispatchKeyValueForPool += dk
+
                 nodes = [node for node in nodeIterator]
-                LOGGER.debug("@   - for each dispatchKey val: %d - %r" % (dk, [node for node.name in nodeIterator]) )
+                LOGGER.debug("@@@@@ nodes sorted and grouped: %r" % nodes )
+                LOGGER.debug("@   - for each dispatchKey val: %d - %r" % (dk, [node.name for node.name in nodeIterator]) )
 
                 # for each priority, if there is only one node, set the maxRN to -1
                 if len(nodes) == 1:

@@ -347,13 +347,20 @@ class Dispatcher(MainLoopApplication):
 
             # we are treating every active node of the pool
             nodesList = [node for node in nodesiterator]
+
+            dkMax=0
+            for node in nodesList:
+                # dkSum += node.dispatchKey
+                dkMax = max(node.dispatchKey, dkMax)
+
+            LOGGER.debug("@   - dkSum:%d" % (dkMax) )
             LOGGER.debug("@   - nodes:%r" % (nodesList) )
 
 
             # the new maxRN value is calculated based on the number of active jobs of the pool, and the number of online rendernodes of the pool
             rnsNotOffline = set([rn for rn in pool.renderNodes if rn.status not in [RN_UNKNOWN, RN_PAUSED]])
             rnsSize = len(rnsNotOffline)
-            LOGGER.debug("@   -nb rns awake:%r" % (len(rnsNotOffline)) )
+            LOGGER.debug("@   - nb rns awake:%r" % (len(rnsNotOffline)) )
 
             # if we have a userdefined maxRN for some nodes, remove them from the list and substracts their maxRN from the pool's size
             l = nodesList[:]  # duplicate the list to be safe when removing elements
@@ -364,8 +371,11 @@ class Dispatcher(MainLoopApplication):
 
             if len(nodesList) == 0:
                 continue
-            updatedmaxRN = rnsSize // len(nodesList)
+
+            updatedmaxRN = rnsSize // len(nodesList) 
             remainingRN = rnsSize % len(nodesList)
+            LOGGER.debug("@   - updatedmaxRN=%r" % updatedmaxRN)
+
 
             # sort by id (fifo)
             nodesList = sorted(nodesList, key=lambda x: x.id)
@@ -373,41 +383,55 @@ class Dispatcher(MainLoopApplication):
             # then sort by dispatchKey (priority)
             nodesList = sorted(nodesList, key=lambda x: x.dispatchKey, reverse=True)
             
-            # prepare dks to respect proportions
-            totalDispatchKeyValueForPool = 0
-
             for dk, nodeIterator in groupby(nodesList, lambda x: x.dispatchKey):
 
-                totalDispatchKeyValueForPool += dk
-
                 nodes = [node for node in nodeIterator]
+                # dkCoef = (len(nodesList) * dk /float(dkSum)) if dkSum != 0 else 1
+                dkCoef = dk / float(dkMax) if dkMax != 0 else 1
+
                 LOGGER.debug("@@@@@ nodes sorted and grouped: %r" % nodes )
-                LOGGER.debug("@   - for each dispatchKey val: %d - %r" % (dk, [node.name for node.name in nodeIterator]) )
+                LOGGER.debug("@   - for each dk: %d / %d (coef = %f" % (dk, dkMax, dkCoef) )
+
+                ###
+                ### NOW we need to update maxRN in each case
+                ###
 
                 # for each priority, if there is only one node, set the maxRN to -1
                 if len(nodes) == 1:
-                    nodes[0].poolShares.values()[0].maxRN = -1
+                    # nodes[0].poolShares.values()[0].maxRN = -1
+                    nodes[0].poolShares.values()[0].maxRN = int(round(updatedmaxRN * dkCoef))
+                    LOGGER.debug("@     - single node %r in DK : maxRN=%d remainingRN=%d" % (nodes[0].name, nodes[0].poolShares.values()[0].maxRN, remainingRN)  )
                     continue
                 # else, if a priority has been set, divide the available RNs between the nodes (parallel dispatching)
                 elif dk != 0:
-                    #######
-                    ###
-                    ### TO CHECK ici on pourrait definir une quantite allouee proportionnelle a la prio du job...
-                    ###
-                    newmaxRN = rnsSize // len(nodes)
-                    newremainingRN = rnsSize % len(nodes)
+
+                    newmaxRN = int( round( (rnsSize // len(nodes)) * dkCoef ))
+                    newremainingRN = rnsSize - newmaxRN
+                    # newmaxRN = rnsSize // len(nodes) 
+                    # newremainingRN = rnsSize % len(nodes)
+
+                    LOGGER.debug("@     - multiple nodes in DK : maxRN=%d remainingRN=%d" % (newmaxRN, newremainingRN)  )
+
                     for node in nodes:
+                        # LOGGER.debug("@     - setting newMaxRN : node %s = %d" % (node, newmaxRN) )
                         node.poolShares.values()[0].maxRN = newmaxRN
-                        LOGGER.debug("@   setting newMaxRN : node %s = %d" % (node, newMaxRN) )
-                        if newremainingRN > 0:
-                            node.poolShares.values()[0].maxRN += 1
-                            newremainingRN -= 1
+                        # if newremainingRN > 0:
+                        #     node.poolShares.values()[0].maxRN += 1
+                        #     newremainingRN -= 1
+                        LOGGER.debug("@       - for %r: maxRn actually =%d" % (node.name, node.poolShares.values()[0].maxRN)  )
                 else:
+                    # On utilise la proportion des DK
+                    updatedmaxRN = int( round((rnsSize // len(nodes)) * dkCoef) )
+                    remainingRN = rnsSize - updatedmaxRN
+                    LOGGER.debug("@     - multiple nodes with DK=0 : maxRN=%d remainingRN=%d" % (updatedmaxRN, remainingRN)  )
+
                     for node in nodes:
                         node.poolShares.values()[0].maxRN = updatedmaxRN
-                        if remainingRN > 0:
-                            node.poolShares.values()[0].maxRN += 1
-                            remainingRN -= 1
+                        # if remainingRN > 0:
+                        #     node.poolShares.values()[0].maxRN += 1
+                        #     remainingRN -= 1
+                        LOGGER.debug("@       - for %r: maxRn actually =%d" % (node.name, node.poolShares.values()[0].maxRN)  )
+
 
         # now, we are treating every nodes
         # sort by id (fifo)

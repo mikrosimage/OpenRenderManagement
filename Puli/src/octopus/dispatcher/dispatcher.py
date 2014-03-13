@@ -364,25 +364,21 @@ class Dispatcher(MainLoopApplication):
                 continue
 
             # Prepare updatedMaxRN with proportions respect
-            dkSum = 0
-
-            dkMin=nodesList[0].dispatchKey if 0<len(nodesList) else 0
-            for node in nodesList:
-                dkMin = min(node.dispatchKey, dkMin)
-
-            # if dkMin < 0:
-            #     dkShift = abs(dkMin)+1
-            dkShift = abs(dkMin) if dkMin < 0 else 0
+            dkList = []                 # list of dks (integer only)
+            dkPositiveList = []         # Normalized list of dks (each min value of dk becomes 1, other higher elems of dkList gets proportionnal value)
+            nbJobs = len(nodesList)     # number of jobs in the current pool
+            nbRNAssigned = 0            # number of render nodes assigned for this pool
 
             for node in nodesList:
-                dkSum += node.dispatchKey + dkShift + 1
+                dkList.append(node.dispatchKey)
 
-            LOGGER.debug("@   - dkSum/dkShif: %d/%d" % (dkSum, dkShift) )
+            dkMin = min(dkList)
+            dkPositiveList = map(lambda x: x-dkMin+1, dkList)
+            dkSum = sum(dkPositiveList)
+
+            LOGGER.debug("@   - dkList: %r" % (dkList) )
+            LOGGER.debug("@   - dkPositiveList: %r" % (dkPositiveList) )
             LOGGER.debug("@   - nodes:%r" % (nodesList) )
-
-            # updatedmaxRN = rnsSize // len(nodesList) 
-            # remainingRN = rnsSize % len(nodesList)
-            # LOGGER.debug("@   - updatedmaxRN=%r" % updatedmaxRN)
 
 
             # sort by id (fifo)
@@ -395,51 +391,64 @@ class Dispatcher(MainLoopApplication):
 
                 nodes = [node for node in nodeIterator]
 
-                # dkCoef = (len(nodesList) * dk /float(dkSum)) if dkSum != 0 else 1
-                # dkCoef = (dk+dkShift) / float(dkMax) if dkMax != 0 else 1
+                dkPos = dkPositiveList[ dkList.index(dk) ]
+
                 LOGGER.debug("@@@@@ nodes sorted and grouped: %r" % nodes )
-                LOGGER.debug("@   - for each dk: %d (proportion to set %d/%d)" % (dk, (dk+dkShift), dkSum) )
+                LOGGER.debug("@   - for each dk: %d (dkPos = %d)" % (dk, dkPos) )
 
-                updatedmaxRN = int(round( rnsSize * ((dk+dkShift+1)/float(dkSum)) ))
-                remainingRN = rnsSize - updatedmaxRN
-                LOGGER.debug("@     - updatedmaxRN=%r" % updatedmaxRN)
-                LOGGER.debug("@     - remainingRN=%r" % remainingRN)
-
-                # for each priority, if there is only one node, set the maxRN to -1
-                if len(nodes) == 1:
-                    # nodes[0].poolShares.values()[0].maxRN = -1
-                    nodes[0].poolShares.values()[0].maxRN = updatedmaxRN
-                    LOGGER.debug("@     - single node %r in DK : maxRN=%d remainingRN=%d" % (nodes[0].name, nodes[0].poolShares.values()[0].maxRN, remainingRN)  )
-                    continue
-                # else, if a priority has been set, divide the available RNs between the nodes (parallel dispatching)
-                elif dk != 0:
-
-                    # newmaxRN = int( round( (rnsSize // len(nodes)) * dkCoef ))
-                    # newremainingRN = rnsSize - newmaxRN
-                    # newmaxRN = rnsSize // len(nodes) 
-                    # newremainingRN = rnsSize % len(nodes)
-
-                    LOGGER.debug("@     - multiple nodes in DK : maxRN=%d remainingRN=%d" % (newmaxRN, newremainingRN)  )
-
-                    for node in nodes:
-                        node.poolShares.values()[0].maxRN = updatedmaxRN
-                        # if newremainingRN > 0:
-                        #     node.poolShares.values()[0].maxRN += 1
-                        #     newremainingRN -= 1
-                        LOGGER.debug("@       - for %r: maxRn actually =%d" % (node.name, node.poolShares.values()[0].maxRN)  )
+                if dkSum > 0:                  
+                    updatedmaxRN = int( round( rnsSize * (dkPos / float(dkSum) )))
                 else:
-                    # On utilise la proportion des DK
-                    # updatedmaxRN = int( round((rnsSize // len(nodes)) * dkCoef) )
-                    # remainingRN = rnsSize - updatedmaxRN
-                    LOGGER.debug("@     - multiple nodes with DK=0 : maxRN=%d remainingRN=%d" % (updatedmaxRN, remainingRN)  )
+                    updatedmaxRN = int(round( rnsSize / float(nbJobs) ))
 
-                    for node in nodes:
-                        node.poolShares.values()[0].maxRN = updatedmaxRN
-                        # if remainingRN > 0:
-                        #     node.poolShares.values()[0].maxRN += 1
-                        #     remainingRN -= 1
-                        LOGGER.debug("@       - for %r: maxRn actually =%d" % (node.name, node.poolShares.values()[0].maxRN)  )
+                LOGGER.debug("@     - updatedmaxRN=%r" % updatedmaxRN)
 
+                for node in nodes:
+                    node.poolShares.values()[0].maxRN = updatedmaxRN
+                    nbRNAssigned += updatedmaxRN
+                    LOGGER.debug("@       - for %r: maxRn actually =%d" % (node.name, node.poolShares.values()[0].maxRN)  )
+
+
+                # for each priority, if there is only one node, set the maxRN to -1 or rnsSize
+                # if len(nodes) == 1:
+                #     # nodes[0].poolShares.values()[0].maxRN = -1
+                #     nodes[0].poolShares.values()[0].maxRN = updatedmaxRN
+                #     LOGGER.debug("@     - single node %r in DK : maxRN=%d" % (nodes[0].name, nodes[0].poolShares.values()[0].maxRN)  )
+                #     continue
+
+                # elif dk != 0:
+
+                #     LOGGER.debug("@     - multiple nodes in DK : maxRN=%d" % (updatedmaxRN)  )
+
+                #     for node in nodes:
+                #         node.poolShares.values()[0].maxRN = updatedmaxRN
+                #         # if newremainingRN > 0:
+                #         #     node.poolShares.values()[0].maxRN += 1
+                #         #     newremainingRN -= 1
+                #         LOGGER.debug("@       - for %r: maxRn actually =%d" % (node.name, node.poolShares.values()[0].maxRN)  )
+                # else:
+                #     LOGGER.debug("@     - multiple nodes with DK=0 : maxRN=%d" % (updatedmaxRN)  )
+
+                #     for node in nodes:
+                #         node.poolShares.values()[0].maxRN = updatedmaxRN
+                #         # if remainingRN > 0:
+                #         #     node.poolShares.values()[0].maxRN += 1
+                #         #     remainingRN -= 1
+                #         LOGGER.debug("@       - for %r: maxRn actually =%d" % (node.name, node.poolShares.values()[0].maxRN)  )
+
+            LOGGER.debug("@     - is there some RNs not assigned ? %d" % (rnsSize - nbRNAssigned)  )
+
+            # Add remaining RNs to most important jobs
+            # for i in xrange(0, rnsSize - nbRNAssigned ):
+            #     nodesList[i].poolShares.values()[0].maxRN += 1
+            unassignedRN = rnsSize - nbRNAssigned
+            for node in nodesList:
+                if unassignedRN > 0:
+                    node.poolShares.values()[0].maxRN += 1
+                    unassignedRN -= 1
+                    LOGGER.debug("@       - add 1 to %s" % node.name  )                    
+                else:
+                    break
 
         # now, we are treating every nodes
         # sort by id (fifo)

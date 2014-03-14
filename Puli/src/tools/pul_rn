@@ -61,7 +61,10 @@ def handle_request(response):
     if VERBOSE: print "DEBUG - Response: " + str(response)
 
     if response.error:
-        print "Error:", response.error
+        print ""
+        print "Error:   %s" % response.error
+        print "         %s" % response.body
+        print ""
     else:
 
         if response.body == "":
@@ -115,12 +118,16 @@ def handle_request(response):
                 print line[1:]
 
         else:
-            RenderNodeTable.displayHeader( RenderNodeTable )
+            try:
+                RenderNodeTable.displayHeader( RenderNodeTable )
 
-            for row in _data['items']:
-                RenderNodeTable.displayRow( row, RenderNodeTable )
+                for row in _data['items']:
+                    RenderNodeTable.displayRow( row, RenderNodeTable )
 
-            RenderNodeTable.displayFooter( _data['summary'], RenderNodeTable )
+                RenderNodeTable.displayFooter( _data['summary'], RenderNodeTable )
+            except KeyError, e:
+                pass
+
 
 
     # Quit loop

@@ -19,6 +19,9 @@ class LicenseManager:
         def __repr__(self):
             return "\"" + self.name + "\" : \"" + str(self.used) + " / " + str(self.maximum) + "\""
 
+        def licenseInfo(self):
+            return { 'name': self.name, "used":self.used, "total":self.maximum, "rns": [ rn.name for rn in self.currentUsingRenderNodes ] }
+
         def reserve(self):
             if self.used < self.maximum:
                 self.used += 1
@@ -98,6 +101,19 @@ class LicenseManager:
     def showLicenses(self):
         for lic in self.licenses.values():
             print lic
+
+    def stats(self):
+        """
+        Get useful information on licenses declared on the server.
+
+        :return: a list of dict, each of them being a license description like { 'name': 'shave', 'total': 70, 'used': 0, 'rns': []  }
+        """
+        res=[]
+        for lic in self.licenses.keys():
+            res.append( self.licenses[lic].licenseInfo() )
+
+        return res
+
 
     def __repr__(self):
         rep = "{"

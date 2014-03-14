@@ -79,7 +79,10 @@ def handle_request(response):
     if VERBOSE: print "DEBUG - Response: " + str(response)
 
     if response.error:
-        print "Error:", response.error
+        print ""
+        print "Error:   %s" % response.error
+        print "         %s" % response.body
+        print ""
     else:
 
         if response.body == "":
@@ -177,6 +180,12 @@ If no output option is specified, the ouput will be a single line presenting the
     - id, name, prod, shot, owner, priority, status
     - creation date, start date, end date, runtime
     - minTimeByFrame, maxTimeByFrame and averageTimeByFrame
+
+Here is the list of field on which a constraint can be set and the expected filter type:
+  - name:           a string representing a regexp
+  - status:         int
+  - TO FINISH
+
 
 
 Example 1. Retrieve all task for a specific user:

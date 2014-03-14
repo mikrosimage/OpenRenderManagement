@@ -137,27 +137,27 @@ class DispatcherStats():
 
                 f.write(
                     "%f;%f;%f;%f;%f;%f;%f;%f;%f;%d;%d;%d;%d;%d;%d;%d;%d;%d\n" % ( 
-                        line[0], 
+                        line[0],                            # 0
 
-                        line[1]['update_tree'], 
-                        line[1]['update_rn'], 
-                        line[1]['update_dependencies'], 
-                        line[1]['update_db'], 
-                        line[1]['compute_assignment'], 
-                        line[1]['send_assignment'], 
-                        line[1]['release_finishing'], 
-                        line[1]['time_elapsed'], 
+                        line[1]['update_tree'],             # 1
+                        line[1]['update_rn'],               # 2
+                        line[1]['update_dependencies'],     # 3
+                        line[1]['update_db'],               # 4
+                        line[1]['compute_assignment'],      # 5
+                        line[1]['send_assignment'],         # 6
+                        line[1]['release_finishing'],       # 7
+                        line[1]['time_elapsed'],            # 8
 
-                        line[2]['incoming_requests'], 
-                        line[2]['incoming_get'], 
-                        line[2]['incoming_post'], 
-                        line[2]['incoming_put'], 
-                        line[2]['incoming_delete'], 
+                        line[2]['incoming_requests'],       # 9
+                        line[2]['incoming_get'],            # 10
+                        line[2]['incoming_post'],           # 11
+                        line[2]['incoming_put'],            # 12
+                        line[2]['incoming_delete'],         # 13
 
-                        line[2]['add_graphs'], 
-                        line[2]['add_rns'], 
-                        line[2]['update_commands'], 
-                        line[2]['num_assignments'],     # from dispatchLoop
+                        line[2]['add_graphs'],              # 14
+                        line[2]['add_rns'],                 # 15
+                        line[2]['update_commands'],         # 16
+                        line[2]['num_assignments'],         # 17
                         )
                     )
 

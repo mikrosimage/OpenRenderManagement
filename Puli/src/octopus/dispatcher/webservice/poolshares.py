@@ -91,6 +91,7 @@ class PoolShareResource(BaseResource):
 
         # Mirror this change to the related node of this pool share
         poolShare.node.maxRN = maxRN
+        poolShare.userDefinedMaxRN = True if maxRN not in [-1, 0] else False
 
         self.writeCallback({
             'poolshare': poolShare.to_json()

@@ -21,7 +21,7 @@ __copyright__   = "Copyright 2013, Mikros Image"
 
 # Imports from libs
 from tornado import ioloop, escape
-from tornado.httpclient import AsyncHTTPClient
+from tornado.httpclient import HTTPClient, HTTPError
 from optparse import OptionParser
 from datetime import datetime
 
@@ -42,8 +42,8 @@ _hostname = Settings.hostname
 _port = Settings.port
 
 VERBOSE = Settings.verbose
-REQUEST_BEGIN_TIME = ''
-REQUEST_END_TIME = ''
+REQUEST_BEGIN_TIME = 0
+REQUEST_END_TIME = 0
 
 
 
@@ -71,7 +71,7 @@ def handle_request(response):
             print ""
             print "No rendernodes registered."
             print ""
-            sys.exit()
+            return
 
 
         # Parsing json
@@ -79,24 +79,25 @@ def handle_request(response):
             _data = json.loads ( response.body )
         except KeyError, e:
             print "Error unknown key : " + str(e)
-            sys.exit()
+            return
         except Exception, e:
             print "Error loading json: " + str(e)
-            sys.exit()
+            return
 
         if len(_data['items']) is 0:
             print ""
             print "Empty result list received."
             print ""
-            sys.exit()
+            return
 
         # Sorting data according to table description
-        if options.sortField in _data['items'][0].keys():
-            _data['items'] = sorted(_data['items'], key=lambda row : row[options.sortField], reverse=options.reverseOrder)
-            pass
-        else:
-            print ""
-            print "WARNING: impossible to sort using \"%s\", the field does not exist." % options.sortField
+        if len(_data['items']) is not 0:
+            if options.sortField in _data['items'][0].keys():
+                _data['items'] = sorted(_data['items'], key=lambda row : row[options.sortField], reverse=options.reverseOrder)
+                pass
+            else:
+                print ""
+                print "WARNING: impossible to sort using \"%s\", the field does not exist." % options.sortField
 
         # Display data according to given args
         if options.json:
@@ -106,7 +107,7 @@ def handle_request(response):
 
             # Print header
             header = ""
-            if _data['items'] is not None:
+            if len(_data['items']) is not 0:
                 header += ";".join(_data['items'][0].keys())
                 print header
 
@@ -247,9 +248,17 @@ if __name__ == '__main__':
 
     _request = "http://%s:%s/%s" % ( _hostname, _port, _query )
 
-    http_client = AsyncHTTPClient()
-
     REQUEST_BEGIN_TIME = time.time()
-    http_client.fetch( _request, handle_request )
 
-    ioloop.IOLoop.instance().start()
+    # http_client = AsyncHTTPClient()
+    # http_client.fetch( _request, handle_request )
+    # ioloop.IOLoop.instance().start()
+
+    http_client = HTTPClient()
+    try:
+        response = http_client.fetch( _request )
+        handle_request( response )
+    except HTTPError as e:
+        print "Error:", e
+    
+    del(http_client)

@@ -38,7 +38,7 @@ __copyright__   = "Copyright 2013, Mikros Image"
 
 # Imports from libs
 from tornado import ioloop, escape
-from tornado.httpclient import AsyncHTTPClient
+from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPError
 from optparse import OptionParser
 from optparse import IndentedHelpFormatter
 from datetime import datetime
@@ -70,7 +70,7 @@ def handle_request(response):
     Callback for handling the request result.
     We try to load the data as JSON and display it according to the arguments or default specification
     """
-
+    # import pudb;pu.db
     REQUEST_END_TIME = time.time() - REQUEST_BEGIN_TIME
 
     if VERBOSE: print ""
@@ -89,27 +89,27 @@ def handle_request(response):
             print ""
             print "No jobs in queue."
             print ""
-            sys.exit()
-
+            return
 
         # Parsing json
         try:
             _data = json.loads ( response.body )
         except KeyError, e:
             print "Error unknown key : " + str(e)
-            sys.exit()
+            return
         except Exception, e:
             print "Error loading json: " + str(e)
-            sys.exit()
+            return
 
 
         # Sorting data according to table description
-        if options.sortField in _data['items'][0].keys():
-            _data['items'] = sorted(_data['items'], key=lambda row : row[options.sortField], reverse=options.reverseOrder)
-            pass
-        else:
-            print ""
-            print "WARNING: impossible to sort using \"%s\", the field does not exist." % options.sortField
+        if len(_data['items']) is not 0:
+            if options.sortField in _data['items'][0].keys():
+                _data['items'] = sorted(_data['items'], key=lambda row : row[options.sortField], reverse=options.reverseOrder)
+                pass
+            else:
+                print ""
+                print "WARNING: impossible to sort using \"%s\", the field does not exist." % options.sortField
 
 
         # Display data according to given args
@@ -120,7 +120,7 @@ def handle_request(response):
 
             # Print header
             header = ""
-            if _data['items'] is not None:
+            if len(_data['items']) is not 0:
                 header += ";".join(_data['items'][0].keys())
                 print header
 
@@ -133,15 +133,12 @@ def handle_request(response):
 
         else:
             # Default display
-            # import pudb;pu.db
             JobTable.displayHeader( JobTable )
             for row in _data['items']:
                 JobTable.displayRow( row, JobTable )
             JobTable.displayFooter( _data['summary'], JobTable )
 
 
-    # Quit loop
-    ioloop.IOLoop.instance().stop()
 
 
 ###########################################################################################################################
@@ -320,9 +317,14 @@ if __name__ == '__main__':
 
     _request = "http://%s:%s/%s" % ( _hostname, _port, _query )
 
-    http_client = AsyncHTTPClient()
+    http_client = HTTPClient()
 
     REQUEST_BEGIN_TIME = time.time()
-    http_client.fetch( _request, handle_request )
 
-    ioloop.IOLoop.instance().start()
+    try:
+        response = http_client.fetch( _request )
+        handle_request( response )
+    except HTTPError as e:
+        print "Error:", e
+    
+    del(http_client)

@@ -21,6 +21,7 @@ LOGGER = logging.getLogger('poolshares')
 class PoolSharesResource(BaseResource):
     #@queue
     def get(self):
+        """ Returns a dict of all poolshares as JSON """
         poolShares = self.getDispatchTree().poolShares.values()
         self.writeCallback({'poolshares': dict(((poolShare.id, poolShare.to_json()) for poolShare in poolShares))})
 
@@ -37,20 +38,28 @@ class PoolSharesResource(BaseResource):
 
     #@queue
     def post(self):
+        """ 
+        Called when user changes the pool of a specific node (via pulback -> "Set job's pool").
+        """
         dct = self.getBodyAsJSON()
+        
+        # LOGGER.debug("POST poolshares with %r", dct)
+        
         for key in ('poolName', 'nodeId', 'maxRN'):
             if not key in dct:
-                return Http400("Missing key %r" % key)
+                raise Http400("Missing key %r" % key)
+
         poolName = str(dct['poolName'])
         nodeId = int(dct['nodeId'])
         maxRN = int(dct['maxRN'])
+
         # get the pool object
         if not poolName in self.getDispatchTree().pools:
-            return HttpConflict("Pool %s is not registered" % poolName)
+            raise HttpConflict("Pool %s is not registered" % poolName)
         pool = self.getDispatchTree().pools[poolName]
         # get the node object
         if not nodeId in self.getDispatchTree().nodes:
-            return HttpConflict("No such node %r" % nodeId)
+            raise HttpConflict("No such node %r" % nodeId)
         node = self.getDispatchTree().nodes[nodeId]
         # create the poolShare
         try:
@@ -60,12 +69,13 @@ class PoolSharesResource(BaseResource):
             self.set_header('Location', '/poolshares/%r/' % poolShare.id)
             self.writeCallback(json.dumps(poolShare.to_json()))
         except PoolShareCreationException:
-            return HttpConflict("PoolShare of pool for this node already exists, re-assigning...")
+            raise HttpConflict("PoolShare of pool for this node already exists, re-assigning...")
 
 
 class PoolShareResource(BaseResource):
     #@queue
     def get(self, id):
+        """ Returns a specific poolshare as JSON """
         try:
             poolShare = self.getDispatchTree().poolShares[int(id)]
         except KeyError:

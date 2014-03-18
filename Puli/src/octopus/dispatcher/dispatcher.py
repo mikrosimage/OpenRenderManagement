@@ -10,7 +10,7 @@ import logging
 import socket
 import time
 from Queue import Queue
-from itertools import groupby
+from itertools import groupby, ifilter, chain
 import collections
 try:
     import simplejson as json
@@ -348,18 +348,24 @@ class Dispatcher(MainLoopApplication):
             # we are treating every active node of the pool
             nodesList = [node for node in nodesiterator]
 
+            # for node in nodesList:
+                # LOGGER.debug("@   - node=%s" % (node.name) )    
+
             # the new maxRN value is calculated based on the number of active jobs of the pool, and the number of online rendernodes of the pool
             rnsNotOffline = set([rn for rn in pool.renderNodes if rn.status not in [RN_UNKNOWN, RN_PAUSED]])
             rnsSize = len(rnsNotOffline)
-            # LOGGER.debug("@   - nb rns awake:%r" % (len(rnsNotOffline)) )
+            # LOGGER.debug("@   - nb rns awake:%r" % (rnsSize) )
 
             # if we have a userdefined maxRN for some nodes, remove them from the list and substracts their maxRN from the pool's size
             l = nodesList[:]  # duplicate the list to be safe when removing elements
             for node in l:
                 # LOGGER.debug("@   - checking userDefMaxRN: %s -> %r maxRN=%d" % (node.name, node.poolShares.values()[0].userDefinedMaxRN, node.poolShares.values()[0].maxRN ) )
                 if node.poolShares.values()[0].userDefinedMaxRN and node.poolShares.values()[0].maxRN not in [-1, 0]:
+                    # LOGGER.debug("@     removing: %s -> maxRN=%d" % (node.name, node.poolShares.values()[0].maxRN ) )
                     nodesList.remove(node)
                     rnsSize -= node.poolShares.values()[0].maxRN
+
+            # LOGGER.debug("@   - nb rns awake after maxRN:%d" % (rnsSize) )
 
             if len(nodesList) == 0:
                 continue
@@ -416,8 +422,20 @@ class Dispatcher(MainLoopApplication):
                     if unassignedRN > 0:
                         node.poolShares.values()[0].maxRN += 1
                         unassignedRN -= 1
+                        # LOGGER.debug("@     - extra RN to %s (still unassigned:%d)" % (node.name, unassignedRN)  )
                     else:
                         break
+
+
+
+        ######
+        ######
+        ######
+        # TODO verif comment sont matche les rns/jobs, avec trop de jobs, seul celui dont l'id est plus bas prend les machines...
+        # En fait SI userMaxRn ET SI les maxRN sont a 0 car leur portion attribuee est trop petite
+        # ---> BOOM
+        # a voir comment les "residus" sont remis sur les machines en fin d'assign
+
 
         # now, we are treating every nodes
         # sort by id (fifo)
@@ -425,13 +443,18 @@ class Dispatcher(MainLoopApplication):
         # then sort by dispatchKey (priority)
         entryPoints = sorted(entryPoints, key=lambda node: node.dispatchKey, reverse=True)
 
+        # Put nodes with a userDefinedMaxRN first
+        userDefEntryPoints = ifilter( lambda node: node.poolShares.values()[0].userDefinedMaxRN, entryPoints )
+        standardEntryPoints = ifilter( lambda node: not node.poolShares.values()[0].userDefinedMaxRN, entryPoints )
+        scoredEntryPoints = chain( userDefEntryPoints, standardEntryPoints)
+
         ####
         #for entryPoint in entryPoints:
         #    if any([poolShare.hasRenderNodesAvailable() for poolShare in entryPoint.poolShares.values()]):
         #        try:
         #            (rn, cmd) = entryPoint.dispatchIterator()
         ####
-        for entryPoint in entryPoints:
+        for entryPoint in scoredEntryPoints:
             if any([poolShare.hasRenderNodesAvailable() for poolShare in entryPoint.poolShares.values()]):
                 try:
 

@@ -41,7 +41,7 @@ COMMAND_FAILED = 3
 logger = logging.getLogger('puli.commandwatcher')
 logger.setLevel(logging.INFO)
 
-handler = logging.StreamHandler(sys.stdout)
+handler = logging.StreamHandler(sys.stderr)
 
 FORMAT = '# [%(levelname)s] %(asctime)s - %(message)s'
 DATE_FORMAT = '%b %d %H:%M:%S'

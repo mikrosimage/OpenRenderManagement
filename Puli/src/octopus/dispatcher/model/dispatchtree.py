@@ -201,21 +201,6 @@ class DispatchTree(object):
         self.root.updateCompletionAndStatus()
 
 
-    def updateAllocationInfo(self):
-        '''
-        Update dispatchTree root children to store the current maxRN/Allocated in their corresponding poolShares.
-        We might only consider the running jobs to avoid updating to many jobs but for the moment having a more reliable data is a better choice.
-
-        NOTE: This process can be take some time for large queue, so we prefer using a more lightweith update method :
-            - doing maxRN update directly in the concerned webservice i.e. when the user has ordered the maxRN change on the poolShare
-            - doing allocatedRN update when parsing the tree for completion and status update (it has a "when needed" necanism which will limit the number of updates)
-        When using these 2 processes, it not necessary to call this method periodically.
-        '''
-        for currNodeRef in self.nodes[1].children:
-            for currPoolShare in currNodeRef.poolShares.values():
-                currNodeRef.maxRN = currPoolShare.maxRN
-                currNodeRef.allocatedRN = currPoolShare.allocatedRN
-        pass
 
     def validateDependencies(self):
         nodes = set()

@@ -1,5 +1,7 @@
 #!/bin/bash
 export PYTHONPATH=/s/apps/lin/puli/:${PYTHONPATH}
-export PATH=/s/apps/lin/puli/tools/:${PATH}
+export PATH=/s/apps/lin/puli/tools/puliquery:${PATH}
 
-/s/apps/lin/puli/tools/pul_rn "$@"
+cd /s/apps/lin/puli/tools/puliquery
+/s/apps/lin/puli/tools/puliquery/pul_rn "$@"
+cd -

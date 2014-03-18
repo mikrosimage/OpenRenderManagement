@@ -9,12 +9,3 @@ PORT=8000
 # WORKER PID FILE
 PIDFILE="/var/run/puli/worker.pid"
 
-#
-# TEST
-#
-#PYTHONPATH="/s/apps/lin/eval/puli/distrib/OpenRenderManagement/Puli/src:$PYTHONPATH"
-
-#
-# PROD
-#
-PYTHONPATH="/s/apps/lin/puli:$PYTHONPATH"

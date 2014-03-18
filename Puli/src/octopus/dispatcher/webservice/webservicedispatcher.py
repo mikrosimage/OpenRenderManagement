@@ -12,6 +12,7 @@ except ImportError:
     import json
 
 import logging
+import time
 
 from tornado.web import Application
 #import tornado.web as web
@@ -127,16 +128,28 @@ class DbgResource(BaseResource):
 class StatsResource(BaseResource):
     def get(self):
         from octopus.core.enums.rendernode import RN_UNKNOWN, RN_STATUS_NAMES
+        from octopus.core.enums.node import NODE_STATUS_NAMES
+
         tree = self.getDispatchTree()
+
+        #
+        # Get info on commands
+        #
         commandsByStatus = {}
         for name in CMD_STATUS_NAME:
             commandsByStatus[name] = 0
         for command in tree.commands.values():
             status = CMD_STATUS_NAME[command.status]
             commandsByStatus[status] += 1
+
         commandsByStatus['TOTAL'] = len(tree.commands)
+
+        #
+        # Get info rendernodes
+        #        
         renderNodeStats = {'totalCores': 0, 'idleCores': 0, 'missingRenderNodes': 0}
         renderNodeByStatus = dict(((status, 0) for status in RN_STATUS_NAMES))
+
         for node in tree.renderNodes.values():
             if node.status != RN_UNKNOWN:
                 renderNodeStats['totalCores'] += node.coresNumber
@@ -145,11 +158,29 @@ class StatsResource(BaseResource):
                 renderNodeStats['missingRenderNodes'] += 1
             renderNodeByStatus[RN_STATUS_NAMES[node.status]] += 1
         renderNodeStats['renderNodesByStatus'] = renderNodeByStatus
+
+
+        #
+        # Get info on jobs (first level of hierarchy)
+        #
+        jobsByStatus = dict( ( (status, 0) for status in NODE_STATUS_NAMES ) )
+        startTimer = time.time()
+        for node in tree.nodes[1].children:
+            jobsByStatus[ NODE_STATUS_NAMES[node.status] ] += 1
+        jobsByStatus['TOTAL'] = len(tree.nodes[1].children)
+        elapsed = time.time() - startTimer
+
+
+        #
+        # Final recap
+        # 
         stats = {
+            'date': time.time(),
             'commands': commandsByStatus,
             'rendernodes': renderNodeStats,
-            'jobs': {'total': len([t for t in tree.tasks.values() if t.parent is None])},
-            'licenses': repr(self.dispatcher.licenseManager)
+            'jobs': jobsByStatus,
+            'licenses': repr(self.dispatcher.licenseManager),
+            'licensesDict': self.dispatcher.licenseManager.stats()
         }
         self.writeCallback(stats)
 

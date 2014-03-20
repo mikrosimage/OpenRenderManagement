@@ -1,5 +1,7 @@
 .settings
 logs/
+utils/
+external_packages/
 *.pyc
 *.pyo
 gwt-unitCache/

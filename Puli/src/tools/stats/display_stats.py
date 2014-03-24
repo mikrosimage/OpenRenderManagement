@@ -15,6 +15,7 @@ import pygal
 from optparse import OptionParser
 
 from octopus.dispatcher import settings
+from tools.common import roundTime
 
 ###########################################################################################################################
 
@@ -30,19 +31,6 @@ from octopus.dispatcher import settings
 # 1393227035.538171;0.000833;0.001247;0.000012;0.000026;0.002080;0.000010;0.000228;0.006208;135;2;0;133;0;0;0;0;0
 # 1393227039.538170;0.022118;0.001121;0.017598;0.059938;0.003182;0.000061;0.000250;0.127258;139;5;1;133;0;1;0;0;1
 # 1393227043.538191;0.025142;0.001268;0.033692;0.073282;0.002914;0.000054;0.000209;0.139076;146;4;1;141;0;1;0;9;1
-
-
-def roundTime(dt=None, roundTo=60):
-   """Round a datetime object to any time laps in seconds
-   dt : datetime.datetime object, default now.
-   roundTo : Closest number of seconds to round to, default 1 minute.
-   Author: Thierry Husson 2012 - Use it as you want but don't blame me.
-   """
-   if dt == None : dt = datetime.datetime.now()
-   seconds = (dt - dt.min).seconds
-
-   rounding = (seconds+roundTo/2) // roundTo * roundTo
-   return dt + datetime.timedelta(0,rounding-seconds,-dt.microsecond)
 
 
 def parseStats():
@@ -67,11 +55,9 @@ def process_args():
     parser.add_option( "-s", action="store", dest="rangeIn", type="int", help="Start range is N hours in past", default=3 )
     parser.add_option( "-e", action="store", dest="rangeOut", type="int", help="End range is N hours in past (mus be lower than '-s option'", default=0 )
     parser.add_option( "-r", "--res", action="store", dest="resolution", type="int", help="Indicates a period of time to aggregate data (in seconds)", default=1800 )
-    # parser.add_option( "--last", action="store", dest="lastHours", type="int", help="Indicates a period of time to consider until current time", default=3 )
     parser.add_option( "--log", action="store_true", dest="logarithmic", help="Display graph with a logarithmic scale", default=False )
     parser.add_option( "--scale", action="store", dest="scaleEvery", type="int", help="Indicates the number of scale values to display", default=8 )
 
-    # parser.add_option("-j", "--json", action="store_true", dest="json", help="Returns data formatted as JSON [%default]", default=False)
     options, args = parser.parse_args()
 
     return options, args
@@ -102,7 +88,6 @@ if __name__ == '__main__':
 
     startDate = time.time() - 3600 * options.rangeIn
     endDate = time.time() - 3600 * options.rangeOut
-    # endDate = time.time()
 
     if VERBOSE:
         print "Loading stats: %r " % sourceFile

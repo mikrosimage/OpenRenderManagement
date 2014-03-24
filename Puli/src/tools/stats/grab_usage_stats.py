@@ -9,8 +9,9 @@ __copyright__   = "Copyright 2014, Mikros Image"
 import os
 import sys
 import csv
-import logging
 import datetime
+import logging
+from logging import handlers
 from optparse import OptionParser
 
 
@@ -22,6 +23,7 @@ except ImportError:
 
 from tornado.httpclient import HTTPClient, HTTPError
 from octopus.dispatcher import settings
+from octopus.core import singletonconfig
 
 ###########################################################################################################################
 # Data example:
@@ -50,11 +52,34 @@ This is generally used in a cron script to grab renderfarm usage data over time.
 if __name__ == "__main__":
 
     options, args = process_args()
-
+    singletonconfig.load( settings.CONFDIR + "/config.ini" )
+    
+    # 
+    # Prepare request and store result in log file
+    #
     _request = "http://%s:%s/stats" % ( options.hostname, options.port )
+    _logPath = os.path.join(settings.LOGDIR, "usage_stats.log")
+
+    # fileHandler = logging.handlers.RotatingFileHandler( _logPath, 
+    #                                                     maxBytes=5000, 
+    #                                                     backupCount=singletonconfig.get('CORE','LOG_BACKUPS'), 
+    #                                                     encoding="UTF-8")
+    fileHandler = logging.handlers.RotatingFileHandler( _logPath, 
+                                                        maxBytes=singletonconfig.get('CORE','LOG_SIZE'), 
+                                                        backupCount=singletonconfig.get('CORE','LOG_BACKUPS'), 
+                                                        encoding="UTF-8")
+
+
+    fileHandler.setFormatter( logging.Formatter('%(message)s') )
+    
+    statsLogger = logging.getLogger('stats')
+    statsLogger.addHandler( fileHandler )
+    statsLogger.setLevel( singletonconfig.get('CORE','LOG_LEVEL') )
+
+
+    statsLogger.debug("test")
 
     http_client = HTTPClient()
-
     try:
         response = http_client.fetch( _request )
 
@@ -65,10 +90,10 @@ if __name__ == "__main__":
             if response.body == "":
                 print "Error: No stats retrieved"
             else:
-                with open("/".join([settings.LOGDIR,"usage_stats.log"]), "a") as logFile:
-                    logFile.write( json.dumps(response.body)+",\n" )
+                statsLogger.warning( response.body )
 
     except HTTPError as e:
         print "Error:", e
-    
+   
     del(http_client)
+

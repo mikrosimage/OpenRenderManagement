@@ -1,7 +1,9 @@
 #!/bin/bash
-export PYTHONPATH=/s/apps/lin/puli/:${PYTHONPATH}
+#export PYTHONPATH=/s/apps/lin/puli/:${PYTHONPATH}
+export PYTHONPATH=/datas/jsa/OpenRenderManagement/Puli/src:${PYTHONPATH}
 export PATH=/s/apps/lin/puli/tools/stats:${PATH}
 
-cd /s/apps/lin/puli/tools/stats
-/s/apps/lin/puli/tools/stats/grab_usage_stats "$@"
-cd -
+#cd /s/apps/lin/puli/tools/stats
+cd /datas/jsa/OpenRenderManagement/Puli/src/tools/stats/
+python ./grab_usage_stats.py "$@"
+cd - > /dev/null

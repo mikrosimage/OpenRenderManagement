@@ -110,7 +110,7 @@ class CustomTable:
 
     @staticmethod
     def listToStr(pValue):
-        return ",".join(pValue)
+        return ", ".join(pValue)
 
     @staticmethod
     def percentToFloat(pValue):
@@ -460,6 +460,7 @@ class RenderNodeTable( CustomTable ):
                 "visible":      True, 
                 "dataFormat":   " %-8s",
                 "labelFormat":  " %-8s",
+                "truncate":     40,
                 "transform":    CustomTable.listToStr
             },
         ]

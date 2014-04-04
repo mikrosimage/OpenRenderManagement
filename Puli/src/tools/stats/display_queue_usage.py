@@ -26,46 +26,29 @@ from octopus.dispatcher import settings
 from octopus.core import singletonconfig
 from tools.common import roundTime
 from tools.common import lowerQuartile, higherQuartile
-# import matplotlib.pyplot as plt
 
 ###########################################################################################################################
+# Data example:
 # {
-#     "date": timestamp
-#     "licenses": "{\"shave\" : \"0 / 70\",\"nuke\" : \"0 / 70\",\"clarisse\" : \"0 / 5\",\"mtoa\" : \"137 / 195\",\"katana\" : \"24 / 200\",\"ocula\" : \"0 / 3\"}",
-#     "rendernodes": 
-#         {
-#             "renderNodesByStatus": 
-#                 {
-#                     "Paused": 89, 
-#                     "Working": 152, 
-#                     "Unknown": 51, 
-#                     "Assigned": 0, 
-#                     "Idle": 15, 
-#                     "Booting": 0, 
-#                     "Finishing": 0
-#                 },
-#             "totalCores": 5192, 
-#             "missingRenderNodes": 51, 
-#             "idleCores": 1844
-#         }, 
-#         "commands": 
-#                     {
-#                         "ASSIGNED": 0, 
-#                         "CANCELED": 38926, 
-#                         "RUNNING": 151, 
-#                         "DONE": 67467, 
-#                         "TIMEOUT": 0, 
-#                         "ERROR": 115, 
-#                         "READY": 5455, 
-#                         "FINISHING": 0, 
-#                         "TOTAL": 117238, 
-#                         "BLOCKED": 5124
-#                     },
-#         "jobs": 
-#             {
-#                 "total": 2519
-#             }
+#     "prod":{
+#           "ddd" :     { "jobs":15, "err":1, "paused":2, "ready/blocked":10, "running":2, "allocatedRN":5, "readyCommandCount":15},
+#           "dior_tea" :    { "jobs":1, "err":0, "paused":0, "ready/blocked":0, "running":1, "allocatedRN":1, "readyCommandCount":15},
+#     }, 
+#     "user":{
+#           "brr" :     { "jobs":15, "err":1, "paused":2, "ready/blocked":10, "running":2 , "allocatedRN":5, "readyCommandCount":15},
+#           "bho" :     { "jobs":1, "err":0, "paused":0, "ready/blocked":0, "running":1 , "allocatedRN":1, "readyCommandCount":15},
+#           "lap" :     { "jobs":1, "err":0, "paused":0, "ready/blocked":0, "running":1 , "allocatedRN":1, "readyCommandCount":15}, 
+#     }, 
+#     "step":{
+#     ...
+#     }, 
+#     "type":{
+#     ...
+#     }, 
+#     "total": { "jobs":15, "err":1, "paused":2, "ready/blocked":10, "running":2 , "allocatedRN":5, "readyCommandCount":150}
+#     "requestDate": "Wed Apr  2 12:16:01 2014"
 # }
+
 
 
 def process_args():
@@ -80,11 +63,11 @@ def process_args():
     parser = OptionParser(usage=usage, description=desc, version="%prog 0.1" )
 
     parser.add_option( "-f", action="store", dest="sourceFile", default=os.path.join(settings.LOGDIR, "usage_stats.log"), help="Source file" )
-    parser.add_option( "-o", action="store", dest="outputFile", default="./usage_avg.svg", help="Target output file." )
+    parser.add_option( "-o", action="store", dest="outputFile", default="./queue_avg.svg", help="Target output file." )
     parser.add_option( "-v", action="store_true", dest="verbose", help="Verbose output" )
     parser.add_option( "-s", action="store", dest="rangeIn", type="int", help="Start range is N hours in past", default=3 )
     parser.add_option( "-e", action="store", dest="rangeOut", type="int", help="End range is N hours in past (mus be lower than '-s option'", default=0 )
-    parser.add_option( "-t", "--title", action="store", dest="title", help="Indicates a title", default="RN usage over time")
+    parser.add_option( "-t", "--title", action="store", dest="title", help="Indicates a title", default="Queue usage over time")
     parser.add_option( "-r", "--res", action="store", dest="resolution", type="int", help="Indicates ", default=10 )
     parser.add_option( "--stack", action="store_true", dest="stacked", default=False)
     parser.add_option( "--line", action="store_true", dest="line", default=True)
@@ -120,53 +103,50 @@ if __name__ == "__main__":
         print "  - to:   %r " % datetime.date.fromtimestamp(endDate)
         print "Start."
 
-    nbjobs=[]
-    nb_working=[]
-    nb_paused=[]
-    nb_idle=[]
-    nb_assigned=[]
-    nb_unknown=[]
-    nb_booting=[]
-    nb_finishing=[]
+
     strScale=[]
     scale=[]
-
+    tot=[]
+    totErr=[]
+    totRun=[]
+    totPaused=[]
+    totReady=[]
+    
+    # arrRnByProd = np.array()
+    rnByProd = {}
     log = []
+
+    #
+    # Load json log and filter by date
+    #
     with open(options.sourceFile, "r" ) as f:
         for line in f:
-            log.append( json.loads(line) )
+            data = json.loads(line)
+            if (startDate < data['requestDate']  and data['requestDate'] <= endDate):
+                log.append( json.loads(line) )
 
-    
-    for data in log:
-        eventDate = datetime.datetime.fromtimestamp( data['date'] )
 
-        if data['date'] < startDate or endDate <= data['date'] :
-            continue
+    for i, data in enumerate(log):
+        eventDate = datetime.datetime.fromtimestamp( data['requestDate'] )
 
-        nb_working.append(data["rendernodes"]["renderNodesByStatus"]['Working'] + data["rendernodes"]["renderNodesByStatus"]['Assigned'])
-        nb_paused.append(data["rendernodes"]["renderNodesByStatus"]['Paused'])
-        nb_unknown.append(data["rendernodes"]["renderNodesByStatus"]['Unknown'])
-        nb_idle.append(data["rendernodes"]["renderNodesByStatus"]['Idle'])
+        # tot.append(data["total"]["jobs"])
+        totErr.append(data["total"]["err"])
+        totPaused.append(data["total"]["paused"])
+        totReady.append(data["total"]["ready"])
+        totRun.append(data["total"]["running"])
+
+        # for key, val in data["prod"].items():
+        #     if key not in rnByProd:
+        #         rnByProd[key] = np.array( [0]*len(log) )
+        #     rnByProd[key][i] = val["allocatedRN"]
 
         scale.append( eventDate )
 
     if VERBOSE:
         print "Num events: %d" % len(scale)
-        print "Done."
-
-
-    # usage = pygal.Line( x_label_rotation=30,
-    #                     logarithmic=False, 
-    #                     show_dots=False,
-    #                     width=800, 
-    #                     height=300,
-    #                     style=BlueStyle)
-    # usage.title = 'Full set of events for the last 24H'
-    # usage.add('Working', nb_working )
-    # usage.add('Paused', nb_paused )
-    # usage.add('Offline', nb_unknown )
-    # # usage.add('Iddle', nb_idle )
-    # usage.render_to_file( os.path.join("/s/prods/ddd/_sandbox/jsa/stats", "usage.svg") )
+        # for key,val in rnByProd.items():
+        #     print "%s - %r - %s" % (key, len(val), val)
+        print "Creating graph."
 
 
     stepSize = len(scale) / options.resolution
@@ -174,32 +154,27 @@ if __name__ == "__main__":
     useableSize = len(scale) - ( len(scale) % options.resolution )
 
     
-    working = np.array(nb_working[-useableSize:])
-    unknown = np.array(nb_unknown[-useableSize:])
-    paused = np.array(nb_paused[-useableSize:])
-    idle = np.array(nb_idle[-useableSize:])
+    err = np.array(totErr[-useableSize:])
+    paused = np.array(totPaused[-useableSize:])
+    ready = np.array(totReady[-useableSize:])
+    run = np.array(totRun[-useableSize:])
 
+    avg_err= np.mean( np.reshape(err, newshape), axis=1)
+    avg_paused= np.mean( np.reshape(paused, newshape), axis=1)
+    avg_ready= np.mean( np.reshape(ready, newshape), axis=1)
+    avg_run= np.mean( np.reshape(run, newshape), axis=1)
 
-    # print ("working %d = %r" % (len(working), working) )
-    # print ("reshape %d = %r" % (len(newshape), newshape) )
-
-    avg_working= np.around( np.mean( np.reshape(working, newshape), axis=1), decimals=0)
-    avg_paused= np.around( np.mean( np.reshape(paused, newshape), axis=1), decimals=0)
-    avg_unknown= np.around( np.mean( np.reshape(unknown, newshape), axis=1), decimals=0)
-    avg_idle= np.around( np.mean( np.reshape(idle, newshape), axis=1), decimals=0)
-
-
-    # med= np.median(data, axis=1)
-    # amin= np.min(data, axis=1)
-    # amax= np.max(data, axis=1)
-    # q1= lowerQuartile(data)
-    # q2= higherQuartile(data)
-    # std= np.std(data, axis=1)
+    # # med= np.median(data, axis=1)
+    # # amin= np.min(data, axis=1)
+    # # amax= np.max(data, axis=1)
+    # # q1= lowerQuartile(data)
+    # # q2= higherQuartile(data)
+    # # std= np.std(data, axis=1)
 
     strScale = [''] * options.resolution
     tmpscale = np.reshape(scale[-useableSize:], newshape)
-    # print ("tmp scale %d = %r" % (len(tmpscale), tmpscale) )
-    # print ("str scale %d = %r" % (len(strScale), strScale) )
+    # # print ("tmp scale %d = %r" % (len(tmpscale), tmpscale) )
+    # # print ("str scale %d = %r" % (len(strScale), strScale) )
 
     for i,date in enumerate(tmpscale[::len(tmpscale)/options.scaleEvery]):
         newIndex = i*len(tmpscale)/options.scaleEvery
@@ -210,19 +185,17 @@ if __name__ == "__main__":
     strScale[0] = scale[0].strftime('%Y-%m-%d %H:%M')
     strScale[-1] = scale[-1].strftime('%Y-%m-%d %H:%M')
 
-    if VERBOSE:
-        print ("newshape %d = %r" % (len(newshape), newshape) )
-        print ("avg %d = %r" % (len(avg_working), avg_working) )
-        print ("scale %d = %r" % (len(strScale), strScale) )
+    # if VERBOSE:
+    #     print ("newshape %d = %r" % (len(newshape), newshape) )
+    #     print ("avg %d = %r" % (len(avg_working), avg_working) )
+    #     print ("scale %d = %r" % (len(strScale), strScale) )
 
-    # sert a etablir une distribution des valeurs du tableau dans chaque "bin"
-    # hist, bin_edges = np.histogram(a, [0,10,20,30,40,50])
 
     if options.stacked:
         avg_usage = pygal.StackedLine( x_label_rotation=30,
                                 include_x_axis=True,
                                 logarithmic=False, 
-                                show_dots=True,
+                                show_dots=False,
                                 width=800, 
                                 height=300,
                                 fill=True,
@@ -246,8 +219,14 @@ if __name__ == "__main__":
 
     avg_usage.title = options.title
     avg_usage.x_labels = strScale
-    avg_usage.add('Offline', avg_unknown )
+    avg_usage.add('Error', avg_err )
     avg_usage.add('Paused', avg_paused )
-    avg_usage.add('Working', avg_working )
-    avg_usage.add('Idle', avg_idle )
+    avg_usage.add('Running', avg_run )
+    avg_usage.add('Ready', avg_ready )
+
     avg_usage.render_to_file( options.outputFile )
+
+    if VERBOSE:
+        print "Done."
+
+

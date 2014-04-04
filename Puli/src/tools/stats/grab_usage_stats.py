@@ -40,10 +40,10 @@ def process_args():
 This is generally used in a cron script to grab renderfarm usage data over time. It can then be processed to generate several graphs."""
 
     parser = OptionParser(usage=usage, description=desc, version="%prog 0.1" )
-
-    parser.add_option("-s", "--server", action="store", dest="hostname", default="pulitest", help="Specified a target host to send the request")
-    parser.add_option("-p", "--port", action="store", dest="port", type="int", default=8004, help="Specified a target port")
-
+    parser.add_option( "-v", action="store_true", dest="verbose", help="Verbose output" )
+    parser.add_option( "-s", "--server", action="store", dest="hostname", default="pulitest", help="Specified a target host to send the request")
+    parser.add_option( "-p", "--port", action="store", dest="port", type="int", default=8004, help="Specified a target port")
+    parser.add_option( "-o", action="store", dest="outputFile", default=os.path.join(settings.LOGDIR, "usage_stats.log"), help="Target output file." )
     options, args = parser.parse_args()
 
     return options, args
@@ -58,15 +58,15 @@ if __name__ == "__main__":
     # Prepare request and store result in log file
     #
     _request = "http://%s:%s/stats" % ( options.hostname, options.port )
-    _logPath = os.path.join(settings.LOGDIR, "usage_stats.log")
+    _logPath = os.path.join( options.outputFile )
 
     # fileHandler = logging.handlers.RotatingFileHandler( _logPath, 
     #                                                     maxBytes=5000, 
     #                                                     backupCount=singletonconfig.get('CORE','LOG_BACKUPS'), 
     #                                                     encoding="UTF-8")
     fileHandler = logging.handlers.RotatingFileHandler( _logPath, 
-                                                        maxBytes=singletonconfig.get('CORE','LOG_SIZE'), 
-                                                        backupCount=singletonconfig.get('CORE','LOG_BACKUPS'), 
+                                                        maxBytes=20000000,
+                                                        backupCount=1, 
                                                         encoding="UTF-8")
 
 
@@ -75,9 +75,6 @@ if __name__ == "__main__":
     statsLogger = logging.getLogger('stats')
     statsLogger.addHandler( fileHandler )
     statsLogger.setLevel( singletonconfig.get('CORE','LOG_LEVEL') )
-
-
-    statsLogger.debug("test")
 
     http_client = HTTPClient()
     try:

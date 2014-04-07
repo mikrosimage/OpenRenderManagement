@@ -151,7 +151,7 @@ if __name__ == "__main__":
     # 
     # Prepare request and store result in log file
     #
-    _param = "query?&constraint_status=0&constraint_status=1&constraint_status=2\
+    _param = "query?&constraint_status=0&constraint_status=1&constraint_status=2&constraint_status=4\
 &constraint_status=6\
 &attr=id\
 &attr=status\
@@ -172,10 +172,12 @@ if __name__ == "__main__":
         print "Command arguments: %s" % args
         print "Query: %s"+_request
 
-    fileHandler = logging.handlers.RotatingFileHandler( _logPath, 
-                                                        maxBytes=20000000,
-                                                        backupCount=1, 
-                                                        encoding="UTF-8")
+    # fileHandler = logging.handlers.RotatingFileHandler( _logPath, 
+    #                                                     maxBytes=20000000,
+    #                                                     backupCount=1, 
+    #                                                     encoding="UTF-8")
+
+    fileHandler = logging.FileHandler( _logPath, encoding="UTF-8")
 
 
     fileHandler.setFormatter( logging.Formatter('%(message)s') )

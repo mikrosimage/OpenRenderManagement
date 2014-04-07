@@ -27,7 +27,43 @@ from octopus.core import singletonconfig
 
 ###########################################################################################################################
 # Data example:
-
+# {
+#     "date": timestamp
+#     "licenses": "{\"shave\" : \"0 / 70\",\"nuke\" : \"0 / 70\",\"clarisse\" : \"0 / 5\",\"mtoa\" : \"137 / 195\",\"katana\" : \"24 / 200\",\"ocula\" : \"0 / 3\"}",
+#     "rendernodes": 
+#         {
+#             "renderNodesByStatus": 
+#                 {
+#                     "Paused": 89, 
+#                     "Working": 152, 
+#                     "Unknown": 51, 
+#                     "Assigned": 0, 
+#                     "Idle": 15, 
+#                     "Booting": 0, 
+#                     "Finishing": 0
+#                 },
+#             "totalCores": 5192, 
+#             "missingRenderNodes": 51, 
+#             "idleCores": 1844
+#         }, 
+#         "commands": 
+#                     {
+#                         "ASSIGNED": 0, 
+#                         "CANCELED": 38926, 
+#                         "RUNNING": 151, 
+#                         "DONE": 67467, 
+#                         "TIMEOUT": 0, 
+#                         "ERROR": 115, 
+#                         "READY": 5455, 
+#                         "FINISHING": 0, 
+#                         "TOTAL": 117238, 
+#                         "BLOCKED": 5124
+#                     },
+#         "jobs": 
+#             {
+#                 "total": 2519
+#             }
+# }
 
 
 def process_args():
@@ -60,14 +96,13 @@ if __name__ == "__main__":
     _request = "http://%s:%s/stats" % ( options.hostname, options.port )
     _logPath = os.path.join( options.outputFile )
 
+
     # fileHandler = logging.handlers.RotatingFileHandler( _logPath, 
-    #                                                     maxBytes=5000, 
-    #                                                     backupCount=singletonconfig.get('CORE','LOG_BACKUPS'), 
+    #                                                     maxBytes=20000000,
+    #                                                     backupCount=1, 
     #                                                     encoding="UTF-8")
-    fileHandler = logging.handlers.RotatingFileHandler( _logPath, 
-                                                        maxBytes=20000000,
-                                                        backupCount=1, 
-                                                        encoding="UTF-8")
+
+    fileHandler = logging.FileHandler( _logPath, encoding="UTF-8")
 
 
     fileHandler.setFormatter( logging.Formatter('%(message)s') )

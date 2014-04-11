@@ -7,7 +7,7 @@ __author__      = "Jérôme Samson"
 __copyright__   = "Copyright 2014, Mikros Image"
 
 
-from PyQt4.QtGui import QApplication, QMainWindow, QColor, QTextCursor
+from PyQt4.QtGui import QApplication, QMainWindow, QColor, QTextCursor, QIcon
 from PyQt4.QtWebKit import QWebSettings
 from PyQt4.QtCore import QDateTime, QUrl, QProcess, Qt
 from PyQt4.QtCore import QObject, pyqtSignal
@@ -38,13 +38,17 @@ class StatsMainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
+        print self.ui.actionGenerate.isIconVisibleInMenu()
+        self.ui.actionGenerate.setIcon( QIcon("rsrc/refresh.png") )
+
         sys.stdout = OutLog( self.ui.log , sys.stdout)
         xlogger.info("Starting log")
 
 
         # Create tmp file for svg
         self.svgFile = NamedTemporaryFile( suffix=".svg", delete=True )
-        xlogger.info("Creating temp file: %s"%self.svgFileName)
+        xlogger.info("Creating temp file: %s"%self.svgFile.name)
+
         # Update end date value
         self.ui.dtEndDate.setDateTime( QDateTime.currentDateTime() )
         
@@ -76,7 +80,7 @@ class StatsMainWindow(QMainWindow):
     def closeEvent(self, pEvent):
         """
         """
-        xlogger.info("Remove temp file: %s"%self.svgFile.name)
+        xlogger.info("Removing temp file: %s"%self.svgFile.name)
         del(self.svgFile)
         pEvent.accept()
 
@@ -194,8 +198,9 @@ class StatsMainWindow(QMainWindow):
 app = QApplication(sys.argv)
 
 # Used to create/maintain application settings
-app.setOrganizationName("Mikros");
-app.setApplicationName("StatsMonitor");
+app.setOrganizationName("Mikros")
+app.setApplicationName("StatsViewer")
+app.setWindowIcon( QIcon("rsrc/charts.png"))
 
 #
 # Define logs

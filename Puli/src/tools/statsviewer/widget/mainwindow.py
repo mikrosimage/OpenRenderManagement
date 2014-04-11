@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'rsrc/mainwindow.ui'
+# Form implementation generated from reading ui file 'rsrc/ui/mainwindow.ui'
 #
-# Created: Wed Apr  9 17:33:02 2014
+# Created: Fri Apr 11 17:33:33 2014
 #      by: PyQt4 UI code generator 4.6.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PyQt4 import QtCore, QtGui
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(794, 580)
+        MainWindow.resize(855, 602)
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout = QtGui.QVBoxLayout(self.centralwidget)
@@ -148,8 +148,6 @@ class Ui_MainWindow(object):
         self.cbGraphStyle.addItem("")
         self.formLayout.setWidget(3, QtGui.QFormLayout.FieldRole, self.cbGraphStyle)
         self.horizontalLayout.addLayout(self.formLayout)
-        spacerItem = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
-        self.horizontalLayout.addItem(spacerItem)
         self.verticalLayout.addLayout(self.horizontalLayout)
         self.webView = QtWebKit.QWebView(self.centralwidget)
         self.webView.setUrl(QtCore.QUrl("about:blank"))
@@ -162,7 +160,7 @@ class Ui_MainWindow(object):
         self.verticalLayout.addWidget(self.log)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 794, 22))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 855, 22))
         self.menubar.setObjectName("menubar")
         self.menuFile = QtGui.QMenu(self.menubar)
         self.menuFile.setEnabled(False)
@@ -176,6 +174,8 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
         self.toolBar = QtGui.QToolBar(MainWindow)
         self.toolBar.setMovable(False)
+        self.toolBar.setIconSize(QtCore.QSize(24, 24))
+        self.toolBar.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
         self.toolBar.setFloatable(False)
         self.toolBar.setObjectName("toolBar")
         MainWindow.addToolBar(QtCore.Qt.TopToolBarArea, self.toolBar)
@@ -191,7 +191,7 @@ class Ui_MainWindow(object):
         self.actionClear_all_snapshots.setObjectName("actionClear_all_snapshots")
         self.actionGenerate = QtGui.QAction(MainWindow)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("../../../../../../../../homes/jsa/.designer/backup/refresh.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap("../refresh.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionGenerate.setIcon(icon)
         self.actionGenerate.setIconVisibleInMenu(True)
         self.actionGenerate.setObjectName("actionGenerate")
@@ -231,7 +231,7 @@ class Ui_MainWindow(object):
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "MainWindow", None, QtGui.QApplication.UnicodeUTF8))
+        MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "Stats Viewer", None, QtGui.QApplication.UnicodeUTF8))
         self.lblEndDate.setText(QtGui.QApplication.translate("MainWindow", "Until", None, QtGui.QApplication.UnicodeUTF8))
         self.lblLength.setText(QtGui.QApplication.translate("MainWindow", "Display last N hours", None, QtGui.QApplication.UnicodeUTF8))
         self.chkWorking.setText(QtGui.QApplication.translate("MainWindow", "Working", None, QtGui.QApplication.UnicodeUTF8))

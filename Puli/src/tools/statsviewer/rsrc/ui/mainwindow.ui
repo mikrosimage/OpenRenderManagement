@@ -6,12 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>794</width>
-    <height>580</height>
+    <width>855</width>
+    <height>602</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Stats Viewer</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -382,7 +382,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>794</width>
+     <width>855</width>
      <height>22</height>
     </rect>
    </property>
@@ -416,6 +416,15 @@
    </property>
    <property name="movable">
     <bool>false</bool>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>24</width>
+     <height>24</height>
+    </size>
+   </property>
+   <property name="toolButtonStyle">
+    <enum>Qt::ToolButtonIconOnly</enum>
    </property>
    <property name="floatable">
     <bool>false</bool>
@@ -460,7 +469,7 @@
   <action name="actionGenerate">
    <property name="icon">
     <iconset>
-     <normaloff>../../../../../../../../homes/jsa/.designer/backup/refresh.png</normaloff>../../../../../../../../homes/jsa/.designer/backup/refresh.png</iconset>
+     <normaloff>../refresh.png</normaloff>../refresh.png</iconset>
    </property>
    <property name="text">
     <string>Refresh</string>

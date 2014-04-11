@@ -181,16 +181,17 @@ class StatsMainWindow(QMainWindow):
 
         if retCode == 0:
             # # try to replace svg inline html
-            # svgMarkup = str(self.p.readAllStandardOutput())
+            # result = str(self.p.readAllStandardOutput())
             # svg = self.ui.webView.page().mainFrame().findFirstElement("#svg")
             # svg.setInnerXml(svgMarkup)
             # svg.replace(svgMarkup)
-
+            
             self.ui.webView.reload()
             xlogger.info("graph updated in %.2fs" % (time.time() - self.creationStartTime ))
         else:
-            xlogger.error("An error occured")
+            xlogger.info("An error occured")
 
+        xlogger.info(str(self.p.readAllStandardOutput()))
 
 
 

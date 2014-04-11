@@ -81,15 +81,27 @@ def process_args():
 
     parser.add_option( "-f", action="store", dest="sourceFile", default=os.path.join(settings.LOGDIR, "usage_stats.log"), help="Source file" )
     parser.add_option( "-o", action="store", dest="outputFile", default="./usage_avg.svg", help="Target output file." )
+    parser.add_option( "--render-mode", action="store", dest="renderMode", type="string", help="render destination: inline, svg or png", default="svg" )
+
     parser.add_option( "-v", action="store_true", dest="verbose", help="Verbose output" )
     parser.add_option( "-s", action="store", dest="rangeIn", type="int", help="Start range is N hours in past", default=3 )
     parser.add_option( "-e", action="store", dest="rangeOut", type="int", help="End range is N hours in past (mus be lower than '-s option'", default=0 )
+
+    parser.add_option( "--startTime", action="store", dest="timeIn", type="int", help="Start range is at timestamp", default=0 )
+    parser.add_option( "--endTime",   action="store", dest="timeOut", type="int", help="End range is at timestamp", default=time.time() )
+
     parser.add_option( "-t", "--title", action="store", dest="title", help="Indicates a title", default="RN usage over time")
     parser.add_option( "-r", "--res", action="store", dest="resolution", type="int", help="Indicates ", default=10 )
     parser.add_option( "--stack", action="store_true", dest="stacked", default=False)
     parser.add_option( "--line", action="store_true", dest="line", default=True)
     parser.add_option( "--log", action="store_true", dest="logarithmic", help="Display graph with a logarithmic scale", default=False )
+    parser.add_option( "--style", action="store", dest="style", help="Set a specific style name (BlueStyle, RedBlueStyle ...)", default="RedBlue" )
     parser.add_option( "--scale", action="store", dest="scaleEvery", type="int", help="Indicates the number of scale values to display", default=8 )
+
+    parser.add_option( "--hide-offline", action="store_false", dest="offline", help="", default=True )
+    parser.add_option( "--hide-paused", action="store_false", dest="paused", help="", default=True )
+    parser.add_option( "--hide-working", action="store_false", dest="working", help="", default=True )
+    parser.add_option( "--hide-idle", action="store_false", dest="idle", help="", default=True )
 
     options, args = parser.parse_args()
 
@@ -106,13 +118,21 @@ if __name__ == "__main__":
         print "Command options: %s" % options
         print "Command arguments: %s" % args
 
-    
-    if options.rangeIn < options.rangeOut:
-        print "Invalid start/end range"
-        sys.exit()
+    if options.timeIn is not 0:
+        if VERBOSE:
+            print "Using precise time range: [%s - %s]" % (options.timeIn,options.timeOut)
+        startDate = options.timeIn
+        endDate = options.timeOut
 
-    startDate = time.time() - 3600 * options.rangeIn
-    endDate = time.time() - 3600 * options.rangeOut
+        if options.timeOut < options.timeIn:
+            print "Invalid start/end range"
+            sys.exit()
+    else:
+        if options.rangeIn < options.rangeOut:
+            print "Invalid start/end range"
+            sys.exit()
+        startDate = time.time() - 3600 * options.rangeIn
+        endDate = time.time() - 3600 * options.rangeOut
 
     if VERBOSE:
         print "Loading stats: %r " % options.sourceFile
@@ -152,21 +172,11 @@ if __name__ == "__main__":
 
     if VERBOSE:
         print "Num events: %d" % len(scale)
-        print "Done."
 
-
-    # usage = pygal.Line( x_label_rotation=30,
-    #                     logarithmic=False, 
-    #                     show_dots=False,
-    #                     width=800, 
-    #                     height=300,
-    #                     style=BlueStyle)
-    # usage.title = 'Full set of events for the last 24H'
-    # usage.add('Working', nb_working )
-    # usage.add('Paused', nb_paused )
-    # usage.add('Offline', nb_unknown )
-    # # usage.add('Iddle', nb_idle )
-    # usage.render_to_file( os.path.join("/s/prods/ddd/_sandbox/jsa/stats", "usage.svg") )
+    if len(scale) < options.resolution:
+        if VERBOSE:
+            print "Too few events for resolution or scale: limit to %d" % len(scale)
+        options.resolution = len(scale)
 
 
     stepSize = len(scale) / options.resolution
@@ -179,9 +189,6 @@ if __name__ == "__main__":
     paused = np.array(nb_paused[-useableSize:])
     idle = np.array(nb_idle[-useableSize:])
 
-
-    # print ("working %d = %r" % (len(working), working) )
-    # print ("reshape %d = %r" % (len(newshape), newshape) )
 
     avg_working= np.around( np.mean( np.reshape(working, newshape), axis=1), decimals=0)
     avg_paused= np.around( np.mean( np.reshape(paused, newshape), axis=1), decimals=0)
@@ -196,11 +203,13 @@ if __name__ == "__main__":
     # q2= higherQuartile(data)
     # std= np.std(data, axis=1)
 
+
     strScale = [''] * options.resolution
     tmpscale = np.reshape(scale[-useableSize:], newshape)
     # print ("tmp scale %d = %r" % (len(tmpscale), tmpscale) )
     # print ("str scale %d = %r" % (len(strScale), strScale) )
 
+    options.scaleEvery = min(options.scaleEvery, options.resolution )
     for i,date in enumerate(tmpscale[::len(tmpscale)/options.scaleEvery]):
         newIndex = i*len(tmpscale)/options.scaleEvery
 
@@ -218,36 +227,63 @@ if __name__ == "__main__":
     # sert a etablir une distribution des valeurs du tableau dans chaque "bin"
     # hist, bin_edges = np.histogram(a, [0,10,20,30,40,50])
 
+    style = { "RedBlue": RedBlueStyle,
+              "Blue" : BlueStyle,
+              "Light" : LightStyle,
+              "Default": DefaultStyle,
+              "Clean": CleanStyle,
+              "DarkColorized": DarkColorizedStyle,
+              "DarkGreenBlue": DarkGreenBlueStyle,
+              # "DarkGreen": DarkGreenStyle,
+              # "LightSolarized": LightSolarizedStyle,
+              # "Neon": NeonStyle,
+            }
+
+    if options.style not in style.keys():
+        print "Error: Style is not recognised, using \"default\" instead"
+        options.style = "Default"
+
     if options.stacked:
         avg_usage = pygal.StackedLine( x_label_rotation=30,
                                 include_x_axis=True,
-                                logarithmic=False, 
-                                show_dots=True,
+                                logarithmic=options.logarithmic, 
+                                show_dots=False,
                                 width=800, 
                                 height=300,
                                 fill=True,
                                 interpolate='hermite', 
                                 interpolation_parameters={'type': 'cardinal', 'c': 1.0},
                                 interpolation_precision=3,
-                                style=RedBlueStyle
+                                style=style[options.style]
                                 )
     else:
         avg_usage = pygal.Line( x_label_rotation=30,
                                 include_x_axis=True,
-                                logarithmic=False, 
+                                logarithmic=options.logarithmic, 
                                 show_dots=True,
                                 width=800, 
                                 height=300,
                                 interpolate='hermite', 
                                 interpolation_parameters={'type': 'cardinal', 'c': 1.0},
                                 interpolation_precision=3,
-                                style=RedBlueStyle
+                                style=style[options.style]
                                 )
 
     avg_usage.title = options.title
     avg_usage.x_labels = strScale
-    avg_usage.add('Offline', avg_unknown )
-    avg_usage.add('Paused', avg_paused )
-    avg_usage.add('Working', avg_working )
-    avg_usage.add('Idle', avg_idle )
-    avg_usage.render_to_file( options.outputFile )
+
+    if options.offline:
+        avg_usage.add('Offline', avg_unknown )
+    if options.paused:
+        avg_usage.add('Paused', avg_paused )
+    if options.working:
+        avg_usage.add('Working', avg_working )
+    if options.idle:
+        avg_usage.add('Idle', avg_idle )
+
+    if options.renderMode == 'svg':
+        avg_usage.render_to_file( options.outputFile )
+    elif options.renderMode == 'png':
+        avg_usage.render_to_png( options.outputFile )
+    elif options.renderMode == 'inline':
+        print avg_usage.render()

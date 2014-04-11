@@ -194,10 +194,11 @@ if __name__ == "__main__":
         print "Num events: %d" % len(scale)
         print "Creating graph."
 
+
     if options.stacked:
         avg_usage = pygal.StackedLine( x_label_rotation=30,
                                 include_x_axis=True,
-                                logarithmic=False, 
+                                logarithmic=options.logarithmic, 
                                 show_dots=False,
                                 width=800, 
                                 height=300,
@@ -210,7 +211,7 @@ if __name__ == "__main__":
     else:
         avg_usage = pygal.Line( x_label_rotation=30,
                                 include_x_axis=True,
-                                logarithmic=False, 
+                                logarithmic=options.logarithmic, 
                                 show_dots=True,
                                 width=800, 
                                 height=300,

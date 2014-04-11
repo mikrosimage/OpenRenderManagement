@@ -38,7 +38,6 @@ class StatsMainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        print self.ui.actionGenerate.isIconVisibleInMenu()
         self.ui.actionGenerate.setIcon( QIcon("rsrc/refresh.png") )
 
         sys.stdout = OutLog( self.ui.log , sys.stdout)

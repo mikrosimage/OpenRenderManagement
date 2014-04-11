@@ -147,7 +147,9 @@ class StatsMainWindow(QMainWindow):
 
         # xlogger.debug("prog=%s" % prog)
         # xlogger.debug("args=%s" % " ".join(args) )
-        self.p.start( prog, args )
+        res = self.p.start( prog, args )
+        if res==False:
+            xlogger.info("Error starting subprocess: code=%s" % str(self.p.error()))
 
         self.ui.statusbar.showMessage("Graph update in progress...", 10000)
         self.ui.actionGenerate.setEnabled( False )
@@ -191,7 +193,7 @@ class StatsMainWindow(QMainWindow):
         else:
             xlogger.info("An error occured")
 
-        xlogger.info(str(self.p.readAllStandardOutput()))
+        xlogger.debug("subprocess output=%s" % str(self.p.readAllStandardOutput()))
 
 
 

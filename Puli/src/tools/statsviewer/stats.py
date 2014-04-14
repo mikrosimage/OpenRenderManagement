@@ -193,7 +193,7 @@ class StatsMainWindow(QMainWindow):
         else:
             xlogger.info("An error occured")
 
-        xlogger.debug("subprocess output=%s" % str(self.p.readAllStandardOutput()))
+        # xlogger.debug("subprocess output=%s" % str(self.p.readAllStandardOutput()))
 
 
 

@@ -34,6 +34,7 @@ class GenericDecomposer(TaskDecomposer):
 
 class GenericRunner(CommandRunner):
     cmd = StringParameter( mandatory = True )
+    timeout = IntegerParameter( default=0 , min=0 )
 
     def execute(self, arguments, updateCompletion, updateMessage, updateStats ):
         # init the helper
@@ -42,5 +43,11 @@ class GenericRunner(CommandRunner):
 
         print 'Running command "%s"' % cmd
         updateCompletion(0.0)
-        helper.execute(cmd.split(" "), env=os.environ)
+
+        if int(arguments['timeout']) == 0:
+            helper.execute( currCommand.split(" "), env=os.environ )
+        else:
+            helper.executeWithTimeout( currCommand.split(" "), env=os.environ, timeout=timeout )
+
+        # helper.execute(cmd.split(" "), env=os.environ)
         updateCompletion(1)

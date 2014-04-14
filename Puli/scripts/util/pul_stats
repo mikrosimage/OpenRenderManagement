@@ -1,7 +1,6 @@
 #!/bin/bash
 export PYTHONPATH=/s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli/src/:${PYTHONPATH}
-#export PATH=/s/apps/lin/puli/tools/puliquery:${PATH}
 
-cd /s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli/src/tools/statsviewer
-python stats.py
-cd - > /dev/null
+# cd /s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli/src/tools/statsviewer
+python /s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli/src/tools/statsviewer/stats.py
+# cd - > /dev/null

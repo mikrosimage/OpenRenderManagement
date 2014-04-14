@@ -98,7 +98,7 @@ class StatsMainWindow(QMainWindow):
         startDate = self.ui.dtEndDate.dateTime().addSecs( -1*self.ui.slLength.value()*3600 )
         endDate = self.ui.dtEndDate.dateTime()
 
-        prog = "/datas/jsa/OpenRenderManagement/Puli/scripts/util/update_usage_stats"
+        prog = "/s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli/scripts/util/update_usage_stats"
         sourceFile = "/s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/usage_stats.log"
         title = "%s - %s" % (startDate.toString("MM/dd hh:mm"), endDate.toString("MM/dd hh:mm"))
 

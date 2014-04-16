@@ -35,12 +35,12 @@ class StatsMainWindow(QMainWindow):
 
     reportDict={ 
         "RN usage": { 
-            "cmd":"/datas/jsa/OpenRenderManagement/Puli/scripts/util/update_usage_stats",
+            "cmd":"/s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli/scripts/util/update_usage_stats",
             "source":"/s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/usage_stats.log"
             },
 
         "Job usage" : { 
-            "cmd":"/datas/jsa/OpenRenderManagement/Puli/scripts/util/update_queue_stats",
+            "cmd":"/s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli/scripts/util/update_queue_stats",
             "source":"/s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/queue_stats.log"
         },
     }

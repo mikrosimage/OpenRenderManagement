@@ -122,7 +122,13 @@ if __name__ == "__main__":
             if response.body == "":
                 print "Error: No stats retrieved"
             else:
-                statsLogger.warning( response.body )
+                tmp = json.loads(response.body)
+                del tmp["jobs"]
+                del tmp["commands"]
+                del tmp["licenses"]
+                for license in tmp["licensesDict"]:
+                    del license["rns"]
+                statsLogger.warning( json.dumps(tmp) )
 
     except HTTPError as e:
         print "Error:", e

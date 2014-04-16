@@ -2,14 +2,13 @@
 # CRONTAB DEFINITION FOR STATISTICS UPDATE
 #
 
-
 # GRAB PROD
 */2 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/grab_usage_stats -s puliserver -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/usage_stats.log
 */2 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/grab_queue_stats -s puliserver -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/queue_stats.log
 
 
 # DISPLAY PROD
-*/5 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/update_usage_stats -s 2  -r 30 -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs/usage_avg_2.svg -t 'RN usage for 2H' -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/usage_stats.log
+*/5 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/update_usage_stats -s 2  -r 30 -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs/usage_avg_2.svg -t 'RN usage for 2H' -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/usage_stats.log --width=800 --height=200
 
 */10 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/update_usage_stats -s 24  -r 30 -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs/usage_avg_24.svg -t 'RN usage for the last 24H' -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/usage_stats.log
 

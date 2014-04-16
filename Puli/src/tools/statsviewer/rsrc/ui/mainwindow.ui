@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>855</width>
-    <height>602</height>
+    <width>833</width>
+    <height>726</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,76 +16,78 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout" stretch="4,3">
+     <layout class="QHBoxLayout" name="filterLayout" stretch="0,0">
       <item>
-       <layout class="QGridLayout" name="gridLayout">
-        <item row="3" column="0">
-         <widget class="QLabel" name="lblEndDate">
-          <property name="text">
-           <string>Until</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="lblLength">
-          <property name="text">
-           <string>Display last N hours</string>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="1">
-         <layout class="QHBoxLayout" name="horizontalLayout_2">
-          <item>
-           <widget class="QCheckBox" name="chkWorking">
-            <property name="text">
-             <string>Working</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="chkIdle">
-            <property name="text">
-             <string>Idle</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="chkPaused">
-            <property name="text">
-             <string>Paused</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="chkOffline">
-            <property name="text">
-             <string>Offline</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
+       <layout class="QFormLayout" name="dataFilterLayout">
+        <property name="fieldGrowthPolicy">
+         <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+        </property>
         <item row="0" column="0">
-         <widget class="QLabel" name="lblSelectReport">
+         <widget class="QLabel" name="lblSelectAReport">
           <property name="text">
            <string>Select a report</string>
           </property>
          </widget>
         </item>
-        <item row="3" column="1">
-         <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="0,2">
+        <item row="0" column="1">
+         <widget class="QComboBox" name="cbReport">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="displayNHoursLabel">
+          <property name="text">
+           <string>Display N hours</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <layout class="QHBoxLayout" name="lenghtLayout">
+          <item>
+           <widget class="QSlider" name="slLength">
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>168</number>
+            </property>
+            <property name="value">
+             <number>24</number>
+            </property>
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="spLength">
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>168</number>
+            </property>
+            <property name="singleStep">
+             <number>1</number>
+            </property>
+            <property name="value">
+             <number>24</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="lblUntil">
+          <property name="text">
+           <string>Until</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <layout class="QHBoxLayout" name="endLayout" stretch="1,2">
           <item>
            <widget class="QCheckBox" name="chkNow">
             <property name="text">
@@ -101,110 +103,6 @@
             <property name="enabled">
              <bool>false</bool>
             </property>
-            <property name="dateTime">
-             <datetime>
-              <hour>8</hour>
-              <minute>0</minute>
-              <second>0</second>
-              <year>2014</year>
-              <month>1</month>
-              <day>1</day>
-             </datetime>
-            </property>
-            <property name="minimumDateTime">
-             <datetime>
-              <hour>0</hour>
-              <minute>0</minute>
-              <second>0</second>
-              <year>2014</year>
-              <month>1</month>
-              <day>1</day>
-             </datetime>
-            </property>
-            <property name="minimumDate">
-             <date>
-              <year>2014</year>
-              <month>1</month>
-              <day>1</day>
-             </date>
-            </property>
-            <property name="displayFormat">
-             <string>dd MMM hh:mm</string>
-            </property>
-            <property name="calendarPopup">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item row="0" column="1">
-         <widget class="QComboBox" name="cbReport">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <item>
-           <property name="text">
-            <string>RN Usage</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Job Usage</string>
-           </property>
-          </item>
-         </widget>
-        </item>
-        <item row="2" column="1">
-         <layout class="QHBoxLayout" name="horizontalLayout_4">
-          <item>
-           <widget class="QSlider" name="slLength">
-            <property name="minimum">
-             <number>1</number>
-            </property>
-            <property name="maximum">
-             <number>168</number>
-            </property>
-            <property name="singleStep">
-             <number>1</number>
-            </property>
-            <property name="pageStep">
-             <number>24</number>
-            </property>
-            <property name="value">
-             <number>24</number>
-            </property>
-            <property name="sliderPosition">
-             <number>24</number>
-            </property>
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="invertedAppearance">
-             <bool>false</bool>
-            </property>
-            <property name="invertedControls">
-             <bool>false</bool>
-            </property>
-            <property name="tickPosition">
-             <enum>QSlider::NoTicks</enum>
-            </property>
-            <property name="tickInterval">
-             <number>20</number>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QSpinBox" name="spLength">
-            <property name="minimum">
-             <number>1</number>
-            </property>
-            <property name="maximum">
-             <number>168</number>
-            </property>
-            <property name="value">
-             <number>24</number>
-            </property>
            </widget>
           </item>
          </layout>
@@ -212,145 +110,303 @@
        </layout>
       </item>
       <item>
-       <layout class="QFormLayout" name="formLayout">
-        <property name="fieldGrowthPolicy">
-         <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
         </property>
-        <item row="0" column="0">
-         <widget class="QLabel" name="lblResolution">
-          <property name="text">
-           <string>Resolution</string>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="optionsLayout" stretch="0,0,0">
+      <item>
+       <layout class="QVBoxLayout" name="reportGroupBox">
+        <item>
+         <widget class="QGroupBox" name="gbJobUsage">
+          <property name="maximumSize">
+           <size>
+            <width>300</width>
+            <height>16777215</height>
+           </size>
           </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <layout class="QHBoxLayout" name="horizontalLayout_7">
-          <item>
-           <widget class="QSlider" name="slResolution">
-            <property name="minimum">
-             <number>8</number>
-            </property>
-            <property name="maximum">
-             <number>60</number>
-            </property>
-            <property name="singleStep">
-             <number>1</number>
-            </property>
-            <property name="value">
-             <number>30</number>
-            </property>
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QSpinBox" name="spResolution">
-            <property name="minimum">
-             <number>8</number>
-            </property>
-            <property name="maximum">
-             <number>60</number>
-            </property>
-            <property name="singleStep">
-             <number>1</number>
-            </property>
-            <property name="value">
-             <number>30</number>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="lblGraphType">
-          <property name="text">
-           <string>Graph type</string>
+          <property name="title">
+           <string>Jobs usage options</string>
           </property>
+          <layout class="QFormLayout" name="formLayout">
+           <item row="0" column="1">
+            <widget class="QComboBox" name="cbTrack"/>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>Track Value</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="groupByLabel">
+             <property name="text">
+              <string>Group by</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QComboBox" name="cbGroupBy"/>
+           </item>
+          </layout>
          </widget>
         </item>
-        <item row="1" column="1">
-         <widget class="QComboBox" name="cbGraphType">
-          <item>
-           <property name="text">
-            <string>Line</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Stacked</string>
-           </property>
-          </item>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="lblScaleType">
-          <property name="text">
-           <string>Scale type</string>
+        <item>
+         <widget class="QGroupBox" name="gbRnUsage">
+          <property name="maximumSize">
+           <size>
+            <width>300</width>
+            <height>16777215</height>
+           </size>
           </property>
-         </widget>
-        </item>
-        <item row="2" column="1">
-         <widget class="QComboBox" name="cbScaleType">
-          <item>
-           <property name="text">
-            <string>Standard</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Logarithmic</string>
-           </property>
-          </item>
-         </widget>
-        </item>
-        <item row="3" column="0">
-         <widget class="QLabel" name="lblStyle">
-          <property name="text">
-           <string>Style</string>
+          <property name="title">
+           <string>RN usage options</string>
           </property>
+          <property name="flat">
+           <bool>false</bool>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_12">
+           <item>
+            <widget class="QCheckBox" name="chkWorking">
+             <property name="text">
+              <string>Working</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkPaused">
+             <property name="text">
+              <string>Paused</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkIdle">
+             <property name="text">
+              <string>Idle</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkOffline">
+             <property name="text">
+              <string>Offline</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </widget>
         </item>
-        <item row="3" column="1">
-         <widget class="QComboBox" name="cbGraphStyle">
-          <item>
-           <property name="text">
-            <string>RedBlue</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Default</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Blue</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Light</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Clean</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>DarkColorized</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>DarkGreenBlue</string>
-           </property>
-          </item>
-         </widget>
+        <item>
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
         </item>
        </layout>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="displayGroupBox">
+        <property name="maximumSize">
+         <size>
+          <width>269</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="title">
+         <string>Display options</string>
+        </property>
+        <layout class="QFormLayout" name="formLayout_4">
+         <property name="fieldGrowthPolicy">
+          <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+         </property>
+         <item row="0" column="0">
+          <widget class="QLabel" name="lblResolution">
+           <property name="text">
+            <string>Resolution</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <layout class="QHBoxLayout" name="resolutionLayout">
+           <item>
+            <widget class="QSlider" name="slResolution">
+             <property name="minimum">
+              <number>8</number>
+             </property>
+             <property name="maximum">
+              <number>60</number>
+             </property>
+             <property name="singleStep">
+              <number>1</number>
+             </property>
+             <property name="value">
+              <number>30</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="spResolution">
+             <property name="minimum">
+              <number>8</number>
+             </property>
+             <property name="maximum">
+              <number>60</number>
+             </property>
+             <property name="singleStep">
+              <number>1</number>
+             </property>
+             <property name="value">
+              <number>30</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="lblGraphType">
+           <property name="text">
+            <string>Graph type</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QComboBox" name="cbGraphType">
+           <item>
+            <property name="text">
+             <string>Line</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Stacked</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="lblScaleType">
+           <property name="text">
+            <string>Scale type</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QComboBox" name="cbScaleType">
+           <item>
+            <property name="text">
+             <string>Standard</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Logarithmic</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="lblStyle">
+           <property name="text">
+            <string>Style</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QComboBox" name="cbGraphStyle">
+           <item>
+            <property name="text">
+             <string>RedBlue</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Default</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Blue</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Light</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Clean</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>DarkColorized</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>DarkGreenBlue</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+        </layout>
+        <zorder>lblStyle</zorder>
+        <zorder>lblResolution</zorder>
+        <zorder>cbGraphType</zorder>
+        <zorder>lblScaleType</zorder>
+        <zorder>cbScaleType</zorder>
+        <zorder>cbGraphStyle</zorder>
+        <zorder>lblGraphType</zorder>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
       </item>
      </layout>
     </item>
@@ -365,6 +421,12 @@
     </item>
     <item>
      <widget class="QPlainTextEdit" name="log">
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>60</height>
+       </size>
+      </property>
       <property name="undoRedoEnabled">
        <bool>false</bool>
       </property>
@@ -382,7 +444,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>855</width>
+     <width>833</width>
      <height>22</height>
     </rect>
    </property>
@@ -512,294 +574,5 @@
   </customwidget>
  </customwidgets>
  <resources/>
- <connections>
-  <connection>
-   <sender>chkNow</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>dtEndDate</receiver>
-   <slot>setDisabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>154</x>
-     <y>104</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>351</x>
-     <y>104</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>spLength</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>slLength</receiver>
-   <slot>setValue(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>493</x>
-     <y>74</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>296</x>
-     <y>74</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>slLength</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>spLength</receiver>
-   <slot>setValue(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>261</x>
-     <y>103</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>423</x>
-     <y>103</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>spResolution</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>slResolution</receiver>
-   <slot>setValue(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>758</x>
-     <y>84</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>626</x>
-     <y>84</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>slResolution</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>spResolution</receiver>
-   <slot>setValue(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>626</x>
-     <y>84</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>758</x>
-     <y>84</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>cbGraphType</sender>
-   <signal>currentIndexChanged(QString)</signal>
-   <receiver>actionGenerate</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>652</x>
-     <y>114</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>cbScaleType</sender>
-   <signal>currentIndexChanged(QString)</signal>
-   <receiver>actionGenerate</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>652</x>
-     <y>144</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>cbGraphStyle</sender>
-   <signal>currentIndexChanged(QString)</signal>
-   <receiver>actionGenerate</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>652</x>
-     <y>174</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>slLength</sender>
-   <signal>sliderReleased()</signal>
-   <receiver>actionGenerate</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>261</x>
-     <y>114</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>slResolution</sender>
-   <signal>sliderReleased()</signal>
-   <receiver>actionGenerate</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>626</x>
-     <y>84</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>spResolution</sender>
-   <signal>editingFinished()</signal>
-   <receiver>actionGenerate</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>758</x>
-     <y>84</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>chkNow</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>actionGenerate</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>154</x>
-     <y>144</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>chkIdle</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>actionGenerate</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>247</x>
-     <y>174</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>chkWorking</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>actionGenerate</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>166</x>
-     <y>174</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>chkOffline</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>actionGenerate</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>409</x>
-     <y>174</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>chkPaused</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>actionGenerate</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>328</x>
-     <y>174</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>dtEndDate</sender>
-   <signal>editingFinished()</signal>
-   <receiver>actionGenerate</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>316</x>
-     <y>144</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>spLength</sender>
-   <signal>editingFinished()</signal>
-   <receiver>actionGenerate</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>423</x>
-     <y>114</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

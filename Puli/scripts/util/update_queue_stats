@@ -2,9 +2,8 @@
 # export PYTHONPATH=/s/apps/lin/puli/:${PYTHONPATH}
 # export PATH=/s/apps/lin/puli/tools/stats:${PATH}
     
-# export PYTHONPATH=/s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli/src/:${PYTHONPATH}
-export PYTHONPATH=/datas/jsa/OpenRenderManagement/Puli/src:${PYTHONPATH}
+export PYTHONPATH=/s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli/src/:${PYTHONPATH}
+# export PYTHONPATH=/datas/jsa/OpenRenderManagement/Puli/src:${PYTHONPATH}
 export PATH=/s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli/src/tools/stats:${PATH}
 
-# python /s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli/src/tools/stats/display_2dim_usage.py "$@"
-python /datas/jsa/OpenRenderManagement/Puli/src/tools/stats/trace_queue_2dim.py "$@"
+python /s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli/src/tools/stats/trace_queue_2dim.py "$@"

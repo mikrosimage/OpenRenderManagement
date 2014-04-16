@@ -1,3 +1,4 @@
+
 #
 # CRONTAB DEFINITION FOR STATISTICS UPDATE
 #
@@ -8,12 +9,12 @@
 
 
 # DISPLAY PROD
-*/5 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/update_usage_stats -s 2  -r 30 -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs/usage_avg_2.svg -t 'RN usage for 2H' -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/usage_stats.log --width=800 --height=200
+*/5 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/update_usage_stats -s 2  -r 30 -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs/usage_avg_2.svg -t 'RN usage for 2H' -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/usage_stats.log --width=800 --height=300 > /dev/null
 
-*/10 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/update_usage_stats -s 24  -r 30 -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs/usage_avg_24.svg -t 'RN usage for the last 24H' -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/usage_stats.log
+*/10 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/update_usage_stats -s 24  -r 30 -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs/usage_avg_24.svg -t 'RN usage for the last 24H' -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/usage_stats.log --width=800 --height=300 > /dev/null
 
-30 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/update_usage_stats -s 168  -r 30 -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs/usage_avg_168.svg -t 'RN usage for the last 7 days' -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/usage_stats.log
+30 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/update_usage_stats -s 168  -r 30 -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs/usage_avg_168.svg -t 'RN usage for the last 7 days' -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/usage_stats.log --width=800 --height=300 > /dev/null
 
-*/10 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/update_jobs_by_status
-*/10 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/update_rn_by_prod
-*/10 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/update_jobs_by_prod
+*/10 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/update_jobs_by_status > /dev/null
+*/10 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/update_rn_by_prod > /dev/null
+*/10 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/update_jobs_by_prod > /dev/null

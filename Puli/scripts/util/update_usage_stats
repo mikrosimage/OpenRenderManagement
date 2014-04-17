@@ -1,0 +1,7 @@
+#!/bin/bash
+
+export PYTHONPATH=/s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli/src/:${PYTHONPATH}
+# export PYTHONPATH=/datas/jsa/OpenRenderManagement/Puli/src:${PYTHONPATH}
+export PATH=/s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli/src/tools/stats:${PATH}
+
+python /s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli/src/tools/stats/trace_farm.py "$@"

@@ -65,7 +65,12 @@ def main():
 
     ## Handle puli arguments ##
 
-    usage = "usage: %prog [options] -- yourcommand [cmd_options]"
+    usage = """
+usage: %prog [options] -- yourcommand [cmd_options]
+
+Used to start any shell command either locally or on the render farm.
+Don't forget to specify a pool name otherwise your job will be submitted but will never start.
+    """
     parser = optparse.OptionParser(usage=usage)
 
     parser.add_option(
@@ -216,6 +221,8 @@ def main():
         user=options.user, poolName=options.pool, maxRN=options.maxRN)
 
     if not options.local:
+        if options.pool is "":
+            print "\nWARNING: no pool defined for this job, it won't start until you set a proper pool value via pulback.\n"
         return graph.submit(options.host, options.port)
     else:
         return graph.execute()

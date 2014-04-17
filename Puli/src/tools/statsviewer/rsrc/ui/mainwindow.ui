@@ -1,0 +1,578 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>833</width>
+    <height>726</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Stats Viewer</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <layout class="QHBoxLayout" name="filterLayout" stretch="0,0">
+      <item>
+       <layout class="QFormLayout" name="dataFilterLayout">
+        <property name="fieldGrowthPolicy">
+         <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+        </property>
+        <item row="0" column="0">
+         <widget class="QLabel" name="lblSelectAReport">
+          <property name="text">
+           <string>Select a report</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QComboBox" name="cbReport">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="displayNHoursLabel">
+          <property name="text">
+           <string>Display N hours</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <layout class="QHBoxLayout" name="lenghtLayout">
+          <item>
+           <widget class="QSlider" name="slLength">
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>168</number>
+            </property>
+            <property name="value">
+             <number>24</number>
+            </property>
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="spLength">
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>168</number>
+            </property>
+            <property name="singleStep">
+             <number>1</number>
+            </property>
+            <property name="value">
+             <number>24</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="lblUntil">
+          <property name="text">
+           <string>Until</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <layout class="QHBoxLayout" name="endLayout" stretch="1,2">
+          <item>
+           <widget class="QCheckBox" name="chkNow">
+            <property name="text">
+             <string>Now</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDateTimeEdit" name="dtEndDate">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="optionsLayout" stretch="0,0,0">
+      <item>
+       <layout class="QVBoxLayout" name="reportGroupBox">
+        <item>
+         <widget class="QGroupBox" name="gbJobUsage">
+          <property name="maximumSize">
+           <size>
+            <width>300</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="title">
+           <string>Jobs usage options</string>
+          </property>
+          <layout class="QFormLayout" name="formLayout">
+           <item row="0" column="1">
+            <widget class="QComboBox" name="cbTrack"/>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>Track Value</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="groupByLabel">
+             <property name="text">
+              <string>Group by</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QComboBox" name="cbGroupBy"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="gbRnUsage">
+          <property name="maximumSize">
+           <size>
+            <width>300</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="title">
+           <string>RN usage options</string>
+          </property>
+          <property name="flat">
+           <bool>false</bool>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_12">
+           <item>
+            <widget class="QCheckBox" name="chkWorking">
+             <property name="text">
+              <string>Working</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkPaused">
+             <property name="text">
+              <string>Paused</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkIdle">
+             <property name="text">
+              <string>Idle</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkOffline">
+             <property name="text">
+              <string>Offline</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="displayGroupBox">
+        <property name="maximumSize">
+         <size>
+          <width>269</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="title">
+         <string>Display options</string>
+        </property>
+        <layout class="QFormLayout" name="formLayout_4">
+         <property name="fieldGrowthPolicy">
+          <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+         </property>
+         <item row="0" column="0">
+          <widget class="QLabel" name="lblResolution">
+           <property name="text">
+            <string>Resolution</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <layout class="QHBoxLayout" name="resolutionLayout">
+           <item>
+            <widget class="QSlider" name="slResolution">
+             <property name="minimum">
+              <number>8</number>
+             </property>
+             <property name="maximum">
+              <number>60</number>
+             </property>
+             <property name="singleStep">
+              <number>1</number>
+             </property>
+             <property name="value">
+              <number>30</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="spResolution">
+             <property name="minimum">
+              <number>8</number>
+             </property>
+             <property name="maximum">
+              <number>60</number>
+             </property>
+             <property name="singleStep">
+              <number>1</number>
+             </property>
+             <property name="value">
+              <number>30</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="lblGraphType">
+           <property name="text">
+            <string>Graph type</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QComboBox" name="cbGraphType">
+           <item>
+            <property name="text">
+             <string>Line</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Stacked</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="lblScaleType">
+           <property name="text">
+            <string>Scale type</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QComboBox" name="cbScaleType">
+           <item>
+            <property name="text">
+             <string>Standard</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Logarithmic</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="lblStyle">
+           <property name="text">
+            <string>Style</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QComboBox" name="cbGraphStyle">
+           <item>
+            <property name="text">
+             <string>RedBlue</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Default</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Blue</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Light</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Clean</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>DarkColorized</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>DarkGreenBlue</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+        </layout>
+        <zorder>lblStyle</zorder>
+        <zorder>lblResolution</zorder>
+        <zorder>cbGraphType</zorder>
+        <zorder>lblScaleType</zorder>
+        <zorder>cbScaleType</zorder>
+        <zorder>cbGraphStyle</zorder>
+        <zorder>lblGraphType</zorder>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QWebView" name="webView">
+      <property name="url">
+       <url>
+        <string>about:blank</string>
+       </url>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPlainTextEdit" name="log">
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>60</height>
+       </size>
+      </property>
+      <property name="undoRedoEnabled">
+       <bool>false</bool>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+   </layout>
+   <zorder>log</zorder>
+   <zorder>webView</zorder>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>833</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
+    <property name="title">
+     <string>&amp;Graph</string>
+    </property>
+    <addaction name="actionExport_as"/>
+   </widget>
+   <widget class="QMenu" name="menuSnapshots">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
+    <property name="title">
+     <string>&amp;Snapshots</string>
+    </property>
+    <addaction name="actionCreate"/>
+    <addaction name="actionDelete"/>
+    <addaction name="actionClear_all_snapshots"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuSnapshots"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QToolBar" name="toolBar">
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <property name="movable">
+    <bool>false</bool>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>24</width>
+     <height>24</height>
+    </size>
+   </property>
+   <property name="toolButtonStyle">
+    <enum>Qt::ToolButtonIconOnly</enum>
+   </property>
+   <property name="floatable">
+    <bool>false</bool>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actionGenerate"/>
+   <addaction name="actionReset"/>
+  </widget>
+  <action name="actionSave_as">
+   <property name="text">
+    <string>Save as...</string>
+   </property>
+  </action>
+  <action name="actionSnapshot">
+   <property name="text">
+    <string>Snapshot</string>
+   </property>
+  </action>
+  <action name="actionCreate">
+   <property name="text">
+    <string>&amp;Create</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+T</string>
+   </property>
+  </action>
+  <action name="actionDelete">
+   <property name="text">
+    <string>Delete</string>
+   </property>
+  </action>
+  <action name="actionClear_all_snapshots">
+   <property name="text">
+    <string>Clear all snapshots</string>
+   </property>
+  </action>
+  <action name="actionGenerate">
+   <property name="icon">
+    <iconset>
+     <normaloff>../refresh.png</normaloff>../refresh.png</iconset>
+   </property>
+   <property name="text">
+    <string>Refresh</string>
+   </property>
+   <property name="toolTip">
+    <string>Create graph with current parameters</string>
+   </property>
+   <property name="statusTip">
+    <string>Create graph with current parameters</string>
+   </property>
+   <property name="shortcut">
+    <string>F5</string>
+   </property>
+   <property name="iconVisibleInMenu">
+    <bool>true</bool>
+   </property>
+  </action>
+  <action name="actionReset">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Reset</string>
+   </property>
+   <property name="toolTip">
+    <string>Set parameter values to default</string>
+   </property>
+  </action>
+  <action name="actionExport_as">
+   <property name="text">
+    <string>&amp;Export to...</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QWebView</class>
+   <extends>QWidget</extends>
+   <header>QtWebKit/QWebView</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

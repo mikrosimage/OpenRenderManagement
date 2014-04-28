@@ -342,18 +342,8 @@ class FolderNode(BaseNode):
                 
             if hasattr(self,"commandCount") and int(self.commandCount)!=0:
                 self.completion = self.doneCommandCount / float(self.commandCount)
-
-                # LOGGER.error("Updating completion for: %s -> done=%d total=%d ready=%d alloc=%d -> %.2f" % (
-                #                 self.name,
-                #                 self.doneCommandCount,
-                #                 self.commandCount,
-                #                 self.readyCommandCount,
-                #                 self.allocatedRN,
-                #                 self.completion )
-                #             )
-                # LOGGER.error("  - commandCount -> %d / %d = %.2f" %  )
             else:
-                LOGGER.warning("Warning: a folder node without \"commandCount\" value was found -> %s" % self.name  )
+                # LOGGER.warning("Warning: a folder node without \"commandCount\" value was found -> %s" % self.name  )
                 self.completion = completion / len(self.children)
 
             # Updating node's overall status

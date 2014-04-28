@@ -9,7 +9,7 @@ __copyright__   = "Copyright 2014, Mikros Image"
 import os
 import datetime
 
-from datetime import datetime
+# from datetime import datetime
 import numpy as np
 
 from PyQt4.QtCore import qDebug
@@ -62,15 +62,15 @@ class XLogger():
   """
 
   def debug(self,text):
-    qDebug( str(datetime.now().strftime("%m-%d %H:%M:%S")) + " - " + str(text) )
+    qDebug( str(datetime.datetime.now().strftime("%m-%d %H:%M:%S")) + " - " + str(text) )
     pass
   def info(self,text):
-    print str(datetime.now().strftime("%m-%d %H:%M:%S")) + " - " + str(text)
+    print str(datetime.datetime.now().strftime("%m-%d %H:%M:%S")) + " - " + str(text)
   def warning(self,text):
     print str(datetime.now().strftime("%m-%d %H:%M:%S")) + " - WARNING - " + str(text)
   def error(self,text):
-    qDebug( str(datetime.now().strftime("%m-%d %H:%M:%S")) + " - ERROR - " + str(text) )
-    print str(datetime.now().strftime("%m-%d %H:%M:%S")) + " - ERROR - "+ str(text)
+    qDebug( str(datetime.datetime.now().strftime("%m-%d %H:%M:%S")) + " - ERROR - " + str(text) )
+    print str(datetime.datetime.now().strftime("%m-%d %H:%M:%S")) + " - ERROR - "+ str(text)
 
 
 class OutLog:

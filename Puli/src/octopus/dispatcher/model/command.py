@@ -103,6 +103,10 @@ class Command(models.Model):
         self.status = CMD_ASSIGNED
 
     def cancel(self):
+        """
+        TOFIX log message if RN clearing failed !!!
+        """
+
         if self.status in (CMD_FINISHING, CMD_DONE, CMD_CANCELED):
             return
         elif self.status == CMD_RUNNING:
@@ -117,6 +121,28 @@ class Command(models.Model):
         elif self.renderNode is not None:
             self.renderNode.clearAssignment(self)
         self.status = CMD_CANCELED
+
+
+    def setDoneStatus(self):
+        """
+
+        FIXME c'est pas bon, il faut que la demande soit envoyee au RN directement qui va forcer le done...
+        """
+        if self.status in (CMD_FINISHING, CMD_DONE, CMD_CANCELED):
+            return
+        elif self.status == CMD_RUNNING:
+            pass
+            try:
+                self.renderNode.clearAssignment(self)
+                (response, data) = self.renderNode.request("POST", "/commands/" + str(self.id) + "/done")
+                LOGGER.debug( "data: %r" % data )
+            except Exception:
+                # if request has failed, it means the rendernode is unreachable
+                LOGGER.warning("Impossible to cancel command %d on the RN: %s" % (self.id, self.renderNode.name ))
+                self.status = CMD_CANCELED
+        elif self.renderNode is not None:
+            self.renderNode.clearAssignment(self)
+        self.status = CMD_DONE
 
     def setReadyAndKill(self):
         if self.renderNode is not None:

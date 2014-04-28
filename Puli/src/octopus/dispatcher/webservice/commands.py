@@ -8,6 +8,7 @@ except ImportError:
 from octopus.core.enums.command import *
 from octopus.core.framework import BaseResource, queue
 from octopus.core.communication.http import Http404, Http400
+import logging
 
 __all__ = ['CommandsResource', 'CommandResource']
 
@@ -56,11 +57,15 @@ class CommandResource(BaseResource):
                         command.cancel()
                     elif status == CMD_READY:
                         command.setReadyStatus()
+                    elif status == CMD_DONE:
+                        logging.getLogger().debug("setting to done!")
+                        command.setDoneStatus()
                     else:
                         raise Http400("Invalid status. Cannot set of command %d to %r" % (commandId, status))
             return "Done"
 
         # check requested updates
+        # import pudb;pu.db
         commandId = int(commandId)
         updatedData = self.getBodyAsJSON()
         toUpdate = {}
@@ -72,7 +77,7 @@ class CommandResource(BaseResource):
             toUpdate['status'] = updatedData.pop('status')
         # any remaining field is an error
         if updatedData:
-            return Http400("Invalid fields. Updating the following field(s) is not allowed: %s" % (' '.join(updatedData.keys())))
+            raise Http400("Invalid fields. Updating the following field(s) is not allowed: %s" % (' '.join(updatedData.keys())))
         # send work to the dispatcher
         result = work(self, commandId, toUpdate)
 

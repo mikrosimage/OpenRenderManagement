@@ -568,7 +568,7 @@ class Worker(MainLoopApplication):
 
     def sendSysInfosMessage(self):
         """
-        | Send sys infos to the dispatcher, the request content holds the RN status only, it has to be kept
+        | Send sys infos to the dispatcher, the request content holds the RN status and free memory only, it has to be kept
         | very small to avoid nerwork flood.
         | req: PUT /rendernodes/<currentRN>/sysinfos
 
@@ -666,11 +666,11 @@ class Worker(MainLoopApplication):
     # @todo find a clean way to stop the processes so that they \
     #       can call their after-execution scripts
     #
-    def stopCommandApply(self, ticket, commandId):
+    def stopCommandApply(self, ticket, commandId, endCompletion=0, endStatus=COMMAND.CMD_CANCELED, endMessage="killed"):
         commandWatcher = self.commandWatchers[commandId]
         commandWatcher.processObj.kill()
-        self.updateCompletionAndStatus(commandId, 0, COMMAND.CMD_CANCELED, "killed")
-        LOGGER.info("Stopped command %r", commandId)
+        self.updateCompletionAndStatus(commandId, endCompletion, endStatus, endMessage)
+        LOGGER.info("Stopped command %r - final status set to %s", commandId, COMMAND.CMD_STATUS_NAME[endStatus])
 
     def updateCommandApply(self, ticket, commandId, status, completion, message, stats):
         self.updateCompletionAndStatus(commandId, completion, status, message, stats)

@@ -241,9 +241,10 @@ if __name__ == '__main__':
     # line_chart.x_labels = scale
 
     line_chart.add('Total in loop',  loopDuration)
+    line_chart.add('Compute Assignment',  listCompute)
     line_chart.add('Update tree',  listTree)
     # line_chart.add('Update rn',  listRn)
-    line_chart.add('Update db',  listCompute)
+    line_chart.add('Update db',  listDb)
     line_chart.add('Dependencies',  listDep)
     line_chart.add('Assignment',  listSend)
     # line_chart.add('Send order',  listSend)

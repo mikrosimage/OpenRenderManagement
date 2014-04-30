@@ -13,6 +13,9 @@ LOGGER = logging.getLogger("dispatcher.dispatchtree")
 class NoRenderNodeAvailable(BaseException):
     '''Raised to interrupt the dispatch iteration on an entry point node.'''
 
+class NoLicenseAvailableForTask(BaseException):
+    '''Raised to interrupt the dispatch iteration on an entry point node.'''
+
 class DependencyListField(models.Field):
     def to_json(self, node):
         return [[dep.id, statusList] for (dep, statusList) in node.dependencies]
@@ -271,6 +274,8 @@ class FolderNode(BaseNode):
     # @return yields (node, command) tuples
     #
     def dispatchIterator(self, stopFunc, ep=None):
+        LOGGER.debug("dispatching: %s", self.name)
+
         if ep is None:
             ep = self
 
@@ -280,6 +285,7 @@ class FolderNode(BaseNode):
         # ready but can not be started due to match constraint...
         # So we count the nb of iteration done, it can't be more than the number of readycommands
         #
+        breaker = False
         for i in range(0, self.readyCommandCount):
             # On veut iterer tant qu'il y a des commandes ready...
             # MAIS il faut pouvoir interrompre le parcours si les commandes ready ne peuvent pas etre assignees
@@ -301,9 +307,19 @@ class FolderNode(BaseNode):
                         return
                 except NoRenderNodeAvailable:
                     return
+                except NoLicenseAvailableForTask:
+                    LOGGER.debug( "Oops no license found for the task: %s", self.name)
+                    # raise NoLicenseAvailableForTask
+                    breaker = True
+                    continue
                 else:
                     if not stopFunc():
                         continue
+            else:
+                if breaker:
+                    raise NoLicenseAvailableForTask
+
+
             # HACK
             # This "else" clause slows assignment by stopping iterator after a small number of assignement
             # found. Only for jobs with multiple level of taskgroups.
@@ -460,6 +476,9 @@ class TaskNode(BaseNode):
 
 
     def dispatchIterator(self, stopFunc, ep=None):
+
+        LOGGER.debug("dispatching: %s" % self.name)
+
         if ep is None:
             ep = self
 
@@ -484,7 +503,8 @@ class TaskNode(BaseNode):
                 yield (renderNode, command)
             else:
                 # Pas de RN ou les RNS ne matchent pas les contraintes des jobs.
-                LOGGER.debug("Reservation failed for command %r" % command.id)
+                # On pourrait lever une exception pour indiquer au folder node que le dispatch doit s'arreter pour ce fils
+                # LOGGER.debug("Reservation failed in task %s for command %d" % self.name, command.id)
                 return
 
     def reserve_rendernode(self, command, ep):
@@ -497,13 +517,12 @@ class TaskNode(BaseNode):
                 if rendernode.isAvailable() and rendernode.canRun(command):
                     if rendernode.reserveLicense(command, self.dispatcher.licenseManager):
                         rendernode.addAssignment(command)
-                        #rendernode.reserveRessources(command)
                         return rendernode
-
-            # stop iterating through RNs if none available
-            # else:
-            #     LOGGER.debug("Unable to reserve rendernode (might not be able to run task)")
-            #     raise NoRenderNodeAvailable
+                    else:
+                        LOGGER.debug("Reservation failed in task %s for command %d", self.name, command.id)
+                        raise NoLicenseAvailableForTask
+                # else:
+                #     raise NoRNCanRunTask
 
         # Might not be necessary anymore because first loop is based on poolShare's hasRNSavailable method
         # It was not taking into account the tests before assignment: RN.canRun()

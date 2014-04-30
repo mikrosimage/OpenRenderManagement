@@ -271,7 +271,7 @@ class Dispatcher(MainLoopApplication):
         prevTimer = time.time()
 
         loopDuration = (time.time() - loopStartTime)*1000
-        LOGGER.info( "%8.3f ms --> cycle ended. " % loopDuration )
+        LOGGER.info( "%8.2f ms --> cycle ended. " % loopDuration )
         LOGGER.info("-----------------------------------------------------")
 
         # TODO: process average and sums of datas in stats, if flush time, send it to disk
@@ -307,11 +307,12 @@ class Dispatcher(MainLoopApplication):
     def computeAssignments(self):
         '''Computes and returns a list of (rendernode, command) assignments.'''
 
-        # LOGGER.debug("@-----------------------------------------------------")
-        # LOGGER.debug("@ COMPUTE ASSIGNMENT")
-        # LOGGER.debug("@-----------------------------------------------------")
 
-        from .model.node import NoRenderNodeAvailable
+        assignStartTime = time.time()
+        prevTimer = assignStartTime
+        LOGGER.info("-- at %f ------------", time.time() )
+
+        from .model.node import NoRenderNodeAvailable, NoLicenseAvailableForTask
         # if no rendernodes available, return
         if not any(rn.isAvailable() for rn in self.dispatchTree.renderNodes.values()):
             return []
@@ -321,7 +322,13 @@ class Dispatcher(MainLoopApplication):
         # first create a set of entrypoints that are not done nor cancelled nor blocked nor paused and that have at least one command ready
         # FIXME: hack to avoid getting the 'graphs' poolShare node in entryPoints, need to avoid it more nicely...
         entryPoints = set([poolShare.node for poolShare in self.dispatchTree.poolShares.values() if poolShare.node.status not in [NODE_BLOCKED, NODE_DONE, NODE_CANCELED, NODE_PAUSED] and poolShare.node.readyCommandCount > 0 and poolShare.node.name != 'graphs'])
-
+        
+        currDelay = (time.time() - prevTimer)*1000
+        prevTimer = time.time()
+        # if singletonconfig.get('CORE','GET_STATS'):
+        #     singletonstats.theStats.assignmentTimers['get_entry_points'] = time.time() - prevTimer
+        LOGGER.info("-- at %f - %f ms --> Getting entry point" % (time.time(), currDelay ))
+        
         # LOGGER.debug("@ - getting entryPoints (%d)" % len(entryPoints))
         # for item in entryPoints:
         #     LOGGER.debug("@      -node:%r -pool:%r" % (item.name, item.poolShares.values()) )
@@ -333,6 +340,12 @@ class Dispatcher(MainLoopApplication):
             rnsAvailables = set([rn for rn in pool.renderNodes if rn.status not in [RN_UNKNOWN, RN_PAUSED, RN_WORKING]])
             if len(rnsAvailables):
                 rnsBool = True
+
+        currDelay = (time.time() - prevTimer)*1000
+        prevTimer = time.time()
+        # if singletonconfig.get('CORE','GET_STATS'):
+        #     singletonstats.theStats.assignmentTimers['check_rn_available'] = time.time() - prevTimer
+        LOGGER.info("-- at %f - %f ms --> Check if some rn availables" % (time.time(), currDelay ))
 
         if not rnsBool:
             return []
@@ -426,15 +439,11 @@ class Dispatcher(MainLoopApplication):
                     else:
                         break
 
-
-
-        ######
-        ######
-        ######
-        # TODO verif comment sont matche les rns/jobs, avec trop de jobs, seul celui dont l'id est plus bas prend les machines...
-        # En fait SI userMaxRn ET SI les maxRN sont a 0 car leur portion attribuee est trop petite
-        # ---> BOOM
-        # a voir comment les "residus" sont remis sur les machines en fin d'assign
+        currDelay = (time.time() - prevTimer)*1000
+        prevTimer = time.time()
+        # if singletonconfig.get('CORE','GET_STATS'):
+        #     singletonstats.theStats.assignmentTimers['check_rn_available'] = time.time() - prevTimer
+        LOGGER.info("-- at %f - %f ms --> update max rns" % (time.time(), currDelay ))
 
 
         # now, we are treating every nodes
@@ -447,6 +456,11 @@ class Dispatcher(MainLoopApplication):
         userDefEntryPoints = ifilter( lambda node: node.poolShares.values()[0].userDefinedMaxRN, entryPoints )
         standardEntryPoints = ifilter( lambda node: not node.poolShares.values()[0].userDefinedMaxRN, entryPoints )
         scoredEntryPoints = chain( userDefEntryPoints, standardEntryPoints)
+
+        currDelay = (time.time() - prevTimer)*1000
+        prevTimer = time.time()        # if singletonconfig.get('CORE','GET_STATS'):
+        #     singletonstats.theStats.assignmentTimers['check_rn_available'] = time.time() - prevTimer
+        LOGGER.info("-- at %f - %f ms --> rearrange entry points order" % (time.time(), currDelay ) )
 
         ####
         #for entryPoint in entryPoints:
@@ -467,9 +481,19 @@ class Dispatcher(MainLoopApplication):
 
                 except NoRenderNodeAvailable:
                     pass
+                except NoLicenseAvailableForTask:
+                    LOGGER.debug("stop dispatch because no licence found")
+                    pass
+
         assignmentDict = collections.defaultdict(list)
         for (rn, com) in assignments:
             assignmentDict[rn].append(com)
+
+        currDelay = (time.time() - prevTimer)*1000
+        prevTimer = time.time()
+        # if singletonconfig.get('CORE','GET_STATS'):
+        #     singletonstats.theStats.assignmentTimers['check_rn_available'] = time.time() - prevTimer
+        LOGGER.info("-- at %f - %f ms --> dispatch rns" % (time.time(), currDelay ) )
 
         #
         # Check replacements
@@ -483,6 +507,8 @@ class Dispatcher(MainLoopApplication):
         # Backfill
         #
         # TODO refaire une passe pour les jobs ayant un attribut "killable" et au moins une pool additionnelle
+        assignDuration = (time.time() - assignStartTime)*1000
+        LOGGER.info( "-- at %f - %f ms --> total assignment (including log). " % (time.time(), assignDuration ))
 
 
         return assignmentDict.items()

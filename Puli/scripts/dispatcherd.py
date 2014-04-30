@@ -100,12 +100,13 @@ def setup_logging(options):
                     backupCount=singletonconfig.get('CORE','LOG_BACKUPS'), 
                     encoding="UTF-8")
 
-    fileHandler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+    fileHandler.setFormatter(logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s"))
     logger = logging.getLogger()
 
     # logLevel = logging.DEBUG if options.DEBUG else logging.WARNING
     logLevel = logging.DEBUG if options.DEBUG else singletonconfig.get('CORE','LOG_LEVEL')
     logger.setLevel(logLevel)
+    fileHandler.setLevel( logging.DEBUG ) # Must be set otherwise it will receive the statsLog data, but not higher than DEBUG otherwise we might loose some info if reconfig with higher lvl
 
     logger.addHandler(fileHandler)
 

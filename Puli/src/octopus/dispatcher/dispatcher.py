@@ -325,12 +325,6 @@ class Dispatcher(MainLoopApplication):
             if len(rnsAvailables):
                 rnsBool = True
 
-        currDelay = (time.time() - prevTimer)*1000
-        prevTimer = time.time()
-        # if singletonconfig.get('CORE','GET_STATS'):
-        #     singletonstats.theStats.assignmentTimers['check_rn_available'] = time.time() - prevTimer
-        LOGGER.info("-- at %f - %f ms --> Check if some rn availables" % (time.time(), currDelay ))
-
         if not rnsBool:
             return []
 
@@ -466,8 +460,6 @@ class Dispatcher(MainLoopApplication):
         # Backfill
         #
         # TODO refaire une passe pour les jobs ayant un attribut "killable" et au moins une pool additionnelle
-        assignDuration = (time.time() - assignStartTime)*1000
-        LOGGER.info( "-- at %f - %f ms --> total assignment (including log). " % (time.time(), assignDuration ))
 
         return assignmentDict.items()
 

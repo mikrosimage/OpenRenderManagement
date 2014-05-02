@@ -237,6 +237,7 @@ class Worker(MainLoopApplication):
             infos['cores'] = self.getNbCores()
             infos['ram'] = self.getTotalMemory()
             infos['systemFreeRam'] = self.getFreeMem()
+            infos["puliversion"]=settings.VERSION
             self.updateSys = False
             # system info values:
             infos['caracteristics'] = {"os": platform.system().lower(),
@@ -287,7 +288,7 @@ class Worker(MainLoopApplication):
 
         infos = self.fetchSysInfos()
 
-        # Add specific info when registering (initially it was the same info at regiter and periodic utpdate
+        # Add specific info when registering (initially it was the same info at register and periodic utpdate
         infos["createDate"]=self.createDate
         infos["puliversion"]=settings.VERSION
 
@@ -576,8 +577,13 @@ class Worker(MainLoopApplication):
         """
 
         # we don't need to send the whole dict of sysinfos
-        #infos = self.fetchSysInfos()
         infos = {}
+
+        if self.updateSys:
+            # If necessary (i.e. specified by user via WS)
+            infos = self.fetchSysInfos()
+            self.updateSys = False
+            
         infos['status'] = self.status
         infos['systemFreeRam'] = self.getFreeMem()
         dct = json.dumps(infos)

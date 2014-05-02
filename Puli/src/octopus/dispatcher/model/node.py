@@ -271,6 +271,7 @@ class FolderNode(BaseNode):
     # @return yields (node, command) tuples
     #
     def dispatchIterator(self, stopFunc, ep=None):
+
         if ep is None:
             ep = self
 
@@ -280,12 +281,12 @@ class FolderNode(BaseNode):
         # ready but can not be started due to match constraint...
         # So we count the nb of iteration done, it can't be more than the number of readycommands
         #
+        interruptDispatch = False
+
         for i in range(0, self.readyCommandCount):
             # On veut iterer tant qu'il y a des commandes ready...
             # MAIS il faut pouvoir interrompre le parcours si les commandes ready ne peuvent pas etre assignees
             # (a cause de la RAM ou autre contrainte).
-            # Donc on considere qu'on ne peut pas passer plus de fois dans ce noeud qu'il contient
-            # de commandes ready initialement (le nb de cmd READY doit rester juste du coup)...
             if self.readyCommandCount == 0:
                 return
             self.strategy.update(self, ep)
@@ -301,14 +302,15 @@ class FolderNode(BaseNode):
                         return
                 except NoRenderNodeAvailable:
                     return
+                except NoLicenseAvailableForTask:
+                    interruptDispatch = True
+                    continue
                 else:
                     if not stopFunc():
                         continue
-            # HACK
-            # This "else" clause slows assignment by stopping iterator after a small number of assignement
-            # found. Only for jobs with multiple level of taskgroups.
-            # else:
-            #     return
+            else:
+                if interruptDispatch:
+                    raise NoLicenseAvailableForTask
 
     def updateCompletionAndStatus(self):
         self.updateAllocation()
@@ -460,6 +462,7 @@ class TaskNode(BaseNode):
 
 
     def dispatchIterator(self, stopFunc, ep=None):
+
         if ep is None:
             ep = self
 
@@ -499,11 +502,8 @@ class TaskNode(BaseNode):
                         rendernode.addAssignment(command)
                         #rendernode.reserveRessources(command)
                         return rendernode
-
-            # stop iterating through RNs if none available
-            # else:
-            #     LOGGER.debug("Unable to reserve rendernode (might not be able to run task)")
-            #     raise NoRenderNodeAvailable
+                    else:
+                        raise NoLicenseAvailableForTask
 
         # Might not be necessary anymore because first loop is based on poolShare's hasRNSavailable method
         # It was not taking into account the tests before assignment: RN.canRun()

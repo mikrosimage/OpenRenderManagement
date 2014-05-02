@@ -231,6 +231,8 @@ class RenderNodeSysInfosResource(BaseResource):
 
         dct = self.getBodyAsJSON()
         renderNode = rns[computerName]
+        if "puliversion" in dct:
+            renderNode.puliversion = dct.get('puliversion',"unknown")
         if "caracteristics" in dct:
             renderNode.caracteristics = eval(str(dct["caracteristics"]))
         if "cores" in dct:

@@ -6,7 +6,7 @@ Created on Sep 28, 2011
 import os
 import time
 
-from puliclient.jobs import TaskDecomposer, CommandRunner, StringParameter
+from puliclient.jobs import TaskDecomposer, CommandRunner, StringParameter, IntegerParameter
 from puliclient.contrib.helper.helper import PuliActionHelper
 
 START = "start"
@@ -45,9 +45,9 @@ class GenericRunner(CommandRunner):
         updateCompletion(0.0)
 
         if int(arguments['timeout']) == 0:
-            helper.execute( currCommand.split(" "), env=os.environ )
+            helper.execute( cmd.split(" "), env=os.environ )
         else:
-            helper.executeWithTimeout( currCommand.split(" "), env=os.environ, timeout=timeout )
+            helper.executeWithTimeout( cmd.split(" "), env=os.environ, timeout=timeout )
 
         # helper.execute(cmd.split(" "), env=os.environ)
         updateCompletion(1)

@@ -25,7 +25,6 @@ def process_args():
     parser.add_option("--min",              action="store", dest="min",    type=int,   default=20 )
     parser.add_option("--max",              action="store", dest="max",    type=int,   default=50 )
     parser.add_option("--num",              action="store", dest="num",    type=int,   default=10 )
-
     options, args = parser.parse_args()
     return options, args
 

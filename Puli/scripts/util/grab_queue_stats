@@ -1,0 +1,11 @@
+#!/bin/bash
+
+#export PYTHONPATH=/s/apps/lin/puli/:${PYTHONPATH}
+export PYTHONPATH=/datas/jsa/OpenRenderManagement/Puli/src:${PYTHONPATH}
+#export PATH=/s/apps/lin/puli/tools/stats:${PATH}
+#/s/apps/lin/puli/tools/puliquery/pul_query -j -a id -a status -a name -a allocatedRN -a user -a dispatchKey -a completion -a tags:prod -a tags:step -a tags:shot -a tags:type -C status=0 -C status=1 -C status=2 -C status=6 "$@"
+#curl "http://pulitest:8004/query?&constraint_status=0&constraint_status=1&constraint_status=2&constraint_status=6&attr=id&attr=status&attr=name&attr=allocatedRN&attr=user&attr=dispatchKey&attr=completion&attr=tags%3Aprod&attr=tags%3Astep&attr=tags%3Ashot&attr=tags%3Atype"
+
+cd /datas/jsa/OpenRenderManagement/Puli/src/tools/stats/
+python ./grab_queue_stats.py "$@"
+cd - > /dev/null

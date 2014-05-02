@@ -271,7 +271,7 @@ class Dispatcher(MainLoopApplication):
         prevTimer = time.time()
 
         loopDuration = (time.time() - loopStartTime)*1000
-        LOGGER.info( "%8.3f ms --> cycle ended. " % loopDuration )
+        LOGGER.info( "%8.2f ms --> cycle ended. " % loopDuration )
         LOGGER.info("-----------------------------------------------------")
 
         # TODO: process average and sums of datas in stats, if flush time, send it to disk
@@ -306,10 +306,6 @@ class Dispatcher(MainLoopApplication):
 
     def computeAssignments(self):
         '''Computes and returns a list of (rendernode, command) assignments.'''
-
-        # LOGGER.debug("@-----------------------------------------------------")
-        # LOGGER.debug("@ COMPUTE ASSIGNMENT")
-        # LOGGER.debug("@-----------------------------------------------------")
 
         from .model.node import NoRenderNodeAvailable, NoLicenseAvailableForTask
         # if no rendernodes available, return

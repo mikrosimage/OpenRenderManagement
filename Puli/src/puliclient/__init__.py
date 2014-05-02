@@ -14,6 +14,7 @@ import sys
 import os
 import subprocess
 import time
+import copy
 
 from datetime import datetime, timedelta, date
 
@@ -115,7 +116,7 @@ class Command(object):
     def __init__(self, description, task, arguments={}):
         self.description = description
         self.task = task
-        self.arguments = arguments
+        self.arguments = copy.copy(arguments)
 
 
 class Task(object):

@@ -41,8 +41,9 @@ if __name__ == '__main__':
     #
     # Create custom graph
     #
-    args =  { "args":"sleep `shuf -i 20-50 -n 1`", "start":1, "end":10, "packetSize":1 }
-    tags =  { "prod":"test", "shot":"test", "nbFrames":10 }
+    command = "sleep `shuf -i %d-%d -n 1`" % (options.min, options.max )
+    args =  { "args": command, "start":1, "end":options.num, "packetSize":1 }
+    tags =  { "prod":"test", "shot":"test", "nbFrames":options.num }
     runner = "puliclient.contrib.commandlinerunner.CommandLineRunner"
     if options.lic != "":
         lic=options.lic

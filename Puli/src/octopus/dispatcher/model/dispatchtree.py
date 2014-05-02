@@ -52,7 +52,7 @@ class DispatchTree(object):
         startTimer = time.time()
         timeout = 2.0
 
-        result="<html><body font-family='verdana'>"
+        result="<html><head><style>table,th,td { margin: 5px; border-collapse:collapse; border:1px solid black; }</style></head><body font-family='verdana'>"
 
         result +="<h3>Pools: %r</h3><table>" % len(self.pools)
         for i,curr in enumerate(self.pools):
@@ -80,8 +80,9 @@ class DispatchTree(object):
 
 
         result +="<h3>Main level nodes (proxy info only):</h3><table>"
+        result +="<tr><th>id</th><th>name</th><th>readyCommandCount</th><th>commandCount</th><th>completion</th></tr>"
         for i,curr in enumerate(self.nodes[1].children):
-            result += "<tr><td>%r</td><td>%s</td></tr>" % (i, curr.name)
+            result += "<tr><td>%r</td><td>%s</td><td>%d</td><td>%d</td><td>%.2f</td></tr>" % (i, curr.name, curr.readyCommandCount, curr.commandCount, curr.completion)
 
             if (time.time()-startTimer) > timeout:
                 raise TimeoutException("TimeoutException occured: the dispatchTree might be too large to dump")
@@ -326,7 +327,24 @@ class DispatchTree(object):
             assert isinstance(node.id, int)
             self.nodes[node.id] = node
 
+        # Init number of command in hierarchy
+        self.populateCommandCounts(nodes[0])
         return nodes
+
+    def populateCommandCounts(self, node):
+        """
+        Updates "commandCount" over a whole hierarchy starting from the given node.
+        """
+        res = 0
+        if isinstance(node, FolderNode):
+            for child in node.children:
+                res += self.populateCommandCounts( child )
+        elif isinstance(node, TaskNode):
+            res = len(node.task.commands)
+
+        node.commandCount = res
+        return res
+
 
     def _createTaskGroupFromJSON(self, taskGroupDefinition, user):
         # name, parent, arguments, environment, priority, dispatchKey, strategy

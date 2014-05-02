@@ -327,6 +327,10 @@ class RenderNode(models.Model):
     #                          the execution of this method.
     #
     def request(self, method, url, body=None, headers={}):
+        """
+        TODO: make asynchronous.
+        At this time when a rendernode is swapping or inaccessible, this process is stucked at "conn.getresponse()"
+        """
         from octopus.dispatcher import settings
 
         conn = self.getHTTPConnection()

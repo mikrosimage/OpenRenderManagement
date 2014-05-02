@@ -13,6 +13,9 @@ LOGGER = logging.getLogger("dispatcher.dispatchtree")
 class NoRenderNodeAvailable(BaseException):
     '''Raised to interrupt the dispatch iteration on an entry point node.'''
 
+class NoLicenseAvailableForTask(BaseException):
+    '''Raised to interrupt the dispatch iteration on an entry point node.'''
+
 class DependencyListField(models.Field):
     def to_json(self, node):
         return [[dep.id, statusList] for (dep, statusList) in node.dependencies]
@@ -93,6 +96,8 @@ class BaseNode(models.Model):
         self.lastDependenciesSatisfaction = False
         self.lastDependenciesSatisfactionDispatchCycle = -1
         self.readyCommandCount = 0
+        self.doneCommandCount = 0
+        self.commandCount = 0
         self.averageTimeByFrameList = []
         self.averageTimeByFrame = 0.0
         self.minTimeByFrame = 0.0
@@ -105,6 +110,8 @@ class BaseNode(models.Model):
         base["maxRN"] = self.maxRN
         base["tags"] = self.tags.copy()
         base["readyCommandCount"] = self.readyCommandCount
+        base["doneCommandCount"] = self.doneCommandCount
+        base["commandCount"] = self.commandCount
         return base
 
     def addDependency(self, node, acceptedStatus):
@@ -313,6 +320,10 @@ class FolderNode(BaseNode):
                     raise NoLicenseAvailableForTask
 
     def updateCompletionAndStatus(self):
+        """
+        Evaluate new value for completion and status of a particular FolderNode
+        """
+
         self.updateAllocation()
 
         if not self.invalidated:
@@ -324,6 +335,7 @@ class FolderNode(BaseNode):
 
             # Getting completion info
             self.readyCommandCount = 0
+            self.doneCommandCount = 0
             completion = 0.0
             status = defaultdict(int)
             for child in self.children:
@@ -331,7 +343,13 @@ class FolderNode(BaseNode):
                 completion += child.completion
                 status[child.status] += 1
                 self.readyCommandCount += child.readyCommandCount
-            self.completion = completion / len(self.children)
+                self.doneCommandCount += child.doneCommandCount
+                
+            if hasattr(self,"commandCount") and int(self.commandCount)!=0:
+                self.completion = self.doneCommandCount / float(self.commandCount)
+            else:
+                # LOGGER.warning("Warning: a folder node without \"commandCount\" value was found -> %s" % self.name  )
+                self.completion = completion / len(self.children)
 
             # Updating node's overall status
             if NODE_PAUSED in status:
@@ -487,7 +505,8 @@ class TaskNode(BaseNode):
                 yield (renderNode, command)
             else:
                 # Pas de RN ou les RNS ne matchent pas les contraintes des jobs.
-                LOGGER.debug("Reservation failed for command %r" % command.id)
+                # On pourrait lever une exception pour indiquer au folder node que le dispatch doit s'arreter pour ce fils
+                # LOGGER.debug("Reservation failed in task %s for command %d" % self.name, command.id)
                 return
 
     def reserve_rendernode(self, command, ep):
@@ -500,7 +519,6 @@ class TaskNode(BaseNode):
                 if rendernode.isAvailable() and rendernode.canRun(command):
                     if rendernode.reserveLicense(command, self.dispatcher.licenseManager):
                         rendernode.addAssignment(command)
-                        #rendernode.reserveRessources(command)
                         return rendernode
                     else:
                         raise NoLicenseAvailableForTask
@@ -512,6 +530,9 @@ class TaskNode(BaseNode):
         return None
 
     def updateCompletionAndStatus(self):
+        """
+        Evaluate new value for completion and status of a particular TaskNode
+        """
         self.updateAllocation()
 
         if not self.invalidated:
@@ -522,11 +543,15 @@ class TaskNode(BaseNode):
         completion = 0.0
         status = defaultdict(int)
         self.readyCommandCount = 0
+        self.doneCommandCount = 0
         for command in self.task.commands:
             completion += command.completion
             status[command.status] += 1
             if command.status == CMD_READY:
                 self.readyCommandCount += 1
+            if command.status == CMD_DONE:
+                self.doneCommandCount += 1
+
         if self.task.commands:
             self.completion = completion / len(self.task.commands)
         else:

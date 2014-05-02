@@ -1,0 +1,62 @@
+<!-- <html>
+<head>
+    <script type="text/javascript" src="js/svg.jquery.js"></script>
+    <script type="text/javascript" src="js/pygal-tooltips.js"></script>
+</head>
+<body>
+        <figure id="svg">
+            <embed id="tmpfile" type="image/svg+xml" src="" />
+        </figure>
+</body>
+</html> -->
+
+<html>
+<head>
+    <script type="text/javascript" src="js/svg.jquery.js"></script>
+    <script type="text/javascript" src="js/pygal-tooltips.js"></script>
+    
+    <style>
+        /* Make wait image visible over the rgaph and centered */
+        img.visible {
+            display:inline;    
+            position:fixed;
+            top: 50%;
+            left: 50%;
+            margin-top: -16px;
+            margin-left: -16px;
+            z-index:1;
+        }
+
+        /* Disable wait image by default */
+        img { display:none; }
+        figure { 
+            width:100%; 
+            height:100%; 
+        }
+
+        /* Gray out the whole graph div when processing new one */
+        div.loading { opacity: 0.6; }
+    </style>
+</head>
+
+<body>
+    <div>
+        <!-- Gif animated waiting cursor, disabled by default only
+             appears when creating graph -->
+        <img id="wait" class="visible" src="img/wait.gif">
+
+        <!-- While div is grayed out when creating graph -->
+        <div  id="graph" class="loading">
+        
+            <!-- When ready, the svg markup is inserted here -->
+            <figure id="svg">
+                <embed type="image/svg+xml" src="/tmp/graph.svg" />
+            </figure>
+        </div>
+    </div>
+
+
+</body>
+</html>
+
+

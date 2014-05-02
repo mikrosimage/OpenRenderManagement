@@ -33,7 +33,7 @@ def loadSettingsFile(filename):
 
 ## SETTINGS ###########################################################
 
-VERSION = "1.6.6"
+VERSION = "1.6.7"
 
 DEBUG = False
 
@@ -47,10 +47,10 @@ RUN_AS = None
 #
 
 # EVAL ENV
-# BASEDIR = "/s/apps/lin/vfx_test_apps/"
+BASEDIR = "/s/apps/lin/vfx_test_apps/"
 
 # DEV ENV
-BASEDIR = "/datas/jsa/"
+#BASEDIR = "/datas/jsa/"
 
 LOGDIR = BASEDIR + "OpenRenderManagement/logs"
 CONFDIR = BASEDIR + "OpenRenderManagement/Puli/etc/puli"

@@ -280,9 +280,6 @@ class StatsMainWindow(QMainWindow):
         self.p.finished.connect( self.renderFinished )
         self.p.started.connect( self.renderStarted )
 
-        # env = self.p.systemEnvironment()
-        # env.replaceInStrings("PYTHONPATH=", "PYTHONPATH=/usr/lib64/python2.6/site-packages/:")
-        # self.p.setEnvironment( env )
 
         xlogger.debug("starting command: %s %s" % (self.currentCmd, " ".join(args)) )
         res = self.p.start( self.currentCmd, args )

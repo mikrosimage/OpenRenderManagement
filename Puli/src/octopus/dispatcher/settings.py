@@ -47,7 +47,7 @@ RUN_AS = None
 #
 
 # EVAL ENV
-#BASEDIR = "/s/apps/lin/vfx_test_apps/"
+# BASEDIR = "/s/apps/lin/vfx_test_apps/"
 
 # DEV ENV
 BASEDIR = "/datas/jsa/"

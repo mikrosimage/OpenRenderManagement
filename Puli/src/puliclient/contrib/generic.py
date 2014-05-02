@@ -23,7 +23,6 @@ class GenericDecomposer(TaskDecomposer):
         self.task = task
         self.task.runner = "puliclient.contrib.generic.GenericRunner"
 
-        # PuliActionHelper().decompose(task.arguments[START], task.arguments[END], task.arguments[PACKET_SIZE], self)
         packetSize = int(task.arguments[PACKET_SIZE])
         if len(framesList) != 0:
             frames = framesList.split(",")
@@ -82,7 +81,6 @@ class GenericRunner(CommandRunner):
 
     def execute(self, arguments, updateCompletion, updateMessage, updateStats ):
         # init the helper
-        # helper = PuliActionHelper(cleanTemp=True)
         cmd = arguments[CMD]
 
         print 'Running command "%s"' % cmd

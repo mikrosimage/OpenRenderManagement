@@ -96,6 +96,8 @@ class BaseNode(models.Model):
         self.lastDependenciesSatisfaction = False
         self.lastDependenciesSatisfactionDispatchCycle = -1
         self.readyCommandCount = 0
+        self.doneCommandCount = 0
+        self.commandCount = 0
         self.averageTimeByFrameList = []
         self.averageTimeByFrame = 0.0
         self.minTimeByFrame = 0.0
@@ -108,6 +110,8 @@ class BaseNode(models.Model):
         base["maxRN"] = self.maxRN
         base["tags"] = self.tags.copy()
         base["readyCommandCount"] = self.readyCommandCount
+        base["doneCommandCount"] = self.doneCommandCount
+        base["commandCount"] = self.commandCount
         return base
 
     def addDependency(self, node, acceptedStatus):
@@ -316,6 +320,10 @@ class FolderNode(BaseNode):
                     raise NoLicenseAvailableForTask
 
     def updateCompletionAndStatus(self):
+        """
+        Evaluate new value for completion and status of a particular FolderNode
+        """
+
         self.updateAllocation()
 
         if not self.invalidated:
@@ -327,6 +335,7 @@ class FolderNode(BaseNode):
 
             # Getting completion info
             self.readyCommandCount = 0
+            self.doneCommandCount = 0
             completion = 0.0
             status = defaultdict(int)
             for child in self.children:
@@ -334,7 +343,13 @@ class FolderNode(BaseNode):
                 completion += child.completion
                 status[child.status] += 1
                 self.readyCommandCount += child.readyCommandCount
-            self.completion = completion / len(self.children)
+                self.doneCommandCount += child.doneCommandCount
+                
+            if hasattr(self,"commandCount") and int(self.commandCount)!=0:
+                self.completion = self.doneCommandCount / float(self.commandCount)
+            else:
+                # LOGGER.warning("Warning: a folder node without \"commandCount\" value was found -> %s" % self.name  )
+                self.completion = completion / len(self.children)
 
             # Updating node's overall status
             if NODE_PAUSED in status:
@@ -515,6 +530,9 @@ class TaskNode(BaseNode):
         return None
 
     def updateCompletionAndStatus(self):
+        """
+        Evaluate new value for completion and status of a particular TaskNode
+        """
         self.updateAllocation()
 
         if not self.invalidated:
@@ -525,11 +543,15 @@ class TaskNode(BaseNode):
         completion = 0.0
         status = defaultdict(int)
         self.readyCommandCount = 0
+        self.doneCommandCount = 0
         for command in self.task.commands:
             completion += command.completion
             status[command.status] += 1
             if command.status == CMD_READY:
                 self.readyCommandCount += 1
+            if command.status == CMD_DONE:
+                self.doneCommandCount += 1
+
         if self.task.commands:
             self.completion = completion / len(self.task.commands)
         else:

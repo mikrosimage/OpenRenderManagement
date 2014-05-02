@@ -24,23 +24,25 @@ if __name__ == '__main__':
     #
     # Create custom graph
     #
-    cmdArgs =  { "cmd":"sleep 5", "start":1, "end":1, "packetSize":1 }
+    cmdArgs =  { "cmd":"sleep 20", "start":1, "end":20, "packetSize":1 }
     tags =  { "prod":"test", "shot":"test" }
 
-    # simpleTask = Task( name="todo", arguments=cmdArgs, tags=tags, priority=10 )
+    simpleTask = Task( name="todo", arguments=cmdArgs, tags=tags, priority=10, lic="ocula" )
+    graph = Graph(options.jobname, poolName='default', tags=tags, root=simpleTask)
 
-    graph = Graph(options.jobname, poolName='default', tags=tags)
 
-    t1 = graph.addNewTask( name="todo1", arguments=cmdArgs, tags=tags, runner='puliclient.contrib.generic.GenericRunner' )
-    t2 = graph.addNewTask( name="todo2", arguments=cmdArgs, tags=tags, runner='puliclient.contrib.generic.GenericRunner' )
-    t3 = graph.addNewTask( name="todo3", arguments=cmdArgs, tags=tags, runner='puliclient.contrib.generic.GenericRunner' )
-
-    graph.addChain( [ t1, t2, t3 ] )
-
-    tg = graph.addNewTaskGroup( name="mongroup" )
-    tg1 = tg.addNewTask( name="tg1", arguments=cmdArgs, tags=tags, runner='puliclient.contrib.generic.GenericRunner' )
-
-    graph.addEdges( [ (tg, t1 ) ] )
+#    graph = Graph(options.jobname, poolName='default', tags=tags)
+#
+#    t1 = graph.addNewTask( name="todo1", arguments=cmdArgs, tags=tags, runner='puliclient.contrib.generic.GenericRunner' )
+#    t2 = graph.addNewTask( name="todo2", arguments=cmdArgs, tags=tags, runner='puliclient.contrib.generic.GenericRunner' )
+#    t3 = graph.addNewTask( name="todo3", arguments=cmdArgs, tags=tags, runner='puliclient.contrib.generic.GenericRunner' )
+#
+#    graph.addChain( [ t1, t2, t3 ] )
+#
+#    tg = graph.addNewTaskGroup( name="mongroup" )
+#    tg1 = tg.addNewTask( name="tg1", arguments=cmdArgs, tags=tags, runner='puliclient.contrib.generic.GenericRunner' )
+#
+#    graph.addEdges( [ (tg, t1 ) ] )
 
     if options.dump:
         print graph

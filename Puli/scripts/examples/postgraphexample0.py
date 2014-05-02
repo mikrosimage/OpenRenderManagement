@@ -20,7 +20,11 @@ def process_args():
     parser.add_option("-p", "--port",       action="store", dest="port",        type=int,   default=8004,           help="Specified a target port")
     parser.add_option("-x", "--execute",    action="store_true", dest="execute",                                    help="Override submit param and executes job locally")
     parser.add_option("-d", "--display",    action="store_true", dest="dump",                                       help="Print graph json representation before process")
-    # parser.add_option("-t", "--time",       action="store", dest="time",        type=int,   default=30,             help="Time spend in command (will be randomized)")
+
+    parser.add_option("--lic",    	    action="store", dest="lic",    type=str,   default="" )
+    parser.add_option("--min",              action="store", dest="min",    type=int,   default=20 )
+    parser.add_option("--max",              action="store", dest="max",    type=int,   default=50 )
+    parser.add_option("--num",              action="store", dest="num",    type=int,   default=10 )
     options, args = parser.parse_args()
     return options, args
 
@@ -40,10 +44,19 @@ if __name__ == '__main__':
     args =  { "args":"sleep `shuf -i 20-50 -n 1`", "start":1, "end":10, "packetSize":1 }
     tags =  { "prod":"test", "shot":"test", "nbFrames":10 }
     runner = "puliclient.contrib.commandlinerunner.CommandLineRunner"
+    if options.lic != "":
+        lic=options.lic
+    else:
+        lic=None
 
-    simpleTask = Task( name=options.jobname, arguments=args, tags=tags, runner=runner )
+    simpleTask = Task( name="NoLic", arguments=args, tags=tags, runner=runner, lic=None )
 
-    graph = Graph(options.jobname, poolName='default', tags=tags, root=simpleTask)
+    graph = Graph(options.jobname, poolName='default', tags=tags)
+    tg = graph.addNewTaskGroup( name="TG")
+    tg.addNewTask( name="Lic", arguments=args, tags=tags, runner=runner, lic=lic )
+
+    tg2 = graph.addNewTaskGroup( name="TG2")
+    tg2.addTask( simpleTask )
 
     if options.dump:
         print graph

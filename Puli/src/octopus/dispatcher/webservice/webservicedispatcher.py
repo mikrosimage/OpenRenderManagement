@@ -274,7 +274,7 @@ class ReconfigResource(BaseResource):
             logging.getLogger("process").setLevel( logLevel )
             logging.getLogger("worker").setLevel( logLevel )
             logging.getLogger("workerws").setLevel( logLevel )
-            logging.getLogger("stats").setLevel( logLevel )
+
             # Tous les logger de l'appli
             #
             # root

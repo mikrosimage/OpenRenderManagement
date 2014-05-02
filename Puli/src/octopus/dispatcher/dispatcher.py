@@ -307,11 +307,6 @@ class Dispatcher(MainLoopApplication):
     def computeAssignments(self):
         '''Computes and returns a list of (rendernode, command) assignments.'''
 
-
-        assignStartTime = time.time()
-        prevTimer = assignStartTime
-        LOGGER.info("-- at %f ------------", time.time() )
-
         from .model.node import NoRenderNodeAvailable, NoLicenseAvailableForTask
         # if no rendernodes available, return
         if not any(rn.isAvailable() for rn in self.dispatchTree.renderNodes.values()):
@@ -322,17 +317,6 @@ class Dispatcher(MainLoopApplication):
         # first create a set of entrypoints that are not done nor cancelled nor blocked nor paused and that have at least one command ready
         # FIXME: hack to avoid getting the 'graphs' poolShare node in entryPoints, need to avoid it more nicely...
         entryPoints = set([poolShare.node for poolShare in self.dispatchTree.poolShares.values() if poolShare.node.status not in [NODE_BLOCKED, NODE_DONE, NODE_CANCELED, NODE_PAUSED] and poolShare.node.readyCommandCount > 0 and poolShare.node.name != 'graphs'])
-        
-        currDelay = (time.time() - prevTimer)*1000
-        prevTimer = time.time()
-        # if singletonconfig.get('CORE','GET_STATS'):
-        #     singletonstats.theStats.assignmentTimers['get_entry_points'] = time.time() - prevTimer
-        LOGGER.info("-- at %f - %f ms --> Getting entry point" % (time.time(), currDelay ))
-        
-        # LOGGER.debug("@ - getting entryPoints (%d)" % len(entryPoints))
-        # for item in entryPoints:
-        #     LOGGER.debug("@      -node:%r -pool:%r" % (item.name, item.poolShares.values()) )
-
 
         # don't proceed to the calculation if no rns availables in the requested pools
         rnsBool = False
@@ -350,19 +334,18 @@ class Dispatcher(MainLoopApplication):
         if not rnsBool:
             return []
 
+
+        # Log time updating max rn
+        prevTimer = time.time()
+
         # sort by pool for the groupby
         entryPoints = sorted(entryPoints, key=lambda node: node.poolShares.values()[0].pool)
 
         # update the value of the maxrn for the poolshares (parallel dispatching)
         for pool, nodesiterator in groupby(entryPoints, lambda x: x.poolShares.values()[0].pool):
 
-            # LOGGER.debug("@ - foreach set of nodes on a pool:%r" % (pool.name) )
-
             # we are treating every active node of the pool
             nodesList = [node for node in nodesiterator]
-
-            # for node in nodesList:
-                # LOGGER.debug("@   - node=%s" % (node.name) )    
 
             # the new maxRN value is calculated based on the number of active jobs of the pool, and the number of online rendernodes of the pool
             rnsNotOffline = set([rn for rn in pool.renderNodes if rn.status not in [RN_UNKNOWN, RN_PAUSED]])
@@ -395,9 +378,6 @@ class Dispatcher(MainLoopApplication):
             dkMin = min(dkList)
             dkPositiveList = map(lambda x: x-dkMin+1, dkList)
             dkSum = sum(dkPositiveList)
-            # LOGGER.debug("@   - dkList: %r" % (dkList) )
-            # LOGGER.debug("@   - dkPositiveList: %r" % (dkPositiveList) )
-            # LOGGER.debug("@   - nodes:%r" % (nodesList) )
 
             # sort by id (fifo)
             nodesList = sorted(nodesList, key=lambda x: x.id)
@@ -408,25 +388,16 @@ class Dispatcher(MainLoopApplication):
             for dk, nodeIterator in groupby(nodesList, lambda x: x.dispatchKey):
 
                 nodes = [node for node in nodeIterator]
-
                 dkPos = dkPositiveList[ dkList.index(dk) ]
-
-                # LOGGER.debug("@@@@@ nodes sorted and grouped: %r" % nodes )
-                # LOGGER.debug("@   - for each dk: %d (dkPos = %d)" % (dk, dkPos) )
 
                 if dkSum > 0:                  
                     updatedmaxRN = int( round( rnsSize * (dkPos / float(dkSum) )))
                 else:
                     updatedmaxRN = int(round( rnsSize / float(nbJobs) ))
 
-                # LOGGER.debug("@     - updatedmaxRN=%r" % updatedmaxRN)
-
                 for node in nodes:
                     node.poolShares.values()[0].maxRN = updatedmaxRN
                     nbRNAssigned += updatedmaxRN
-                    # LOGGER.debug("@       - for %r: maxRn actually =%d" % (node.name, node.poolShares.values()[0].maxRN)  )
-
-            # LOGGER.debug("@     - is there some RNs not assigned ? %d" % (rnsSize - nbRNAssigned)  )
 
             # Add remaining RNs to most important jobs
             unassignedRN = rnsSize - nbRNAssigned
@@ -435,16 +406,12 @@ class Dispatcher(MainLoopApplication):
                     if unassignedRN > 0:
                         node.poolShares.values()[0].maxRN += 1
                         unassignedRN -= 1
-                        # LOGGER.debug("@     - extra RN to %s (still unassigned:%d)" % (node.name, unassignedRN)  )
                     else:
                         break
 
-        currDelay = (time.time() - prevTimer)*1000
-        prevTimer = time.time()
-        # if singletonconfig.get('CORE','GET_STATS'):
-        #     singletonstats.theStats.assignmentTimers['check_rn_available'] = time.time() - prevTimer
-        LOGGER.info("-- at %f - %f ms --> update max rns" % (time.time(), currDelay ))
-
+        if singletonconfig.get('CORE','GET_STATS'):
+            singletonstats.theStats.assignmentTimers['update_max_rn'] = time.time() - prevTimer
+        LOGGER.info( "%8.2f ms --> .... updating max RN values", (time.time() - prevTimer)*1000 )
 
         # now, we are treating every nodes
         # sort by id (fifo)
@@ -457,17 +424,11 @@ class Dispatcher(MainLoopApplication):
         standardEntryPoints = ifilter( lambda node: not node.poolShares.values()[0].userDefinedMaxRN, entryPoints )
         scoredEntryPoints = chain( userDefEntryPoints, standardEntryPoints)
 
-        currDelay = (time.time() - prevTimer)*1000
-        prevTimer = time.time()        # if singletonconfig.get('CORE','GET_STATS'):
-        #     singletonstats.theStats.assignmentTimers['check_rn_available'] = time.time() - prevTimer
-        LOGGER.info("-- at %f - %f ms --> rearrange entry points order" % (time.time(), currDelay ) )
 
-        ####
-        #for entryPoint in entryPoints:
-        #    if any([poolShare.hasRenderNodesAvailable() for poolShare in entryPoint.poolShares.values()]):
-        #        try:
-        #            (rn, cmd) = entryPoint.dispatchIterator()
-        ####
+        # Log time dispatching RNs
+        prevTimer = time.time()
+
+        # Iterate over each entryPoint to get an assignment
         for entryPoint in scoredEntryPoints:
             if any([poolShare.hasRenderNodesAvailable() for poolShare in entryPoint.poolShares.values()]):
                 try:
@@ -482,18 +443,16 @@ class Dispatcher(MainLoopApplication):
                 except NoRenderNodeAvailable:
                     pass
                 except NoLicenseAvailableForTask:
-                    LOGGER.debug("stop dispatch because no licence found")
+                    LOGGER.info("Missing license for node \"%s\" (other commands can start anyway)." % entryPoint.name)
                     pass
 
         assignmentDict = collections.defaultdict(list)
         for (rn, com) in assignments:
             assignmentDict[rn].append(com)
 
-        currDelay = (time.time() - prevTimer)*1000
-        prevTimer = time.time()
-        # if singletonconfig.get('CORE','GET_STATS'):
-        #     singletonstats.theStats.assignmentTimers['check_rn_available'] = time.time() - prevTimer
-        LOGGER.info("-- at %f - %f ms --> dispatch rns" % (time.time(), currDelay ) )
+        if singletonconfig.get('CORE','GET_STATS'):
+            singletonstats.theStats.assignmentTimers['dispatch_command'] = time.time() - prevTimer
+        LOGGER.info( "%8.2f ms --> .... dispatching commands", (time.time() - prevTimer)*1000  )
 
         #
         # Check replacements
@@ -509,7 +468,6 @@ class Dispatcher(MainLoopApplication):
         # TODO refaire une passe pour les jobs ayant un attribut "killable" et au moins une pool additionnelle
         assignDuration = (time.time() - assignStartTime)*1000
         LOGGER.info( "-- at %f - %f ms --> total assignment (including log). " % (time.time(), assignDuration ))
-
 
         return assignmentDict.items()
 

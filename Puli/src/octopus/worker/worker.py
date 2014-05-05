@@ -82,6 +82,7 @@ class Worker(MainLoopApplication):
         LOGGER.info("---")
         LOGGER.info("Initializing worker")
         LOGGER.info("---")
+
         self.framework = framework
         self.data = None
         self.requestManager = RequestManager(settings.DISPATCHER_ADDRESS,
@@ -653,7 +654,6 @@ class Worker(MainLoopApplication):
     def addCommandApply(self, ticket, commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment):
         if not self.isPaused:
             try:
-
                 newCommand = Command(commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment=environment)
                 self.commands[commandId] = newCommand
                 self.addCommandWatcher(newCommand)

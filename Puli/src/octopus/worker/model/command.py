@@ -35,11 +35,3 @@ class Command(object):
         self.message = message
         self.environment = os.environ.copy()
         self.environment.update(environment)
-        if platform.system() == 'Linux':
-            sep = ":"
-        else:
-            sep = ";"
-        if "PYTHONPATH" in self.environment:
-            self.environment["PYTHONPATH"] = sep.join([self.environment["PYTHONPATH"]] + sys.path)
-        else:
-            self.environment["PYTHONPATH"] = sep.join(sys.path)

@@ -9,8 +9,10 @@ except ImportError:
     import json
 
 from octopus.core.communication.http import Http404, Http400, HttpConflict
-from octopus.core.framework import BaseResource, queue
+from octopus.core.framework import queue
 from octopus.dispatcher.model.pool import PoolShare, PoolShareCreationException
+from octopus.dispatcher.webservice import DispatcherBaseResource
+
 import logging
 
 __all__ = []
@@ -18,7 +20,7 @@ __all__ = []
 
 LOGGER = logging.getLogger('poolshares')
 
-class PoolSharesResource(BaseResource):
+class PoolSharesResource(DispatcherBaseResource):
     #@queue
     def get(self):
         """ Returns a dict of all poolshares as JSON """
@@ -72,7 +74,7 @@ class PoolSharesResource(BaseResource):
             raise HttpConflict("PoolShare of pool for this node already exists, re-assigning...")
 
 
-class PoolShareResource(BaseResource):
+class PoolShareResource(DispatcherBaseResource):
     #@queue
     def get(self, id):
         """ Returns a specific poolshare as JSON """

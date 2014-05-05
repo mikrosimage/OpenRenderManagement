@@ -12,6 +12,7 @@ from tornado.web import HTTPError
 from octopus.core.framework import ResourceNotFoundError, BaseResource, queue
 from octopus.core.enums.node import *
 from octopus.dispatcher.model import TaskGroup, Task
+from octopus.dispatcher.webservice import DispatcherBaseResource
 
 ALLOWED_STATUS_VALUES = (NODE_DONE, NODE_CANCELED)
 
@@ -28,7 +29,7 @@ class TaskNotFoundError(ResourceNotFoundError):
     '''Raised when a requested task does not exist'''
 
 
-class TasksResource(BaseResource):
+class TasksResource(DispatcherBaseResource):
     #@queue
     def get(self):
         tasks = self.getDispatchTree().tasks
@@ -38,7 +39,7 @@ class TasksResource(BaseResource):
         self.writeCallback(body)
 
 
-class DeleteTasksResource(BaseResource):
+class DeleteTasksResource(DispatcherBaseResource):
     #@queue
     def post(self):
         data = self.getBodyAsJSON()
@@ -70,7 +71,7 @@ class DeleteTasksResource(BaseResource):
             self.writeCallback("Tasks archived successfully.")
 
 
-class TaskResource(BaseResource):
+class TaskResource(DispatcherBaseResource):
     #@queue
     def get(self, taskID):
         taskID = int(taskID)

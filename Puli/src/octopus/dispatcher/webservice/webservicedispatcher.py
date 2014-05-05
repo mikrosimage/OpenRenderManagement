@@ -23,7 +23,7 @@ from octopus.dispatcher.webservice import commands, rendernodes, graphs, nodes,\
 
 from octopus.core.communication.http import Http404, Http400, Http500, HttpConflict
 from octopus.core.enums.command import *
-from octopus.core.framework import BaseResource
+from octopus.dispatcher.webservice import DispatcherBaseResource
 from octopus.core import singletonconfig
 
 
@@ -107,7 +107,7 @@ class WebServiceDispatcher(Application):
         self.listen(port, "0.0.0.0")
         self.framework = framework
 
-class DbgResource(BaseResource):
+class DbgResource(DispatcherBaseResource):
     """
     Very basic debug WS, it returns a simple HTML representation of the currently hold dispatchTree
     TODO: return a json string instead
@@ -125,7 +125,7 @@ class DbgResource(BaseResource):
         pass
 
 
-class StatsResource(BaseResource):
+class StatsResource(DispatcherBaseResource):
     def get(self):
         from octopus.core.enums.rendernode import RN_UNKNOWN, RN_STATUS_NAMES
         from octopus.core.enums.node import NODE_STATUS_NAMES
@@ -185,7 +185,7 @@ class StatsResource(BaseResource):
         self.writeCallback(stats)
 
 
-class MobileResource(BaseResource):
+class MobileResource(DispatcherBaseResource):
     def get(self):
         from octopus.core.enums.rendernode import RN_STATUS_NAMES
         html = "<meta name = \"viewport\" content = \"width = device-width\">\n<meta name = \"viewport\" content = \"width = 320\">"
@@ -246,7 +246,7 @@ class MobileResource(BaseResource):
         self.writeCallback(html)
 
 
-class SystemResource(BaseResource):
+class SystemResource(DispatcherBaseResource):
     def get(self):
         import os
         env = "The dispatcher is currently running with this environment : <br><br>"
@@ -255,7 +255,7 @@ class SystemResource(BaseResource):
         self.writeCallback(env)
 
 
-class ReconfigResource(BaseResource):
+class ReconfigResource(DispatcherBaseResource):
     def post(self):
         try:
             singletonconfig.reload()
@@ -307,7 +307,7 @@ class ReconfigResource(BaseResource):
         self.writeCallback("done")
 
 
-class SystemResourceJson(BaseResource):
+class SystemResourceJson(DispatcherBaseResource):
     def get(self):
         """
         Builds the server environment representation.

@@ -14,13 +14,14 @@ from octopus.core.enums.rendernode import *
 
 from octopus.core import enums, singletonstats, singletonconfig
 from octopus.dispatcher.model import RenderNode
-from octopus.core.framework import BaseResource, queue
+from octopus.core.framework import queue
+from octopus.dispatcher.webservice import DispatcherBaseResource
 
 
 logger = logging.getLogger("dispatcher")
 
 
-class RenderNodesResource(BaseResource):
+class RenderNodesResource(DispatcherBaseResource):
     """
     Lists the render nodes known by the dispatcher.
     :param: request the HTTP request
@@ -33,7 +34,7 @@ class RenderNodesResource(BaseResource):
         self.writeCallback(content)
 
 
-class RenderNodeResource(BaseResource):
+class RenderNodeResource(DispatcherBaseResource):
     ## Sends the JSON detailed representation of a given render node.
     #
     # @param request the HTTP request object for this request
@@ -147,7 +148,7 @@ class RenderNodeResource(BaseResource):
         renderNode.remove()
 
 
-class RenderNodeCommandsResource(BaseResource):
+class RenderNodeCommandsResource(DispatcherBaseResource):
     #@queue
     def put(self, computerName, commandId):
         '''Update command `commandId` running on rendernode `renderNodeId`.
@@ -220,7 +221,7 @@ class RenderNodeCommandsResource(BaseResource):
                 return HTTPError(403, message)
 
 
-class RenderNodeSysInfosResource(BaseResource):
+class RenderNodeSysInfosResource(DispatcherBaseResource):
     #@queue
     def put(self, computerName):
         computerName = computerName.lower()
@@ -264,7 +265,7 @@ class RenderNodeSysInfosResource(BaseResource):
         renderNode.isRegistered = True
 
 
-class RenderNodesPerfResource(BaseResource):
+class RenderNodesPerfResource(DispatcherBaseResource):
     """
     Sets a performance index (float) for one or several given rendernode names
     TOFIX: might not be actually used, need to verify
@@ -278,7 +279,7 @@ class RenderNodesPerfResource(BaseResource):
         self.writeCallback("Performance indexes have been set.")
 
 
-class RenderNodeResetResource(BaseResource):
+class RenderNodeResetResource(DispatcherBaseResource):
     #@queue
     def put(self, computerName):
         computerName = computerName.lower()
@@ -292,7 +293,7 @@ class RenderNodeResetResource(BaseResource):
             renderNode.reset()
 
 
-class RenderNodeQuarantineResource(BaseResource):
+class RenderNodeQuarantineResource(DispatcherBaseResource):
     def put(self):
         """
         Used to set a quarantine on a list of rendernodes. Quarantine rns have a flag "excluded"
@@ -319,7 +320,7 @@ class RenderNodeQuarantineResource(BaseResource):
         self.writeCallback("Quarantine attributes set.")
 
 
-class RenderNodePausedResource(BaseResource):
+class RenderNodePausedResource(DispatcherBaseResource):
     #@queue
     def put(self, computerName):
         dct = self.getBodyAsJSON()

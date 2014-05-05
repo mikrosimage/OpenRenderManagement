@@ -41,12 +41,13 @@ from octopus.core.enums.node import NODE_ERROR, NODE_CANCELED, NODE_DONE, NODE_R
 from octopus.core.communication.http import Http404, Http400, Http500, HttpConflict
 
 from octopus.core.framework import BaseResource, queue
+from octopus.dispatcher.webservice import DispatcherBaseResource
 
 __all__ = []
 
 logger = logging.getLogger('dispatcher.webservice.editController')
 
-class EditStatusResource(BaseResource, IQueryNode):
+class EditStatusResource(DispatcherBaseResource, IQueryNode):
     """
     Handle user request to change the status on a set of nodes. Status value will be change according to transition constraints 
     in setStatusForNode() class member.
@@ -135,7 +136,7 @@ class EditStatusResource(BaseResource, IQueryNode):
 
 
 
-class PauseResource(BaseResource, IQueryNode):
+class PauseResource(DispatcherBaseResource, IQueryNode):
     """
     Hanlde user requests to pause a specific set of jobs
     """
@@ -187,7 +188,7 @@ class PauseResource(BaseResource, IQueryNode):
 
 
 
-class ResumeResource(BaseResource, IQueryNode):
+class ResumeResource(DispatcherBaseResource, IQueryNode):
     """
     Hanlde user requests to resume a specific set of jobs
     """
@@ -236,7 +237,7 @@ class ResumeResource(BaseResource, IQueryNode):
         self.writeCallback( json.dumps(content) )
 
 
-class EditMaxRnResource(BaseResource, IQueryNode):
+class EditMaxRnResource(DispatcherBaseResource, IQueryNode):
     """
     Edit multiple jobs with a query for filtering. 
     Value edited is maxRN field which indicates a max number of rendernodes to assign to a specific job.
@@ -299,7 +300,7 @@ class EditMaxRnResource(BaseResource, IQueryNode):
 
 
 
-class EditPrioResource(BaseResource, IQueryNode):
+class EditPrioResource(DispatcherBaseResource, IQueryNode):
     """
     Edit multiple jobs with a query for filtering.
     Value given is a new priority, it is stored as the dispatchKey which the true field used for job assignation
@@ -357,7 +358,7 @@ class EditPrioResource(BaseResource, IQueryNode):
 
 
 
-class RenderNodeEditResource(BaseResource, IQueryNode):
+class RenderNodeEditResource(DispatcherBaseResource, IQueryNode):
     def get(self):
         """
         """

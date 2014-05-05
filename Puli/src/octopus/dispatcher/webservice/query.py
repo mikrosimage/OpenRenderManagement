@@ -63,13 +63,14 @@ from octopus.dispatcher.model import FolderNode
 from octopus.dispatcher.model.nodequery import IQueryNode
 
 from octopus.core.communication.http import Http404, Http400, Http500, HttpConflict
-from octopus.core.framework import BaseResource, queue
+from octopus.core.framework import queue
+from octopus.dispatcher.webservice import DispatcherBaseResource
 
 __all__ = []
 
 logger = logging.getLogger('query')
 
-class QueryResource(BaseResource, IQueryNode):
+class QueryResource(DispatcherBaseResource, IQueryNode):
     ADDITIONNAL_SUPPORTED_FIELDS = ['pool', 'userDefinedMaxRn']
     DEFAULT_FIELDS = ['id','user','name', 'tags:prod', 'tags:shot', \
                      'status', 'completion', 'dispatchKey', \
@@ -216,7 +217,7 @@ class QueryResource(BaseResource, IQueryNode):
 
 
 
-class RenderNodeQueryResource(BaseResource, IQueryNode):
+class RenderNodeQueryResource(DispatcherBaseResource, IQueryNode):
     """
     id: 3,
     name: "vfxpc64:9002",

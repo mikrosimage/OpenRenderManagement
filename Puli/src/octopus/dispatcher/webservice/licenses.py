@@ -4,17 +4,18 @@ Created on Apr 27, 2012
 @author: Arnaud Chassagne
 '''
 
-from octopus.core.framework import ResourceNotFoundError, BaseResource, queue
+from octopus.core.framework import ResourceNotFoundError, queue
 from tornado.httpclient import HTTPError
+from octopus.dispatcher.webservice import DispatcherBaseResource
 
 
-class LicensesResource(BaseResource):
+class LicensesResource(DispatcherBaseResource):
     #@queue
     def get(self):
         self.writeCallback(repr(self.dispatcher.licenseManager))
 
 
-class LicenseResource(BaseResource):
+class LicenseResource(DispatcherBaseResource):
     #@queue
     def get(self, licenseName):
         try:

@@ -203,14 +203,29 @@ if __name__ == "__main__":
     # print ("str scale %d = %r" % (len(strScale), strScale) )
 
     options.scaleEvery = min(options.scaleEvery, options.resolution )
-    for i,date in enumerate(tmpscale[::len(tmpscale)/options.scaleEvery]):
-        newIndex = i*len(tmpscale)/options.scaleEvery
+    # for i,date in enumerate(tmpscale[::len(tmpscale)/options.scaleEvery]):
+    #     newIndex = i*len(tmpscale)/options.scaleEvery
 
-        if newIndex < len(strScale):
-            strScale[newIndex] = date[0].strftime('%H:%M')
+    #     if newIndex < len(strScale):
+    #         strScale[newIndex] = date[0].strftime('%H:%M')
 
-    strScale[0] = scale[0].strftime('%Y-%m-%d %H:%M')
-    strScale[-1] = scale[-1].strftime('%Y-%m-%d %H:%M')
+    # print ("1. str scale %d = %r" % (len(strScale), strScale) )
+
+    for i, date in enumerate(tmpscale):
+        # print "i:%d - %s" % (i,date[0])
+        if i < len(strScale):
+            strScale[i] = date[0].strftime('%H:%M')
+    # print ("2. str scale %d = %r" % (len(strScale), strScale) )
+
+    padding = len(tmpscale)/options.scaleEvery
+    for i, date in enumerate(strScale):
+        if i%padding != 0:
+            strScale[i] = ''
+
+    # print ("3. str scale %d = %r" % (len(strScale), strScale) )
+
+    strScale[0] = scale[0].strftime('%m-%d %H:%M')
+    strScale[-1] = scale[-1].strftime('%m-%d %H:%M')
 
     # print "%s - %6.2f ms - create scale" % (datetime.datetime.now(), (time.time()-prevTime) * 1000)
     # prevTime = time.time()

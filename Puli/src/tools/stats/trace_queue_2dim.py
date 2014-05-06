@@ -26,7 +26,7 @@ from octopus.dispatcher import settings
 from octopus.core import singletonconfig
 from tools.common import roundTime
 from tools.common import lowerQuartile, higherQuartile
-from tools.stats.common import createCommonParser, getRangeDates, prepareGraph, renderGraph
+from tools.stats.common import createCommonParser, getRangeDates, prepareGraph, prepareScale, renderGraph
 
 
 ###########################################################################################################################
@@ -171,19 +171,18 @@ if __name__ == "__main__":
     # # q2= higherQuartile(data)
     # # std= np.std(data, axis=1)
 
-    strScale = [''] * options.resolution
+    # strScale = [''] * options.resolution
     tmpscale = np.reshape(scale[-useableSize:], newshape)
-    # # print ("tmp scale %d = %r" % (len(tmpscale), tmpscale) )
-    # # print ("str scale %d = %r" % (len(strScale), strScale) )
+    strScale = prepareScale( tmpscale, options )
 
-    for i,date in enumerate(tmpscale[::len(tmpscale)/options.scaleEvery]):
-        newIndex = i*len(tmpscale)/options.scaleEvery
+    # for i,date in enumerate(tmpscale[::len(tmpscale)/options.scaleEvery]):
+    #     newIndex = i*len(tmpscale)/options.scaleEvery
 
-        if newIndex < len(strScale):
-            strScale[newIndex] = date[0].strftime('%H:%M')
+    #     if newIndex < len(strScale):
+    #         strScale[newIndex] = date[0].strftime('%H:%M')
 
-    strScale[0] = scale[0].strftime('%Y-%m-%d %H:%M')
-    strScale[-1] = scale[-1].strftime('%Y-%m-%d %H:%M')
+    # strScale[0] = scale[0].strftime('%Y-%m-%d %H:%M')
+    # strScale[-1] = scale[-1].strftime('%Y-%m-%d %H:%M')
 
     # print "%s - %6.2f ms - create scale" % (datetime.datetime.now(), (time.time() - prevTime) * 1000)
     # prevTime = time.time()

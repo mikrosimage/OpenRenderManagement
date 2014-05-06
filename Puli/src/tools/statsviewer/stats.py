@@ -33,15 +33,17 @@ class StatsMainWindow(QMainWindow):
     """
     """
 
+    # BASEDIR = "/s/apps/lin/vfx_test_apps/OpenRenderManagement/"
+    BASEDIR = "/datas/jsa/OpenRenderManagement/"
+    
     reportDict={ 
         "RN usage": { 
-            # "cmd":"/s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli/scripts/util/update_usage_stats",
-            "cmd":"/datas/jsa/OpenRenderManagement/Puli/scripts/util/update_usage_stats",
+            "cmd": BASEDIR + "Puli/scripts/util/update_usage_stats",
             "source":"/s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/usage_stats.log"
             },
 
         "Job usage" : { 
-            "cmd":"/s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli/scripts/util/update_queue_stats",
+            "cmd": BASEDIR + "Puli/scripts/util/update_queue_stats",
             "source":"/s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/queue_stats.log"
         },
     }
@@ -69,7 +71,7 @@ class StatsMainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self.ui.actionGenerate.setIcon( QIcon("rsrc/refresh.png") )
+        self.ui.actionGenerate.setIcon( QIcon( StatsMainWindow.BASEDIR+"Puli/src/tools/statsviewer/rsrc/refresh.png") )
 
         sys.stdout = OutLog( self.ui.log , sys.stdout)
         xlogger.info("Starting log")
@@ -94,7 +96,7 @@ class StatsMainWindow(QMainWindow):
 
         for key, elem in sorted(self.queueGroupByParam.items()):
             self.ui.cbGroupBy.addItem(key)
-            self.ui.cbGroupBy.setCurrentIndex(0)
+        self.ui.cbGroupBy.setCurrentIndex(0)
 
 
         #
@@ -106,6 +108,7 @@ class StatsMainWindow(QMainWindow):
         
         # Connect up the buttons.
         self.ui.actionGenerate.triggered.connect(self.generateGraph)
+        self.ui.actionReset.triggered.connect(self.resetParams)
         self.ui.cbReport.currentIndexChanged.connect( self.updateParamsVisibility )
         self.ui.cbReport.currentIndexChanged.connect( self.ui.actionGenerate.trigger )
 
@@ -141,6 +144,9 @@ class StatsMainWindow(QMainWindow):
         self.ui.cbGraphStyle.currentIndexChanged.connect( self.ui.actionGenerate.trigger )
         self.ui.cbGraphType.currentIndexChanged.connect( self.ui.actionGenerate.trigger )
         self.ui.cbScaleType.currentIndexChanged.connect( self.ui.actionGenerate.trigger )
+        self.ui.cbScaleRound.currentIndexChanged.connect( self.ui.actionGenerate.trigger )
+        self.ui.spScaleResolution.editingFinished.connect(self.ui.actionGenerate.trigger)
+
 
         # Hide/Show report param
         self.updateParamsVisibility()
@@ -204,6 +210,8 @@ class StatsMainWindow(QMainWindow):
         args += ["-f", self.currentSource]
         args += ["-o", self.svgFile.name]
         args += ["--render-mode", "svg"]
+        args += ["--scale", str(self.ui.spScaleResolution.value())]
+        args += ["--scaleRound", str( int(self.ui.cbScaleRound.currentText()) * 60 )]
 
         #
         # Display params
@@ -250,6 +258,37 @@ class StatsMainWindow(QMainWindow):
         xlogger.info( "Tracking %s grouped by %s" % (self.queueTrackParam[ str(self.ui.cbTrack.currentText()) ],
                                                     self.queueGroupByParam[ str(self.ui.cbGroupBy.currentText()) ]) )
         return args
+
+    def resetParams(self):
+        """
+        Set default values for all widget elements that might have been changed by user.
+        Signals are blocked for actionGenerate during the reset, a call to grapheGenerate is done to refresh the view at the end.
+        """
+        
+        xlogger.info( "Reset all params" )
+        self.ui.actionGenerate.blockSignals(True)
+
+        self.ui.cbReport.setCurrentIndex(0)
+        self.ui.slLength.setValue(24)
+        self.ui.chkNow.setChecked(True)
+
+        self.ui.chkWorking.setChecked(True)
+        self.ui.chkPaused.setChecked(True)
+        self.ui.chkIdle.setChecked(True)
+        self.ui.chkOffline.setChecked(True)
+
+        self.ui.cbTrack.setCurrentIndex(1)
+        self.ui.cbGroupBy.setCurrentIndex(0)
+
+        self.ui.slResolution.setValue(30)
+        self.ui.cbGraphType.setCurrentIndex(0)
+        self.ui.cbScaleType.setCurrentIndex(0)
+        self.ui.cbGraphStyle.setCurrentIndex(0)
+        self.ui.cbScaleRound.setCurrentIndex(3)
+        self.ui.spScaleResolution.setValue(20)
+
+        self.ui.actionGenerate.blockSignals(False)
+        self.generateGraph()
 
     def generateGraph(self):
 
@@ -338,7 +377,7 @@ app = QApplication(sys.argv)
 # Used to create/maintain application settings
 app.setOrganizationName("Mikros")
 app.setApplicationName("StatsViewer")
-app.setWindowIcon( QIcon("rsrc/charts.png"))
+app.setWindowIcon( QIcon(StatsMainWindow.BASEDIR+"Puli/src/tools/statsviewer/rsrc/charts.png"))
 
 #
 # Define logs

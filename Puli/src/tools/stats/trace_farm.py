@@ -24,9 +24,8 @@ except ImportError:
 
 from octopus.dispatcher import settings
 from octopus.core import singletonconfig
-from tools.common import roundTime
 from tools.common import lowerQuartile, higherQuartile
-from tools.stats.common import createCommonParser, getRangeDates, prepareGraph, renderGraph
+from tools.stats.common import createCommonParser, getRangeDates, prepareGraph, prepareScale, renderGraph
 
 # import matplotlib.pyplot as plt
 
@@ -197,38 +196,12 @@ if __name__ == "__main__":
     # std= np.std(data, axis=1)
 
 
-    strScale = [''] * options.resolution
+    #
+    # Prepare scale
+    #
     tmpscale = np.reshape(scale[-useableSize:], newshape)
-    # print ("tmp scale %d = %r" % (len(tmpscale), tmpscale) )
-    # print ("str scale %d = %r" % (len(strScale), strScale) )
-
-    options.scaleEvery = min(options.scaleEvery, options.resolution )
-    # for i,date in enumerate(tmpscale[::len(tmpscale)/options.scaleEvery]):
-    #     newIndex = i*len(tmpscale)/options.scaleEvery
-
-    #     if newIndex < len(strScale):
-    #         strScale[newIndex] = date[0].strftime('%H:%M')
-
-    # print ("1. str scale %d = %r" % (len(strScale), strScale) )
-
-    for i, date in enumerate(tmpscale):
-        # print "i:%d - %s" % (i,date[0])
-        if i < len(strScale):
-            strScale[i] = date[0].strftime('%H:%M')
-    # print ("2. str scale %d = %r" % (len(strScale), strScale) )
-
-    padding = len(tmpscale)/options.scaleEvery
-    for i, date in enumerate(strScale):
-        if i%padding != 0:
-            strScale[i] = ''
-
-    # print ("3. str scale %d = %r" % (len(strScale), strScale) )
-
-    strScale[0] = scale[0].strftime('%m-%d %H:%M')
-    strScale[-1] = scale[-1].strftime('%m-%d %H:%M')
-
-    # print "%s - %6.2f ms - create scale" % (datetime.datetime.now(), (time.time()-prevTime) * 1000)
-    # prevTime = time.time()
+    strScale = prepareScale( tmpscale, options )
+    # print ("scale %d = %r" % (len(strScale), strScale) )
 
 
     if VERBOSE:

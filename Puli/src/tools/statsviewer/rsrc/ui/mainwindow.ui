@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>833</width>
-    <height>726</height>
+    <width>843</width>
+    <height>747</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -385,6 +385,60 @@
            </item>
           </widget>
          </item>
+         <item row="4" column="0">
+          <widget class="QLabel" name="lblScaleRound">
+           <property name="text">
+            <string>Round time (min)</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="1">
+          <widget class="QComboBox" name="cbScaleRound">
+           <property name="currentIndex">
+            <number>3</number>
+           </property>
+           <item>
+            <property name="text">
+             <string>1</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>10</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>30</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>60</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="5" column="1">
+          <widget class="QSpinBox" name="spScaleResolution">
+           <property name="minimum">
+            <number>8</number>
+           </property>
+           <property name="maximum">
+            <number>40</number>
+           </property>
+           <property name="value">
+            <number>20</number>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="0">
+          <widget class="QLabel" name="lblScaleResolution">
+           <property name="text">
+            <string>Resolution in scale</string>
+           </property>
+          </widget>
+         </item>
         </layout>
         <zorder>lblStyle</zorder>
         <zorder>lblResolution</zorder>
@@ -393,6 +447,10 @@
         <zorder>cbScaleType</zorder>
         <zorder>cbGraphStyle</zorder>
         <zorder>lblGraphType</zorder>
+        <zorder>lblScaleRound</zorder>
+        <zorder>cbScaleRound</zorder>
+        <zorder>spScaleResolution</zorder>
+        <zorder>lblScaleResolution</zorder>
        </widget>
       </item>
       <item>
@@ -444,7 +502,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>833</width>
+     <width>843</width>
      <height>22</height>
     </rect>
    </property>
@@ -551,7 +609,7 @@
   </action>
   <action name="actionReset">
    <property name="enabled">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <property name="text">
     <string>Reset</string>

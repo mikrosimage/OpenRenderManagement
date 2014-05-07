@@ -213,7 +213,7 @@ if __name__ == '__main__':
                     count_UpdateCommands = 0
 
 
-    line_chart = pygal.StackedLine( x_label_rotation=40, logarithmic=options.logarithmic, show_dots=False, fill=True, width=800, height=300 )
+    line_chart = pygal.StackedLine( x_label_rotation=40, logarithmic=options.logarithmic, truncate_legend=20, show_dots=False, fill=True, width=800, height=300 )
     line_chart.title = 'Average loop duration (in ms)'
 
 
@@ -241,11 +241,11 @@ if __name__ == '__main__':
     line_chart.x_labels = strScale
 
     # line_chart.add('Total in loop',  loopDuration)
-    line_chart.add('Compute Assignment',  listCompute)
-    line_chart.add('Update status & progress',  listTree)
+    line_chart.add('Assignment',  listCompute)
+    line_chart.add('Status & progess',  listTree)
     line_chart.add('Update db',  listDb)
-    line_chart.add('Dependencies',  listDep)
-    line_chart.add('Send order to RN',  listSend)
+    line_chart.add('Check Depend.',  listDep)
+    line_chart.add('Send orders',  listSend)
 
     line_chart.render_to_file( os.path.join(options.outputDir, "timers"+options.suffix+".svg") )
 

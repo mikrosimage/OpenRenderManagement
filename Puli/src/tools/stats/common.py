@@ -84,7 +84,7 @@ def prepareScale( npArrScale, options ):
     for i, date in enumerate(npArrScale):
         tmpscale.append(date[0])
     
-    print tmpscale
+    # print tmpscale
 
     options.scaleEvery = min(options.scaleEvery, options.resolution )
 
@@ -93,7 +93,7 @@ def prepareScale( npArrScale, options ):
     padding = len(npArrScale)/options.scaleEvery
     dayChanged = False
     for i, date in enumerate(tmpscale):
-        print "i: %d - %s " % (i, date)
+        # print "i: %d - %s " % (i, date)
 
         
         if i==0:
@@ -101,7 +101,7 @@ def prepareScale( npArrScale, options ):
         else:
 
             if date.date() != tmpscale[i-1].date():
-                print "change date at index: %d = %s" % (i,date.strftime("%m-%d %H:%M"))
+                # print "change date at index: %d = %s" % (i,date.strftime("%m-%d %H:%M"))
                 dayChanged = True
 
             if i%padding == 0:

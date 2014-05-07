@@ -53,6 +53,7 @@ def process_args():
     parser.add_option( "-o", action="store", dest="outputDir", default="./", help="Target output directory" )
     parser.add_option( "-v", action="store_true", dest="verbose", help="Verbose output" )
     parser.add_option( "-s", action="store", dest="rangeIn", type="int", help="Start range is N hours in past", default=3 )
+    parser.add_option( "--suffix", action="store", dest="suffix", type="string", help="Suffix added to output file name", default='')
     parser.add_option( "-e", action="store", dest="rangeOut", type="int", help="End range is N hours in past (mus be lower than '-s option'", default=0 )
     parser.add_option( "-r", "--res", action="store", dest="resolution", type="int", help="Indicates a period of time to aggregate data (in seconds)", default=1800 )
     parser.add_option( "--log", action="store_true", dest="logarithmic", help="Display graph with a logarithmic scale", default=False )
@@ -212,51 +213,47 @@ if __name__ == '__main__':
                     count_UpdateCommands = 0
 
 
-    line_chart = pygal.Line( x_label_rotation=40, logarithmic=options.logarithmic )
+    line_chart = pygal.StackedLine( x_label_rotation=40, logarithmic=options.logarithmic, show_dots=False, fill=True, width=800, height=300 )
     line_chart.title = 'Average loop duration (in ms)'
 
 
     # Adapt date values to have a useful time scale
-    (eventDate, previousDate) = (0,0)
-    strScale=[]
-    for i, val in enumerate(scale):
-        previousDate = eventDate
-        eventDate = val
 
-        if previousDate == 0 or (eventDate.day - previousDate.day) > 0 or i == len(scale)-1:
-            scaleValue = eventDate.strftime('%Y-%m-%d %H:%M')
-        else:
-            if len(scale) < options.scaleEvery:
-                scaleValue = eventDate.strftime('%H:%M')
-            else:
-                if ( i % (len(scale)/options.scaleEvery) ) == 0:
-                    scaleValue = eventDate.strftime('%H:%M')
-                else:
-                    scaleValue = ""
 
-        strScale.append( scaleValue )
+    #     strScale.append( scaleValue )
+
+    strScale = []
+    options.scaleEvery = min(options.scaleEvery, options.resolution )
+    for i, date in enumerate(scale):
+        # print "i:%d - %s" % (i,date)
+        if i < len(scale):
+            strScale.append( date.strftime('%H:%M') )
+
+    padding = len(scale)/options.scaleEvery
+    for i, date in enumerate(strScale):
+        if i%padding != 0:
+            strScale[i] = ''
+
+    strScale[0] = scale[0].strftime('%m-%d %H:%M')
+    strScale[-1] = scale[-1].strftime('%m-%d %H:%M')
 
 
     line_chart.x_labels = strScale
-    # line_chart.x_labels = scale
 
-    line_chart.add('Total in loop',  loopDuration)
+    # line_chart.add('Total in loop',  loopDuration)
     line_chart.add('Compute Assignment',  listCompute)
-    line_chart.add('Update tree',  listTree)
-    # line_chart.add('Update rn',  listRn)
+    line_chart.add('Update status & progress',  listTree)
     line_chart.add('Update db',  listDb)
     line_chart.add('Dependencies',  listDep)
-    line_chart.add('Assignment',  listSend)
-    # line_chart.add('Send order',  listSend)
-    # line_chart.add('Release finished',  listRelease)
+    line_chart.add('Send order to RN',  listSend)
 
-    line_chart.render_to_file( os.path.join(options.outputDir, "timers.svg") )
+    line_chart.render_to_file( os.path.join(options.outputDir, "timers"+options.suffix+".svg") )
 
 
-    line_chart = pygal.Line( x_label_rotation=45, logarithmic=options.logarithmic )
+    line_chart = pygal.Line( x_label_rotation=45, logarithmic=options.logarithmic, width=800, height=300 )
     line_chart.title = 'Requests by second (avg over %d s)' % options.resolution
     line_chart.x_labels = strScale
-    line_chart.add('All requests', listIncomingRequest )
+    # line_chart.add('All requests', listIncomingRequest )
     line_chart.add('- GET', listIncomingGet )
     line_chart.add('- POST', listIncomingPost )
     line_chart.add('- PUT', listIncomingPut )
@@ -265,6 +262,6 @@ if __name__ == '__main__':
     # line_chart.add('New RNs', listAddRns )
     line_chart.add('Update commands', listUpdateCommands )
  
-    line_chart.render_to_file( os.path.join(options.outputDir, "requests.svg") )
+    line_chart.render_to_file( os.path.join(options.outputDir, "requests"+options.suffix+".svg") )
 
     

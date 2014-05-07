@@ -1,9 +1,11 @@
 #!/bin/bash
-#export PYTHONPATH=/s/apps/lin/puli/:${PYTHONPATH}
-export PYTHONPATH=/datas/jsa/OpenRenderManagement/Puli/src:${PYTHONPATH}
-export PATH=/s/apps/lin/puli/tools/stats:${PATH}
 
-#cd /s/apps/lin/puli/tools/stats
-cd /datas/jsa/OpenRenderManagement/Puli/src/tools/stats/
-python ./grab_usage_stats.py "$@"
-cd - > /dev/null
+# DEV env
+#export PYTHONPATH=/datas/jsa/OpenRenderManagement/Puli/src:${PYTHONPATH}
+# BASEDIR="/datas/jsa/OpenRenderManagement/Puli/src/tools/stats/"
+
+# PROD env
+export PYTHONPATH=/s/apps/lin/puli/:${PYTHONPATH}
+BASEDIR="/s/apps/lin/puli/tools/stats"
+
+python ${BASEDIR}/grab_usage_stats.py "$@"

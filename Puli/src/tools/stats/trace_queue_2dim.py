@@ -121,7 +121,6 @@ if __name__ == "__main__":
     # print "%s - %6.2f ms - load source complete, num lines: %d" % (datetime.datetime.now(), (time.time() - prevTime) * 1000, len(log))
     # prevTime = time.time()
 
-
     for i, data in enumerate(log):
         eventDate = datetime.datetime.fromtimestamp( data['requestDate'] )
 
@@ -172,20 +171,12 @@ if __name__ == "__main__":
     # # std= np.std(data, axis=1)
 
     # strScale = [''] * options.resolution
+
+    #
+    # Prepare scale
+    #
     tmpscale = np.reshape(scale[-useableSize:], newshape)
     strScale = prepareScale( tmpscale, options )
-
-    # for i,date in enumerate(tmpscale[::len(tmpscale)/options.scaleEvery]):
-    #     newIndex = i*len(tmpscale)/options.scaleEvery
-
-    #     if newIndex < len(strScale):
-    #         strScale[newIndex] = date[0].strftime('%H:%M')
-
-    # strScale[0] = scale[0].strftime('%Y-%m-%d %H:%M')
-    # strScale[-1] = scale[-1].strftime('%Y-%m-%d %H:%M')
-
-    # print "%s - %6.2f ms - create scale" % (datetime.datetime.now(), (time.time() - prevTime) * 1000)
-    # prevTime = time.time()
 
     if options.verbose:
         print ("newshape %d = %r" % (len(newshape), newshape) )

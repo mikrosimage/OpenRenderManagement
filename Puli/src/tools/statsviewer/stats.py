@@ -33,17 +33,18 @@ class StatsMainWindow(QMainWindow):
     """
     """
 
-    # BASEDIR = "/s/apps/lin/vfx_test_apps/OpenRenderManagement/"
-    BASEDIR = "/datas/jsa/OpenRenderManagement/"
-    
+    LOGDIR = "/s/apps/lin/vfx_test_apps/OpenRenderManagement/"
+    # SRCDIR = "/datas/jsa/OpenRenderManagement/"
+    BASEDIR = "/s/apps/lin/puli/"
+
     reportDict={ 
         "RN usage": { 
-            "cmd": BASEDIR + "Puli/scripts/util/update_usage_stats",
+            "cmd": BASEDIR + "scripts/util/update_usage_stats",
             "source":"/s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/usage_stats.log"
             },
 
         "Job usage" : { 
-            "cmd": BASEDIR + "Puli/scripts/util/update_queue_stats",
+            "cmd": BASEDIR + "scripts/util/update_queue_stats",
             "source":"/s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/queue_stats.log"
         },
     }
@@ -71,7 +72,7 @@ class StatsMainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self.ui.actionGenerate.setIcon( QIcon( StatsMainWindow.BASEDIR+"Puli/src/tools/statsviewer/rsrc/refresh.png") )
+        self.ui.actionGenerate.setIcon( QIcon( StatsMainWindow.BASEDIR+"tools/statsviewer/rsrc/refresh.png") )
 
         sys.stdout = OutLog( self.ui.log , sys.stdout)
         xlogger.info("Starting log")
@@ -264,7 +265,7 @@ class StatsMainWindow(QMainWindow):
         Set default values for all widget elements that might have been changed by user.
         Signals are blocked for actionGenerate during the reset, a call to grapheGenerate is done to refresh the view at the end.
         """
-        
+
         xlogger.info( "Reset all params" )
         self.ui.actionGenerate.blockSignals(True)
 
@@ -377,7 +378,7 @@ app = QApplication(sys.argv)
 # Used to create/maintain application settings
 app.setOrganizationName("Mikros")
 app.setApplicationName("StatsViewer")
-app.setWindowIcon( QIcon(StatsMainWindow.BASEDIR+"Puli/src/tools/statsviewer/rsrc/charts.png"))
+app.setWindowIcon( QIcon(StatsMainWindow.BASEDIR+"tools/statsviewer/rsrc/charts.png"))
 
 #
 # Define logs

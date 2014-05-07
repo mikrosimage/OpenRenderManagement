@@ -234,9 +234,9 @@ if __name__ == '__main__':
         if i%padding != 0:
             strScale[i] = ''
 
-    strScale[0] = scale[0].strftime('%m-%d %H:%M')
-    strScale[-1] = scale[-1].strftime('%m-%d %H:%M')
-
+    if 0 < len(strScale):
+        strScale[0] = scale[0].strftime('%m-%d %H:%M')
+        strScale[-1] = scale[-1].strftime('%m-%d %H:%M')
 
     line_chart.x_labels = strScale
 

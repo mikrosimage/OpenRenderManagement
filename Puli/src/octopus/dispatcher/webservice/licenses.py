@@ -7,6 +7,7 @@ Created on Apr 27, 2012
 from octopus.core.framework import ResourceNotFoundError, queue
 from tornado.httpclient import HTTPError
 from octopus.dispatcher.webservice import DispatcherBaseResource
+from octopus.core.communication.http import Http404, Http500
 
 
 class LicensesResource(DispatcherBaseResource):
@@ -34,7 +35,7 @@ class LicenseResource(DispatcherBaseResource):
         try:
             maxLic = data['maxlic']
         except KeyError:
-            raise HTTPError(404, "Missing entry : 'maxlic'")
+            raise Http404( "Missing entry : 'maxlic'")
         else:
             self.dispatcher.licenseManager.setMaxLicensesNumber(licenseName, maxLic)
             self.writeCallback("OK")
@@ -45,9 +46,14 @@ class LicenseResource(DispatcherBaseResource):
         try:
             rns = data['rns']
         except KeyError:
-            raise HTTPError(404, "Missing entry : 'rns'")
+            raise Http404( "Missing entry : 'rns'")
         else:
             rnsList = rns.split(",")
-            for rn in rnsList:
+            for rnName in rnsList:
+                if rnName in self.dispatcher.dispatchTree.renderNodes:
+                    rn = self.dispatcher.dispatchTree.renderNodes[rnName]
+                else:
+                    raise Http500("Internal Server Error: Render node %s is not registered."%(rnName))
+
                 self.dispatcher.licenseManager.releaseLicenseForRenderNode(licenseName, rn)
             self.writeCallback("OK")

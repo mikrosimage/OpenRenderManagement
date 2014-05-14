@@ -109,7 +109,7 @@ class Command(models.Model):
             try:
                 self.renderNode.clearAssignment(self)
                 (response, data) = self.renderNode.request("DELETE", "/commands/" + str(self.id) + "/")
-                LOGGER.info( "data: %r" % data )
+                # LOGGER.info( "data: %r" % data )
                 
             except Exception:
                 # if request has failed, it means the rendernode is unreachable

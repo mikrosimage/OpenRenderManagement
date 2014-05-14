@@ -8,14 +8,15 @@ import logging
 from octopus.dispatcher.model.pool import Pool
 from octopus.core.communication.http import Http404, Http400, HttpConflict
 
-from octopus.core.framework import BaseResource, queue
+from octopus.core.framework import queue
+from octopus.dispatcher.webservice import DispatcherBaseResource
 
 __all__ = []
 
 logger = logging.getLogger('dispatcher.webservice.PoolController')
 
 
-class PoolsResource(BaseResource):
+class PoolsResource(DispatcherBaseResource):
     #@queue
     def get(self):
         pools = self.getDispatchTree().pools.values()
@@ -24,7 +25,7 @@ class PoolsResource(BaseResource):
         })
 
 
-class PoolResource(BaseResource):
+class PoolResource(DispatcherBaseResource):
     #@queue
     def get(self, poolName):
         try:
@@ -67,7 +68,7 @@ class PoolResource(BaseResource):
             raise Http404('No such pool')
 
 
-class PoolRenderNodesResource(BaseResource):
+class PoolRenderNodesResource(DispatcherBaseResource):
     #@queue
     def put(self, poolName):
         dct = self.getBodyAsJSON()

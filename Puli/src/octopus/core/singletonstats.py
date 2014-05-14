@@ -108,7 +108,7 @@ class DispatcherStats():
         """
         for line in self.accumulationBuffer:
             statsLog.log( 1,
-                "%f;%f;%f;%f;%f;%f;%f;%f;%f;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d" % ( 
+                "%f;%f;%f;%f;%f;%f;%f;%f;%f;%d;%d;%d;%d;%d;%d;%d;%d;%d;%f;%f" % ( 
                 line[0], 
 
                 line[1]['update_tree'],         # from dispatchLoop
@@ -135,39 +135,6 @@ class DispatcherStats():
                 line[3]['dispatch_command'],    # from dispatchLoop in computeAssignment
                 )
             )
-
-        # with open( os.path.join(settings.LOGDIR, "stats.log") , 'a') as f:
-        #     for line in self.accumulationBuffer:
-
-        #         f.write(
-        #             "%f;%f;%f;%f;%f;%f;%f;%f;%f;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d\n" % ( 
-        #                 line[0],                            # 0
-
-        #                 line[1]['update_tree'],             # 1
-        #                 line[1]['update_rn'],               # 2
-        #                 line[1]['update_dependencies'],     # 3
-        #                 line[1]['update_db'],               # 4
-        #                 line[1]['compute_assignment'],      # 5
-        #                 line[1]['send_assignment'],         # 6
-        #                 line[1]['release_finishing'],       # 7
-        #                 line[1]['time_elapsed'],            # 8
-
-        #                 line[2]['incoming_requests'],       # 9
-        #                 line[2]['incoming_get'],            # 10
-        #                 line[2]['incoming_post'],           # 11
-        #                 line[2]['incoming_put'],            # 12
-        #                 line[2]['incoming_delete'],         # 13
-
-        #                 line[2]['add_graphs'],              # 14
-        #                 line[2]['add_rns'],                 # 15
-        #                 line[2]['update_commands'],         # 16
-        #                 line[2]['num_assignments'],         # 17
-
-        #                 line[3]['update_max_rn'],           # 18
-        #                 line[3]['dispatch_command'],        # 19
-        #                 )
-        #             )
-
 
         self.accumulationBuffer[:]=[]
 

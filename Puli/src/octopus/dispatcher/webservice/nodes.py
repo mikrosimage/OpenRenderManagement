@@ -4,6 +4,7 @@ Controller for the /nodes service.
 from octopus.core.enums.node import NODE_ERROR, NODE_CANCELED, NODE_DONE, NODE_READY
 from octopus.dispatcher.model.task import TaskGroup
 from octopus.core.enums.command import CMD_READY, CMD_RUNNING
+from octopus.dispatcher.webservice import DispatcherBaseResource
 
 import logging
 import time
@@ -19,8 +20,7 @@ from tornado.web import HTTPError
 logger = logging.getLogger("dispatcher.webservice.NodeController")
 
 from octopus.core.communication import *
-from octopus.core.framework import ResourceNotFoundError, ControllerError,\
-    BaseResource, queue
+from octopus.core.framework import ResourceNotFoundError, ControllerError, queue
 from octopus.dispatcher.model import FolderNode
 
 from octopus.dispatcher.model.enums import NODE_STATUS
@@ -51,7 +51,7 @@ if __name__ == '__main__':
     pass
 
 
-class NodesResource(BaseResource):
+class NodesResource(DispatcherBaseResource):
     ##@queue
     def get(self):
         self.writeCallback(self.getNode(0))

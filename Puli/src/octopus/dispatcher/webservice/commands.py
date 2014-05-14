@@ -6,7 +6,7 @@ except ImportError:
     import json
 
 from octopus.core.enums.command import *
-from octopus.core.framework import BaseResource, queue
+from octopus.core.framework import queue
 from octopus.core.communication.http import Http404, Http400
 
 __all__ = ['CommandsResource', 'CommandResource']
@@ -14,7 +14,10 @@ __all__ = ['CommandsResource', 'CommandResource']
 ALLOWED_STATUS_VALUES = (CMD_READY, CMD_DONE, CMD_CANCELED)
 
 
-class CommandsResource(BaseResource):
+from octopus.dispatcher.webservice import DispatcherBaseResource
+
+
+class CommandsResource(DispatcherBaseResource):
     def get(self):
         commands = self.framework.application.dispatchTree.commands.values()
         commandRepresentations = [command.to_json() for command in commands]
@@ -22,7 +25,7 @@ class CommandsResource(BaseResource):
         self.writeCallback(commandRepresentations)
 
 
-class CommandResource(BaseResource):
+class CommandResource(DispatcherBaseResource):
     #@queue
     def get(self, commandId):
         try:

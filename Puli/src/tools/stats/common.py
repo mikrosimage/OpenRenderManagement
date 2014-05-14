@@ -13,6 +13,7 @@ import pygal
 import os
 import time
 
+from tools.common import roundTime
 
 def createCommonParser():
     """
@@ -32,15 +33,16 @@ def createCommonParser():
     parser.add_option( "--endTime",   action="store", dest="timeOut", type="int", help="End range is at timestamp", default=time.time() )
 
     parser.add_option( "-t", "--title", action="store", dest="title", help="Indicates a title", default="")
-    parser.add_option( "-r", "--res", action="store", dest="resolution", type="int", help="Indicates ", default=10 )
+    parser.add_option( "-r", "--res", action="store", dest="resolution", type="int", help="Indicates ", default=60 )
     parser.add_option( "--scale", action="store", dest="scaleEvery", type="int", help="Indicates the number of scale values to display", default=8 )
+    parser.add_option( "--scaleRound", action="store", dest="scaleRound", type="int", default=3600 )
 
     parser.add_option( "--stack", action="store_true", dest="stacked", default=False)
     parser.add_option( "--line", action="store_true", dest="line", default=True)
     parser.add_option( "--interpolate", action="store_true", dest="interpolate", default=False )
     parser.add_option( "--log", action="store_true", dest="logarithmic", help="Display graph with a logarithmic scale", default=False )
     parser.add_option( "--style", action="store", dest="style", help="Set a specific style name (BlueStyle, RedBlueStyle ...)", default="RedBlue" )
-    parser.add_option( "--scaleRotation", action="store", dest="scaleRotation", type="int", default=30 )
+    parser.add_option( "--scaleRotation", action="store", dest="scaleRotation", type="int", default=45 )
     parser.add_option( "--width", action="store", dest="width", type="int" )
     parser.add_option( "--height", action="store", dest="height", type="int" )
     # parser.add_option( "--hide-x", action="store_false", dest="showX", default=True)
@@ -74,6 +76,47 @@ def getRangeDates( options ):
     return startDate, endDate
 
 
+def prepareScale( npArrScale, options ):
+
+    result = [''] * options.resolution
+    tmpscale = []
+
+    for i, date in enumerate(npArrScale):
+        tmpscale.append(date[0])
+    
+    # print tmpscale
+
+    options.scaleEvery = min(options.scaleEvery, options.resolution )
+
+    #########################################################################################
+    # Methode 2
+    padding = len(npArrScale)/options.scaleEvery
+    dayChanged = False
+    for i, date in enumerate(tmpscale):
+        # print "i: %d - %s " % (i, date)
+
+        
+        if i==0:
+            result[i] = date.strftime("%m-%d %H:%M")
+        else:
+
+            if date.date() != tmpscale[i-1].date():
+                # print "change date at index: %d = %s" % (i,date.strftime("%m-%d %H:%M"))
+                dayChanged = True
+
+            if i%padding == 0:
+                rounded = roundTime(date,options.scaleRound)
+
+                if dayChanged:
+                    result[i] = rounded.strftime('%m-%d %H:%M')
+                else:
+                    result[i] = rounded.strftime('%H:%M')
+
+                dayChanged = False
+
+    result[-1] = tmpscale[-1].strftime("%m-%d %H:%M")
+
+    return result
 
 def prepareGraph( options ):
     """
@@ -104,7 +147,7 @@ def prepareGraph( options ):
     #
     # Prepare optionnal graph arguments
     #
-    kwargs = {}
+    kwargs = {"truncate_label":50}
     if options.interpolate:
         kwargs["interpolate"]="hermite"
         kwargs["interpolation_parameters"]={'type': 'cardinal', 'c': .5}

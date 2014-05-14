@@ -16,9 +16,6 @@ import re
 from datetime import datetime
 from tornado.web import HTTPError
 
-from octopus.dispatcher.model import FolderNode
-from octopus.core.framework import BaseResource, queue
-
 __all__ = []
 
 logger = logging.getLogger('dispatcher.webservice')
@@ -87,6 +84,43 @@ class IQueryNode:
             except Exception:
                 logger.warning('Error parsing date constraint')
                 raise HTTPError(400, 'Error when parsing date constraint')
+
+
+        if 'constraint_starttime' in pFilterArgs:
+            if len(pFilterArgs['constraint_starttime']) > 1:
+                logger.info( "More than one date specified, first occurence is used: %s" % str(pFilterArgs['constraint_starttime'][0]) )
+            try:
+                filterTimestamp = datetime.strptime( pFilterArgs['constraint_starttime'][0], "%Y-%m-%d %H:%M:%S" ).strftime('%s')
+                pNodes = [child for child in pNodes if child.startTime >= int(filterTimestamp)]
+
+                logger.info( "-- Filtering on date %s (e.g. timestamp=%d), nb remaining nodes: %d", pFilterArgs['constraint_starttime'][0], 
+                    int(filterTimestamp), len(pNodes) )
+
+            except ValueError:
+                logger.warning('Error: invalid date format, the format definition is "YYYY-mm-dd HH:MM:SS"' )
+                raise HTTPError(400, 'Invalid date format')
+            except Exception:
+                logger.warning('Error parsing date constraint')
+                raise HTTPError(400, 'Error when parsing date constraint')
+
+
+        if 'constraint_endtime' in pFilterArgs:
+            if len(pFilterArgs['constraint_endtime']) > 1:
+                logger.info( "More than one date specified, first occurence is used: %s" % str(pFilterArgs['constraint_endtime'][0]) )
+            try:
+                filterTimestamp = datetime.strptime( pFilterArgs['constraint_endtime'][0], "%Y-%m-%d %H:%M:%S" ).strftime('%s')
+                pNodes = [child for child in pNodes if child.endTime >= int(filterTimestamp)]
+
+                logger.info( "-- Filtering on date %s (e.g. timestamp=%d), nb remaining nodes: %d", pFilterArgs['constraint_endtime'][0], 
+                    int(filterTimestamp), len(pNodes) )
+
+            except ValueError:
+                logger.warning('Error: invalid date format, the format definition is "YYYY-mm-dd HH:MM:SS"' )
+                raise HTTPError(400, 'Invalid date format')
+            except Exception:
+                logger.warning('Error parsing date constraint')
+                raise HTTPError(400, 'Error when parsing date constraint')
+
 
         return pNodes
         pass

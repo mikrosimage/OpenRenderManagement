@@ -55,6 +55,10 @@ class LicenseManager:
                     self.licenses[newLicense.name] = newLicense
 
     def releaseLicenseForRenderNode(self, licenseName, renderNode):
+        """
+        :licenseName: 
+        :renderNode: render node object expected
+        """
         if "&" not in licenseName:
             licenseName += "&"
         for licName in licenseName.split("&"):
@@ -65,7 +69,8 @@ class LicenseManager:
                         if renderNode in lic.currentUsingRenderNodes:
                             rnId = lic.currentUsingRenderNodes.index(renderNode)
                             del lic.currentUsingRenderNodes[rnId]
-                        lic.release()
+
+                            lic.release()
                     except IndexError:
                         print "Cannot release license %s for renderNode %s" % (licName, renderNode)
                 except KeyError:

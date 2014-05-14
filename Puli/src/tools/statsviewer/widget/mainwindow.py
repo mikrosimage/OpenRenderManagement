@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'rsrc/ui/mainwindow.ui'
 #
-# Created: Wed Apr 16 17:19:55 2014
+# Created: Tue May  6 19:08:29 2014
 #      by: PyQt4 UI code generator 4.6.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PyQt4 import QtCore, QtGui
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(833, 726)
+        MainWindow.resize(843, 747)
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout = QtGui.QVBoxLayout(self.centralwidget)
@@ -171,6 +171,25 @@ class Ui_MainWindow(object):
         self.cbGraphStyle.addItem("")
         self.cbGraphStyle.addItem("")
         self.formLayout_4.setWidget(3, QtGui.QFormLayout.FieldRole, self.cbGraphStyle)
+        self.lblScaleRound = QtGui.QLabel(self.displayGroupBox)
+        self.lblScaleRound.setObjectName("lblScaleRound")
+        self.formLayout_4.setWidget(4, QtGui.QFormLayout.LabelRole, self.lblScaleRound)
+        self.cbScaleRound = QtGui.QComboBox(self.displayGroupBox)
+        self.cbScaleRound.setObjectName("cbScaleRound")
+        self.cbScaleRound.addItem("")
+        self.cbScaleRound.addItem("")
+        self.cbScaleRound.addItem("")
+        self.cbScaleRound.addItem("")
+        self.formLayout_4.setWidget(4, QtGui.QFormLayout.FieldRole, self.cbScaleRound)
+        self.spScaleResolution = QtGui.QSpinBox(self.displayGroupBox)
+        self.spScaleResolution.setMinimum(8)
+        self.spScaleResolution.setMaximum(40)
+        self.spScaleResolution.setProperty("value", 20)
+        self.spScaleResolution.setObjectName("spScaleResolution")
+        self.formLayout_4.setWidget(5, QtGui.QFormLayout.FieldRole, self.spScaleResolution)
+        self.lblScaleResolution = QtGui.QLabel(self.displayGroupBox)
+        self.lblScaleResolution.setObjectName("lblScaleResolution")
+        self.formLayout_4.setWidget(5, QtGui.QFormLayout.LabelRole, self.lblScaleResolution)
         self.optionsLayout.addWidget(self.displayGroupBox)
         spacerItem2 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.optionsLayout.addItem(spacerItem2)
@@ -187,7 +206,7 @@ class Ui_MainWindow(object):
         self.verticalLayout.addWidget(self.log)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 833, 22))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 843, 22))
         self.menubar.setObjectName("menubar")
         self.menuFile = QtGui.QMenu(self.menubar)
         self.menuFile.setEnabled(False)
@@ -223,7 +242,7 @@ class Ui_MainWindow(object):
         self.actionGenerate.setIconVisibleInMenu(True)
         self.actionGenerate.setObjectName("actionGenerate")
         self.actionReset = QtGui.QAction(MainWindow)
-        self.actionReset.setEnabled(False)
+        self.actionReset.setEnabled(True)
         self.actionReset.setObjectName("actionReset")
         self.actionExport_as = QtGui.QAction(MainWindow)
         self.actionExport_as.setObjectName("actionExport_as")
@@ -237,6 +256,7 @@ class Ui_MainWindow(object):
         self.toolBar.addAction(self.actionReset)
 
         self.retranslateUi(MainWindow)
+        self.cbScaleRound.setCurrentIndex(3)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -269,6 +289,12 @@ class Ui_MainWindow(object):
         self.cbGraphStyle.setItemText(4, QtGui.QApplication.translate("MainWindow", "Clean", None, QtGui.QApplication.UnicodeUTF8))
         self.cbGraphStyle.setItemText(5, QtGui.QApplication.translate("MainWindow", "DarkColorized", None, QtGui.QApplication.UnicodeUTF8))
         self.cbGraphStyle.setItemText(6, QtGui.QApplication.translate("MainWindow", "DarkGreenBlue", None, QtGui.QApplication.UnicodeUTF8))
+        self.lblScaleRound.setText(QtGui.QApplication.translate("MainWindow", "Round time (min)", None, QtGui.QApplication.UnicodeUTF8))
+        self.cbScaleRound.setItemText(0, QtGui.QApplication.translate("MainWindow", "1", None, QtGui.QApplication.UnicodeUTF8))
+        self.cbScaleRound.setItemText(1, QtGui.QApplication.translate("MainWindow", "10", None, QtGui.QApplication.UnicodeUTF8))
+        self.cbScaleRound.setItemText(2, QtGui.QApplication.translate("MainWindow", "30", None, QtGui.QApplication.UnicodeUTF8))
+        self.cbScaleRound.setItemText(3, QtGui.QApplication.translate("MainWindow", "60", None, QtGui.QApplication.UnicodeUTF8))
+        self.lblScaleResolution.setText(QtGui.QApplication.translate("MainWindow", "Resolution in scale", None, QtGui.QApplication.UnicodeUTF8))
         self.menuFile.setTitle(QtGui.QApplication.translate("MainWindow", "&Graph", None, QtGui.QApplication.UnicodeUTF8))
         self.menuSnapshots.setTitle(QtGui.QApplication.translate("MainWindow", "&Snapshots", None, QtGui.QApplication.UnicodeUTF8))
         self.toolBar.setWindowTitle(QtGui.QApplication.translate("MainWindow", "toolBar", None, QtGui.QApplication.UnicodeUTF8))

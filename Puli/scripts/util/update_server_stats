@@ -1,0 +1,6 @@
+#!/bin/bash
+
+export PYTHONPATH=/datas/jsa/OpenRenderManagement/Puli/src:${PYTHONPATH}
+BASEDIR="/datas/jsa/OpenRenderManagement/Puli/src/tools/stats"
+
+python ${BASEDIR}/display_stats.py "$@"

@@ -4,8 +4,8 @@
 #
 
 # GRAB PROD
-*/2 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/grab_usage_stats -s puliserver -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/usage_stats.log
-*/2 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/grab_queue_stats -s puliserver -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/queue_stats.log
+#*/2 * * * * /s/apps/lin/puli/scripts/util/grab_usage_stats -s puliserver -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/usage_stats.log
+#*/2 * * * * /s/apps/lin/puli/scripts/util/grab_queue_stats -s puliserver -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/queue_stats.log
 
 
 # DISPLAY PROD
@@ -18,3 +18,10 @@
 */10 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/update_jobs_by_status > /dev/null
 */10 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/update_rn_by_prod > /dev/null
 */10 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/update_jobs_by_prod > /dev/null
+
+
+*/20 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/update_server_stats -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/server_stats.log -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs -s 2 -r 120 --suffix "_2"
+
+*/20 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/update_server_stats -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/server_stats.log -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs -s 12 -r 600 --suffix "_12"
+
+*/20 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/update_server_stats -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/server_stats.log -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs -s 24 -r 600 --suffix "_24"

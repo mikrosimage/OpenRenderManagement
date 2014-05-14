@@ -172,8 +172,11 @@ In addition, user can specified one or several specific constraint with the "-C"
 that satisfy the specified expressions: FILTER="VALUE"
     user=jsa
     status=1 (value is a number corresponding to the states: "Blocked", "Ready", "Running", "Done", "Error", "Cancel", "Pause")
+    prod="ddd"
     name="mon job"
     creationtime="2013-09-09 14:00:00" (It filters all jobs created AFTER the given date/time)
+    starttime="2013-09-09 14:00:00" (It filters all jobs started AFTER the given date/time)
+    endtime="2013-09-09 14:00:00" (It filters all jobs ended AFTER the given date/time)
     
 Output options will indicate if the command will output information as human readable format, or csv or raw json
 Default output will only return top level jobs in queue, user can override this to return in-depth data of job nodes hierarchy

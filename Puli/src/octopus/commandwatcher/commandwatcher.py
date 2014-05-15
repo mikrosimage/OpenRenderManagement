@@ -16,9 +16,12 @@ import logging
 import sys
 import inspect
 import os
+import socket
 import time
 from datetime import timedelta
 import traceback
+import requests
+
 import httplib as http
 try:
     import simplejson as json
@@ -29,6 +32,8 @@ from octopus.core.http import Request
 from octopus.core.communication.requestmanager import RequestManager
 
 from octopus.core.enums.command import *
+
+from octopus.worker import settings
 
 EXEC, POSTEXEC = "execute", "postExecute"
 
@@ -60,7 +65,7 @@ class CmdThreader(Thread):
     # @param cmd name of the jobtype script
     # @param methodName name of the jobtype method
     #
-    def __init__(self, cmd, methodName, arguments, updateCompletion, updateMessage, updateStats):
+    def __init__(self, cmd, methodName, arguments, updateCompletion, updateMessage, updateStats, updateLicense):
         Thread.__init__(self)
 
         self.logger = logging.getLogger()
@@ -73,6 +78,7 @@ class CmdThreader(Thread):
         self.updateCompletion = updateCompletion
         self.updateMessage = updateMessage
         self.updateStats = updateStats
+        self.updateLicense = updateLicense
 
     ## Runs the specified method of the command.
     #
@@ -86,6 +92,9 @@ class CmdThreader(Thread):
             constructArgs = [ self.arguments, self.updateCompletion, self.updateMessage ]
             if 'updateStats' in inspect.getargspec( getattr(self.cmd, self.methodName) ).args:
                 constructArgs.append( self.updateStats )
+            if 'updateLicense' in inspect.getargspec( getattr(self.cmd, self.methodName) ).args:
+                constructArgs.append( self.updateLicense )
+
 
             getattr(self.cmd, self.methodName)( *constructArgs )
 
@@ -121,11 +130,13 @@ class CommandWatcher(object):
     # @param runner the runner type name
     # @param arguments the arguments of the command
     #
-    def __init__(self, workerPort, id, runner, validationExpression, arguments):
+    def __init__(self, serverFullName, workerPort, id, runner, validationExpression, arguments):
 
         self.id = id
         self.requestManager = RequestManager("127.0.0.1", workerPort)
         self.workerPort = workerPort
+        self.workerFullName = socket.gethostname()+":"+self.workerPort
+        self.serverFullName = serverFullName
         self.arguments = arguments
         self.runner = runner
 
@@ -211,7 +222,7 @@ class CommandWatcher(object):
     # @param action the name of the action to thread (jobtype script method)
     #
     def threadAction(self, action):
-        tmpThread = CmdThreader(self.job, action, self.arguments, self.updateCompletionCallback, self.updateMessageCallback, self.updateCustomStatsCallback)
+        tmpThread = CmdThreader(self.job, action, self.arguments, self.updateCompletionCallback, self.updateMessageCallback, self.updateCustomStatsCallback, self.updateLicenseCallback)
         tmpThread.setName('jobMain')
         # add this thread to the list
         self.threadList[action] = tmpThread
@@ -291,7 +302,7 @@ class CommandWatcher(object):
     def updateCommandCompletion(self):
         """
         Sends info to the server every intervalTimeExec (several seconds).
-        Info sent is a dict with: commandid, completion and message
+        Info sent is a dict with: commandid, completion, message and custom stats dict
 
         FIXED: 
         Update checks if the data has change between last update to avoid sending same value to frequently.
@@ -332,6 +343,54 @@ class CommandWatcher(object):
         self.completionHasChanged = False
         self.statsHasChanged = False
         self.lastUpdateDate = time.time()
+
+
+    def releaseLicense(self, licenseName):
+        """
+        Sends a request to release a license for the current node
+        """
+        if self.workerPort is "0":
+            return
+
+        try:
+            body = json.dumps({"rns":self.workerFullName})
+            url = "http://%s/licenses/%s" % (self.serverFullName, licenseName)
+
+            logger.info("Releasing license: %s - %s", body, url)
+
+            r=requests.delete(url, data=body)
+            if r.status_code in [200,202]: 
+                logger.info("License released successfully, response = %s" % r.text)
+            else:
+                logger.error("Error releasing license, response = %s" % r.text)
+
+        except HTTPError as e:
+            print "Error:", e
+
+
+
+    def reserveLicense(self, licenseName):
+        """
+        Sends a request to release a license for the current node
+        """
+        if self.workerPort is "0":
+            return
+
+        # try:
+        #     body = json.dumps({"rns":self.workerFullName})
+        #     url = "http://%s/licenses/%s" % (self.serverFullName, licenseName)
+
+        #     logger.info("Reserving license: %s - %s", body, url)
+
+        #     r=requests.delete(url, data=body)
+        #     if r.status_code in [200,202]: 
+        #         logger.info("License token reserver successfully, response = %s" % r.text)
+        #     else:
+        #         logger.error("Error getting license token, response = %s" % r.text)
+
+        # except HTTPError as e:
+        #     print "Error:", e
+
 
     ## Threads the post execution of the corresponding runner.
     #
@@ -422,6 +481,44 @@ class CommandWatcher(object):
             logger.warning("Impossible to update stats: dictionnary expected but \"%r\" was received" % type(pStats) )
 
 
+    def updateLicenseCallback(self, pLicenseInfo):
+        """
+        """
+        logger.debug("Updating license: %r" % type(pLicenseInfo) )
+
+        if type(pLicenseInfo) is not dict:
+            logger.warning("Impossible to update license: dictionnary expected but \"%r\" was received" % type(pLicenseInfo) )
+            return False
+
+        if "action" not in pLicenseInfo or "licenseName" not in pLicenseInfo:
+            logger.warning("Impossible to update license: missing action or license name in given dict: \"%r\"" % pLicenseInfo )
+            return False
+        
+        if pLicenseInfo["licenseName"].strip()=='':
+            logger.warning("Impossible to update license: license name is empty: \"%r\"" % pLicenseInfo )
+            return False
+        
+
+        if pLicenseInfo["action"] == 'reserve':
+            for i in range(10):
+                result = self.reserveLicense( pLicenseInfo["licenseName"].strip() )
+                if result == True:
+                    break
+                logger.warning("Impossible to release license (attempt %d/10)" % (i+1) )
+                time.sleep(.2)
+
+        elif pLicenseInfo["action"] == 'release':
+            for i in range(10):
+                result = self.releaseLicense( pLicenseInfo["licenseName"].strip() )
+                if result == True:
+                    break
+                logger.warning("Impossible to release license (attempt %d/10)" % (i+1) )
+                time.sleep(.2)
+        else:
+            logger.warning("Impossible to update license: invalid action specified, got \"%s\", 'reserve' or 'release' expected" % pLicenseInfo["action"] )
+            return False
+
+
 
 def closeFileDescriptors():
     '''Close all the file descriptors inherited from the parent except for stdin, stdout and stderr.'''
@@ -441,11 +538,12 @@ if __name__ == "__main__":
 
     try:
         logFile = sys.argv[1]
-        workerPort = sys.argv[2]
-        id = int(sys.argv[3])
-        runner = sys.argv[4]
-        validationExpression = sys.argv[5]
-        rawArguments = sys.argv[6:]
+        serverFullName = sys.argv[2]
+        workerPort = sys.argv[3]
+        id = int(sys.argv[4])
+        runner = sys.argv[5]
+        validationExpression = sys.argv[6]
+        rawArguments = sys.argv[7:]
         
         # ARGH !
         # Receiveing arguments as string and loosing type info...
@@ -486,8 +584,11 @@ if __name__ == "__main__":
     # logger.addHandler(handler)
 
     try:
-        CommandWatcher(workerPort, id, runner, validationExpression, argumentsDict)
+        CommandWatcher(serverFullName, workerPort, id, runner, validationExpression, argumentsDict)
     except KeyboardInterrupt, e:
         print("\n")
         logger.warning("Exit event caught: exiting CommandWatcher...\n")
         sys.exit(0)
+    except Exception, e:
+        logger.warning("Exception raised during commandwatcher init: %r" % e)
+        sys.exit(-1)

@@ -743,6 +743,7 @@ class Worker(MainLoopApplication):
             "-u",
             scriptFile,
             commandWatcherLogFile,
+            str( settings.DISPATCHER_ADDRESS+":"+str(settings.DISPATCHER_PORT) ),
             str(workerPort),
             str(command.id),
             command.runner,

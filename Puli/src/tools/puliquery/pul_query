@@ -50,7 +50,6 @@ except ImportError:
 
 import sys
 import time
-import urllib
 
 # Imports from local dir
 from settings import Settings

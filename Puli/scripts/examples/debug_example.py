@@ -34,7 +34,7 @@ if __name__ == '__main__':
     #
     # Create custom graph
     #
-    simpleTask = Task( name="T-Generic", arguments=args, tags=tags, runner="puliclient.contrib.debug.WaitRunner", lic="shave" )
+    simpleTask = Task( name="T-Generic", arguments=args, tags=tags, runner="puliclient.contrib.debug.WaitRunner", lic="shave&mtoa" )
     graph = Graph( options.jobname, simpleTask, tags=tags, poolName='default' )
 
 #    graph.addNewTask( name="T1", arguments={ "args": command, "start":1, "end":5, "packetSize":1 }, tags={ "prod":"test", "shot":"test", "nbFrames":5}, runner=runner )

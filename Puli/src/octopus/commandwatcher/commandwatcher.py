@@ -347,7 +347,16 @@ class CommandWatcher(object):
 
     def releaseLicense(self, licenseName):
         """
-        Sends a request to release a license for the current node
+        | Sends a request to release a license for the current node
+        | A request releases only one token, i.e. a tuple (RN, license)
+        | The command watcher will make several attempts (with 200ms delay btw each)
+        | Request detail:
+        |   -url: http://server:port/licenses/<licenseName>
+        |   -method: DELETE
+        |   -body: a dict containing the worker address: { "rns":"workerAddress:port" }
+
+        :param licenseName: the license name, usally "shave", "mtoa", "nuke"
+        :type licenseName: string
         """
         if self.workerPort is "0":
             return
@@ -357,39 +366,69 @@ class CommandWatcher(object):
             url = "http://%s/licenses/%s" % (self.serverFullName, licenseName)
 
             logger.info("Releasing license: %s - %s", body, url)
+            for i in range(10):
+                r=requests.delete(url, data=body)
+                if r.status_code in [200,202]: 
+                    logger.info("License released successfully, response = %s" % r.text)
+                    res = True
+                    break
+                else:
+                    logger.error("Error releasing license, response = %s" % r.text)
+                    res = False
 
-            r=requests.delete(url, data=body)
-            if r.status_code in [200,202]: 
-                logger.info("License released successfully, response = %s" % r.text)
-            else:
-                logger.error("Error releasing license, response = %s" % r.text)
+                logger.warning("Impossible to release license (attempt %d/10)" % (i+1) )
+                time.sleep(.2)
 
         except HTTPError as e:
             print "Error:", e
+            res = False
+
+        return res
 
 
 
-    def reserveLicense(self, licenseName):
-        """
-        Sends a request to release a license for the current node
-        """
-        if self.workerPort is "0":
-            return
+    # def reserveLicense(self, licenseName):
+    #     """
+    #     | Sends a request to take a license token for the current node
+    #     | It is possible to request several licenses at the same time using  '&' as a delimiter
+    #     | in the licenseName param.
+    #     | The command watcher will make several attempts (with 200ms delay btw each)
+    #     |
+    #     | Request detail:
+    #     |   -url: http://server:port/licenses/
+    #     |   -method: DELETE
+    #     |   -body: a dict containing the worker address: { "rns":"workerAddress:port" }
 
-        # try:
-        #     body = json.dumps({"rns":self.workerFullName})
-        #     url = "http://%s/licenses/%s" % (self.serverFullName, licenseName)
+    #     :param licenseName: the license name, usally "shave", "mtoa", "nuke"
+    #     :type licenseName: string
+    #     """
+    #     if self.workerPort is "0":
+    #         return
 
-        #     logger.info("Reserving license: %s - %s", body, url)
+    #     try:
+    #         body = json.dumps({"rns":self.workerFullName})
+    #         url = "http://%s/licenses/%s" % (self.serverFullName, licenseName)
 
-        #     r=requests.delete(url, data=body)
-        #     if r.status_code in [200,202]: 
-        #         logger.info("License token reserver successfully, response = %s" % r.text)
-        #     else:
-        #         logger.error("Error getting license token, response = %s" % r.text)
+    #         logger.info("Getting license: %s - %s", body, url)
 
-        # except HTTPError as e:
-        #     print "Error:", e
+    #         for i in range(10):
+    #             r=requests.delete(url, data=body)
+    #             if r.status_code in [200,202]: 
+    #                 logger.info("License taken successfully, response = %s" % r.text)
+    #                 res = True
+    #                 break
+    #             else:
+    #                 logger.error("Error getting license token, response = %s" % r.text)
+    #                 res = False
+
+    #             logger.warning("Impossible to reserve license (attempt %d/10)" % (i+1) )
+    #             time.sleep(.2)
+
+    #     except HTTPError as e:
+    #         print "Error:", e
+    #         res = False
+
+    #     return res
 
 
     ## Threads the post execution of the corresponding runner.
@@ -483,6 +522,12 @@ class CommandWatcher(object):
 
     def updateLicenseCallback(self, pLicenseInfo):
         """
+        Specific callback used to reserve/release a license on the server.
+        Note, it is ONLY POSSIBLE TO RELEASE a license.
+        Remote reservation from the worker is not implemented yet.
+
+        :param licenseInfo: Information about the license and action to perform.
+        :type licenseInfo: dict {'action':'release', 'licenseName':'shave'}
         """
         logger.debug("Updating license: %r" % type(pLicenseInfo) )
 
@@ -500,24 +545,17 @@ class CommandWatcher(object):
         
 
         if pLicenseInfo["action"] == 'reserve':
-            for i in range(10):
-                result = self.reserveLicense( pLicenseInfo["licenseName"].strip() )
-                if result == True:
-                    break
-                logger.warning("Impossible to release license (attempt %d/10)" % (i+1) )
-                time.sleep(.2)
+            # result = self.reserveLicense( pLicenseInfo["licenseName"].strip() )
+            logger.warning("Currently not implemented.")
+            result = False
 
         elif pLicenseInfo["action"] == 'release':
-            for i in range(10):
-                result = self.releaseLicense( pLicenseInfo["licenseName"].strip() )
-                if result == True:
-                    break
-                logger.warning("Impossible to release license (attempt %d/10)" % (i+1) )
-                time.sleep(.2)
+            result = self.releaseLicense( pLicenseInfo["licenseName"].strip() )
         else:
             logger.warning("Impossible to update license: invalid action specified, got \"%s\", 'reserve' or 'release' expected" % pLicenseInfo["action"] )
             return False
 
+        return result
 
 
 def closeFileDescriptors():

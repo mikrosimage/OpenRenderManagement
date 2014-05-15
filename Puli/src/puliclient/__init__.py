@@ -905,7 +905,7 @@ class Graph(object):
         from octopus.commandwatcher.commandwatcher import CommandWatcher
 
         try:
-            result = CommandWatcher("0", commandId, runner, validationExpression, pCommand["arguments"])
+            result = CommandWatcher("", "0", commandId, runner, validationExpression, pCommand["arguments"])
             return result.finalState
 
         except KeyboardInterrupt:

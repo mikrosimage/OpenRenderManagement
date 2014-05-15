@@ -1,8 +1,8 @@
 #!/usr/bin/python
 # coding: utf-8
 
-# import sys
-# sys.path.insert(0,"/s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli/src")
+import sys
+sys.path.insert(0,"/s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli/src")
 
 from puliclient import Task, Graph
 
@@ -89,5 +89,5 @@ graph = Graph('mtoa_graph', tags=tags, poolName='default' )
 
 graph.addNewTask( "mtoa_task", tags=tags, arguments=arguments, decomposer=decomposer, lic="shave&mtoa" )
 
-graph.submit("vfxpc64", 8004)
+graph.submit("pulitest", 8004)
 # graph.execute()

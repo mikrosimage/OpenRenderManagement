@@ -540,7 +540,7 @@ class Worker(MainLoopApplication):
                     if pid==commandWatcher.processId:
                         print "CommandWatcher killed but still referenced: %s" % commandWatcher
                         commandWatcher.finished = True
-                        self.updateCompletionAndStatus(commandWatcher.commandId, commandWatcher.command.completion, COMMAND.CMD_ERROR, "Command abruptly terminated.")
+                        self.updateCompletionAndStatus(commandWatcher.commandId, commandWatcher.command.completion, commandWatcher.command.status, "Command termination not properly tracked.")
 
         except OSError:
             pass

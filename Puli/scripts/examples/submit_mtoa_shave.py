@@ -22,7 +22,7 @@ prodPath = '/s/prods/mikros_test'
 mayaProjPath = '/s/prods/mikros_test/fam/3d_pr'
 
 # maya scene file path
-mayaScenePath = '/s/prods/mikros_test/fam/3d_pr/scenes/3rendu/test_shave.ma'
+mayaScenePath = '/s/prods/mikros_test/fam/3d_pr/scenes/3rendu/test_shave_big.ma'
 
 # start, end frames
 startFrame = 1

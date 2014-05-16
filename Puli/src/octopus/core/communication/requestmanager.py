@@ -1,7 +1,7 @@
 import socket
 import httplib as http
 import time
-
+import logging
 
 def connect(self):
     """Connect to the host and port specified in __init__."""
@@ -61,6 +61,7 @@ class RequestManager(object):
                 conn.close()
                 break
             except socket.error, e:
+                print("Socket error in requestmanager '%s %s' - retries left: %d" % (method, path, maxi))
                 try:
                     conn.close()
                 except:
@@ -73,6 +74,7 @@ class RequestManager(object):
                 if errno == 111 or errno == 0:
                     return "ERROR"
                 maxi -= 1
+
                 #print e
                 time.sleep(.1)
             except http.BadStatusLine, e:
@@ -86,6 +88,7 @@ class RequestManager(object):
                 time.sleep(.1)
                 if maxi == 1:
                     # enough retry
+                    print("Maximum number of retries reached in request manager (%s - %s)" % (method, path))
                     raise
 
         else:

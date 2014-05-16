@@ -241,7 +241,10 @@ class CommandWatcher(object):
         headers = {}
         headers['Content-Length'] = len(dct)
         try:
-            self.requestManager.put("/commands/%d/" % self.id, dct, headers)
+            result = self.requestManager.put("/commands/%d/" % self.id, dct, headers)
+            logger.error('Update command request failed: result=%r' % result)
+
+
         except http.BadStatusLine:
             logger.debug('Updating status has failed with a BadStatusLine error')
 
@@ -304,7 +307,6 @@ class CommandWatcher(object):
         Sends info to the server every intervalTimeExec (several seconds).
         Info sent is a dict with: commandid, completion, message and custom stats dict
 
-        FIXED: 
         Update checks if the data has change between last update to avoid sending same value to frequently.
         A maxRefreshDataDelay will force a resend even if data is identicial to ensure server consistency.
         """

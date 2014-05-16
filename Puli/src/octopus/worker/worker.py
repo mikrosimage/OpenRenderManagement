@@ -4,6 +4,7 @@ import os
 import signal
 import sys
 import time
+import datetime
 import platform
 try:
     import simplejson as json
@@ -60,6 +61,17 @@ class Worker(MainLoopApplication):
             self.command = None
             self.modified = True
             self.finished = False
+
+        def __repr__(self):
+            return str(
+                "CommandWatcher(id=%r, processId=%r, startTime=%r, processObj=%r, timeOut=%r, commandId=%r, command=%r, modified=%r, finished=%r)" % 
+                    (self.id, self.processId, self.startTime, self.processObj, self.timeOut, self.commandId, self.command, self.modified, self.finished )
+                )
+
+        def __str__(self):
+            startTime = datetime.datetime.fromtimestamp(int(self.startTime)).strftime("%Y-%m-%d_%H:%M:%S")
+            returncode = self.processObj.process.returncode if self.processObj.process != None else "Invalid process"
+            return str("CommadnWatcher: pid=%r, commandId=%r, returncode=%r, startTime=%s" %(self.processId, self.commandId, returncode, startTime) )
 
     @property
     def modifiedCommandWatchers(self):
@@ -520,7 +532,16 @@ class Worker(MainLoopApplication):
         try:
             pid, stat = os.waitpid(-1, os.WNOHANG)
             if pid:
-                LOGGER.warning("Cleaned process %s" % str(pid))
+                LOGGER.info("Cleaned process %s" % str(pid))
+
+                # Check if pid is still in command watchers
+                # In this case, clean the cmdwatcher and put cmd in error
+                for commandWatcher in self.commandWatchers.values():
+                    if pid==commandWatcher.processId:
+                        print "CommandWatcher killed but still referenced: %s" % commandWatcher
+                        commandWatcher.finished = True
+                        self.updateCompletionAndStatus(commandWatcher.commandId, commandWatcher.command.completion, COMMAND.CMD_ERROR, "Command abruptly terminated.")
+
         except OSError:
             pass
 
@@ -564,7 +585,6 @@ class Worker(MainLoopApplication):
         time.sleep(0.05)
         # except:
         #     LOGGER.error("A problem occured : " + repr(sys.exc_info()))
-
 
 
 
@@ -612,7 +632,7 @@ class Worker(MainLoopApplication):
 
     def removeCommandWatcher(self, commandWatcher):
         print "\nREMOVING COMMAND WATCHER %d\n" % commandWatcher.command.id
-        LOGGER.info('Removing command watcher for command %d', commandWatcher.commandId)
+
         del self.commandWatchers[commandWatcher.commandId]
         del self.commands[commandWatcher.commandId]
         try:
@@ -673,10 +693,14 @@ class Worker(MainLoopApplication):
     #       can call their after-execution scripts
     #
     def stopCommandApply(self, ticket, commandId):
-        commandWatcher = self.commandWatchers[commandId]
-        commandWatcher.processObj.kill()
-        self.updateCompletionAndStatus(commandId, 0, COMMAND.CMD_CANCELED, "killed")
-        LOGGER.info("Stopped command %r", commandId)
+        try:
+            commandWatcher = self.commandWatchers[commandId]
+        except KeyError:
+            LOGGER.warning("attempt to update completion and status of unregistered  command %d", commandId)
+        else:
+            commandWatcher.processObj.kill()
+            self.updateCompletionAndStatus(commandId, 0, COMMAND.CMD_CANCELED, "killed")
+            LOGGER.info("Stopped command %r", commandId)
 
     def updateCommandApply(self, ticket, commandId, status, completion, message, stats):
         self.updateCompletionAndStatus(commandId, completion, status, message, stats)

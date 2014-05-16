@@ -89,5 +89,5 @@ graph = Graph('mtoa_graph', tags=tags, poolName='default' )
 
 graph.addNewTask( "mtoa_task", tags=tags, arguments=arguments, decomposer=decomposer, lic="shave&mtoa" )
 
-graph.submit("pulitest", 8004)
+graph.submit("vfxpc64", 8004)
 # graph.execute()

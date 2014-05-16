@@ -17,4 +17,5 @@ class CommandLineRunner(CommandRunner):
         updateCompletion(0)
         # subprocess.call(args, close_fds=True, shell=True)
         subprocess.check_call(args, close_fds=True, shell=True)
+
         updateCompletion(1)

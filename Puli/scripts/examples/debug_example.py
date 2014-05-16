@@ -26,15 +26,17 @@ def process_args():
 if __name__ == '__main__':
     (options, args) = process_args()
 
-    command = "sleep `shuf -i %d-%d -n 1`" % (options.min, options.max )
+    # command = "sleep `shuf -i %d-%d -n 1`" % (options.min, options.max )
     # command = "sleep %%MI_FRAME%%"
-    args =  { "delay": options.min, "start":1, "end":options.num, "packetSize":1 }
+    command = "bash /tmp/test.bash"
+    args =  { "args":command, "delay": options.min, "start":1, "end":options.num, "packetSize":1 }
     tags =  { "prod":"test", "shot":"test", "nbFrames":options.num }
 
     #
     # Create custom graph
     #
-    simpleTask = Task( name="T-Generic", arguments=args, tags=tags, runner="puliclient.contrib.debug.WaitRunner", lic="shave&mtoa" )
+    simpleTask = Task( name="T-Generic", arguments=args, tags=tags, runner="puliclient.contrib.commandlinerunner.CommandLineRunner" )
+    # simpleTask = Task( name="T-Generic", arguments=args, tags=tags, runner="puliclient.contrib.debug.WaitRunner" )
     graph = Graph( options.jobname, simpleTask, tags=tags, poolName='default' )
 
 #    graph.addNewTask( name="T1", arguments={ "args": command, "start":1, "end":5, "packetSize":1 }, tags={ "prod":"test", "shot":"test", "nbFrames":5}, runner=runner )

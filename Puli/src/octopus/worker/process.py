@@ -42,19 +42,24 @@ def spawnCommandWatcher(pidfile, logfile, args, env):
 
     LOGGER.info("Starting subprocess, log: %r, args: %r" % (logfile, args) )        
     try:
-        pid = subprocess.Popen(args, bufsize=-1, stdin=devnull, stdout=logfile,
+        # pid = subprocess.Popen(args, bufsize=-1, stdin=devnull, stdout=logfile,
+        #                    stderr=subprocess.STDOUT, close_fds=CLOSE_FDS,
+        #                    preexec_fn=setlimits, env=envN).pid
+        process = subprocess.Popen(args, bufsize=-1, stdin=devnull, stdout=logfile,
                            stderr=subprocess.STDOUT, close_fds=CLOSE_FDS,
-                           preexec_fn=setlimits, env=envN).pid
+                           preexec_fn=setlimits, env=envN)
+
     except Exception,e:
         LOGGER.error("Impossible to start subprocess: %r" % e)        
         raise e
 
-    file(pidfile, "w").write(str(pid))
-    return CommandWatcherProcess(pidfile, pid)
+    file(pidfile, "w").write(str(process.pid))
+    return CommandWatcherProcess(process, pidfile, process.pid)
 
 
 class CommandWatcherProcess(object):
-    def __init__(self, pidfile, pid):
+    def __init__(self, process, pidfile, pid):
+        self.process = process
         self.pidfile = pidfile
         self.pid = pid
 

@@ -118,7 +118,7 @@ class CmdThreader(Thread):
 #
 class CommandWatcher(object):
 
-    intervalTimeExec = 2
+    intervalTimeExec = 1
     maxRefreshDataDelay = 30
     intervalTimePostExec = 3
     threadList = {}
@@ -241,7 +241,10 @@ class CommandWatcher(object):
         headers = {}
         headers['Content-Length'] = len(dct)
         try:
-            self.requestManager.put("/commands/%d/" % self.id, dct, headers)
+            result = self.requestManager.put("/commands/%d/" % self.id, dct, headers)
+            logger.error('Update command request failed: result=%r' % result)
+
+
         except http.BadStatusLine:
             logger.debug('Updating status has failed with a BadStatusLine error')
 
@@ -304,7 +307,6 @@ class CommandWatcher(object):
         Sends info to the server every intervalTimeExec (several seconds).
         Info sent is a dict with: commandid, completion, message and custom stats dict
 
-        FIXED: 
         Update checks if the data has change between last update to avoid sending same value to frequently.
         A maxRefreshDataDelay will force a resend even if data is identicial to ensure server consistency.
         """
@@ -385,50 +387,6 @@ class CommandWatcher(object):
 
         return res
 
-
-
-    # def reserveLicense(self, licenseName):
-    #     """
-    #     | Sends a request to take a license token for the current node
-    #     | It is possible to request several licenses at the same time using  '&' as a delimiter
-    #     | in the licenseName param.
-    #     | The command watcher will make several attempts (with 200ms delay btw each)
-    #     |
-    #     | Request detail:
-    #     |   -url: http://server:port/licenses/
-    #     |   -method: DELETE
-    #     |   -body: a dict containing the worker address: { "rns":"workerAddress:port" }
-
-    #     :param licenseName: the license name, usally "shave", "mtoa", "nuke"
-    #     :type licenseName: string
-    #     """
-    #     if self.workerPort is "0":
-    #         return
-
-    #     try:
-    #         body = json.dumps({"rns":self.workerFullName})
-    #         url = "http://%s/licenses/%s" % (self.serverFullName, licenseName)
-
-    #         logger.info("Getting license: %s - %s", body, url)
-
-    #         for i in range(10):
-    #             r=requests.delete(url, data=body)
-    #             if r.status_code in [200,202]: 
-    #                 logger.info("License taken successfully, response = %s" % r.text)
-    #                 res = True
-    #                 break
-    #             else:
-    #                 logger.error("Error getting license token, response = %s" % r.text)
-    #                 res = False
-
-    #             logger.warning("Impossible to reserve license (attempt %d/10)" % (i+1) )
-    #             time.sleep(.2)
-
-    #     except HTTPError as e:
-    #         print "Error:", e
-    #         res = False
-
-    #     return res
 
 
     ## Threads the post execution of the corresponding runner.
@@ -629,4 +587,4 @@ if __name__ == "__main__":
         sys.exit(0)
     except Exception, e:
         logger.warning("Exception raised during commandwatcher init: %r" % e)
-        sys.exit(-1)
+        sys.exit(1)

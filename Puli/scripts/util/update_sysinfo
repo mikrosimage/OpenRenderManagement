@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# http://vfxpc213:8000/updatesysinfos
+# Get all RN names registered in puli
+DELAY=0.1
+
+rns=$(pul_rn -o name -a name $@ | tail -n +2)
+count=$(echo $rns |wc -w)
+
+
+echo "Preparing to update $count rendernodes on ${SERVER}."
+echo "A short delay will be applied between each request to avoid flooding the server (${DELAY}s)."
+read -p "Continue (y/n) ? "
+
+if [[ "$REPLY" != "y" ]]
+then
+  echo "Interrupted by user." 
+  exit 1
+fi
+
+i=0
+progress=0
+for rn in $rns
+do
+    i=$((i+1))
+    progress=$((i*100/count))
+    printf "Update in progress: %3.f %% - %.3d/%.3d  - %s\r" "$progress" "$i" "$count" "$rn"
+
+    curl -s -X GET "http://$rn/updatesysinfos"
+    sleep ${DELAY}s
+done
+printf "\n"

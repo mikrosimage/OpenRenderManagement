@@ -555,7 +555,7 @@ if __name__ == "__main__":
         # argumentsDict = {}
         # argumentsDict = ast.literal_eval(rawArguments[0])
 
-    except:
+    except Exception, e:
         # print "Usage : commandwatcher.py /path/to/the/log/file workerPort id runnerscript argument1=value1,argument2=value2...",
         print "Usage : commandwatcher.py /path/to/the/log/file workerPort id runnerscript \"{'argument1':'strvalue1', 'argument2'=intvalue2... }\"",
         print ""
@@ -564,7 +564,9 @@ if __name__ == "__main__":
         print ""
         print "NOTE: If worker port is \"0\", it means the commandwatcher is intended to be used locally only."
         print "      In this case completion and message updates are ignore as everything is logged."
-        raise
+        logger.warning("Invalid call to the CommandWatcher script: %r" % e)
+        closeFileDescriptors()
+        sys.exit(1)
 
     closeFileDescriptors()
 

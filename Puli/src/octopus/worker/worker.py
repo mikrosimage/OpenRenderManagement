@@ -71,7 +71,7 @@ class Worker(MainLoopApplication):
         def __str__(self):
             startTime = datetime.datetime.fromtimestamp(int(self.startTime)).strftime("%Y-%m-%d_%H:%M:%S")
             returncode = self.processObj.process.returncode if self.processObj.process != None else "Invalid process"
-            return str("CommadnWatcher: pid=%r, commandId=%r, returncode=%r, startTime=%s" %(self.processId, self.commandId, returncode, startTime) )
+            return str("CommandWatcher: pid=%r, commandId=%r, returncode=%r, startTime=%s" %(self.processId, self.commandId, returncode, startTime) )
 
     @property
     def modifiedCommandWatchers(self):
@@ -540,9 +540,20 @@ class Worker(MainLoopApplication):
                 # In this case, clean the cmdwatcher and put cmd in error
                 for commandWatcher in self.commandWatchers.values():
                     if pid==commandWatcher.processId:
-                        print "CommandWatcher killed but still referenced: %s" % commandWatcher
+
+                        if commandWatcher.command.status == COMMAND.CMD_RUNNING:
+                            LOGGER.warning("Command was considered RUNNING: set to ERROR")
+                            newStatus = COMMAND.CMD_ERROR
+                        else:
+                            LOGGER.warning("Keep current status: %r", commandWatcher.command.status)
+                            newStatus = commandWatcher.command.status
+
+
+                        LOGGER.warning( "CommandWatcher killed but still referenced: %s", commandWatcher )
                         commandWatcher.finished = True
-                        self.updateCompletionAndStatus(commandWatcher.commandId, commandWatcher.command.completion, commandWatcher.command.status, "Command termination not properly tracked.")
+
+                        self.updateCompletionAndStatus(commandWatcher.commandId, commandWatcher.command.completion, newStatus, "Command termination not properly tracked.")
+
 
         except OSError:
             pass
@@ -783,6 +794,7 @@ class Worker(MainLoopApplication):
         # args.append( str(command.arguments) )
 
         try:
+            # import pudb;pu.db
             watcherProcess = spawnCommandWatcher(pidFile, logFile, args, command.environment)
             newCommandWatcher.processObj = watcherProcess
             newCommandWatcher.startTime = time.time()

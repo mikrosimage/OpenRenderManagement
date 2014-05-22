@@ -61,7 +61,7 @@ class RequestManager(object):
                 conn.close()
                 break
             except socket.error, e:
-                print("Socket error in requestmanager '%s %s' - retries left: %d" % (method, path, maxi))
+                print("Warning: a socket error occured in requestmanager '%s %s' - retries left: %d" % (method, path, maxi))
                 try:
                     conn.close()
                 except:

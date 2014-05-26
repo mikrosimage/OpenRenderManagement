@@ -207,7 +207,7 @@ if __name__ == "__main__":
                 #     for key2, val2 in val.items():
                 #         print "    - %s = %s" % (key2, val2)
 
-    except HTTPError as e:
+    except HTTPError, e:
         print "Error:", e
    
     del(http_client)

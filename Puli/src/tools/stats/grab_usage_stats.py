@@ -130,7 +130,7 @@ if __name__ == "__main__":
                     del license["rns"]
                 statsLogger.warning( json.dumps(tmp) )
 
-    except HTTPError as e:
+    except HTTPError, e:
         print "Error:", e
    
     del(http_client)

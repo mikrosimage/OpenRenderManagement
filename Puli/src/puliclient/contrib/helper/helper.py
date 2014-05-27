@@ -36,9 +36,6 @@ class PuliActionHelper(object):
             cleanLib.cleanTempDir()
         self.mikUtils = mikrosEnv.MikrosEnv()
 
-
-
-
     def decompose(self, start, end, packetSize, callback, framesList=""):
         packetSize = int(packetSize)
         if len(framesList) != 0:
@@ -85,13 +82,14 @@ class PuliActionHelper(object):
     def mapPath(self, path):
         return self.mikUtils.mapPath(path)
 
-    def getEnv(self, am_version="", maya_version="", shave_version="", crowd_version="", home="", job="", jobdrive="", applis="", use_shave=0, nuke_rep=""):
+    def getEnv(self, am_version="", maya_version="", shave_version="", crowd_version="", yeti_version="latest", home="", job="", jobdrive="", applis="", use_shave=0, nuke_rep=""):
         if nuke_rep == "":
             if use_shave:
                 env = mayaVar.shaveCreateEnvDict(am_version=am_version,
                                     maya_version=maya_version,
                                     shave_version=shave_version,
                                     crowd_version=crowd_version,
+                                    yeti_version=yeti_version,
                                     home=home,
                                     job=job,
                                     jobdrive=jobdrive,
@@ -101,6 +99,7 @@ class PuliActionHelper(object):
                                     maya_version=maya_version,
                                     shave_version=shave_version,
                                     crowd_version=crowd_version,
+                                    yeti_version=yeti_version,
                                     home=home,
                                     job=job,
                                     jobdrive=jobdrive,
@@ -196,7 +195,8 @@ class PuliActionHelper(object):
 
     def buildMayaCommand(self, mikserActionScript, arguments, additionalArguments, env):
         if self.isLinux():
-            cmdArgs = ["%s/bin/python-bin" % env["MAYA_LOCATION"]]
+            cmdArgs = ["/usr/bin/nice"]
+            cmdArgs += ["%s/bin/python-bin" % env["MAYA_LOCATION"]]
         else:
             cmdArgs = ["%s\\bin\\mayapy.exe" % env["MAYA_LOCATION"]]
         if mikserActionScript is not None:
@@ -221,15 +221,16 @@ class PuliActionHelper(object):
         version_array = p.split(arguments[NUKE_VERSION])
         nukeExeVersion = version_array[0][-1] + "." + version_array[1][0]
         if self.isLinux():
-            cmdArgs = ["/s/apps/lin/nuke/Nuke%s/Nuke%s" % (arguments[NUKE_VERSION], nukeExeVersion)]
+            cmdArgs = ["/usr/bin/nice"]
+            cmdArgs += ["/s/apps/lin/nuke/Nuke%s/Nuke%s" % (arguments[NUKE_VERSION], nukeExeVersion)]
         else:
             cmdArgs = ["S:/Nuke/Nuke%s/Nuke%s" % (arguments[NUKE_VERSION], nukeExeVersion)]
 
         if "nukex"in arguments and arguments["nukex"] == "1":
             cmdArgs.append("--nukex")
         cmdArgs.append("-t")
-        cmdArgs.append("-V")
-        if arguments["fullSizeRender"] == "1":
+        cmdArgs.append("-V 2")
+        if "fullSizeRender" in arguments and arguments["fullSizeRender"] == "1":
             cmdArgs.append("-f")
         cmdArgs.append("-X")
         cmdArgs.append(arguments["writeNode"])

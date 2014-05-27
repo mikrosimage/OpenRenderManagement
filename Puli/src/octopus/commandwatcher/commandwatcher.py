@@ -11,7 +11,6 @@
 ####################################################################################################
 
 from threading import Thread
-from puliclient.jobs import CommandError
 import logging
 import sys
 import inspect
@@ -28,11 +27,12 @@ try:
 except ImportError:
     import json
 
+from tornado.web import HTTPError
+
+from puliclient.jobs import CommandError
 from octopus.core.http import Request
 from octopus.core.communication.requestmanager import RequestManager
-
 from octopus.core.enums.command import *
-
 from octopus.worker import settings
 
 EXEC, POSTEXEC = "execute", "postExecute"
@@ -381,7 +381,7 @@ class CommandWatcher(object):
                 logger.warning("Impossible to release license (attempt %d/10)" % (i+1) )
                 time.sleep(.2)
 
-        except HTTPError as e:
+        except HTTPError, e:
             print "Error:", e
             res = False
 

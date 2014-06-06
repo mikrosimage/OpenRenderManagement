@@ -159,6 +159,13 @@ def prepareGraph( options ):
     if options.height:
         kwargs["height"]=options.height
 
+    # if options.majorCount:
+    #     kwargs["x_labels_major_count"]=options.majorCount
+
+    if options.majorCount:
+        kwargs["x_labels_major_count"]=options.majorCount
+        kwargs["show_minor_x_labels"]=False
+
     if options.stacked:
         graph = pygal.StackedLine( x_label_rotation=options.scaleRotation,
                                 show_dots=False,
@@ -168,6 +175,8 @@ def prepareGraph( options ):
                                 legend_font_size=12,
                                 spacing=0,
                                 logarithmic=options.logarithmic, 
+                                show_minor_x_labels=False,
+
                                 # show_x_labels=options.showX,
                                 # show_y_labels=options.showY,
                                 style=style[options.style],
@@ -183,6 +192,7 @@ def prepareGraph( options ):
                                 spacing=0,
                                 # margin=2,
                                 logarithmic=options.logarithmic, 
+
                                 # show_x_labels=options.showX,
                                 # show_y_labels=options.showY,
                                 style=style[options.style],

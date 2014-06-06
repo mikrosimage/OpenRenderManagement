@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # DEV env
-#export PYTHONPATH=/datas/jsa/OpenRenderManagement/Puli/src:${PYTHONPATH}
-# BASEDIR="/datas/jsa/OpenRenderManagement/Puli/src/tools/stats"
+export PYTHONPATH=/datas/jsa/OpenRenderManagement/Puli/src:${PYTHONPATH}
+BASEDIR="/datas/jsa/OpenRenderManagement/Puli/src/tools/stats"
 
 # PROD env
-export PYTHONPATH=/s/apps/lin/puli/:${PYTHONPATH}
-BASEDIR="/s/apps/lin/puli/tools/stats"
+# export PYTHONPATH=/s/apps/lin/puli/:${PYTHONPATH}
+# BASEDIR="/s/apps/lin/puli/tools/stats"
 
 python ${BASEDIR}/grab_queue_stats.py "$@"

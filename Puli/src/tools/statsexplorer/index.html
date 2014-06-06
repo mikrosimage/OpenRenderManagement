@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>D3 Test</title>
+        
+        <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    </head>
+    <body>
+        <script type="text/javascript">
+
+            var dataset = [ 
+                            {
+                                "_id" : 148,
+                                "avg_allocatedrn" : 1
+                            }, 
+                            {
+                                "_id" : 149,
+                                "avg_allocatedrn" : 3
+                            }, 
+                            {
+                                "_id" : 150,
+                                "avg_allocatedrn" : 2
+                            }, 
+                            {
+                                "_id" : 152,
+                                "avg_allocatedrn" : 2
+                            }, 
+                            {
+                                "_id" : 152,
+                                "avg_allocatedrn" : 7
+                            }, 
+                            {
+                                "_id" : 151,
+                                "avg_allocatedrn" : 1
+                            }, 
+                            {
+                                "_id" : 152,
+                                "avg_allocatedrn" : 5
+                            }, 
+                            {
+                                "_id" : 152,
+                                "avg_allocatedrn" : 1
+                            }, 
+                            {
+                                "_id" : 153,
+                                "avg_allocatedrn" : 2.1226415094339623
+                            }
+                        ];
+            // d3.select("body").selectAll("p").data(dataset).enter().append("p").text(function(d) { return d.avg_allocatedrn; }).style("color", "red");
+
+            var w = 200;
+            var h = 50;
+            var barPadding = 1;
+
+            var svg = d3.select("body").append("svg");
+            svg.attr("width", w)
+               .attr("height", h);
+
+            // var circles = svg.selectAll("circle")
+            //                .data(dataset)
+            //                .enter()
+            //                .append("circle");
+                           
+            // circles.attr("cx", function(d, i) {
+            //             return (i * 50) + 25;
+            //         })
+            //        .attr("cy", h/2)
+            //        .attr("r", function(d) {
+            //             return d.avg_allocatedrn * 10;                        
+            //        })
+            //         .attr("fill", "yellow")
+            //         .attr("stroke", "orange");
+            //Create scale functions
+            var hScale = d3.scale.linear()
+                                 .domain([1,7])
+                                 .range([1,h]);
+
+            var rec = svg.selectAll("rect")
+                            .data(dataset)
+                            .enter()
+                            .append("rect")
+                            // .attr("x", 0)
+                            .attr("x", function(d, i) {
+                                return i * (w / dataset.length);
+                            })
+
+                            // .attr("y", function(d,i){ return (h-d.avg_allocatedrn) })
+                            .attr("y", 0)
+                            .attr("width", function(d,i) {
+                                return ((w/dataset.length)-barPadding);
+
+                            })
+                            .attr("height", function(d,i){ return (hScale(d.avg_allocatedrn))})
+                            .attr("fill", "teal");
+            svg.append("g")
+                .call(d3.svg.axis()
+                    .scale(hScale)
+                    .orient("left"));
+        </script>
+    </body>
+</html>

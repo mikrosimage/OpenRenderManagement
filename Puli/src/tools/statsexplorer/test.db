@@ -1,0 +1,36 @@
+//db.test.drop()
+//
+//db.test.insert({ 'ts': 1401792696, 'status':1})
+//db.test.insert({ 'ts': 1401792696, 'status':1})
+//db.test.insert({ 'ts': 1401792696, 'status':0})
+//
+//db.test.insert({ 'ts': 1401792796, 'status':1})
+//db.test.insert({ 'ts': 1401792796, 'status':0})
+//db.test.insert({ 'ts': 1401792796, 'status':1})
+//
+//db.test.insert({ 'ts': 1401792896, 'status':0})
+//db.test.insert({ 'ts': 1401792896, 'status':0})
+//db.test.insert({ 'ts': 1401792896, 'status':1})
+//
+//db.test.insert({ 'ts': 1401792996, 'status':1})
+//db.test.insert({ 'ts': 1401792996, 'status':0})
+//db.test.insert({ 'ts': 1401792996, 'status':0})
+//
+//db.test.find()
+
+//db.test.aggregate([
+//    { $group: { _id:  "$ts", val: {$sum:1} } }
+//])
+
+db.test.aggregate([
+//    { $group: { _id:  "$ts", val: {$sum:1} } }
+    { $group: { 
+        _id: { 
+            date : { '$subtract' :[ {'$divide' : ['$ts', 200 ]}, { '$mod' : [{'$divide' : ['$ts', 200 ]},1] } ] },
+            },
+        count: { $sum: 1},
+        count_val1: {$sum:{ $cond: [ {$eq:["$status",1]},0,1]} },
+        count_val0: {$sum:{ $cond: [ {$eq:["$status",0]},0,1]} },
+      }
+    }
+])

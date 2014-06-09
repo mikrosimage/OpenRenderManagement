@@ -525,7 +525,9 @@ class Worker(MainLoopApplication):
                 rf = open(settings.RESTARTFILE, 'w')
                 rf.close()
             else:
-                LOGGER.warning("Waiting for restart.")
+                # LOGGER.warning("Waiting for restart.")
+                LOGGER.warning("Exiting worker")
+                self.framework.stop()
 
 
         #

@@ -58,7 +58,7 @@ class CommandResource(BaseResource):
                     elif status == CMD_READY:
                         command.setReadyStatus()
                     elif status == CMD_DONE:
-                        logging.getLogger().debug("setting to done!")
+                        # logging.getLogger().debug("setting to done!")
                         command.setDoneStatus()
                     else:
                         raise Http400("Invalid status. Cannot set of command %d to %r" % (commandId, status))

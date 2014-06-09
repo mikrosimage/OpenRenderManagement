@@ -125,8 +125,11 @@ class Command(models.Model):
 
     def setDoneStatus(self):
         """
+        If current status is RUNNING:
+        - clear the current clearAssignment
+        - send a request to the RN to cancel its command
 
-        FIXME c'est pas bon, il faut que la demande soit envoyee au RN directement qui va forcer le done...
+        If request failed, set the status to CANCEL
         """
         if self.status in (CMD_FINISHING, CMD_DONE, CMD_CANCELED):
             return
@@ -140,6 +143,7 @@ class Command(models.Model):
                 # if request has failed, it means the rendernode is unreachable
                 LOGGER.warning("Impossible to cancel command %d on the RN: %s" % (self.id, self.renderNode.name ))
                 self.status = CMD_CANCELED
+
         elif self.renderNode is not None:
             self.renderNode.clearAssignment(self)
         self.status = CMD_DONE

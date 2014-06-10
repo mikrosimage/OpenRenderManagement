@@ -603,7 +603,7 @@ class Worker(MainLoopApplication):
 
     def sendSysInfosMessage(self):
         """
-        | Send sys infos to the dispatcher, the request content holds the RN status only, it has to be kept
+        | Send sys infos to the dispatcher, the request content holds the RN status and free memory only, it has to be kept
         | very small to avoid nerwork flood.
         | req: PUT /rendernodes/<currentRN>/sysinfos
 

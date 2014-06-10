@@ -41,6 +41,7 @@ class WorkerWebService(Application):
         super(WorkerWebService, self).__init__([
             (r'/commands/?$', CommandsResource, dict(framework=framework)),
             (r'/commands/(?P<id>\d+)/?$', CommandResource, dict(framework=framework)),
+            (r'/commands/(?P<id>\d+)/done?$', CommandDoneResource, dict(framework=framework)),
             (r'/debug/?$', DebugResource, dict(framework=framework)),
             (r'/log/?$', WorkerLogResource),
             (r'/log/command/(?P<path>\S+)', CommandLogResource),
@@ -166,6 +167,27 @@ class CommandsResource(BaseResource):
             self.set_status(202)
 
 
+class CommandDoneResource(BaseResource):
+    def post(self, id):
+        """
+        | Stops the process running for this command and sets final status to DONE
+        | It is called by the dispatcher when a user wants to stop a command without cancelling it.
+        |
+        | URL: POST http://host:port/commands/<id>/done
+        """
+
+        dct = {
+                'commandId': int(id),
+                'endStatus':5,
+                'endCompletion':100,
+                'endMessage':"Done."
+            }
+
+        # endCompletion=0, endStatus=COMMAND.CMD_CANCELED, endMessage="killed")
+
+        self.framework.addOrder(self.framework.application.stopCommandApply, **dct)
+        self.set_status(200)
+
 
 class CommandResource(BaseResource):
     def put(self, id):
@@ -212,9 +234,21 @@ class CommandResource(BaseResource):
         # Success
         self.set_status(202)
 
+
     def delete(self, id):
+        """
+        | Called when cancelling a running command.
+        | The process is interrupted and final status is set to CANCEL (with a default completion and message to display)
+        |
+        | URL: DELETE http://host:port/commands/<id>
+
+        """
+
         #TODO check error and set error response
-        dct = {'commandId': int(id)}
+        dct = {
+                'commandId': int(id)
+            }
+
         self.framework.addOrder(self.framework.application.stopCommandApply, **dct)
         self.set_status(202)
 

@@ -129,7 +129,7 @@ class Command(models.Model):
         - clear the current clearAssignment
         - send a request to the RN to cancel its command
 
-        If request failed, set the status to CANCEL
+        If request failed (several retries are executed depanding of dispatcher settings), set the status to CANCEL
         """
         if self.status in (CMD_FINISHING, CMD_DONE, CMD_CANCELED):
             return

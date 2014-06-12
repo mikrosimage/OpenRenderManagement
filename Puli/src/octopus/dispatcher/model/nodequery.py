@@ -231,4 +231,63 @@ class IQueryNode:
         #         raise HTTPError(400, 'Error when parsing date constraint')
 
         return pNodes
-        pass
+
+
+    def compareTS( self, operator, date1, date2 ):
+        """
+        Use a string operator (<,>) to return a value between to timestamps
+        :operator: a single charater '<' or '>'
+        :date1: first date to compare
+        :date2: second date to compare
+        :return: a boolean indicating the result of "date1 OPERATOR date2"
+        """
+        # logger.warning("Comparison: %d %s %d" % (date1, operator, date2))
+        if operator == '<':
+            return True if date1 < date2 else False
+        elif operator == '>':
+            return True if date1 > date2 else False
+        else:
+            raise HTTPError(400, 'Invalid operator')
+
+
+    def filterCommands( self, pFilterArgs, pItems ):
+        """
+        Parse several given constraint to reduce the number of items in list.
+        The resulting items will be sent back as a request response.
+        """
+
+        if 'constraint_id' in pFilterArgs:
+            filteredIds = [int(id) for id in pFilterArgs['constraint_id']]
+            pItems = [child for child in pItems if child.id in filteredIds]
+            logger.info( "-- Filtering on id list %s, nb remaining items: %d", pFilterArgs['constraint_id'], len(pItems) )
+
+        if 'constraint_status' in pFilterArgs:
+            statusList = [int(status) for status in pFilterArgs['constraint_status']]
+            pItems = [child for child in pItems if child.status in statusList]
+            logger.info( "-- Filtering on status %s, nb remaining items: %d", pFilterArgs['constraint_status'], len(pItems) )
+
+        if 'constraint_starttime' in pFilterArgs:
+            if len(pFilterArgs['constraint_starttime']) > 1:
+                logger.info( "More than one date specified, first occurence is used: %s" % str(pFilterArgs['constraint_starttime'][0]) )
+            try:
+                if pFilterArgs['constraint_starttime'][0][0] in ['>','<']:
+                    operator, dateValue = pFilterArgs['constraint_starttime'][0][:1], pFilterArgs['constraint_starttime'][0][1:]
+                else:
+                    operator, dateValue = ('>', pFilterArgs['constraint_starttime'][0])
+
+                filterTimestamp = int(datetime.strptime( dateValue, "%Y-%m-%d %H:%M:%S" ).strftime('%s'))
+                pItems = [child for child in pItems if self.compareTS( operator, child.startTime, filterTimestamp) ]
+
+                logger.info( "-- Filtering on date %s (e.g. timestamp=%d), nb remaining nodes: %d", pFilterArgs['constraint_starttime'][0], 
+                    int(filterTimestamp), len(pItems) )
+
+            except HTTPError,e:
+                raise e
+            except ValueError:
+                logger.warning('Error: invalid date format, the format definition is "YYYY-mm-dd HH:MM:SS"' )
+                raise HTTPError(400, 'Invalid date format')
+            except Exception:
+                logger.warning('Error parsing date constraint')
+                raise HTTPError(400, 'Error when parsing date constraint')
+
+        return pItems

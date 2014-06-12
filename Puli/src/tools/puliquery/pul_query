@@ -54,7 +54,7 @@ import time
 # Imports from local dir
 from settings import Settings
 from common import ConstraintFactory
-from common import JobTable
+from common import JobTable, CustomTable, CommandTable
 from octopus.core.enums.node import NODE_STATUS_SHORT_NAMES
 
 
@@ -135,11 +135,17 @@ def handle_request(response):
                 print line[1:]
 
         else:
+            if options.data == 'job':
+                tableDescription = JobTable
+            elif options.data == 'command':
+                tableDescription = CommandTable
+
             # Default display
-            JobTable.displayHeader( JobTable )
+            CustomTable.displayHeader( tableDescription )
             for row in _data['items']:
-                JobTable.displayRow( row, JobTable )
-            JobTable.displayFooter( _data['summary'], JobTable )
+                CustomTable.displayRow( row, tableDescription )
+            CustomTable.displayFooter( _data['summary'], tableDescription )
+
 
 
 
@@ -255,21 +261,22 @@ Reminder: Possible values for a job status
 
     parser = OptionParser(usage=usage, description=desc, version="%prog 0.1", formatter=PlainHelpFormatter() )
 
-    parser.add_option("-c", "--csv", action="store_true", dest="csv", help="Returns data formatted as raw CSV file [%default]", default=False)
-    parser.add_option("-j", "--json", action="store_true", dest="json", help="Returns data formatted as JSON [%default]", default=False)
+    parser.add_option("-c", "--csv", action="store_true", dest="csv", help="Return data formatted as raw CSV file [%default]", default=False)
+    parser.add_option("-j", "--json", action="store_true", dest="json", help="Return data formatted as JSON [%default]", default=False)
     
     parser.add_option("-C", "--constraint", action="append", type="string", help="Allow user to specify one or more filter constraints")
     parser.add_option("-a", "--attribute", action="append", type="string", help="Allow user to display specific attributes only (WARNING if defined, result will be presented as csv by default, it can be overriden by -j flag)")
 
-    parser.add_option("-t", "--tree",   action="store_true", dest="tree", help="Returns full tree of tasks (not commands)", default=False)
+    parser.add_option("-t", "--tree",   action="store_true", dest="tree", help="Return full tree of tasks (not commands)", default=False)
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help="Verbose mode [%default]", default=False)
 
     parser.add_option("-o", "--sort", action="store", dest="sortField", help="Sort items with the given field [%default]", default='id')
     parser.add_option("-r", "--reverse-order", action="store_true", dest="reverseOrder", help="Sort item in reverse order [%default]", default=False)
 
-    parser.add_option("-s", "--server", action="store", dest="hostname", help="Specified a target host to send the request")
-    parser.add_option("-p", "--port", action="store", dest="port", help="Specified a target port")
+    parser.add_option("-s", "--server", action="store", dest="hostname", help="Specify a target host to send the request")
+    parser.add_option("-p", "--port", action="store", dest="port", help="Specify a target port")
 
+    parser.add_option("-d", "--data", action="store", dest="data", type="string", help="request a specific type of data: command/job [%default]", default="job")
     options, args = parser.parse_args()
 
     return options, args
@@ -294,6 +301,19 @@ if __name__ == '__main__':
         # And if not, activate csv display.
         if not options.json and not options.csv:
             options.csv = True
+
+
+    #
+    # Define base query (regarding "-d" option)
+    #
+    if options.data == 'job':
+        _query = "query?"
+    elif options.data == 'command':
+        _query = "query/command?"
+    else:
+        print "Invalid data type specified (%r), possible values are: job or command" % options.data
+        sys.exit(1)
+
 
 
     #

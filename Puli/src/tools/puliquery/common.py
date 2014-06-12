@@ -466,7 +466,78 @@ class RenderNodeTable( CustomTable ):
         ]
 
 
+class CommandTable( CustomTable ):
+    """
+    | Definition of a table representation for RN.
+    | 
+    | Usage:
+    |     - Field: the data to display, supported fields are those defined in RN object
+    |     - Label: a text used for table header
+    |     - Visible: a flag indicating if the column will be printed
+    |     - dataFormat: a format for the corresponding field, it uses the 'print' (and similar to POSIX print) function
+    |     - labelFormat: idem for label info
+    |     - transform: Optionnal attribute, the name of a static method of the parent CustomTable class.
+    |                  It will preprocess the value before displaying it at a string (example: date format, status short name)
+    """
+    columns = [
+            {
+                "field":        "id", 
+                "label":        "ID", 
+                "visible":      True, 
+                "dataFormat":   " %-5d",
+                "labelFormat":  " %-5s"
+            },
+            {
+                "field":        "description", 
+                "label":        "DESC", 
+                "visible":      True, 
+                "dataFormat":   " %-40s",
+                "labelFormat":  " %-40s",
+                "truncate":     40,
+            },
+            {
+                "field":        "creationTime", 
+                "label":        "CREATE", 
+                "visible":      True, 
+                "dataFormat":   " %-15s",
+                "labelFormat":  " %-15s",
+                "transform":    CustomTable.preciseDateToStr
+            },
+            {
+                "field":        "startTime", 
+                "label":        "START", 
+                "visible":      True, 
+                "dataFormat":   " %-15s",
+                "labelFormat":  " %-15s",
+                "transform":    CustomTable.preciseDateToStr
+            },
+            {
+                "field":        "endTime", 
+                "label":        "END", 
+                "visible":      True, 
+                "dataFormat":   " %-15s",
+                "labelFormat":  " %-15s",
+                "transform":    CustomTable.preciseDateToStr
+            },
+            {
+                "field":        "updateTime", 
+                "label":        "LAST UPDATE", 
+                "visible":      True, 
+                "dataFormat":   " %-15s",
+                "labelFormat":  " %-15s",
+                "transform":    CustomTable.preciseDateToStr
+            },
+            {
+                "field":        "renderNode", 
+                "label":        "HOST", 
+                "visible":      True, 
+                "dataFormat":   " %-15s",
+                "labelFormat":  " %-15s",
+                "truncate":     15
+            },
 
+
+        ]
 
 
 

@@ -210,8 +210,7 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
         
         except Exception, e:
             logger.warning('Impossible to retrieve result for query: %s', self.request.uri)
-            raise e
-
+            raise HTTPError( 500, "Internal error")
 
 
 
@@ -352,5 +351,5 @@ class RenderNodeQueryResource(DispatcherBaseResource, IQueryNode):
 
         except Exception, e:
             logger.warning('Impossible to retrieve query result for rendernodes: %s', self.request.uri)
-            raise e
+            raise HTTPError( 500, "Internal error")
         pass

@@ -25,7 +25,11 @@ from tornado.httpclient import HTTPClient, HTTPError
 from optparse import OptionParser
 from datetime import datetime
 
-import simplejson as json
+ try:
+    import simplejson as json
+except ImportError:
+    import json
+
 import sys
 import time
 import urllib

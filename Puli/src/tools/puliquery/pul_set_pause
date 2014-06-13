@@ -20,7 +20,10 @@ from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 
 from optparse import OptionParser, IndentedHelpFormatter
 from datetime import datetime
-import simplejson as json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 import sys
 import time
 import urllib

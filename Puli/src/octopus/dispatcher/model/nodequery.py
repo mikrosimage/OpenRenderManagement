@@ -20,7 +20,12 @@ __all__ = []
 
 logger = logging.getLogger('dispatcher.webservice')
 
+
+class QueryError(Exception):
+    pass
+
 class IQueryNode:
+
 
     def filterNodes( self, pFilterArgs, pNodes ):
         """
@@ -247,7 +252,7 @@ class IQueryNode:
         elif operator == '>':
             return True if date1 > date2 else False
         else:
-            raise HTTPError(400, 'Invalid operator')
+            raise QueryError('Invalid operator')
 
 
     def filterCommands( self, pFilterArgs, pItems ):
@@ -256,17 +261,21 @@ class IQueryNode:
         The resulting items will be sent back as a request response.
         """
 
+        # Creating filter from constraints given in request
+        filterId = False
+        filterStatus = False
+        filterStartTime = False
+
         if 'constraint_id' in pFilterArgs:
+            filterId = True
             filteredIds = [int(id) for id in pFilterArgs['constraint_id']]
-            pItems = [child for child in pItems if child.id in filteredIds]
-            logger.info( "-- Filtering on id list %s, nb remaining items: %d", pFilterArgs['constraint_id'], len(pItems) )
 
         if 'constraint_status' in pFilterArgs:
+            filterStatus = True
             statusList = [int(status) for status in pFilterArgs['constraint_status']]
-            pItems = [child for child in pItems if child.status in statusList]
-            logger.info( "-- Filtering on status %s, nb remaining items: %d", pFilterArgs['constraint_status'], len(pItems) )
 
         if 'constraint_starttime' in pFilterArgs:
+            filterStartTime = True
             if len(pFilterArgs['constraint_starttime']) > 1:
                 logger.info( "More than one date specified, first occurence is used: %s" % str(pFilterArgs['constraint_starttime'][0]) )
             try:
@@ -276,18 +285,59 @@ class IQueryNode:
                     operator, dateValue = ('>', pFilterArgs['constraint_starttime'][0])
 
                 filterTimestamp = int(datetime.strptime( dateValue, "%Y-%m-%d %H:%M:%S" ).strftime('%s'))
-                pItems = [child for child in pItems if self.compareTS( operator, child.startTime, filterTimestamp) ]
-
-                logger.info( "-- Filtering on date %s (e.g. timestamp=%d), nb remaining nodes: %d", pFilterArgs['constraint_starttime'][0], 
-                    int(filterTimestamp), len(pItems) )
-
-            except HTTPError,e:
-                raise e
-            except ValueError:
-                logger.warning('Error: invalid date format, the format definition is "YYYY-mm-dd HH:MM:SS"' )
-                raise HTTPError(400, 'Invalid date format')
+            except (ValueError,QueryError),e:
+                logger.warning('Error: invalid date format, the format definition is "YYYY-mm-dd HH:MM:SS", optionnal operator can be added as first character "<" or ">"' )
+                raise HTTPError(400, 'Invalid date format or invalid operator')
             except Exception:
                 logger.warning('Error parsing date constraint')
                 raise HTTPError(400, 'Error when parsing date constraint')
 
-        return pItems
+        # Loop over elem to yiel result
+        for item in pItems:
+            if filterId and item.id not in filteredIds:
+                continue
+
+            if filterStatus and item.status not in statusList:
+                continue
+
+            if filterStartTime and not self.compareTS( operator, item.startTime, filterTimestamp):
+                continue
+
+            yield item
+
+
+        # if 'constraint_id' in pFilterArgs:
+        #     filteredIds = [int(id) for id in pFilterArgs['constraint_id']]
+        #     pItems = [child for child in pItems if child.id in filteredIds]
+        #     logger.info( "-- Filtering on id list %s, nb remaining items: %d", pFilterArgs['constraint_id'], len(pItems) )
+
+        # if 'constraint_status' in pFilterArgs:
+        #     statusList = [int(status) for status in pFilterArgs['constraint_status']]
+        #     pItems = [child for child in pItems if child.status in statusList]
+        #     logger.info( "-- Filtering on status %s, nb remaining items: %d", pFilterArgs['constraint_status'], len(pItems) )
+
+        # if 'constraint_starttime' in pFilterArgs:
+        #     if len(pFilterArgs['constraint_starttime']) > 1:
+        #         logger.info( "More than one date specified, first occurence is used: %s" % str(pFilterArgs['constraint_starttime'][0]) )
+        #     try:
+        #         if pFilterArgs['constraint_starttime'][0][0] in ['>','<']:
+        #             operator, dateValue = pFilterArgs['constraint_starttime'][0][:1], pFilterArgs['constraint_starttime'][0][1:]
+        #         else:
+        #             operator, dateValue = ('>', pFilterArgs['constraint_starttime'][0])
+
+        #         filterTimestamp = int(datetime.strptime( dateValue, "%Y-%m-%d %H:%M:%S" ).strftime('%s'))
+        #         pItems = [child for child in pItems if self.compareTS( operator, child.startTime, filterTimestamp) ]
+
+        #         logger.info( "-- Filtering on date %s (e.g. timestamp=%d), nb remaining nodes: %d", pFilterArgs['constraint_starttime'][0], 
+        #             int(filterTimestamp), len(pItems) )
+
+        #     except HTTPError,e:
+        #         raise e
+        #     except ValueError:
+        #         logger.warning('Error: invalid date format, the format definition is "YYYY-mm-dd HH:MM:SS"' )
+        #         raise HTTPError(400, 'Invalid date format')
+        #     except Exception:
+        #         logger.warning('Error parsing date constraint')
+        #         raise HTTPError(400, 'Error when parsing date constraint')
+
+        # return pItems

@@ -50,6 +50,8 @@ except ImportError:
 
 import sys
 import time
+import socket
+import errno
 
 # Imports from local dir
 from settings import Settings
@@ -344,13 +346,18 @@ if __name__ == '__main__':
     _request = "http://%s:%s/%s" % ( _hostname, _port, _query )
 
     http_client = HTTPClient()
-
     REQUEST_BEGIN_TIME = time.time()
 
     try:
         response = http_client.fetch( _request )
         handle_request( response )
+
     except HTTPError as e:
         print "Error:", e
+
+    except socket.error as e:
+        if e.errno == errno.ECONNREFUSED:
+            print "Error: connection refused, puliserver might be unresponsive"
+
     
     del(http_client)

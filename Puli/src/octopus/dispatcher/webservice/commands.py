@@ -155,7 +155,7 @@ class CommandQueryResource(DispatcherBaseResource, IQueryNode):
             # Get value of additionnally supported field
             #
             if currArg.startswith("arguments:"):
-                # Attribute name references a "tags" item
+                # Attribute name references a "argumentss" item
                 caract = unicode(currArg[10:])
                 value = unicode(pItem.caracteristics.get(caract,''))
                 result[caract] = value
@@ -164,7 +164,6 @@ class CommandQueryResource(DispatcherBaseResource, IQueryNode):
                 result[currArg] =  pItem.task.id
 
             elif currArg == "renderNode":
-                # import pudb;pu.db
 
                 if pItem.renderNode is not None:
                     result[currArg] =  pItem.renderNode.name
@@ -178,7 +177,7 @@ class CommandQueryResource(DispatcherBaseResource, IQueryNode):
 
 
 
-    # @tornado.web.asynchronous
+    @tornado.web.asynchronous
     def get(self):
         """
         Handle user query request.
@@ -189,13 +188,28 @@ class CommandQueryResource(DispatcherBaseResource, IQueryNode):
         """
         args = self.request.arguments
 
+        self.command = self.commandGenerator( args )
+        tornado.ioloop.IOLoop.instance().add_callback(self.loop)
+
+
+    def loop( self ):
+        try: 
+            self.command.next()
+            tornado.ioloop.IOLoop.instance().add_callback(self.loop)
+        except StopIteration:
+            self.finish()
+
+
+    def commandGenerator( self, args ):
+        """
+        Generator that fectches all items corresponding to the given args.
+        """
         try:
             start_time = time.time()
             resultData = []
-            filteredRN = []
+            filteredCommands = []
 
             commands = self.getDispatchTree().commands.values()
-
             totalItems = len(commands)
 
             #
@@ -214,12 +228,13 @@ class CommandQueryResource(DispatcherBaseResource, IQueryNode):
                 # Using default result attributes
                 args['attr'] = CommandQueryResource.DEFAULT_FIELDS
 
-
             #
             # --- filtering
             #
-            filteredCommands = self.filterCommands( args, commands )
-
+            for i, cmd in enumerate(self.filterCommands( args, commands )):
+                filteredCommands.append( cmd )
+                # time.sleep(0.05)
+                yield i
 
             #
             # --- Prepare the result json object
@@ -240,20 +255,15 @@ class CommandQueryResource(DispatcherBaseResource, IQueryNode):
                         }
 
             #
-            # --- Create response and callback
+            # --- Create response and return. Request termination will be handled in handler.
             #
-            self.writeCallback( json.dumps(content) )
+            self.write( json.dumps(content) )
 
         except HTTPError, e:
             raise e
-
+        except AssertionError, e:
+            logger.warning('Arrrgh')
+            raise e
         except Exception, e:
             logger.warning('Impossible to retrieve query result: %s - %r', self.request.uri, e)
             raise HTTPError( 500, "Internal error")
-        pass
-
-
-        # self.generator = self.processRequest()
-
-        # def loop( self ):
-        #     pass

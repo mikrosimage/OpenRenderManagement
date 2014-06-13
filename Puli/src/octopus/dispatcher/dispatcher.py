@@ -50,7 +50,9 @@ class Dispatcher(MainLoopApplication):
 
     def __new__(cls, framework):
         if cls.instance is None:
-            cls.instance = super(Dispatcher, cls).__new__(cls, framework)
+            # Disable passing framework to super__new__ call. It is automatically avaible via super class hierarchy
+            # This removes a deprecation warning when launching dispatcher
+            cls.instance = super(Dispatcher, cls).__new__(cls)
         return cls.instance
 
     def __init__(self, framework):
@@ -208,6 +210,7 @@ class Dispatcher(MainLoopApplication):
         LOGGER.info("-----------------------------------------------------")
         LOGGER.info(" Start dispatcher process cycle.")
         LOGGER.info("-----------------------------------------------------")
+
 
         # JSA: Check if requests are finished (necessaire ?)
         try:

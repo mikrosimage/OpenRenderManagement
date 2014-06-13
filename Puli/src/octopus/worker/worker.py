@@ -495,8 +495,13 @@ class Worker(MainLoopApplication):
                 with open(settings.KILLFILE, 'r') as f:
                     data = f.read()
                 if len(data) != 0:
-                    data = int(data)
+                    try:
+                        data = int(data)
+                    except ValueError, e:
+                        LOGGER.warning("Invalid content in killfile, pausing worker anyway")
+
                 LOGGER.warning("Killfile detected, pausing worker")
+
                 # kill cmd watchers, if the flag in the killfile is set to -1
                 killproc = False
                 if data == -1:
@@ -518,14 +523,18 @@ class Worker(MainLoopApplication):
             if self.isPaused:
                 self.pauseWorker(False, False)
 
-        # if the worker is paused and marked to be restarted, create restartfile
+        # if the worker is paused and marked to be restarted, exit program
+        # Once the program has ended, the systemd service manager will automatocally restart it.
         if self.isPaused and self.toberestarted:
-            if not os.path.isfile(settings.RESTARTFILE):
-                LOGGER.warning("Creating restartfile.")
-                rf = open(settings.RESTARTFILE, 'w')
-                rf.close()
-            else:
-                LOGGER.warning("Waiting for restart.")
+            if os.path.isfile(settings.KILLFILE):
+                try:
+                    os.remove(settings.KILLFILE)
+                    LOGGER.warning("Killfile \"%s\" removed" % settings.KILLFILE)
+                except Exception, e:
+                    LOGGER.warning("Error, impossible to remove the kill file: \"%s\"" % settings.KILLFILE)
+
+            LOGGER.warning("Exiting worker")
+            self.framework.stop()
 
 
         #

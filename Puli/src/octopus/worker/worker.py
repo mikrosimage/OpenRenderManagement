@@ -251,6 +251,8 @@ class Worker(MainLoopApplication):
             infos['ram'] = self.getTotalMemory()
             infos['systemFreeRam'] = self.getFreeMem()
             infos["puliversion"]=settings.VERSION
+            infos["createDate"]=self.createDate
+
             self.updateSys = False
             # system info values:
             infos['caracteristics'] = {"os": platform.system().lower(),

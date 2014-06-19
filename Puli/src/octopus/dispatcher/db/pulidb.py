@@ -808,6 +808,12 @@ class PuliDB(object):
                               self.getTimeStampFromDate(endTime),
                               eval(stats),
                               message)
+            if status in [2, 3, 4] and realCmd.renderNode is None:
+              print "%s -- invalid status for command %d, setting to READY" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)), realCmd.id)
+              realCmd.status = 1
+              status =1
+
+
             assert not(status in [2, 3, 4] and realCmd.renderNode is None)
             cmdTaskIdList[taskId].append(realCmd)
             cmdDict[realCmd.id] = realCmd

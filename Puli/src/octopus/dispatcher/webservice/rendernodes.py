@@ -59,19 +59,32 @@ class RenderNodeResource(DispatcherBaseResource):
         if singletonconfig.get('CORE','GET_STATS'):
             singletonstats.theStats.cycleCounts['add_rns'] += 1
 
+        # import pudb;pu.db
         computerName = computerName.lower()
         if computerName.startswith(('1', '2')):
             return Http403(message="Cannot register a RenderNode without a name", content="Cannot register a RenderNode without a name")
 
         dct = self.getBodyAsJSON()
+
         if computerName in self.getDispatchTree().renderNodes:
-            if 'commands' in dct:
+            # When the registering worker is already listed in RN list
+            logger.warning("RenderNode already registered.")
+            existingRN = self.getDispatchTree().renderNodes[computerName]
+
+            if 'commands' not in dct:
+                logger.warning("No commands in current RN, reset command that might be still assigned to this RN")
+                existingRN.reset()
+            else:
                 for cmdId in dct['commands']:
-                    self.getDispatchTree().renderNodes[computerName].commands[cmdId] = self.getDispatchTree().commands[cmdId]
+                    existingRN.commands[cmdId] = self.getDispatchTree().commands[cmdId]
+
             if 'status' in dct:
-                self.getDispatchTree().renderNodes[computerName].status = int(dct['status'])
+                existingRN.status = int(dct['status'])
+
             return HttpResponse(304, "RenderNode already registered.")
+
         else:
+            # Add a new worker (and set infos given in request body)
             for key in ('name', 'port', 'status', 'cores', 'speed', 'ram', 'pools', 'caracteristics'):
                 if not key in dct:
                     return Http400("Missing key %r" % key, content="Missing key %r" % key)
@@ -128,7 +141,8 @@ class RenderNodeResource(DispatcherBaseResource):
                 return Http403("Modifying %r attribute is not authorized." % key)
         self.writeCallback(json.dumps(renderNode.to_json()))
 
-    ## Removes a RenderNode from the dispatchTree and all pools.
+    # Removes a RenderNode from the dispatchTree and all pools.
+    # Also call RN's reset method to remove assigned commands.
     #
     # @param request the HTTP request object for this request
     # @param computerName the name of the requested render node
@@ -137,12 +151,14 @@ class RenderNodeResource(DispatcherBaseResource):
     #@queue
     def delete(self, computerName):
         computerName = computerName.lower()
+
         try:
             renderNode = self.getDispatchTree().renderNodes[computerName]
         except KeyError:
             return Http404("RenderNode not found")
-        if renderNode.status == RN_ASSIGNED:
+        if renderNode.status in [RN_ASSIGNED, RN_WORKING] :
             renderNode.reset()
+        
         for pool in self.getDispatchTree().pools.values():
             pool.removeRenderNode(renderNode)
         renderNode.remove()

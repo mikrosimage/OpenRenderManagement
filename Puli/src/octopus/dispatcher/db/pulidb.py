@@ -477,6 +477,27 @@ class PuliDB(object):
                     conn.query(conn.sqlrepr(Update(RenderNodes.q, values=fields, where=(RenderNodes.q.id == element.id))))
                     conn.cache.clear()
 
+            # /////////////// Handling of the Task
+            elif isinstance(element, Task):
+              # Simply update "tags" field to preserve comments in DB
+              # The model listener will only register this elem when "tags" field is updated
+              if element.id:
+                  conn = Tasks._connection
+                  fields = { Tasks.q.tags.fieldName: json.dumps(element.tags) }
+                  conn.query(conn.sqlrepr(Update(Tasks.q, values=fields, where=(Tasks.q.id == element.id))))
+                  conn.cache.clear()
+
+            # /////////////// Handling of the TaskGroup
+            elif isinstance(element, TaskGroup):
+              # Simply update "tags" field to preserve comments in DB
+              # The model listener will only register this elem when "tags" field is updated
+              if element.id:
+                  conn = TaskGroups._connection
+                  fields = { TaskGroups.q.tags.fieldName: json.dumps(element.tags) }
+                  conn.query(conn.sqlrepr(Update(TaskGroups.q, values=fields, where=(TaskGroups.q.id == element.id))))
+                  conn.cache.clear()
+
+
     ## Mark the provided elements as archived.
     # @param elements the elements to archive
     #
@@ -808,6 +829,12 @@ class PuliDB(object):
                               self.getTimeStampFromDate(endTime),
                               eval(stats),
                               message)
+            if status in [2, 3, 4] and realCmd.renderNode is None:
+              print "%s -- invalid status for command %d, setting to READY" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)), realCmd.id)
+              realCmd.status = 1
+              status =1
+
+
             assert not(status in [2, 3, 4] and realCmd.renderNode is None)
             cmdTaskIdList[taskId].append(realCmd)
             cmdDict[realCmd.id] = realCmd

@@ -94,6 +94,7 @@ class TaskCommentResource(TaskResource):
         '''
         Sets a comment on the task.
         '''
+
         data = self.getBodyAsJSON()
         try:
             comment = data['comment']
@@ -102,7 +103,12 @@ class TaskCommentResource(TaskResource):
         else:
             taskId = int(taskId)
             task = self._findTask(taskId)
-            task.tags["comment"] = comment
+
+            # Need to force change of tags attr to trigger this listener
+            tmp = task.tags.copy()
+            tmp["comment"] = comment
+            task.tags = tmp.copy()
+            # task.tags["comment"] = comment
             self.dispatcher.dispatchTree.toModifyElements.append(task)
 
 

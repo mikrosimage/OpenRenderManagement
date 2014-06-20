@@ -226,6 +226,7 @@ class NodePriorityResource(NodesResource):
         node = self._findNode(nodeId)
         node.priority = priority
         message = "Priority for node %d set to %d." % (nodeId, priority)
+
         self.writeCallback(message)
 
 

@@ -151,6 +151,8 @@ class DispatchTree(object):
         # listeners
         self.nodeListener = ObjectListener(self.onNodeCreation, self.onNodeDestruction, self.onNodeChange)
         self.taskListener = ObjectListener(self.onTaskCreation, self.onTaskDestruction, self.onTaskChange)
+        # # JSA
+        # self.taskGroupListener = ObjectListener(self.onTaskCreation, self.onTaskDestruction, self.onTaskGroupChange)
         self.renderNodeListener = ObjectListener(self.onRenderNodeCreation, self.onRenderNodeDestruction, self.onRenderNodeChange)
         self.poolListener = ObjectListener(self.onPoolCreation, self.onPoolDestruction, self.onPoolChange)
         self.commandListener = ObjectListener(onCreationEvent=self.onCommandCreation, onChangeEvent=self.onCommandChange)
@@ -489,8 +491,15 @@ class DispatchTree(object):
         self.unregisterElementsFromTree(task)
 
     def onTaskChange(self, task, field, oldvalue, newvalue):
-        # logger.info("  -- on task change: %s [ %s = %s -> %s ]" % (task,field, oldvalue, newvalue) )
-        self.toModifyElements.append(task)
+        """
+        Normally, taskgroup should not be updated to DB, there would be too manby updates due to command/state changes
+        However in order to keep track of comments (stored in task's tags[comment] field), we make the following change:
+        - enable task/taskgroups update in DB (cf pulidb.py)
+        - disable changeEvent (append an event in dispatchTree.toModifyElements array) for all fields of tasks and TGs
+          BUT the only field we want to update: "tags"
+        """
+        if field == "tags":
+            self.toModifyElements.append(task)
 
     ### methods called after interaction with a BaseNode
 

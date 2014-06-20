@@ -148,7 +148,10 @@ class BaseNode(models.Model):
         return self.lastDependenciesSatisfaction
 
     def __new__(cls, *args, **kwargs):
-        obj = super(BaseNode, cls).__new__(cls, *args, **kwargs)
+
+        # Remove optional attributes for __new__ call, not supported, but the attributes are still transmitter via super hierarchy
+        obj = super(BaseNode, cls).__new__(cls)
+        # obj = super(BaseNode, cls).__new__(cls, *args, **kwargs)
         obj._parent_value = None
         obj.invalidated = True
         return obj

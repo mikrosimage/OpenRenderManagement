@@ -435,7 +435,7 @@ class Graph(object):
     | Data structure to submit to Puli server.  
     | It describes one or several tasks that will be executer on the renderfarm.
     """
-    def __init__( self, name, root=None, user=None, poolName=None, maxRN=-1, tags={} ):
+    def __init__( self, name, root=None, user=None, poolName='default', maxRN=-1, tags={} ):
         """
         Create a new graph object with given name and parameters.  
         If root is given, it will be attached to the graph (wether it is a task or a taskgroup).  

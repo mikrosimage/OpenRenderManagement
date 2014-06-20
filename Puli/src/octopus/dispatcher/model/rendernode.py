@@ -62,7 +62,7 @@ class RenderNode(models.Model):
     lastAliveTime = models.FloatField()
     
 
-    def __init__(self, id, name, coresNumber, speed, ip, port, ramSize, caracteristics=None, performance=0.0, puliversion="", createDate=None):
+    def __init__(self, id, name, coresNumber, speed, ip, port, ramSize, caracteristics=None, performance=0.0, puliversion="undefined", createDate=None):
         '''Constructs a new Rendernode.
 
         :parameters:
@@ -104,7 +104,7 @@ class RenderNode(models.Model):
         # Init new data
         self.puliversion = puliversion
         if createDate is None:
-            self.createDate = time.time()
+            self.createDate = 0
         else:
             self.createDate = createDate
             

@@ -1,6 +1,7 @@
 [Unit]
 Description=Puliworker
 After=network.service autofs.service
+Requires=autofs.service
 
 [Service]
 User=render
@@ -8,24 +9,21 @@ Type=forking
 EnvironmentFile=/etc/sysconfig/puliworker
 Environment="PYTHONPATH=/s/apps/lin/puli:$PYTHONPATH"
 
+
 #
 # Prepare PID dir on reboot
 #
 PermissionsStartOnly=true
 ExecStartPre=/bin/chown -R render /var/run/puli/
-ExecStartPre=ulimit -n 65536 -H
-
 
 #
 # Main
 #
 ExecStart=/usr/bin/python /s/apps/lin/puli/scripts/workerd.py -p ${PORT} -s ${HOST} -P ${PIDFILE} -d
-
-# TEST
-# ExecStart=/usr/bin/python /s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli/scripts/workerd.py -p ${PORT} -s ${HOST} -P ${PIDFILE} -d
-
-
+LimitNOFILE=32000
 PIDFile=/var/run/puli/worker.pid
+Restart=always
+RestartSec=1
 
 [Install]
 WantedBy=multi-user.target

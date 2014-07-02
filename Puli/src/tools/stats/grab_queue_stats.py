@@ -98,7 +98,7 @@ This is generally used in a cron script to grab queue usage data over time. It c
 
     parser = OptionParser(usage=usage, description=desc, version="%prog 0.1" )
     parser.add_option( "-v", action="store_true", dest="verbose", help="Verbose output" )
-    parser.add_option( "-s", "--server", action="store", dest="hostname", default="vfxpc64", help="Specified a target host to send the request")
+    parser.add_option( "-s", "--server", action="store", dest="hostname", default="puliserver", help="Specified a target host to send the request")
     parser.add_option( "-p", "--port", action="store", dest="port", type="int", default=8004, help="Specified a target port")
     parser.add_option( "-o", action="store", dest="outputFile", default=os.path.join(settings.LOGDIR, "queue_stats.log"), help="Target output file." )
     options, args = parser.parse_args()
@@ -224,7 +224,7 @@ if __name__ == "__main__":
     #
     # db.event_queue.aggregate( [ { $unwind : "$facts"}, { $project : { ts_day : { $dayOfYear : "$date" } } },  { $group : { _id: {ts_day:"$ts_day"}, nbfacts_day: {$sum:1}}}, { $sort : { "_id.ts_day": 1}}  ] )
 
-
+    # import pudb;pu.db
     options, args = process_args()
     singletonconfig.load( settings.CONFDIR + "/config.ini" )
     

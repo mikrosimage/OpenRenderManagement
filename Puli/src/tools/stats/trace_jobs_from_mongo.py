@@ -66,54 +66,109 @@ def createParser():
     return parser
 
 
-def getData(startDate, EndDate, timeInterval, filter, group, value):
+def getData(startDate, EndDate, timeInterval, filter, group=None, value=None):
     global prevTime
 
     client = MongoClient()
     db = client.pulistats
     queue = db.event_queue
 
-    dateIn = datetime.datetime(2014, 6, 1, 10, 30, 00, 0)
-    dateOut = datetime.datetime(2014, 6, 6, 16, 30, 00, 0)
+    dateIn = datetime.datetime.fromtimestamp(startDate)
+    dateOut = datetime.datetime.fromtimestamp(endDate)
+
+    # dateIn = datetime.datetime(2014, 6, 1, 10, 30, 00, 0)
+    # dateOut = datetime.datetime(2014, 7, 6, 16, 30, 00, 0)
 
     print "%s - %6.2f ms - request prepared" % (datetime.datetime.now(), (time.time() - prevTime) * 1000)
     prevTime = time.time()
 
-    res = queue.aggregate([
-            { "$match": { "date" : {"$gt":dateIn, "$lt":dateOut} } },
-            { "$unwind": "$facts"},
-            # { "$match": { "facts.tags.prod": "test" }},
-            { "$project": {
-#                    "allocatedRN" : "$facts.allocatedRN",
-                    "name" : "$facts.name",
-                    "prod" : "$facts.tags.prod",
-                    "status" : "$facts.status",
-                    "ts": 1,
-                    "date": 1,
-                    "_id": 0
-                }},
-           { "$group": {
-                "_id" : { "timeInterval" : { '$subtract' :[ {'$divide' : ['$ts', timeInterval ]}, { '$mod' : [{'$divide' : ['$ts', timeInterval ]},1] } ] } }, 
-                "count_jobs": {"$sum":1},
-                "count_ready": {"$sum":{ "$cond": [ {"$ne":["$status",1]},0,1]} },
-            #     count_running: {$sum:{ $cond: [ {$ne:["$status",2]},0,1]} },
-            #     count_error: {$sum:{ $cond: [ {$ne:["$status",4]},0,1]} },
-            #     count_paused: {$sum:{ $cond: [ {$ne:["$status",6]},0,1]} },
-                }},
-            { "$project": {
-                "avg_jobs": {"$divide": ["$count_jobs", (timeInterval/60)] },
-                "avg_ready": {"$divide": ["$count_ready", (timeInterval/60)] },
-                # avg_running: {$divide: ["$count_running",1] },
-                # avg_error: {$divide: ["$count_error",1] },
-                # avg_paused: {$divide: ["$count_paused",1] },
-                # count_ready:1,
-                # count_running:1,
-                # count_error:1,
-                # count_paused:1,
-                # count_jobs:1,
-                }},
-            { "$sort": {"_id":1}}
-            ])
+    matchDate = { "date" : {"$gt":dateIn, "$lt":dateOut} }
+    matchFilter = { "facts.tags.prod": "ddd" }
+
+    # Set custom fields to be retrieved from facts attributes (including job tags)
+    fields = {
+        "allocatedRN" : "$facts.allocatedRN",
+        "name" : "$facts.name",
+        "prod" : "$facts.tags.prod",
+        "status" : "$facts.status",
+        }
+    # Add default fields
+    fields["ts"]=1
+    fields["date"]=1
+    fields["_id"]=1
+
+    # groupBytime
+    group = { "_id" : { "timeInterval" : { '$subtract' :[ {'$divide' : ['$ts', timeInterval ]}, { '$mod' : [{'$divide' : ['$ts', timeInterval ]},1] } ] } }, }
+    group["count_jobs"]={"$sum":1}
+    group["count_ready"]={"$sum":{ "$cond": [ {"$ne":["$status",1]},0,1]} }
+    group["count_running"]={"$sum":{ "$cond": [ {"$ne":["$status",2]},0,1]} }
+    group["count_error"]={"$sum":{ "$cond": [ {"$ne":["$status",4]},0,1]} }
+    group["count_paused"]={"$sum":{ "$cond": [ {"$ne":["$status",6]},0,1]} }
+
+    # calculatedFields
+    resultFields = { "avg_jobs": {"$divide": ["$count_jobs", (timeInterval/60)] } }
+    resultFields["avg_ready"]={"$divide": ["$count_ready", (timeInterval/60)] }
+    resultFields["avg_running"]={"$divide": ["$count_running", (timeInterval/60)] }
+    resultFields["avg_error"]={"$divide": ["$count_error", (timeInterval/60)] }
+    resultFields["avg_paused"]={"$divide": ["$count_paused", (timeInterval/60)] }
+    # countFields
+    resultFields["count_ready"]=1
+    resultFields["count_running"]=1
+    resultFields["count_error"]=1
+    resultFields["count_paused"]=1
+    resultFields["count_jobs"]=1
+
+    request = [
+        { "$match": matchDate },
+        { "$unwind": "$facts" },
+        { "$match": matchFilter },
+        { "$project": fields },
+        { "$group": group },
+        { "$project": resultFields },
+        { "$sort": {"_id":1} }
+    ]
+
+
+    print request
+
+    # print json.dumps(request, indent=4)
+
+    res = queue.aggregate( request )
+    # res = queue.aggregate([
+#             { "$match": { "date" : {"$gt":dateIn, "$lt":dateOut} } },
+#             { "$unwind": "$facts"},
+#             # { "$match": { "facts.tags.prod": "test" }},
+#             { "$project": {
+# #                    "allocatedRN" : "$facts.allocatedRN",
+#                     "name" : "$facts.name",
+#                     "prod" : "$facts.tags.prod",
+#                     "status" : "$facts.status",
+#                     "ts": 1,
+#                     "date": 1,
+#                     "_id": 0
+#                 }},
+#            { "$group": {
+#                 "_id" : { "timeInterval" : { '$subtract' :[ {'$divide' : ['$ts', timeInterval ]}, { '$mod' : [{'$divide' : ['$ts', timeInterval ]},1] } ] } }, 
+#                 "count_jobs": {"$sum":1},
+#                 "count_ready": {"$sum":{ "$cond": [ {"$ne":["$status",1]},0,1]} },
+#             #     count_running: {$sum:{ $cond: [ {$ne:["$status",2]},0,1]} },
+#             #     count_error: {$sum:{ $cond: [ {$ne:["$status",4]},0,1]} },
+#             #     count_paused: {$sum:{ $cond: [ {$ne:["$status",6]},0,1]} },
+#                 }},
+#             { "$project": {
+#                 "avg_jobs": {"$divide": ["$count_jobs", (timeInterval/60)] },
+#                 "avg_ready": {"$divide": ["$count_ready", (timeInterval/60)] },
+#                 # avg_running: {$divide: ["$count_running",1] },
+#                 # avg_error: {$divide: ["$count_error",1] },
+#                 # avg_paused: {$divide: ["$count_paused",1] },
+#                 # count_ready:1,
+#                 # count_running:1,
+#                 # count_error:1,
+#                 # count_paused:1,
+#                 # count_jobs:1,
+#                 }},
+#             { "$sort": {"_id":1}}
+#             ])
 
     print "%s - %6.2f ms - request executed" % (datetime.datetime.now(), (time.time() - prevTime) * 1000)
     prevTime = time.time()
@@ -136,12 +191,12 @@ if __name__ == "__main__":
         print "Command options: %s" % options
         print "Command arguments: %s" % args
 
-    if len(args) is not 2:
-        print "Error: 2 fields must be specified."
-        sys.exit(1)
-    else:
-        groupField = args[0]
-        graphValue = args[1]
+    # if len(args) is not 2:
+    #     print "Error: 2 fields must be specified."
+    #     sys.exit(1)
+    # else:
+    #     groupField = args[0]
+    #     graphValue = args[1]
 
     startDate, endDate = getRangeDates( options )
 
@@ -149,24 +204,37 @@ if __name__ == "__main__":
     print "%s - %6.2f ms" % (datetime.datetime.now(), (time.time() - prevTime) * 1000)
     prevTime = time.time()
 
-    data = getData( startDate, endDate, options.resolution, options.filterExpr, groupField, graphValue )
+    data = getData( startDate, endDate, options.resolution, options.filterExpr )
 
     job_queue = prepareGraph( options )
 
     arr_avg_jobs = [0] * len(data["result"])
+    arr_avg_ready = [0] * len(data["result"])
+    arr_avg_running = [0] * len(data["result"])
+    arr_avg_error = [0] * len(data["result"])
+    arr_avg_paused = [0] * len(data["result"])
     scale_avg_jobs = [''] * len(data["result"])
 
     for i, event in enumerate(data["result"]):
         # print "i:%d" %i
         arr_avg_jobs[i]=event["avg_jobs"]
+        arr_avg_ready[i]=event["avg_ready"]
+        arr_avg_running[i]=event["avg_running"]
+        arr_avg_error[i]=event["avg_error"]
+        arr_avg_paused[i]=event["avg_paused"]
         # scale_avg_jobs[i] = str(event["_id"]["timeInterval"])
         scale_avg_jobs[i] = datetime.datetime.fromtimestamp((options.resolution*event["_id"]["timeInterval"])).strftime('%Y-%m-%d %H:%M:%S')
 
-    job_queue.add("test", arr_avg_jobs )
+    job_queue.add("avg jobs", arr_avg_jobs )
+    job_queue.add("avg ready", arr_avg_ready )
+    job_queue.add("avg running", arr_avg_running )
+    job_queue.add("avg error", arr_avg_error )
+    job_queue.add("avg paused", arr_avg_paused )
     job_queue.x_labels = scale_avg_jobs
 
     print "%s - %6.2f ms - add data" % (datetime.datetime.now(), (time.time() - prevTime) * 1000)
-    print "avg:%r" % (arr_avg_jobs)
+    print "avg jobs:%r" % (arr_avg_jobs)
+    print "avg ready:%r" % (arr_avg_ready)
     # prevTime = time.time()
 
     renderGraph( job_queue, options )

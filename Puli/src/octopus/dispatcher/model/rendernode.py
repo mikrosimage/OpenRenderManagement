@@ -297,7 +297,7 @@ class RenderNode(models.Model):
     # @warning The returned HTTPConnection is not safe to use from multiple threads
     #
     def getHTTPConnection(self):
-        return http.HTTPConnection(self.host, self.port, timeout=20)
+        return http.HTTPConnection(self.host, self.port, timeout=2)
 #        if (self.httpConnection == None or
 #            self.httpConnection.port!=self.port or
 #            self.httpConnection.host!=self.host
@@ -331,7 +331,25 @@ class RenderNode(models.Model):
         TODO: make asynchronous.
         At this time when a rendernode is swapping or inaccessible, this process is stucked at "conn.getresponse()"
         """
+        
         from octopus.dispatcher import settings
+
+        LOGGER.debug("Send request to RN: http://%s:%s/%s %s (%s)"%(self.host, self.port , url, method, headers))
+        
+        import request
+        url = "http://%s:%s/%s"%(self.host, self.port ,url)
+        
+        if method.lower() == "get":
+            r = requests.get(url)
+        elif method.lower() == "post":
+            pass
+        elif method.lower() == "put":
+            pass
+        elif method.lower() == "delete":
+            pass
+        else
+            pass
+
 
         conn = self.getHTTPConnection()
         # try to process the request at most RENDERNODE_REQUEST_MAX_RETRY_COUNT times.
@@ -348,6 +366,7 @@ class RenderNode(models.Model):
                 conn.close()
                 return (response, data)
             except http.socket.error, e:
+                LOGGER.debug("socket error %r" % e)
                 try:
                     conn.close()
                 except:
@@ -355,16 +374,20 @@ class RenderNode(models.Model):
                 if e in (errno.ECONNREFUSED, errno.ENETUNREACH):
                     raise self.RequestFailed(cause=e)
             except http.HTTPException, e:
+                LOGGER.debug("HTTPException %r" % e)
                 try:
                     conn.close()
                 except:
                     pass
                 LOGGER.exception("rendernode.request failed")
+
+            LOGGER.debug("request error, %d/%d"%(i, singletonconfig.get('COMMUNICATION','RENDERNODE_REQUEST_MAX_RETRY_COUNT')))
             # request failed so let's sleep for a while
             # time.sleep(settings.RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE)
             time.sleep( singletonconfig.get('COMMUNICATION','RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE') )
 
         # request failed too many times so pause the RN and report a failure
+        LOGGER.debug("request failed too many times.")
         self.reset(paused=True)
         self.excluded = True
         raise self.RequestFailed()

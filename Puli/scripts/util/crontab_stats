@@ -11,22 +11,22 @@
 # Trace RN usage
 */10 * * * * /s/apps/lin/puli/scripts/util/update_usage_stats -t "RN usage for the last 2H" -s 2 -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/usage_stats.log -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs/usage_avg_2.svg --scale 10 --scaleRound 60 --res 30 --style RedBlue --width 800 --height 300
 
-*/10 * * * * /s/apps/lin/puli/scripts/util/update_usage_stats -t "RN usage for the last 24H" -s 24 -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/usage_stats.log -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs/usage_avg_24.svg --scale 20 --scaleRound 3600 --res 30 --style RedBlue --width 800 --height 300
+10 * * * * /s/apps/lin/puli/scripts/util/update_usage_stats -t "RN usage for the last 24H" -s 24 -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/usage_stats.log -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs/usage_avg_24.svg --scale 20 --scaleRound 3600 --res 30 --style RedBlue --width 800 --height 300
 
-*/10 * * * * /s/apps/lin/puli/scripts/util/update_usage_stats -t "RN usage for the last 7 days" -s 168 -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/usage_stats.log -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs/usage_avg_168.svg --scale 20 --scaleRound 3600 --res 30 --style RedBlue --width 800 --height 300
+15 * * * * /s/apps/lin/puli/scripts/util/update_usage_stats -t "RN usage for the last 7 days" -s 168 -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/usage_stats.log -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs/usage_avg_168.svg --scale 20 --scaleRound 3600 --res 30 --style RedBlue --width 800 --height 300
 
 
 # Jobs by status (still specific)
-*/10 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/update_jobs_by_status > /dev/null
+20 * * * * /datas/jsa/OpenRenderManagement/Puli/scripts/util/update_jobs_by_status > /dev/null
 
 # Trace Queue usage
-*/10 * * * * /s/apps/lin/puli/scripts/util/update_queue_stats -t "Jobs by prod over time" -s 24 -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/queue_stats.log -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs/jobs_by_prod_avg_24.svg --scale 20 --scaleRound 3600 --res 30 --style RedBlue --width 800 --height 300 prod jobs
+25 * * * * /s/apps/lin/puli/scripts/util/update_queue_stats -t "Jobs by prod over time" -s 24 -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/queue_stats.log -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs/jobs_by_prod_avg_24.svg --scale 20 --scaleRound 3600 --res 30 --style RedBlue --width 800 --height 300 prod jobs
 
-*/10 * * * * /s/apps/lin/puli/scripts/util/update_queue_stats -t "Allocated RN by prod over time" -s 24 -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/queue_stats.log -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs/rn_by_prod_avg_24.svg --scale 20 --scaleRound 3600 --res 30 --style RedBlue --width 800 --height 300 prod allocatedRN
+30 * * * * /s/apps/lin/puli/scripts/util/update_queue_stats -t "Allocated RN by prod over time" -s 24 -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/queue_stats.log -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs/rn_by_prod_avg_24.svg --scale 20 --scaleRound 3600 --res 30 --style RedBlue --width 800 --height 300 prod allocatedRN
 
 # Trace server stats
 */2 * * * * /s/apps/lin/puli/scripts/util/update_server_stats -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/server_stats.log -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs -s 1 -r 4 --suffix "_1"
-*/15 * * * * /s/apps/lin/puli/scripts/util/update_server_stats -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/server_stats.log -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs -s 12 -r 600 --suffix "_12"
-3 * * * * /s/apps/lin/puli/scripts/util/update_server_stats -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/server_stats.log -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs -s 24 -r 600 --suffix "_24"
+40 * * * * /s/apps/lin/puli/scripts/util/update_server_stats -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/server_stats.log -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs -s 12 -r 600 --suffix "_12"
+45 * * * * /s/apps/lin/puli/scripts/util/update_server_stats -f /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/server_stats.log -o /s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/graphs -s 24 -r 600 --suffix "_24"
 
 

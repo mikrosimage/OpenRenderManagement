@@ -297,7 +297,7 @@ class RenderNode(models.Model):
     # @warning The returned HTTPConnection is not safe to use from multiple threads
     #
     def getHTTPConnection(self):
-        return http.HTTPConnection(self.host, self.port, timeout=2)
+        return http.HTTPConnection(self.host, self.port, timeout=5)
 #        if (self.httpConnection == None or
 #            self.httpConnection.port!=self.port or
 #            self.httpConnection.host!=self.host
@@ -334,23 +334,41 @@ class RenderNode(models.Model):
         
         from octopus.dispatcher import settings
 
-        LOGGER.debug("Send request to RN: http://%s:%s/%s %s (%s)"%(self.host, self.port , url, method, headers))
-        
-        import request
-        url = "http://%s:%s/%s"%(self.host, self.port ,url)
-        
-        if method.lower() == "get":
-            r = requests.get(url)
-        elif method.lower() == "post":
-            pass
-        elif method.lower() == "put":
-            pass
-        elif method.lower() == "delete":
-            pass
-        else
-            pass
+        LOGGER.debug("@@ Send request to RN: http://%s:%s%s %s (%s)"%(self.host, self.port , url, method, headers))
 
+        # import requests
+        # url = "http://%s:%s%s"%(self.host, self.port ,url)
+        
+        # try:
+        #     if method.lower() == "get":
+        #         r = requests.get(url, data=body, headers=headers, timeout=0.5)
+        #     elif method.lower() == "post":
+        #         r = requests.post(url, data=body, headers=headers,timeout=0.5)
+        #     elif method.lower() == "put":
+        #         r = requests.put(url, data=body, headers=headers, timeout=0.5)
+        #     elif method.lower() == "delete":
+        #         r = requests.delete(url, data=body, headers=headers, timeout=0.5)
+        #     else:
+        #         LOGGER.debug("Unknown method %s"%(method))
 
+        #     if r.status_code in [requests.codes.ok, requests.codes.accepted]:
+        #         LOGGER.debug("@@ OK")
+        #         return (r,r.text)
+        #     else:
+        #         LOGGER.debug("@@ Invalid response %s"%(r.text))
+        #         raise self.RequestFailed
+        # except (
+        #     requests.Timeout, 
+        #     requests.ConnectionError, 
+        #     request.HTTPError,
+        #     self.RequestFailed
+        #     ), e:
+        #         LOGGER.error("@@ Exception caught during request %r"%e)
+        #         self.reset(paused=True)
+        #         self.excluded = True
+        #         raise self.RequestFailed
+        # LOGGER.debug("@@ request failed too many times.")
+        
         conn = self.getHTTPConnection()
         # try to process the request at most RENDERNODE_REQUEST_MAX_RETRY_COUNT times.
         for i in xrange( singletonconfig.get('COMMUNICATION','RENDERNODE_REQUEST_MAX_RETRY_COUNT') ):
@@ -387,7 +405,7 @@ class RenderNode(models.Model):
             time.sleep( singletonconfig.get('COMMUNICATION','RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE') )
 
         # request failed too many times so pause the RN and report a failure
-        LOGGER.debug("request failed too many times.")
+        LOGGER.debug("@@ request failed too many times.")
         self.reset(paused=True)
         self.excluded = True
         raise self.RequestFailed()

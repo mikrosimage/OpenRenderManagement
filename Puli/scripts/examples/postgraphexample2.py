@@ -19,18 +19,18 @@ if __name__ == '__main__':
     decomposer = "puliclient.contrib.generic.GenericDecomposer"
 
     graph = Graph('simpleGraph', tags=tags)
-    task1 = graph.addNewTask(name="task1", arguments=args, tags=tags, decomposer=decomposer)
+    task1 = graph.addNewTask(name="task1", arguments=args, tags=tags)
     task2 = graph.addNewTask(name="task2", arguments=args, tags=tags)
-    task3 = graph.addNewTask(name="task3", arguments=args, tags=tags, decomposer=decomposer)    
-    task4 = graph.addNewTask(name="task4", arguments=args, tags=tags, decomposer=decomposer)    
-    task5 = graph.addNewTask(name="task5", arguments=args, tags=tags, decomposer=decomposer)    
-    task6 = graph.addNewTask(name="task6", arguments=args, tags=tags, decomposer=decomposer)    
+    task3 = graph.addNewTask(name="task3", arguments=args, tags=tags)    
+    task4 = graph.addNewTask(name="task4", arguments=args, tags=tags)    
+    task5 = graph.addNewTask(name="task5", arguments=args, tags=tags)    
+    task6 = graph.addNewTask(name="task6", arguments=args, tags=tags)    
 
     # Create a chain of dependencies, execution order will be: 
     # task1 > task4 > task3 > task2 > task5 > task6
     graph.addChain( [task1, task4, task3, task2, task5, task6] )
 
-    graph.submit(host="puliserver")
+    graph.submit(host="vfxpc64")
 
 
 # PREVIOUS METHOD (still valid)

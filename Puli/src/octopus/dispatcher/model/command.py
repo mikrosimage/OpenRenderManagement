@@ -109,17 +109,15 @@ class Command(models.Model):
         if self.status in (CMD_FINISHING, CMD_DONE, CMD_CANCELED):
             return
         elif self.status == CMD_RUNNING:
-            # import pudb;pu.db
             try:
                 self.renderNode.clearAssignment(self)
                 (response, data) = self.renderNode.request("DELETE", "/commands/" + str(self.id) + "/")
-                # LOGGER.info( "data: %r" % data )
-                
+
             except Exception:
                 # if request has failed, it means the rendernode is unreachable
                 LOGGER.error( "Impossible to reach RN %s to cancel command %d." % (self.renderNode, self.id) )
                 self.status = CMD_CANCELED
-                
+
         elif self.renderNode is not None:
             self.renderNode.clearAssignment(self)
         self.status = CMD_CANCELED

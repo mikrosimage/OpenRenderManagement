@@ -13,7 +13,7 @@ try:
 except ImportError:
     import json
 
-
+import tornado
 from tornado.web import HTTPError
 
 
@@ -95,11 +95,17 @@ class NodeNameResource(NodesResource):
         self.writeCallback("Node name set")
 
 
+# class NodeCancelResource(NodesResource):
+#     '''
+#     TOFIX: specific case for a retry all command on errors should be handled in another WS for better understanding
+#     '''
+#     pass
+
 class NodeStatusResource(NodesResource):
     '''
     TOFIX: specific case for a retry all command on errors should be handled in another WS for better understanding
     '''
-    ##@queue
+    @tornado.web.asynchronous
     def put(self, nodeId):
         '''
         | Pushes an order to change the status of the given node.
@@ -152,7 +158,7 @@ class NodeStatusResource(NodesResource):
                 else:
                     msg = "No commands were restarted."
                 self.writeCallback("Done. %s" % msg)
-
+                self.finish()
             #
             # handles the 'general' setStatus
             #
@@ -162,14 +168,36 @@ class NodeStatusResource(NodesResource):
 
                 if node.status in [NODE_ERROR, NODE_CANCELED, NODE_DONE] and nodeStatus == NODE_READY:
                     node.resetCompletion()
+
                 if nodeStatus not in NODE_STATUS:
                     raise Http400("Invalid status value %r" % nodeStatus)
+                elif nodeStatus == NODE_CANCELED:
+                    # If user action is CANCEL, we use asynchronous webservice to avoid the timeout that 
+                    # might occur when sending requests to each render node.
+                    logger.debug("CANCEL ACTION")
+                    self.gen = node.cmdIterator()
+                    tornado.ioloop.IOLoop.instance().add_callback(self.iterOnCommands)
+
+                    self.writeCallback("New status has been taken into account. Change will be effective soon")
+                    self.finish()
                 else:
                     if node.setStatus(nodeStatus, cascadeUpdate):
                         self.writeCallback("Status set to %r" % nodeStatus)
+                        self.finish()
                     else:
                         self.writeCallback("Status was not changed.")
+                        self.finish()
 
+    
+    def iterOnCommands( self ):
+        try: 
+            cmd = self.gen.next()
+            cmd.cancel()
+            logger.debug("on cmd: %r" % cmd)
+
+            tornado.ioloop.IOLoop.instance().add_callback(self.iterOnCommands)
+        except StopIteration:
+            self.finish()
 
 
 class NodePausedResource(NodesResource):

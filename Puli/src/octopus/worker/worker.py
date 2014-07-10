@@ -425,10 +425,6 @@ class Worker(MainLoopApplication):
         :param killproc: boolean flag indicating if all running processes must be killed or not
         """
 
-        # LOGGER.warning("SLEEEEEEP")
-        # time.sleep(10.0)
-        # LOGGER.warning("AND PAUSE")
-
         while True:
             url = "/rendernodes/%s/paused/" % (self.computerName)
             dct = {}

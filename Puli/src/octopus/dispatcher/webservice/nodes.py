@@ -3,7 +3,7 @@ Controller for the /nodes service.
 '''
 from octopus.core.enums.node import NODE_ERROR, NODE_CANCELED, NODE_DONE, NODE_READY
 from octopus.dispatcher.model.task import TaskGroup
-from octopus.core.enums.command import CMD_READY, CMD_RUNNING
+from octopus.core.enums.command import CMD_READY, CMD_RUNNING, CMD_CANCELED
 from octopus.dispatcher.webservice import DispatcherBaseResource
 
 import logging
@@ -95,11 +95,56 @@ class NodeNameResource(NodesResource):
         self.writeCallback("Node name set")
 
 
-# class NodeCancelResource(NodesResource):
-#     '''
-#     TOFIX: specific case for a retry all command on errors should be handled in another WS for better understanding
-#     '''
-#     pass
+class NodeCancelResource(NodesResource):
+    '''
+    A webservice dedicated to cancelling nodes.
+    It handles the process in 2 steps:
+    - reset node and commands on the dispatch tree (server side)
+    - send "DELETE" request to the rendernode on which a command was assigned
+    The 2nd step is executed in a dedicated thread to avoir blocking tornado
+    '''
+
+    def put(self, nodeId):
+        # If user action is CANCEL, we use asynchronous webservice to avoid the timeout that 
+        # might occur when sending requests to each render node.
+        
+        node = self._findNode( int(nodeId) )
+        self.interruptedRnList = []
+
+        for cmd in node.cmdIterator():
+            if cmd.status == CMD_RUNNING:
+                self.interruptedRnList.append( (cmd.renderNode, cmd.id) )
+                cmd.status = CMD_CANCELED
+
+        if len(self.interruptedRnList) > 0:
+            from threading import Thread
+            t = Thread(target=self.sendCancelRequests)
+            t.start()
+
+        # logger.debug("Done updating server")
+        self.writeCallback("New status has been taken into account. Change will be effective soon")
+        self.finish()
+
+
+    def sendCancelRequests( self ):
+        '''
+        Send a specific request to each rendernodes. It uses the 
+        '''
+        for rn,cmdId in self.interruptedRnList:
+            # For each RN marked as having a running command
+            try:
+                rn.request("DELETE", "/commands/" + str(cmdId) + "/")
+            except:
+                logger.warning("Problem occured interruption of %s for command %s (however command has already been reseted on the server)" % (cmdId, rn))
+
+            # Reset RN assignment to make it available for a future assignment
+            rn.clearAssignment(self)
+
+        # Clean rn list after process
+        self.interruptedRnList = []
+
+        
+
 
 class NodeStatusResource(NodesResource):
     '''
@@ -174,12 +219,10 @@ class NodeStatusResource(NodesResource):
                 elif nodeStatus == NODE_CANCELED:
                     # If user action is CANCEL, we use asynchronous webservice to avoid the timeout that 
                     # might occur when sending requests to each render node.
-                    logger.debug("CANCEL ACTION")
                     self.gen = node.cmdIterator()
                     tornado.ioloop.IOLoop.instance().add_callback(self.iterOnCommands)
 
-                    self.writeCallback("New status has been taken into account. Change will be effective soon")
-                    self.finish()
+                    self.writeCallback("New status (CANCEL) has been taken into account. Change will be effective soon")
                 else:
                     if node.setStatus(nodeStatus, cascadeUpdate):
                         self.writeCallback("Status set to %r" % nodeStatus)
@@ -190,11 +233,15 @@ class NodeStatusResource(NodesResource):
 
     
     def iterOnCommands( self ):
-        try: 
+        """
+        Cancel each command in a node hierarchy (command is given by a generator on the node)
+        Each command might be blocked by network pb (or machine swapping) but asynchronous mecanism will
+        allow other request to be treated between each command cancelation.
+        """
+        try:
+            # Get next command in generator
             cmd = self.gen.next()
             cmd.cancel()
-            logger.debug("on cmd: %r" % cmd)
-
             tornado.ioloop.IOLoop.instance().add_callback(self.iterOnCommands)
         except StopIteration:
             self.finish()

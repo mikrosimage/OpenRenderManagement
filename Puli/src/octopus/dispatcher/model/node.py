@@ -489,7 +489,7 @@ class TaskNode(BaseNode):
 
 
     def cmdIterator(self):
-        LOGGER.debug("Iterator on TaskNode %s" % (self.name))
+        # LOGGER.debug("Iterator on TaskNode %s" % (self.name))
         for command in self.task.commands:
             yield command
 

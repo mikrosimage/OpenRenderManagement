@@ -104,7 +104,9 @@ class Command(models.Model):
 
     def cancel(self):
         """
-        TOFIX log message if RN clearing failed !!!
+        | Method called when changing node status via "nodes/id/status" webservice.
+        | The calling webservice is made asynchronous to avoid blocking when RN node request encounter a timeout error
+        | If a RN can not be reached, its command assignement is reseted and RN is marked as "quarantine"
         """
         if self.status in (CMD_FINISHING, CMD_DONE, CMD_CANCELED):
             return

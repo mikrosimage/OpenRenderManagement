@@ -55,6 +55,7 @@ class WebServiceDispatcher(Application):
             (r'^/nodes/(\d+)/?$', nodes.NodeResource, dict(framework=framework)),
             (r'^/nodes/(\d+)/name/?$', nodes.NodeNameResource, dict(framework=framework)),
             (r'^/nodes/(\d+)/status/?$', nodes.NodeStatusResource, dict(framework=framework)),
+            (r'^/nodes/(\d+)/cancel/?$', nodes.NodeCancelResource, dict(framework=framework)),
             (r'^/nodes/(\d+)/paused/?$', nodes.NodePausedResource, dict(framework=framework)),
             (r'^/nodes/(\d+)/pauseKill/?$', nodes.NodePauseKillResource, dict(framework=framework)),
             (r'^/nodes/(\d+)/priority/?$', nodes.NodePriorityResource, dict(framework=framework)),

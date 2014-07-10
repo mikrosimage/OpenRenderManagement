@@ -262,6 +262,12 @@ class DebugResource(BaseResource):
 
 class WorkerLogResource(RequestHandler):
     def get(self):
+
+        LOGGER.info("block")
+        for i in xrange(0,30000000):
+            i=i*i*i*i*i*i*i
+        LOGGER.info("finblock")
+
         logFileName = "worker%d.log" % settings.PORT
         logFilePath = os.path.join(settings.LOGDIR, logFileName)
         if os.path.isfile(logFilePath):

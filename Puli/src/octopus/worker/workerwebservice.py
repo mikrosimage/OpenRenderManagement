@@ -1,4 +1,5 @@
 import os
+import os
 from Queue import Queue
 try:
     import simplejson as json
@@ -262,6 +263,7 @@ class DebugResource(BaseResource):
 
 class WorkerLogResource(RequestHandler):
     def get(self):
+
         logFileName = "worker%d.log" % settings.PORT
         logFilePath = os.path.join(settings.LOGDIR, logFileName)
         if os.path.isfile(logFilePath):

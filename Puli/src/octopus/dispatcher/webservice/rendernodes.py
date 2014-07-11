@@ -258,6 +258,8 @@ class RenderNodeSysInfosResource(DispatcherBaseResource):
             renderNode.ram = int(dct["ram"])
         if "systemFreeRam" in dct:
             renderNode.systemFreeRam = int(dct["systemFreeRam"])
+        if "systemSwapPercentage" in dct:
+            renderNode.systemSwapPercentage = float(dct["systemSwapPercentage"])
         if "speed" in dct:
             renderNode.speed = float(dct["speed"])
         if "performance" in dct:

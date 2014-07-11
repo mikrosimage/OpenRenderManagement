@@ -80,9 +80,9 @@ class DispatchTree(object):
 
 
         result +="<h3>Main level nodes (proxy info only):</h3><table>"
-        result +="<tr><th>id</th><th>name</th><th>readyCommandCount</th><th>commandCount</th><th>completion</th></tr>"
+        result +="<tr><th>id</th><th>name</th><th>readyCommandCount</th><th>commandCount</th><th>completion</th><th>poolshares</th></tr>"
         for i,curr in enumerate(self.nodes[1].children):
-            result += "<tr><td>%r</td><td>%s</td><td>%d</td><td>%d</td><td>%.2f</td></tr>" % (i, curr.name, curr.readyCommandCount, curr.commandCount, curr.completion)
+            result += "<tr><td>%r</td><td>%s</td><td>%d</td><td>%d</td><td>%.2f</td><td>%s</td></tr>" % (i, curr.name, curr.readyCommandCount, curr.commandCount, curr.completion, curr.poolShares.values())
 
             if (time.time()-startTimer) > timeout:
                 raise TimeoutException("TimeoutException occured: the dispatchTree might be too large to dump")

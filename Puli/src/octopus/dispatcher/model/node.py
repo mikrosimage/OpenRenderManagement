@@ -173,19 +173,21 @@ class BaseNode(models.Model):
     def dispatchIterator(self):
         raise NotImplementedError
 
-    # def computeDispatch(self):
-    #     if self.poolShares:
-    #         return list(self.dispatchIterator())
-    #     return []
 
     def updateAllocation(self):
         '''
         Called by subclasses during updateCompletion process to store maxRN and allocatedRN in the node.
         maxRN is also updated during webservice on user requests, this is a bit of a redefinition since it shouldn't change programmatically.
         '''
-        for currPoolShare in self.poolShares.values():
+
+        # Need to iterate over all poolshares concerning the current node.
+        # Otherwise we only update the allocatedRN of current pool (node the right value when user has changed pool during render)
+        nodeSharesList = [poolshare for poolshare in self.dispatcher.dispatchTree.poolShares.values() if poolshare.node.id == self.id]
+
+        self.allocatedRN = 0
+        for currPoolShare in nodeSharesList:
             self.maxRN = currPoolShare.maxRN
-            self.allocatedRN = currPoolShare.allocatedRN
+            self.allocatedRN += currPoolShare.allocatedRN
 
 
     def updateCompletionAndStatus(self):
@@ -271,11 +273,23 @@ class FolderNode(BaseNode):
                 pass
 
 
-    # def nuIterator(self, ep=None):
-    #     print "Dispatching FolderNode %s" % (self.name)
-    #     for child in self.children:
-    #         for command in child.nuIterator(ep):
-    #             yield command
+    def cmdIterator(self):
+        # print "Dispatching FolderNode %s" % (self.name)
+        for child in self.children:
+            for command in child.cmdIterator():
+                yield command
+
+
+        # if pCascadeUpdate:
+        #     for dependingNode in self.reverseDependencies:
+        #         dependingNode.setStatus( pStatus, pCascadeUpdate )
+
+        # for child in self.children:
+        #     child.setStatus(pStatus, pCascadeUpdate)
+
+        # self.status = pStatus
+        # return True
+
 
     ##
     # @return yields (node, command) tuples
@@ -476,10 +490,10 @@ class TaskNode(BaseNode):
             self.timer = task.timer
 
 
-    # def nuIterator(self, ep=None):
-    #     print "Dispatching TaskNode %s" % (self.name)
-    #     for command in self.task.commands:
-    #         yield command
+    def cmdIterator(self):
+        # LOGGER.debug("Iterator on TaskNode %s" % (self.name))
+        for command in self.task.commands:
+            yield command
 
 
     def dispatchIterator(self, stopFunc, ep=None):

@@ -31,14 +31,14 @@ confWithString = None
 conf = None
 
 
-def get( pSection, pOption ):
+def get( section, option, default=None ):
 	"""
 	Simple accessor to hide/protect the multiple depth dict access: conf["SECTION"]["OPTION"]
 	"""
-	if pSection in conf.keys():
-		if pOption in conf[pSection].keys():
-			return conf[pSection][pOption]
-	return None
+	if section in conf.keys():
+		if option in conf[section].keys():
+			return conf[section][option]
+	return default
 
 def parse():
 	"""

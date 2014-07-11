@@ -2,29 +2,30 @@ import socket
 import httplib as http
 import time
 import logging
+import requests
 
-def connect(self):
-    """Connect to the host and port specified in __init__."""
-    msg = "getaddrinfo returns an empty list"
-    for res in socket.getaddrinfo(self.host, self.port, 0, socket.SOCK_STREAM):
-        af, socktype, proto, canonname, sa = res
-        try:
-            self.sock = socket.socket(af, socktype, proto)
-            self.sock.settimeout(getattr(self, "timeout", None))
-            if self.debuglevel > 0:
-                print "connect: (%s, %s)" % (self.host, self.port)
-            self.sock.connect(sa)
-        except socket.error, msg:
-            if self.debuglevel > 0:
-                print 'connect fail:', (self.host, self.port)
-            if self.sock:
-                self.sock.close()
-            self.sock = None
-            continue
-        break
-    if not self.sock:
-        raise socket.error, msg
-    self.sock.settimeout(None)
+# def connect(self):
+#     """Connect to the host and port specified in __init__."""
+#     msg = "getaddrinfo returns an empty list"
+#     for res in socket.getaddrinfo(self.host, self.port, 0, socket.SOCK_STREAM):
+#         af, socktype, proto, canonname, sa = res
+#         try:
+#             self.sock = socket.socket(af, socktype, proto)
+#             self.sock.settimeout(getattr(self, "timeout", None))
+#             if self.debuglevel > 0:
+#                 print "connect: (%s, %s)" % (self.host, self.port)
+#             self.sock.connect(sa)
+#         except socket.error, msg:
+#             if self.debuglevel > 0:
+#                 print 'connect fail:', (self.host, self.port)
+#             if self.sock:
+#                 self.sock.close()
+#             self.sock = None
+#             continue
+#         break
+#     if not self.sock:
+#         raise socket.error, msg
+#     self.sock.settimeout(None)
 
 
 class RequestManager(object):
@@ -39,7 +40,10 @@ class RequestManager(object):
         self.port = port
         self.requestId = 1
 
+
     def request(self, method, path, data=None, headers=None):
+        # logging.getLogger().debug("Using request manager for: %s %s" % (method, path))
+
         if not headers:
             headers = {}
         headers["requestId"] = str(self.requestId)
@@ -48,7 +52,7 @@ class RequestManager(object):
         while maxi:
             try:
                 conn = http.HTTPConnection(self.host, self.port)
-                conn.timeout = 5.0
+                conn.timeout = 2.0
                 if not headers:
                     conn.request(method, path, data)
                 else:
@@ -96,6 +100,12 @@ class RequestManager(object):
         return rdata
 
     def get(self, path, data=None, headers={}):
+        # try:
+        #     if 
+        #     r = request.get(path, params=data)
+        # except:
+
+        #     pass
         return self.request("GET", path, data, headers=headers)
 
     def post(self, path, data, headers={}):

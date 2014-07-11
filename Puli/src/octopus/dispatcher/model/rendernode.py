@@ -42,6 +42,7 @@ class RenderNode(models.Model):
     usedCoresNumber = models.DictField(as_item_list=True)
     freeRam = models.IntegerField()
     systemFreeRam = models.IntegerField()
+    systemSwapPercentage = models.FloatField()
     usedRam = models.DictField(as_item_list=True)
 
     # Worker state
@@ -80,6 +81,7 @@ class RenderNode(models.Model):
         self.usedCoresNumber = {}
         self.freeRam = int(ramSize) # ramSize-usedRam i.e. the amount of RAM used if several commands running concurrently
         self.systemFreeRam = int(ramSize) # the RAM available on the system (updated each ping)
+        self.systemSwapPercentage = 0
         self.usedRam = {}
 
         self.speed = speed
@@ -96,7 +98,6 @@ class RenderNode(models.Model):
         self.caracteristics = caracteristics if caracteristics else {}
         self.currentpoolshare = None
         self.performance = float(performance)
-        # self.history = deque(maxlen=settings.RN_NB_ERRORS_TOLERANCE)
         self.history = deque( maxlen=singletonconfig.get('CORE','RN_NB_ERRORS_TOLERANCE') )
         self.tasksHistory = deque(maxlen=15)
         self.excluded = False
@@ -297,13 +298,8 @@ class RenderNode(models.Model):
     # @warning The returned HTTPConnection is not safe to use from multiple threads
     #
     def getHTTPConnection(self):
-        return http.HTTPConnection(self.host, self.port, timeout=20)
-#        if (self.httpConnection == None or
-#            self.httpConnection.port!=self.port or
-#            self.httpConnection.host!=self.host
-#        ):
-#            self.httpConnection = http.HTTPConnection(self.host, self.port)
-#        return self.httpConnection
+        timeout = singletonconfig.get('COMMUNICATION','RENDERNODE_REQUEST_TIMEOUT', 5)
+        return http.HTTPConnection(self.host, self.port, timeout=timeout)
 
     ## An exception class to report a render node http request failure.
     #
@@ -312,8 +308,8 @@ class RenderNode(models.Model):
 
     ## Sends a HTTP request to the render node and returns a (HTTPResponse, data) tuple on success.
     #
-    # This method tries to send the request at most settings.RENDERNODE_REQUEST_MAX_RETRY_COUNT times,
-    # waiting settings.RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE seconds between each try. It
+    # This method tries to send the request at most RENDERNODE_REQUEST_MAX_RETRY_COUNT times,
+    # waiting RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE seconds between each try. It
     # then raises a RenderNode.RequestFailed exception.
     #
     # @param method the HTTP method for this request
@@ -322,21 +318,22 @@ class RenderNode(models.Model):
     # @param body the string body for this request (None by default)
     # @raise RenderNode.RequestFailed if the request fails.
     # @note it is a good idea to specify a Content-Length header when giving a non-empty body.
-    # @see dispatcher.settings the RENDERNODE_REQUEST_MAX_RETRY_COUNT and
-    #                          RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE settings affect
-    #                          the execution of this method.
+    # @see  the RENDERNODE_REQUEST_MAX_RETRY_COUNT and
+    #       RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE params affect the execution of this method.
     #
     def request(self, method, url, body=None, headers={}):
         """
-        TODO: make asynchronous.
-        At this time when a rendernode is swapping or inaccessible, this process is stucked at "conn.getresponse()"
         """
-        from octopus.dispatcher import settings
+        
+        # from octopus.dispatcher import settings
 
+        LOGGER.debug("Send request to RN: http://%s:%s%s %s (%s)"%(self.host, self.port , url, method, headers))
+        
+        err=None
         conn = self.getHTTPConnection()
+
         # try to process the request at most RENDERNODE_REQUEST_MAX_RETRY_COUNT times.
         for i in xrange( singletonconfig.get('COMMUNICATION','RENDERNODE_REQUEST_MAX_RETRY_COUNT') ):
-        # for i in xrange(settings.RENDERNODE_REQUEST_MAX_RETRY_COUNT):
             try:
                 conn.request(method, url, body, headers)
                 response = conn.getresponse()
@@ -348,6 +345,8 @@ class RenderNode(models.Model):
                 conn.close()
                 return (response, data)
             except http.socket.error, e:
+                err = e
+                LOGGER.debug("socket error %r" % e)
                 try:
                     conn.close()
                 except:
@@ -355,16 +354,20 @@ class RenderNode(models.Model):
                 if e in (errno.ECONNREFUSED, errno.ENETUNREACH):
                     raise self.RequestFailed(cause=e)
             except http.HTTPException, e:
+                err = e
+                LOGGER.debug("HTTPException %r" % e)
                 try:
                     conn.close()
                 except:
                     pass
                 LOGGER.exception("rendernode.request failed")
+
+            LOGGER.warning("request failed (%d/%d), reason: %s"%(i+1, singletonconfig.get('COMMUNICATION','RENDERNODE_REQUEST_MAX_RETRY_COUNT'),err) )
             # request failed so let's sleep for a while
-            # time.sleep(settings.RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE)
             time.sleep( singletonconfig.get('COMMUNICATION','RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE') )
 
         # request failed too many times so pause the RN and report a failure
+        # LOGGER.debug("request failed too many times.")
         self.reset(paused=True)
         self.excluded = True
         raise self.RequestFailed()

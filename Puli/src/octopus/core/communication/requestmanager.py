@@ -42,7 +42,7 @@ class RequestManager(object):
 
 
     def request(self, method, path, data=None, headers=None):
-        logging.getLogger().debug("Using request mananger for: %s %s" % (method, path))
+        # logging.getLogger().debug("Using request manager for: %s %s" % (method, path))
 
         if not headers:
             headers = {}

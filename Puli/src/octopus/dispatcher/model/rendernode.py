@@ -42,6 +42,7 @@ class RenderNode(models.Model):
     usedCoresNumber = models.DictField(as_item_list=True)
     freeRam = models.IntegerField()
     systemFreeRam = models.IntegerField()
+    systemSwapPercentage = models.FloatField()
     usedRam = models.DictField(as_item_list=True)
 
     # Worker state
@@ -80,6 +81,7 @@ class RenderNode(models.Model):
         self.usedCoresNumber = {}
         self.freeRam = int(ramSize) # ramSize-usedRam i.e. the amount of RAM used if several commands running concurrently
         self.systemFreeRam = int(ramSize) # the RAM available on the system (updated each ping)
+        self.systemSwapPercentage = 0
         self.usedRam = {}
 
         self.speed = speed

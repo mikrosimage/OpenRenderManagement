@@ -431,6 +431,20 @@ class RenderNodeTable( CustomTable ):
                 "labelFormat":  " %-10s",
             },
             {
+                "field":        "systemFreeRam", 
+                "label":        "FREE RAM", 
+                "visible":      True, 
+                "dataFormat":   " %-8d",
+                "labelFormat":  " %-8s"
+            },
+            {
+                "field":        "systemSwapPercentage", 
+                "label":        "%SWAP", 
+                "visible":      True, 
+                "dataFormat":   " %-8d",
+                "labelFormat":  " %-8s"
+            },
+            {
                 "field":        "createDate", 
                 "label":        "CREATE", 
                 "visible":      True, 

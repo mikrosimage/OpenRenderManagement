@@ -20,7 +20,9 @@ LIST_ALLOWED_PROCESSES_WHEN_PAUSING_WORKER = ['python', 'python2.6', 'bash', 'ss
 #
 # COMUNICATION BEHAVIOUR
 # 
-WORKER_SYSINFO_DELAY = 8                           # interval between 2 heartbeats to the server
+WORKER_SYSINFO_DELAY = 8                           # interval between 2 heartbeats to the server (usually few seconds)
+WORKER_MAX_SYSINFO_DELAY = 300                     # interval between 2 full update to the server (usually several minutes)
+
 WORKER_REGISTER_DELAY_AFTER_FAILURE = 15           # wait 15s before retrying to register to the server
 
 WORKER_REQUEST_MAX_RETRY_COUNT = 8                 # nb of retry for a failed request

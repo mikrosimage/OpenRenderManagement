@@ -253,7 +253,7 @@ class RenderNodeQueryResource(DispatcherBaseResource, IQueryNode):
 
 
     ADDITIONNAL_SUPPORTED_FIELDS = ['caracteristics:mikdistrib', 'caracteristics:distribname', 'caracteristics:openglversion']
-    DEFAULT_FIELDS = ['id', 'name', 'host', 'port', 'ramSize', 'coresNumber', 'speed', 'status', 'lastAliveTime', 'createDate', 'registerDate', 'puliversion', 'pools' ]
+    DEFAULT_FIELDS = ['id', 'name', 'host', 'port', 'ramSize', 'coresNumber', 'speed', 'status', 'lastAliveTime', 'createDate', 'registerDate', 'puliversion', 'pools', 'systemFreeRam', 'systemSwapPercentage' ]
 
 
 

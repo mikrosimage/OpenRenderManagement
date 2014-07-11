@@ -1,4 +1,5 @@
 import logging
+import psutil
 import socket
 import os
 import signal
@@ -107,6 +108,7 @@ class Worker(MainLoopApplication):
 
         self.createDate = time.time()
         self.lastSysInfosMessageTime = 0
+        self.lastFullSysInfoUpdate = 0
         self.registerDate = 0
 
 
@@ -191,6 +193,20 @@ class Worker(MainLoopApplication):
 
         return freeMem
 
+    def getSwapUsage(self):
+        """
+        | Uses psutil module to retrieve usage swap percentage. The value is transmitted as a float in range [0-1]
+        :return: A float indicating the amount of swap currently used on the system
+        :raise: 
+        """
+        swapUsage=0.0
+        try:
+            swapUsage=psutil.swap_memory().percent
+        except psutil.Error:
+            LOGGER.warning("An error occured when retrieving swap percentage.")
+
+        return swapUsage
+
 
     def getCpuInfo(self):
         if os.path.isfile('/proc/cpuinfo'):
@@ -250,6 +266,7 @@ class Worker(MainLoopApplication):
             infos['cores'] = self.getNbCores()
             infos['ram'] = self.getTotalMemory()
             infos['systemFreeRam'] = self.getFreeMem()
+            infos['systemSwapPercentage'] = self.getSwapUsage()
             infos["puliversion"]=settings.VERSION
             infos["createDate"]=self.createDate
 
@@ -598,9 +615,19 @@ class Worker(MainLoopApplication):
 
         # time resync
         now = time.time()
+
+        if (now - self.lastFullSysInfoUpdate) > config.WORKER_MAX_SYSINFO_DELAY:
+            # Every WORKER_MAX_SYSINFO_DELAY a request is sent to ensure a complete set of data is present on the server
+            # - WORKER_MAX_SYSINFO_DELAY should be higher that WORKER_SYSINFO_DELAY
+            # - WORKER_MAX_SYSINFO_DELAY could be several minutes to avoid flooding the network
+            self.updateSysInfos(0)
+            self.lastFullSysInfoUpdate = now
+
         if (now - self.lastSysInfosMessageTime) > config.WORKER_SYSINFO_DELAY:
+            # Every WORKER_SYSINFO_DELAY, sends a minimal set of data to the server
             self.sendSysInfosMessage()
             self.lastSysInfosMessageTime = now
+
 
         self.httpconn.close()
 
@@ -630,6 +657,8 @@ class Worker(MainLoopApplication):
             
         infos['status'] = self.status
         infos['systemFreeRam'] = self.getFreeMem()
+        infos['systemSwapPercentage'] = self.getSwapUsage()
+
         dct = json.dumps(infos)
         headers = {}
         headers['content-length'] = len(dct)

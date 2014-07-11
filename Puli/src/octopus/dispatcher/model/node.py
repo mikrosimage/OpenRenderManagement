@@ -173,19 +173,21 @@ class BaseNode(models.Model):
     def dispatchIterator(self):
         raise NotImplementedError
 
-    # def computeDispatch(self):
-    #     if self.poolShares:
-    #         return list(self.dispatchIterator())
-    #     return []
 
     def updateAllocation(self):
         '''
         Called by subclasses during updateCompletion process to store maxRN and allocatedRN in the node.
         maxRN is also updated during webservice on user requests, this is a bit of a redefinition since it shouldn't change programmatically.
         '''
-        for currPoolShare in self.poolShares.values():
+
+        # Need to iterate over all poolshares concerning the current node.
+        # Otherwise we only update the allocatedRN of current pool (node the right value when user has changed pool during render)
+        nodeSharesList = [poolshare for poolshare in self.dispatcher.dispatchTree.poolShares.values() if poolshare.node.id == self.id]
+
+        self.allocatedRN = 0
+        for currPoolShare in nodeSharesList:
             self.maxRN = currPoolShare.maxRN
-            self.allocatedRN = currPoolShare.allocatedRN
+            self.allocatedRN += currPoolShare.allocatedRN
 
 
     def updateCompletionAndStatus(self):

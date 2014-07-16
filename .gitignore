@@ -23,4 +23,5 @@ Puli/doc/_build
 Puli/src/tornado
 Puli/src/numpy
 Puli/src/pygal
+Puli/src/psutil
 Puli/src/puliclient/contrib

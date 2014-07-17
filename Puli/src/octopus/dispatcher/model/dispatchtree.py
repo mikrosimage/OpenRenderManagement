@@ -449,8 +449,14 @@ class DispatchTree(object):
                 for poolShare in element.poolShares.values():
                     del poolShare.pool.poolShares[poolShare.node]
                     del self.poolShares[poolShare.id]
-                    # print poolShare.pool.poolShares
                     self.toArchiveElements.append(poolShare)
+            
+            if element.additionnalPoolShares:
+                for poolShare in element.additionnalPoolShares.values():
+                    del poolShare.pool.poolShares[poolShare.node]
+                    del self.poolShares[poolShare.id]
+                    self.toArchiveElements.append(poolShare)
+
             del self.nodes[element.id]
             self.toArchiveElements.append(element)
             for dependency in element.dependencies:
@@ -464,6 +470,13 @@ class DispatchTree(object):
                     del poolShare.pool.poolShares[poolShare.node]
                     del self.poolShares[poolShare.id]
                     self.toArchiveElements.append(poolShare)
+
+            if element.additionnalPoolShares:
+                for poolShare in element.additionnalPoolShares.values():
+                    del poolShare.pool.poolShares[poolShare.node]
+                    del self.poolShares[poolShare.id]
+                    self.toArchiveElements.append(poolShare)
+
             del self.nodes[element.id]
             self.toArchiveElements.append(element)
             for dependency in element.dependencies:

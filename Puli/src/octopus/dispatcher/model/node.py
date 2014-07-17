@@ -25,6 +25,10 @@ class PoolShareDictField(models.Field):
     def to_json(self, instance):
         return [[poolShare.id, poolShare.pool.name] for poolShare in instance.poolShares.values()]
 
+class AdditionnalPoolShareDictField(models.Field):
+    def to_json(self, instance):
+        return [[ps.id, ps.pool.name] for ps in instance.additionnalPoolShares.values()]
+
 
 class FolderNodeChildrenField(models.Field):
     def to_json(self, instance):
@@ -43,6 +47,7 @@ class BaseNode(models.Model):
     maxRN = models.IntegerField()
     updateTime = models.FloatField()
     poolShares = PoolShareDictField()
+    additionnalPoolShares = AdditionnalPoolShareDictField()
     completion = models.FloatField()
     status = models.IntegerField()
     creationTime = models.FloatField()
@@ -84,6 +89,7 @@ class BaseNode(models.Model):
         self.maxRN = int(maxRN)
         self.allocatedRN = 0
         self.poolShares = WeakKeyDictionary()
+        self.additionnalPoolShares = WeakKeyDictionary()
         self.completion = 1.0
         self.status = status
         self.creationTime = time() if not creationTime else creationTime
@@ -182,12 +188,19 @@ class BaseNode(models.Model):
 
         # Need to iterate over all poolshares concerning the current node.
         # Otherwise we only update the allocatedRN of current pool (node the right value when user has changed pool during render)
-        nodeSharesList = [poolshare for poolshare in self.dispatcher.dispatchTree.poolShares.values() if poolshare.node.id == self.id]
+        # nodeSharesList = [poolshare for poolshare in self.dispatcher.dispatchTree.poolShares.values() if poolshare.node.id == self.id and poolshare.node.status in [NODE_RUNNING, NODE_ERROR, NODE_PAUSED] ]
+        # self.allocatedRN = 0
+        # for currPoolShare in nodeSharesList:
+        #     self.maxRN = currPoolShare.maxRN
+        #     self.allocatedRN += currPoolShare.allocatedRN
 
-        self.allocatedRN = 0
-        for currPoolShare in nodeSharesList:
+        # Correct way, iterate over active poolshare and additionnal poolshares only
+        for currPoolShare in self.poolShares.values():
             self.maxRN = currPoolShare.maxRN
-            self.allocatedRN += currPoolShare.allocatedRN
+            self.allocatedRN = currPoolShare.allocatedRN
+        
+        for ps in self.additionnalPoolShares.values():
+            self.allocatedRN += ps.allocatedRN
 
 
     def updateCompletionAndStatus(self):

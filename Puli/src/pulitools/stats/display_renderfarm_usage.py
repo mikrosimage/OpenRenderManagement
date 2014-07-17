@@ -24,8 +24,8 @@ except ImportError:
 
 from octopus.dispatcher import settings
 from octopus.core import singletonconfig
-from tools.common import roundTime
-from tools.common import lowerQuartile, higherQuartile
+from pulitools.common import roundTime
+from pulitools.common import lowerQuartile, higherQuartile
 # import matplotlib.pyplot as plt
 
 ###########################################################################################################################

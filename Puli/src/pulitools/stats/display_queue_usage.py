@@ -24,8 +24,8 @@ except ImportError:
 
 from octopus.dispatcher import settings
 from octopus.core import singletonconfig
-from tools.common import roundTime
-from tools.common import lowerQuartile, higherQuartile
+from pulitools.common import roundTime
+from pulitools.common import lowerQuartile, higherQuartile
 
 ###########################################################################################################################
 # Data example:
@@ -89,13 +89,6 @@ if __name__ == "__main__":
         print "Command options: %s" % options
         print "Command arguments: %s" % args
 
-    if len(args) is not 2:
-        print "Error: 2 fields must be specified."
-        sys.exit(1)
-    else:
-        groupField = args[0]
-        graphValue = args[1]
-
     
     if options.rangeIn < options.rangeOut:
         print "Invalid start/end range"
@@ -113,7 +106,14 @@ if __name__ == "__main__":
 
     strScale=[]
     scale=[]
-    data2Dim = {}
+    tot=[]
+    totErr=[]
+    totRun=[]
+    totPaused=[]
+    totReady=[]
+    
+    # arrRnByProd = np.array()
+    rnByProd = {}
     log = []
 
     #
@@ -129,40 +129,40 @@ if __name__ == "__main__":
     for i, data in enumerate(log):
         eventDate = datetime.datetime.fromtimestamp( data['requestDate'] )
 
-        for key, val in data[ groupField ].items():
-            if key not in data2Dim:
-                data2Dim[key] = np.array( [0]*len(log) )
-            data2Dim[key][i] = val[ graphValue ]
+        # tot.append(data["total"]["jobs"])
+        totErr.append(data["total"]["err"])
+        totPaused.append(data["total"]["paused"])
+        totReady.append(data["total"]["ready"])
+        totRun.append(data["total"]["running"])
+
+        # for key, val in data["prod"].items():
+        #     if key not in rnByProd:
+        #         rnByProd[key] = np.array( [0]*len(log) )
+        #     rnByProd[key][i] = val["allocatedRN"]
 
         scale.append( eventDate )
+
+    if VERBOSE:
+        print "Num events: %d" % len(scale)
+        # for key,val in rnByProd.items():
+        #     print "%s - %r - %s" % (key, len(val), val)
+        print "Creating graph."
 
 
     stepSize = len(scale) / options.resolution
     newshape = (options.resolution, stepSize)
     useableSize = len(scale) - ( len(scale) % options.resolution )
 
-    avgData = {}
+    
+    err = np.array(totErr[-useableSize:])
+    paused = np.array(totPaused[-useableSize:])
+    ready = np.array(totReady[-useableSize:])
+    run = np.array(totRun[-useableSize:])
 
-    if VERBOSE:
-        print "stepSize=%d" % stepSize
-        print "useableSize=%d" % useableSize
-
-    for dataset in data2Dim.keys():
-        # print "%s = %d - %r" % (dataset, len(data2Dim[dataset]), data2Dim[dataset])
-        avgData[dataset] = np.mean( np.reshape(data2Dim[dataset][-useableSize:], newshape), axis=1)
-
-    # working = np.array(nb_working[-useableSize:])
-    # unknown = np.array(nb_unknown[-useableSize:])
-    # paused = np.array(nb_paused[-useableSize:])
-
-
-    # # print ("working %d = %r" % (len(working), working) )
-    # # print ("reshape %d = %r" % (len(newshape), newshape) )
-
-    # avg_working= np.mean( np.reshape(working, newshape), axis=1)
-    # avg_paused= np.mean( np.reshape(paused, newshape), axis=1)
-    # avg_unknown= np.mean( np.reshape(unknown, newshape), axis=1)
-
+    avg_err= np.mean( np.reshape(err, newshape), axis=1)
+    avg_paused= np.mean( np.reshape(paused, newshape), axis=1)
+    avg_ready= np.mean( np.reshape(ready, newshape), axis=1)
+    avg_run= np.mean( np.reshape(run, newshape), axis=1)
 
     # # med= np.median(data, axis=1)
     # # amin= np.min(data, axis=1)
@@ -185,20 +185,16 @@ if __name__ == "__main__":
     strScale[0] = scale[0].strftime('%Y-%m-%d %H:%M')
     strScale[-1] = scale[-1].strftime('%Y-%m-%d %H:%M')
 
-    if VERBOSE:
-        print ("newshape %d = %r" % (len(newshape), newshape) )
-        print ("data2Dim %d = %r" % (len(data2Dim), data2Dim) )
-        print ("scale %d = %r" % (len(strScale), strScale) )
-
-    if VERBOSE:
-        print "Num events: %d" % len(scale)
-        print "Creating graph."
+    # if VERBOSE:
+    #     print ("newshape %d = %r" % (len(newshape), newshape) )
+    #     print ("avg %d = %r" % (len(avg_working), avg_working) )
+    #     print ("scale %d = %r" % (len(strScale), strScale) )
 
 
     if options.stacked:
         avg_usage = pygal.StackedLine( x_label_rotation=30,
                                 include_x_axis=True,
-                                logarithmic=options.logarithmic, 
+                                logarithmic=False, 
                                 show_dots=False,
                                 width=800, 
                                 height=300,
@@ -211,7 +207,7 @@ if __name__ == "__main__":
     else:
         avg_usage = pygal.Line( x_label_rotation=30,
                                 include_x_axis=True,
-                                logarithmic=options.logarithmic, 
+                                logarithmic=False, 
                                 show_dots=True,
                                 width=800, 
                                 height=300,
@@ -223,12 +219,14 @@ if __name__ == "__main__":
 
     avg_usage.title = options.title
     avg_usage.x_labels = strScale
-
-    for key,val in avgData.items():
-        avg_usage.add(key, val )
+    avg_usage.add('Error', avg_err )
+    avg_usage.add('Paused', avg_paused )
+    avg_usage.add('Running', avg_run )
+    avg_usage.add('Ready', avg_ready )
 
     avg_usage.render_to_file( options.outputFile )
 
     if VERBOSE:
         print "Done."
+
 

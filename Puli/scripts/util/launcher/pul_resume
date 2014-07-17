@@ -1,5 +1,5 @@
 #!/bin/bash
 export PYTHONPATH=/s/apps/lin/puli/:${PYTHONPATH}
-export PATH=/s/apps/lin/puli/tools/puliquery:${PATH}
+export PATH=/s/apps/lin/puli/pulitools/puliquery:${PATH}
 
 pul_set_pause --set 0 "$@"

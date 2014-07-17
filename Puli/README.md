@@ -24,6 +24,7 @@ Currently, Puli is only supported on Linux (32 or 64 bits).
    * MySQL-python
    * python-sqlobject
    * python-tornado
+   * requests
 
 ##### MySQL server 5.0+
 

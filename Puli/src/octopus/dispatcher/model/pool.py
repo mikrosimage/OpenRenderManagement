@@ -44,17 +44,29 @@ class PoolShare(models.Model):
         self.node = node
         self.allocatedRN = 0
         self.maxRN = int(maxRN)
+
+        # Keep track of previous poolshares on the node's "additionnalPoolShares"
+        for ps in self.node.poolShares.values():
+            self.node.additionnalPoolShares[ps.pool] = ps
+
         # check if we already have a poolShare with this pool and node
         if node in pool.poolShares:
             # reassign to the node if it already exists
-            self.node.poolShares = WeakKeyDictionary()
+            self.node.poolShares = WeakKeyDictionary()      
             self.node.poolShares[self.pool] = self.pool.poolShares[self.node]
+
+            # Remove existing ref of the pool assigned
+            del(self.node.additionnalPoolShares[self.pool])
+
             raise PoolShareCreationException("PoolShare on node %s already exists for pool %s", node.name, pool.name)
+
         # registration
         self.pool.poolShares[self.node] = self
+
         # remove any previous poolshare on this node
         self.node.poolShares = WeakKeyDictionary()
         self.node.poolShares[self.pool] = self
+
         # the default maxRN at the creation is -1, if it is a different value, it means it's user defined
         if self.maxRN != -1:
             self.userDefinedMaxRN = True

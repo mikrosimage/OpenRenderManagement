@@ -6,6 +6,6 @@
 
 # PROD env
 export PYTHONPATH=/s/apps/lin/puli/:${PYTHONPATH}
-BASEDIR="/s/apps/lin/puli/tools/stats"
+BASEDIR="/s/apps/lin/puli/pulitools/stats"
 
 python ${BASEDIR}/grab_queue_stats.py "$@"

@@ -14,6 +14,12 @@ SYSTEM PREREQUISITES
 
 Currently, Puli is only supported on Linux (32 or 64 bits).
 
+#### Central manager
+
+The manager is the main server component, it holds the following subsystems:
+ - a central db
+ - a dispatcher daemon
+
 ##### Linux packages :
 
    * mysql-devel
@@ -27,6 +33,38 @@ Currently, Puli is only supported on Linux (32 or 64 bits).
    * requests
 
 ##### MySQL server 5.0+
+
+
+#### Render node
+
+A render node is installed on each machine that can holds a rendering process.
+It holds the following subsystems:
+   * a worker daemon
+   * an optionnal commandwatcher process when a process is currently rendering
+
+##### Python 2.6+ with following modules :
+
+   * python-tornado
+   * requests
+   * psutil
+
+
+#### Additionnal tools
+
+Several tools can be installed on a separate computer to operate the system:
+   * puliquery: command line request tools
+   * puliexec: simplify submission of scripts and command line
+   * pulistats: set of script to trace graphs based on server statistics
+   * pulistatsviewer: GUI program to trace and display graphs
+
+##### Python 2.6+ with following modules :
+
+   * python-tornado
+   * numpy
+   * pygal
+   * pyqt4
+
+
 
 
 INSTALLATION

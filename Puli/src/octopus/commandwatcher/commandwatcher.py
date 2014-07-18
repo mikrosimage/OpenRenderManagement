@@ -381,7 +381,7 @@ class CommandWatcher(object):
                 logger.warning("Impossible to release license (attempt %d/10)" % (i+1) )
                 time.sleep(.2)
 
-        except (HTTPError, ConnectionError) as e:
+        except HTTPError as e:
             print "Network error:", e
             res = False
         except Exception as e:

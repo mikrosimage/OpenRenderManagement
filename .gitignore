@@ -15,6 +15,7 @@ tests/
 bin/
 src/*.egg-info
 
+stats/
 lib/
 logs/
 utils/

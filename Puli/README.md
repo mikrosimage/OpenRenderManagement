@@ -17,22 +17,20 @@ Currently, Puli is only supported on Linux (32 or 64 bits).
 #### Central manager
 
 The manager is the main server component, it holds the following subsystems:
- - a central db
- - a dispatcher daemon
+   * a central db
+   * a dispatcher daemon
 
-##### Linux packages :
-
+###### Linux packages :
    * mysql-devel
    * python-devel (for your version of python)
 
-##### Python 2.6+ with following modules :
-
+###### Python 2.6+ with following modules :
    * python-tornado
    * MySQL-python
    * python-sqlobject
    * requests
 
-##### MySQL server 5.0+
+###### MySQL server 5.0+
 
 
 #### Render node
@@ -42,8 +40,7 @@ It holds the following subsystems:
    * a worker daemon
    * an optionnal commandwatcher process when a process is currently rendering
 
-##### Python 2.6+ with following modules :
-
+###### Python 2.6+ with following modules :
    * python-tornado
    * requests
    * psutil
@@ -57,8 +54,7 @@ Several tools can be installed on a separate computer to operate the system:
    * pulistats: set of script to trace graphs based on server statistics
    * pulistatsviewer: GUI program to trace and display graphs
 
-##### Python 2.6+ with following modules :
-
+###### Python 2.6+ with following modules :
    * python-tornado
    * numpy
    * pygal

@@ -47,6 +47,7 @@ RUN_AS = None
 #
 
 # EVAL ENV
+<<<<<<< HEAD
 # LOGDIR = "/s/apps/lin/vfx_test_apps/puli_runtime/logs"
 # CONFDIR = "/s/apps/lin/vfx_test_apps/puli_runtime/conf"
 
@@ -57,6 +58,19 @@ CONFDIR = "/datas/jsa/puli_runtime/conf"
 # PROD
 # LOGDIR = "/opt/puli/logs"
 # CONFDIR = "/opt/puli/conf"
+=======
+# BASEDIR = "/s/apps/lin/vfx_test_apps/"
+
+# DEV ENV
+# BASEDIR = "/datas/jsa/"
+
+# LOGDIR = BASEDIR + "OpenRenderManagement/logs"
+# CONFDIR = BASEDIR + "OpenRenderManagement/Puli/etc/puli"
+
+# PROD
+LOGDIR = "/opt/puli/logs"
+CONFDIR = "/opt/puli/conf"
+>>>>>>> 2beb9bf6a7e1b6da47551a2e5ac0b04e3acc71ff
 
 PIDFILE = "/var/run/puli/dispatcher.pid"  # service control pid file
 

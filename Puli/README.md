@@ -27,9 +27,9 @@ The manager is the main server component, it holds the following subsystems:
 
 ##### Python 2.6+ with following modules :
 
+   * python-tornado
    * MySQL-python
    * python-sqlobject
-   * python-tornado
    * requests
 
 ##### MySQL server 5.0+

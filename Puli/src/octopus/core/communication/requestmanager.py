@@ -2,7 +2,6 @@ import socket
 import httplib as http
 import time
 import logging
-import requests
 
 # def connect(self):
 #     """Connect to the host and port specified in __init__."""

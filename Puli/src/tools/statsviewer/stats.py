@@ -33,19 +33,19 @@ class StatsMainWindow(QMainWindow):
     """
     """
 
-    LOGDIR = "/s/apps/lin/vfx_test_apps/OpenRenderManagement/"
+    LOGDIR = "/s/apps/lin/vfx_test_apps/pulistats/"
     # SRCDIR = "/datas/jsa/OpenRenderManagement/"
     BASEDIR = "/s/apps/lin/puli/"
 
     reportDict={ 
         "RN usage": { 
             "cmd": BASEDIR + "scripts/util/update_usage_stats",
-            "source":"/s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/usage_stats.log"
+            "source":"/s/apps/lin/vfx_test_apps/pulistats/logs/usage_stats.log"
             },
 
         "Job usage" : { 
             "cmd": BASEDIR + "scripts/util/update_queue_stats",
-            "source":"/s/apps/lin/vfx_test_apps/OpenRenderManagement/stats/FR/logs/queue_stats.log"
+            "source":"/s/apps/lin/vfx_test_apps/pulistats/logs/queue_stats.log"
         },
     }
 

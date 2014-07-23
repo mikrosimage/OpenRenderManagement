@@ -36,7 +36,7 @@ def spawnCommandWatcher(pidfile, logfile, args, env):
     '''
     devnull = file(os.devnull, "r")
     # normalize environment
-    envN = {}
+    envN = os.environ.copy()
     for key in env:
         envN[str(key)] = str(env[key])
 

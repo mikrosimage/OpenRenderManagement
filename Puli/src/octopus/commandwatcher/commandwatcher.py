@@ -33,7 +33,6 @@ from puliclient.jobs import CommandError
 from octopus.core.http import Request
 from octopus.core.communication.requestmanager import RequestManager
 from octopus.core.enums.command import *
-from octopus.worker import settings
 
 EXEC, POSTEXEC = "execute", "postExecute"
 

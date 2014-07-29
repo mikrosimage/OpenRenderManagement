@@ -1,6 +1,5 @@
 #!/bin/bash
 export PYTHONPATH=/s/apps/lin/puli/:${PYTHONPATH}
+export PATH=/s/apps/lin/puli/pulitools/puliexec:${PATH}
 
-cd /s/apps/lin/puli/pulitools/puliexec
-python puliexec.py "$@"
-cd -
+puliexec.py "$@"

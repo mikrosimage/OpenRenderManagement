@@ -120,7 +120,6 @@ class Worker(MainLoopApplication):
         self.lastFullSysInfoUpdate = 0
         self.registerDate = 0
 
-
         self.httpconn = httplib.HTTPConnection(settings.DISPATCHER_ADDRESS, settings.DISPATCHER_PORT)
         self.PID_DIR = os.path.dirname(settings.PIDFILE)
         if not os.path.isdir(self.PID_DIR):

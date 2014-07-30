@@ -33,7 +33,7 @@ def loadSettingsFile(filename):
 
 ## SETTINGS ###########################################################
 
-VERSION = "1.6.14"
+VERSION = "1.7.1"
 
 DEBUG = False
 
@@ -43,21 +43,16 @@ RUN_AS = None
 
 
 #
-# DEV/EVAL/PROD ENV
+# LOG AND CONF FOLDERS
 #
+LOGDIR = "__LOGDIR_PLACEHOLDER__"
+CONFDIR = "__CONFDIR_PLACEHOLDER__"
 
-# EVAL ENV
-# BASEDIR = "/s/apps/lin/vfx_test_apps/"
 
-# DEV ENV
-LOGDIR = "/datas/jsa/puli_runtime/logs"
-CONFDIR = "/datas/jsa/puli_runtime/conf/puli"
-
-# PROD
-# LOGDIR = "/opt/puli/logs"
-# CONFDIR = "/opt/puli/conf"
-
-PIDFILE = "/var/run/puli/dispatcher.pid"  # service control pid file
+#
+# SERVICE CONTROL PID FILE
+#
+PIDFILE = "/var/run/puli/dispatcher.pid"  
 
 
 #
@@ -77,7 +72,3 @@ DB_ENABLE = True
 DB_CLEAN_DATA = False
 
 DB_URL = "mysql://puliuser:0ct0pus@127.0.0.1/pulidb"
-#DB_URL = "sqlite:///path/to/my/database/file.db"
-
-
-# RN_TIMEOUT = 1200

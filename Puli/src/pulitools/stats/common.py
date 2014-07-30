@@ -13,7 +13,7 @@ import pygal
 import os
 import time
 
-from tools.common import roundTime
+from pulitools.common import roundTime
 
 def createCommonParser():
     """

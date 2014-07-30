@@ -15,7 +15,7 @@ import pygal
 from optparse import OptionParser
 
 from octopus.dispatcher import settings
-from tools.common import roundTime
+from pulitools.common import roundTime
 
 ###########################################################################################################################
 

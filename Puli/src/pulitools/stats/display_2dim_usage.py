@@ -24,10 +24,8 @@ except ImportError:
 
 from octopus.dispatcher import settings
 from octopus.core import singletonconfig
-from tools.common import roundTime
-from tools.common import lowerQuartile, higherQuartile
-from tools.stats.common import createCommonParser, getRangeDates, prepareGraph, prepareScale, renderGraph
-
+from pulitools.common import roundTime
+from pulitools.common import lowerQuartile, higherQuartile
 
 ###########################################################################################################################
 # Data example:
@@ -53,16 +51,41 @@ from tools.stats.common import createCommonParser, getRangeDates, prepareGraph, 
 
 
 
+def process_args():
+    '''
+    Manages arguments parsing definition and help information
+    '''
+
+    usage = "usage: %prog [general options] [restriction list] [output option]"
+    desc="""Displays information.
+"""
+
+    parser = OptionParser(usage=usage, description=desc, version="%prog 0.1" )
+
+    parser.add_option( "-f", action="store", dest="sourceFile", default=os.path.join(settings.LOGDIR, "usage_stats.log"), help="Source file" )
+    parser.add_option( "-o", action="store", dest="outputFile", default="./queue_avg.svg", help="Target output file." )
+    parser.add_option( "-v", action="store_true", dest="verbose", help="Verbose output" )
+    parser.add_option( "-s", action="store", dest="rangeIn", type="int", help="Start range is N hours in past", default=3 )
+    parser.add_option( "-e", action="store", dest="rangeOut", type="int", help="End range is N hours in past (mus be lower than '-s option'", default=0 )
+    parser.add_option( "-t", "--title", action="store", dest="title", help="Indicates a title", default="Queue usage over time")
+    parser.add_option( "-r", "--res", action="store", dest="resolution", type="int", help="Indicates ", default=10 )
+    parser.add_option( "--stack", action="store_true", dest="stacked", default=False)
+    parser.add_option( "--line", action="store_true", dest="line", default=True)
+    parser.add_option( "--log", action="store_true", dest="logarithmic", help="Display graph with a logarithmic scale", default=False )
+    parser.add_option( "--scale", action="store", dest="scaleEvery", type="int", help="Indicates the number of scale values to display", default=8 )
+
+    options, args = parser.parse_args()
+
+    return options, args
+
+
 if __name__ == "__main__":
 
-    # # DBG
-    # startTime = time.time()
-    # prevTime = time.time()
-    # print ("%s - init timer" % (datetime.datetime.now()))
 
-    options, args = createCommonParser().parse_args()
-   
-    if options.verbose:
+    options, args = process_args()
+    VERBOSE = options.verbose
+    
+    if VERBOSE:
         print "Command options: %s" % options
         print "Command arguments: %s" % args
 
@@ -73,14 +96,20 @@ if __name__ == "__main__":
         groupField = args[0]
         graphValue = args[1]
 
-
-    startDate, endDate = getRangeDates( options )
     
-    if options.verbose:
+    if options.rangeIn < options.rangeOut:
+        print "Invalid start/end range"
+        sys.exit()
+
+    startDate = time.time() - 3600 * options.rangeIn
+    endDate = time.time() - 3600 * options.rangeOut
+
+    if VERBOSE:
         print "Loading stats: %r " % options.sourceFile
         print "  - from: %r " % datetime.date.fromtimestamp(startDate)
         print "  - to:   %r " % datetime.date.fromtimestamp(endDate)
         print "Start."
+
 
     strScale=[]
     scale=[]
@@ -89,37 +118,13 @@ if __name__ == "__main__":
 
     #
     # Load json log and filter by date
-    # Optim done to have a fast dataset:
-    #  - read the whole file without parsing
-    #  - read resulting list in reversed order and parse each json line (mandatory due to the log format)
-    #  - filter and add data in range
-    #  - once we reached data too old: break the loop
-
+    #
     with open(options.sourceFile, "r" ) as f:
-        raw_str = f.readlines()
+        for line in f:
+            data = json.loads(line)
+            if (startDate < data['requestDate']  and data['requestDate'] <= endDate):
+                log.append( json.loads(line) )
 
-    # print "%s - %6.2f ms - load raw source complete, num lines: %d" % (datetime.datetime.now(), (time.time() - prevTime) * 1000,len(raw_str))
-    # prevTime = time.time()
-
-    # for line in reversed(raw_str):
-    #     date = float(re.search('"requestDate":(.+?),', line).group(1))
-    #     if (startDate < date  and date <= endDate):
-    #         log.insert( 0, json.loads(line) )
-    #     if date < startDate:
-    #         break
-
-    for line in reversed(raw_str):
-        data = json.loads(line)
-
-        if (startDate < data['requestDate']  and data['requestDate'] <= endDate):
-            log.insert( 0, data )
-
-        # We read by the end, if date is too old, no need to continue the parsing
-        if data['requestDate'] < startDate:
-            break
-
-    # print "%s - %6.2f ms - load source complete, num lines: %d" % (datetime.datetime.now(), (time.time() - prevTime) * 1000, len(log))
-    # prevTime = time.time()
 
     for i, data in enumerate(log):
         eventDate = datetime.datetime.fromtimestamp( data['requestDate'] )
@@ -130,8 +135,7 @@ if __name__ == "__main__":
             data2Dim[key][i] = val[ graphValue ]
 
         scale.append( eventDate )
-    # print "%s - %6.2f ms - create tables" % (datetime.datetime.now(), (time.time() - prevTime) * 1000)
-    # prevTime = time.time()
+
 
     stepSize = len(scale) / options.resolution
     newshape = (options.resolution, stepSize)
@@ -139,16 +143,13 @@ if __name__ == "__main__":
 
     avgData = {}
 
-    if options.verbose:
+    if VERBOSE:
         print "stepSize=%d" % stepSize
         print "useableSize=%d" % useableSize
 
     for dataset in data2Dim.keys():
         # print "%s = %d - %r" % (dataset, len(data2Dim[dataset]), data2Dim[dataset])
         avgData[dataset] = np.mean( np.reshape(data2Dim[dataset][-useableSize:], newshape), axis=1)
-
-    # print "%s - %6.2f ms - create avg data" % (datetime.datetime.now(), (time.time() - prevTime) * 1000)
-    # prevTime = time.time()
 
     # working = np.array(nb_working[-useableSize:])
     # unknown = np.array(nb_unknown[-useableSize:])
@@ -170,37 +171,64 @@ if __name__ == "__main__":
     # # q2= higherQuartile(data)
     # # std= np.std(data, axis=1)
 
-    # strScale = [''] * options.resolution
-
-    #
-    # Prepare scale
-    #
+    strScale = [''] * options.resolution
     tmpscale = np.reshape(scale[-useableSize:], newshape)
-    strScale = prepareScale( tmpscale, options )
+    # # print ("tmp scale %d = %r" % (len(tmpscale), tmpscale) )
+    # # print ("str scale %d = %r" % (len(strScale), strScale) )
 
-    if options.verbose:
+    for i,date in enumerate(tmpscale[::len(tmpscale)/options.scaleEvery]):
+        newIndex = i*len(tmpscale)/options.scaleEvery
+
+        if newIndex < len(strScale):
+            strScale[newIndex] = date[0].strftime('%H:%M')
+
+    strScale[0] = scale[0].strftime('%Y-%m-%d %H:%M')
+    strScale[-1] = scale[-1].strftime('%Y-%m-%d %H:%M')
+
+    if VERBOSE:
         print ("newshape %d = %r" % (len(newshape), newshape) )
         print ("data2Dim %d = %r" % (len(data2Dim), data2Dim) )
         print ("scale %d = %r" % (len(strScale), strScale) )
 
-    if options.verbose:
+    if VERBOSE:
         print "Num events: %d" % len(scale)
         print "Creating graph."
 
 
-    avg_usage = prepareGraph( options )
+    if options.stacked:
+        avg_usage = pygal.StackedLine( x_label_rotation=30,
+                                include_x_axis=True,
+                                logarithmic=options.logarithmic, 
+                                show_dots=False,
+                                width=800, 
+                                height=300,
+                                fill=True,
+                                interpolate='hermite', 
+                                interpolation_parameters={'type': 'cardinal', 'c': 1.0},
+                                interpolation_precision=3,
+                                style=RedBlueStyle
+                                )
+    else:
+        avg_usage = pygal.Line( x_label_rotation=30,
+                                include_x_axis=True,
+                                logarithmic=options.logarithmic, 
+                                show_dots=True,
+                                width=800, 
+                                height=300,
+                                interpolate='hermite', 
+                                interpolation_parameters={'type': 'cardinal', 'c': 1.0},
+                                interpolation_precision=3,
+                                style=RedBlueStyle
+                                )
+
     avg_usage.title = options.title
     avg_usage.x_labels = strScale
 
     for key,val in avgData.items():
         avg_usage.add(key, val )
-    # print "%s - %6.2f ms - prepare graph" % (datetime.datetime.now(), (time.time() - prevTime) * 1000)
-    # prevTime = time.time()
 
-    renderGraph( avg_usage, options )
-    # print "%s - %6.2f ms - render graph" % (datetime.datetime.now(), (time.time() - prevTime) * 1000)
-    # print "%s - %6.2f ms - Total time" % (datetime.datetime.now(), (time.time() - startTime) * 1000)
+    avg_usage.render_to_file( options.outputFile )
 
-    if options.verbose:
+    if VERBOSE:
         print "Done."
 

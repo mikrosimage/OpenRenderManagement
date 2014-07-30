@@ -7,4 +7,4 @@ export PYTHONPATH=/datas/jsa/OpenRenderManagement/Puli/src:${PYTHONPATH}
 
 
 # python /s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli/src/tools/stats/trace_queue_2dim.py "$@"
-python /datas/jsa/OpenRenderManagement/Puli/src/tools/stats/trace_queue_2dim.py "$@"
+python /datas/jsa/OpenRenderManagement/Puli/src/pulitools/stats/trace_queue_2dim.py "$@"

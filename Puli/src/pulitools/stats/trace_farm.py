@@ -24,8 +24,8 @@ except ImportError:
 
 from octopus.dispatcher import settings
 from octopus.core import singletonconfig
-from tools.common import lowerQuartile, higherQuartile
-from tools.stats.common import createCommonParser, getRangeDates, prepareGraph, prepareScale, renderGraph
+from pulitools.common import lowerQuartile, higherQuartile
+from pulitools.stats.common import createCommonParser, getRangeDates, prepareGraph, prepareScale, renderGraph
 
 # import matplotlib.pyplot as plt
 

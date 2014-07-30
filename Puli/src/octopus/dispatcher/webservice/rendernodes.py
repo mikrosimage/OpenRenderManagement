@@ -35,12 +35,11 @@ class RenderNodesResource(DispatcherBaseResource):
 
 
 class RenderNodeResource(DispatcherBaseResource):
-    ## Sends the JSON detailed representation of a given render node.
-    #
+    ## Sends the JSON detailed representation of a given render node, url: http://server:8004/rendernodes/<rn:port>
+    # 
     # @param request the HTTP request object for this request
     # @param computerName the name of the requested render node
     #
-    #@queue
     def get(self, computerName):
         computerName = computerName.lower()
         try:
@@ -51,7 +50,6 @@ class RenderNodeResource(DispatcherBaseResource):
         content = json.dumps(content)
         self.writeCallback(content)
 
-    #@queue
     def post(self, computerName):
         """
         A worker send a request to get registered on the server.
@@ -59,7 +57,6 @@ class RenderNodeResource(DispatcherBaseResource):
         if singletonconfig.get('CORE','GET_STATS'):
             singletonstats.theStats.cycleCounts['add_rns'] += 1
 
-        # import pudb;pu.db
         computerName = computerName.lower()
         if computerName.startswith(('1', '2')):
             return Http403(message="Cannot register a RenderNode without a name", content="Cannot register a RenderNode without a name")
@@ -254,6 +251,8 @@ class RenderNodeSysInfosResource(DispatcherBaseResource):
             renderNode.caracteristics = eval(str(dct["caracteristics"]))
         if "cores" in dct:
             renderNode.cores = int(dct["cores"])
+        if "createDate" in dct:
+            renderNode.createDate = int(dct["createDate"])
         if "ram" in dct:
             renderNode.ram = int(dct["ram"])
         if "systemFreeRam" in dct:

@@ -47,11 +47,12 @@ RUN_AS = None
 #
 
 # EVAL ENV
-# BASEDIR = "/s/apps/lin/vfx_test_apps/"
+# LOGDIR = "/s/apps/lin/vfx_test_apps/puli_runtime/logs"
+# CONFDIR = "/s/apps/lin/vfx_test_apps/puli_runtime/conf"
 
 # DEV ENV
 LOGDIR = "/datas/jsa/puli_runtime/logs"
-CONFDIR = "/datas/jsa/puli_runtime/conf/puli"
+CONFDIR = "/datas/jsa/puli_runtime/conf"
 
 # PROD
 # LOGDIR = "/opt/puli/logs"
@@ -77,7 +78,3 @@ DB_ENABLE = True
 DB_CLEAN_DATA = False
 
 DB_URL = "mysql://puliuser:0ct0pus@127.0.0.1/pulidb"
-#DB_URL = "sqlite:///path/to/my/database/file.db"
-
-
-# RN_TIMEOUT = 1200

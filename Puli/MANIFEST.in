@@ -1,5 +1,0 @@
-recursive-include src *.py
-include etc/puli/workers.lst
-include scripts/dispatcherd.py
-include scripts/workerd.py
-include setup.py

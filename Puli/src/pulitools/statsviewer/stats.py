@@ -14,8 +14,8 @@ from PyQt4.QtCore import QObject, pyqtSignal
 from PyQt4.QtCore import qDebug
 
 
-from tools.statsviewer.widget.mainwindow import Ui_MainWindow
-from tools.common import XLogger, OutLog
+from pulitools.statsviewer.widget.mainwindow import Ui_MainWindow
+from pulitools.common import XLogger, OutLog
 
 import sys
 import subprocess

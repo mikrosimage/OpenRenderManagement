@@ -263,3 +263,16 @@ def mik_puli( source_path=env.source_path, target_path=env.target_path, shared_p
     deploy_on_shared_storage(source_path, shared_path)
     create_launcher(shared_path, common_path)
 
+
+@task()
+def mik_pulitest():
+    """Mikros: install eval env on pulitest.mikrosimage.eu
+    """    
+    env.hosts = ['pulitest']
+    env.source_path = '/s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli'
+    env.target_path = '/opt/puli'
+    env.shared_path = '/s/apps/lin/vfx_test_apps/puli'
+    env.common_path = '/s/apps/lin/vfx_test_apps/puli/bin'
+
+    mik_puli(env.source_path, env.target_path, env.shared_path, env.common_path)
+    

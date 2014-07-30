@@ -105,12 +105,13 @@ class WebServiceDispatcher(Application):
             (r'^/query/command$', commands.CommandQueryResource, dict(framework=framework)),
             
             (r'^/reconfig$', ReconfigResource, dict(framework=framework)),
-            (r'^/dbg$', DbgResource, dict(framework=framework))
+            (r'^/dbg$', DbgResource, dict(framework=framework)),
 
             # Standard WS to retrieve log file from server
-
-            (r"/log/(.*)", tornado.web.StaticFileHandler, {"path": settings.LOGDIR}),
+            (r"/log/(.*)", tornado.web.StaticFileHandler, {"path": settings.LOGDIR, "default_filename": "dispatcher.log"}),
         ])
+
+
         self.listen(port, "0.0.0.0")
         self.framework = framework
 

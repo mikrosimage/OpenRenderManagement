@@ -14,9 +14,10 @@ except ImportError:
 import logging
 import time
 
+
+import tornado
 from tornado.web import Application
-#import tornado.web as web
-#from tornado.httpserver import HTTPServer
+
 from octopus.dispatcher.webservice import commands, rendernodes, graphs, nodes,\
     tasks, poolshares, pools, licenses, \
     query, edit
@@ -25,7 +26,7 @@ from octopus.core.communication.http import Http404, Http400, Http500, HttpConfl
 from octopus.core.enums.command import *
 from octopus.dispatcher.webservice import DispatcherBaseResource
 from octopus.core import singletonconfig
-
+from octopus.dispatcher import settings
 
 ## This class defines the webservice associated with the dispatcher.
 #
@@ -104,9 +105,13 @@ class WebServiceDispatcher(Application):
             (r'^/query/command$', commands.CommandQueryResource, dict(framework=framework)),
             
             (r'^/reconfig$', ReconfigResource, dict(framework=framework)),
-            (r'^/dbg$', DbgResource, dict(framework=framework))
+            (r'^/dbg$', DbgResource, dict(framework=framework)),
 
+            # Standard WS to retrieve log file from server
+            (r"/log/(.*)", tornado.web.StaticFileHandler, {"path": settings.LOGDIR, "default_filename": "dispatcher.log"}),
         ])
+
+
         self.listen(port, "0.0.0.0")
         self.framework = framework
 

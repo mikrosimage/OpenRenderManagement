@@ -43,22 +43,16 @@ RUN_AS = None
 
 
 #
-# DEV/EVAL/PROD ENV
+# LOG AND CONF FOLDERS
 #
+LOGDIR = "__LOGDIR_PLACEHOLDER__"
+CONFDIR = "__CONFDIR_PLACEHOLDER__"
 
-# EVAL ENV
-# LOGDIR = "/s/apps/lin/vfx_test_apps/puli_runtime/logs"
-# CONFDIR = "/s/apps/lin/vfx_test_apps/puli_runtime/conf"
 
-# DEV ENV
-LOGDIR = "/datas/jsa/puli_runtime/logs"
-CONFDIR = "/datas/jsa/puli_runtime/conf"
-
-# PROD
-# LOGDIR = "/opt/puli/logs"
-# CONFDIR = "/opt/puli/conf"
-
-PIDFILE = "/var/run/puli/dispatcher.pid"  # service control pid file
+#
+# SERVICE CONTROL PID FILE
+#
+PIDFILE = "/var/run/puli/dispatcher.pid"  
 
 
 #

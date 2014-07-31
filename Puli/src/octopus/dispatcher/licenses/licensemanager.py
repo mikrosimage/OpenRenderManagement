@@ -1,7 +1,13 @@
 '''
+
+.. module:: puliclient
+    :platform: Unix
+    :synopsis: API to create and submit jobs on the renderfarm
+
+.. moduleauthor:: Jean-Baptiste Spieser
+
 Created on 25 nov. 2009
 
-@author: jean-baptiste.spiese
 '''
 import os
 

@@ -130,6 +130,17 @@ class CommandWatcher(object):
     # @param arguments the arguments of the command
     #
     def __init__(self, serverFullName, workerPort, id, runner, validationExpression, arguments):
+        """Creates a new command watcher.
+
+        :param serverFullName: Main server address
+        :type serverFullName: string
+        :param workerPort: Communication port opened on the worker
+        :type serverFullName: int
+        :param id: commandId
+        :param runner: module name of the class that will be executed i.e. the 'runner'
+        :param validationExpression: 
+        :param arguments: 
+        """
 
         self.id = id
         self.requestManager = RequestManager("127.0.0.1", workerPort)

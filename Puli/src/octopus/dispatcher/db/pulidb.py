@@ -126,6 +126,9 @@ class Tasks(SQLObject):
     archived = BoolCol()
     args = UnicodeCol()
 
+    # Adding autoretry capability on task
+    maxAttempt = IntCol()
+
 
 class Commands(SQLObject):
     class sqlmeta:
@@ -143,6 +146,10 @@ class Commands(SQLObject):
     stats = UnicodeCol()
     archived = BoolCol()
     args = UnicodeCol()
+
+    # Adding autoretry capability on command
+    attempt = IntCol()
+    maxAttempt = IntCol()
 
 
 class Pools(SQLObject):

@@ -808,7 +808,6 @@ class PuliDB(object):
         commands = conn.queryAll(conn.sqlrepr(Select(fields, where=(Commands.q.archived == False))))
 
         print "%s -- req for cmd complete %s --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)), len(commands))
-        # import pudb;pu.db
         for num, dbCmd in enumerate(commands):
             id, description, taskId, status, completion, creationTime, startTime, updateTime, endTime, assignedRNId, message, stats, archived, args = dbCmd
             if args is None:

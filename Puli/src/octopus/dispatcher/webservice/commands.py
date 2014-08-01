@@ -76,7 +76,6 @@ class CommandResource(DispatcherBaseResource):
             return "Done"
 
         # check requested updates
-        # import pudb;pu.db
         commandId = int(commandId)
         updatedData = self.getBodyAsJSON()
         toUpdate = {}

@@ -30,6 +30,8 @@ except ImportError:
 from tornado.web import HTTPError
 
 from puliclient.jobs import CommandError
+from puliclient.jobs import CommandStop
+
 from octopus.core.http import Request
 from octopus.core.communication.requestmanager import RequestManager
 from octopus.core.enums.command import *
@@ -40,6 +42,7 @@ COMMAND_RUNNING = 0
 COMMAND_STOPPED = 1
 COMMAND_CRASHED = 2
 COMMAND_FAILED = 3
+COMMAND_ENDED = 4
 
 
 logger = logging.getLogger('puli.commandwatcher')
@@ -54,6 +57,9 @@ handler.setFormatter( logging.Formatter(fmt=FORMAT, datefmt=DATE_FORMAT) )
 logger.addHandler(handler)
 
 
+class ThreadInterruption(Exception):
+    pass
+
 ## This class is used to thread a command.
 #
 class CmdThreader(Thread):
@@ -67,12 +73,13 @@ class CmdThreader(Thread):
     def __init__(self, cmd, methodName, arguments, updateCompletion, updateMessage, updateStats, updateLicense):
         Thread.__init__(self)
 
-        self.logger = logging.getLogger()
+        self.logger = logging.getLogger('puli.commandwatcher')
         self.logger.debug("cmd = %s" % cmd)
         self.logger.debug("methodName = %s" % methodName)
         self.cmd = cmd
         self.methodName = methodName
         self.errorInfo = None
+        self.stopInfo = None
         self.arguments = arguments
         self.updateCompletion = updateCompletion
         self.updateMessage = updateMessage
@@ -97,11 +104,18 @@ class CmdThreader(Thread):
 
             getattr(self.cmd, self.methodName)( *constructArgs )
 
+            self.stopped = COMMAND_ENDED
+
+        except CommandStop, e:
+            '''Raised from runner to manually end a job'''
+            self.stopInfo = str(e)
             self.stopped = COMMAND_STOPPED
         except CommandError, e:
+            '''Raised from runner when a failure was detected during the process, a message can be printed to the user'''
             self.errorInfo = str(e)
             self.stopped = COMMAND_FAILED
         except Exception, e:
+            '''A command crashed or raised an unhandled error'''
             self.errorInfo = (str(e) + "\n" + str(traceback.format_exc()))
             self.stopped = COMMAND_CRASHED
 
@@ -110,7 +124,11 @@ class CmdThreader(Thread):
     def stop(self):
         self.stopped = COMMAND_STOPPED
         self.logger.warning("Abrupt termination for thread \"%s\"" % self.methodName)
-        Thread.__stop(self)
+
+        # threading.Thread class does not provde an internal way to stop itself.
+        # It only ends when execution end is reached or on an unhandled exception.
+        # Therefore we raise a specific exception, unhandled in thread but known in CommandWatcher class
+        raise ThreadInterruption()
 
 
 ## This class is used to ensure the good execution of the CmdThreader's process.
@@ -190,6 +208,7 @@ class CommandWatcher(object):
         startDate = time.time()
         try:
             self.job.validate(self.arguments)
+
         except Exception,e:
             logger.warning("Caught exception (%r) while starting command %d." % (e, self.id))
             self.finalState = CMD_ERROR
@@ -232,7 +251,6 @@ class CommandWatcher(object):
     # @param status
     #
     def updateCommandStatus(self, status):
-
         if self.workerPort is "0":
             return
 
@@ -249,7 +267,7 @@ class CommandWatcher(object):
 
     def updateValidatorResult(self, msg, errorInfos):
         """
-        FIXME: NEVER CALLED ??! WTF
+        FIXME: function never called
         """
 
         if self.workerPort is "0":
@@ -413,11 +431,15 @@ class CommandWatcher(object):
 
             if timeOut is not None:
                 if timeOut < 0:
-                    logger.error("execute Script timeout reached !")
-                    self.finalState = CMD_ERROR
+                    logger.error("Script timeout reached.")
+                    self.finalState = CMD_TIMEOUT
 
-            if self.finalState == CMD_ERROR or self.finalState == CMD_CANCELED:
-                self.killCommand()
+            if self.finalState in [CMD_ERROR, CMD_CANCELED, CMD_TIMEOUT]:
+                try:
+                    self.killCommand()
+                except ThreadInterruption,e:
+                    logger.debug("Thread was interrupted")
+                    pass
                 break
 
             time.sleep(self.intervalTimeExec)
@@ -425,10 +447,16 @@ class CommandWatcher(object):
             if timeOut is not None:
                 timeOut -= time.time() - tmpTime
 
-        if self.threadList[EXEC].stopped == COMMAND_FAILED:
+        if self.threadList[EXEC].stopped == COMMAND_STOPPED:
+            ''' Manually stopped from CommandRunner'''
+            logger.info("Runner stopped manually: %s", self.threadList[EXEC].stopInfo)
+
+        elif self.threadList[EXEC].stopped == COMMAND_FAILED:
             self.finalState = CMD_ERROR
             logger.error("Error: %s", self.threadList[EXEC].errorInfo)
             self.runnerErrorInExec = str(self.threadList[EXEC].errorInfo)
+
+
         elif self.threadList[EXEC].stopped == COMMAND_CRASHED:
             logger.error("Job script raised some unexpected exception :")
             error = str(self.threadList[EXEC].errorInfo) or ("None")

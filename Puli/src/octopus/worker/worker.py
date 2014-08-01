@@ -841,7 +841,6 @@ class Worker(MainLoopApplication):
         # args.append( str(command.arguments) )
 
         try:
-            # import pudb;pu.db
             watcherProcess = spawnCommandWatcher(pidFile, logFile, args, command.environment)
             newCommandWatcher.processObj = watcherProcess
             newCommandWatcher.startTime = time.time()

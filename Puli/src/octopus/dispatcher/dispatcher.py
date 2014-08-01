@@ -99,6 +99,7 @@ class Dispatcher(MainLoopApplication):
         if self.enablePuliDB and not self.cleanDB:
             self.dispatchTree.toModifyElements = []
         self.defaultPool = self.dispatchTree.pools['default']
+
         LOGGER.warning("loading dispatch rules")
         self.loadRules()
         # it should be better to have a maxsize

@@ -33,7 +33,7 @@ def loadSettingsFile(filename):
 
 ## SETTINGS ###########################################################
 
-VERSION = "1.6.14"
+VERSION = "1.7.1"
 
 DEBUG = False
 

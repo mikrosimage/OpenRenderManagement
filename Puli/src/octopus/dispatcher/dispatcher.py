@@ -69,7 +69,6 @@ class Dispatcher(MainLoopApplication):
         # Class holding custom infos on the dispatcher.
         # This data can be periodically flushed in a specific log file for later use
         #
-        
 
         self.cycle = 1
         self.dispatchTree = DispatchTree()
@@ -98,7 +97,14 @@ class Dispatcher(MainLoopApplication):
         self.dispatchTree.validateDependencies()
         if self.enablePuliDB and not self.cleanDB:
             self.dispatchTree.toModifyElements = []
+
+        # If no 'default' pool exists, create default pool
+        if 'default' not in self.dispatchTree.pools:
+            newId = len(self.dispatchTree.pools)+1
+            pool = Pool(id=newId, name='default')
+            self.dispatchTree.toCreateElements.append(pool)
         self.defaultPool = self.dispatchTree.pools['default']
+
         LOGGER.warning("loading dispatch rules")
         self.loadRules()
         # it should be better to have a maxsize
@@ -166,7 +172,7 @@ class Dispatcher(MainLoopApplication):
         from .rules.graphview import GraphViewBuilder
         graphs = self.dispatchTree.findNodeByPath("/graphs", None)
         if graphs is None:
-            LOGGER.fatal("No /graphs node, impossible to load rule for /graphs.")
+            LOGGER.fatal("No '/graphs' node, impossible to load rule for /graphs.")
             self.stop()
         self.dispatchTree.rules.append(GraphViewBuilder(self.dispatchTree, graphs))
 

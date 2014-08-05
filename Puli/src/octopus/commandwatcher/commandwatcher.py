@@ -101,7 +101,6 @@ class CmdThreader(Thread):
             if 'updateLicense' in inspect.getargspec( getattr(self.cmd, self.methodName) ).args:
                 constructArgs.append( self.updateLicense )
 
-
             getattr(self.cmd, self.methodName)( *constructArgs )
 
             self.stopped = COMMAND_ENDED
@@ -123,13 +122,13 @@ class CmdThreader(Thread):
     #
     def stop(self):
         self.stopped = COMMAND_STOPPED
-        self.logger.warning("Abrupt termination for thread \"%s\"" % self.methodName)
+        self.logger.warning("Abrupt termination for thread \"%s.%s\"" % (self.cmd, self.methodName))
 
         # threading.Thread class does not provde an internal way to stop itself.
         # It only ends when execution end is reached or on an unhandled exception.
         # Therefore we raise a specific exception, unhandled in thread but known in CommandWatcher class
         raise ThreadInterruption()
-
+        
 
 ## This class is used to ensure the good execution of the CmdThreader's process.
 #

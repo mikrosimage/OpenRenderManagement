@@ -30,7 +30,7 @@ except ImportError:
 from tornado.web import HTTPError
 
 from puliclient.jobs import CommandError
-from puliclient.jobs import CommandStop
+from puliclient.jobs import CommandDone
 
 from octopus.core.http import Request
 from octopus.core.communication.requestmanager import RequestManager
@@ -105,7 +105,7 @@ class CmdThreader(Thread):
 
             self.stopped = COMMAND_ENDED
 
-        except CommandStop, e:
+        except CommandDone, e:
             '''Raised from runner to manually end a job'''
             self.stopInfo = str(e)
             self.stopped = COMMAND_STOPPED

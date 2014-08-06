@@ -11,7 +11,7 @@ import logging
 import subprocess
 
 
-class CommandStop(Exception):
+class CommandDone(Exception):
     '''Raised to manually end a command execution.'''
     # def __init__(self, errorInfo=''):
     #     self.errorInfo = errorInfo

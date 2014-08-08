@@ -255,14 +255,14 @@ class Dispatcher(MainLoopApplication):
         assignments = self.computeAssignments()
         if singletonconfig.get('CORE','GET_STATS'):
             singletonstats.theStats.cycleTimers['compute_assignment'] = time.time() - prevTimer
-        LOGGER.info("%8.2f ms --> compute assignements." % ( (time.time() - prevTimer)*1000)  )
+        LOGGER.info("%8.2f ms --> compute assignments." % ( (time.time() - prevTimer)*1000)  )
         prevTimer = time.time()
 
         self.sendAssignments(assignments)
         if singletonconfig.get('CORE','GET_STATS'):
             singletonstats.theStats.cycleTimers['send_assignment'] = time.time() - prevTimer
             singletonstats.theStats.cycleCounts['num_assignments'] = len(assignments)
-        LOGGER.info("%8.2f ms --> send %r assignements." % ( (time.time() - prevTimer)*1000, len(assignments) )  )
+        LOGGER.info("%8.2f ms --> send %r assignments." % ( (time.time() - prevTimer)*1000, len(assignments) )  )
         prevTimer = time.time()
 
         # call the release finishing status on all rendernodes
@@ -424,6 +424,28 @@ class Dispatcher(MainLoopApplication):
 
         # Log time dispatching RNs
         prevTimer = time.time()
+
+        # 
+        # HACK update license info for katana with rlmutils
+        # This helps having the real number of used licenses before finishing assignment
+        # This is done because katana rlm management sometime reserves 2 token (cf BUGLIST v1.4)
+        try:
+            import subprocess
+            strRlmKatanaUsed=''
+            strRlmKatanaUsed = subprocess.Popen(["/s/apps/lin/farm/tools/rlm_katana_free.sh"], stdout=subprocess.PIPE).communicate()[0]
+
+            katanaUsed = int(strRlmKatanaUsed)
+            LOGGER.debug("HACK update katana license: used = %d" % (katanaUsed))
+
+            # Sets used license number
+            try:
+                self.licenseManager.licenses["katana"].used = katanaUsed
+            except KeyError:
+                LOGGER.warning("License katana not found... Impossible to set 'used' value: %d" % katanaUsed)
+        except Exception, e:
+            LOGGER.warning("Error getting number of katana license used via rlmutil (e: %r, rlmoutput=%r)" % (e,strRlmKatanaUsed))
+        # ENDHACK
+        #
 
         # Iterate over each entryPoint to get an assignment
         for entryPoint in scoredEntryPoints:

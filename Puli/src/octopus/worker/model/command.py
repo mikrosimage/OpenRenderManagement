@@ -22,6 +22,15 @@ from octopus.core.enums.command import CMD_RUNNING
 class Command(object):
 
     def __init__(self, id, runner, arguments={}, validationExpression="VAL_TRUE", taskName="", relativePathToLogDir="", message="", environment={}):
+        '''
+        :param id: command id
+        :param arguments: command arguments as a dict
+        :param validationExpression: -
+        :param taskName: a string representing the parent task name
+        :param relativePathToLogDir: relative path to log
+        :param message:
+        :param environment: A dict of env vars which will be added to current os.environ
+        '''
         self.status = CMD_RUNNING
         self.id = id
         self.completion = 0

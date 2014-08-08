@@ -435,11 +435,11 @@ class Dispatcher(MainLoopApplication):
             strRlmKatanaUsed = subprocess.Popen(["/s/apps/lin/farm/tools/rlm_katana_used.sh"], stdout=subprocess.PIPE).communicate()[0]
 
             katanaUsed = int(strRlmKatanaUsed)
-            LOGGER.debug("HACK update katana license: used = %d" % (katanaUsed))
+            LOGGER.debug("HACK update katana license: used = %d (+buffer in config:%d)" % (katanaUsed,singletonconfig.get('HACK','KATANA_BUFFER')))
 
             # Sets used license number
             try:
-                self.licenseManager.licenses["katana"].used = katanaUsed
+                self.licenseManager.licenses["katana"].used = katanaUsed + singletonconfig.get('HACK','KATANA_BUFFER')
             except KeyError:
                 LOGGER.warning("License katana not found... Impossible to set 'used' value: %d" % katanaUsed)
         except Exception, e:

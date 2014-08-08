@@ -30,7 +30,7 @@ if __name__ == '__main__':
     # command = "sleep %%MI_FRAME%%"
     # command = "bash /tmp/test.bash"
     # command = "/datas/jsa/01_test/memcrash/mem.py -l %s -k 0.01" % options.min
-    args =  { "args":command, "delay": options.min, "start":1, "end":options.num, "packetSize":1 }
+    args =  { "cmd":command, "delay": options.min, "start":1, "end":options.num, "packetSize":1, "scriptTimeOut":45 }
     tags =  { "prod":"test", "shot":"test", "nbFrames":options.num }
 
     #

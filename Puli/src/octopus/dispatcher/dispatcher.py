@@ -99,6 +99,7 @@ class Dispatcher(MainLoopApplication):
         if self.enablePuliDB and not self.cleanDB:
             self.dispatchTree.toModifyElements = []
         self.defaultPool = self.dispatchTree.pools['default']
+
         LOGGER.warning("loading dispatch rules")
         self.loadRules()
         # it should be better to have a maxsize
@@ -601,6 +602,7 @@ class Dispatcher(MainLoopApplication):
             # rn = command.renderNode
             # rn.clearAssignment(command)
             # rn.request("DELETE", "/commands/" + str(commandId) + "/")
+            LOGGER.warning("The emitting RN %s is different from the RN assigned to the command in pulimodel." % ( renderNodeName, rn.name ) )
             raise KeyError("Command %d is running on a different rendernode (%s) than the one in puli's model (%s)." % (commandId, renderNodeName, command.renderNode.name))
 
         rn = command.renderNode
@@ -616,7 +618,7 @@ class Dispatcher(MainLoopApplication):
                 LOGGER.warning("re-assigning command %d on %s. (TIMEOUT?)" % (commandId, rn.name))
             else:
                 # The command has been cancelled on the dispatcher but update from RN only arrives now
-                LOGGER.warning("Status update from %d (%d) on %s but command is currently assigned." % (commandId, int(dct['status']), rn.name ))
+                LOGGER.warning("Status update for %d (%d) from %s but command is currently assigned." % (commandId, int(dct['status']), renderNodeName ))
                 pass
 
         if "status" in dct:

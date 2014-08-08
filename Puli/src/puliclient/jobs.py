@@ -8,9 +8,17 @@ import os
 import sys
 import traceback
 import logging
+import subprocess
 
 class TimeoutError ( Exception ):
     ''' Raised when helper execution is too long. '''
+
+class CommandDone(Exception):
+    '''Raised to manually end a command execution.'''
+    # def __init__(self, errorInfo=''):
+    #     self.errorInfo = errorInfo
+    # def __str__(self):
+    #     return repr(self.errorInfo)
 
 class CommandError(Exception):
     '''Raised to signal failure of a CommandRunner execution.'''
@@ -212,7 +220,7 @@ class CommandRunner(object):
     parameters = []
 
 
-    def execute(self, arguments, updateCompletion, updateMessage, updateStats):
+    def execute(self, arguments, updateCompletion, updateMessage, updateStats, updateLicense):
         raise NotImplementedError
 
     def validate(self, arguments):
@@ -224,13 +232,22 @@ class CommandRunner(object):
             logger.info("  - %s" % parameter)
             parameter.validate(arguments)
 
+        # Checking global argument scriptTimeOut:
+        try:
+            self.scriptTimeOut = int(arguments['scriptTimeOut'])
+            logger.info("Defining time out limit: scriptTimeout=%d"%self.scriptTimeOut)
+        except KeyError, e:
+            logger.info("No scriptTimeout in arguments. Command will never be interrupted.")
+        except TypeError, e:
+            logger.info("Invalid scriptTimeout value given (integer expected)")
+
 
 class DefaultCommandRunner(CommandRunner):
     
     cmd = StringParameter( mandatory = True )
     timeout = IntegerParameter( default=0 , min=0 )
 
-    def execute(self, arguments, updateCompletion, updateMessage):
+    def execute(self, arguments, updateCompletion, updateMessage, updateStats, updateLicense):
         '''
         | Simple execution using the helper. Default argument "cmd" is expected (mandatory)
         | to start the execution with the current env.
@@ -260,8 +277,6 @@ class DefaultCommandRunner(CommandRunner):
         cmd = arguments[ 'cmd' ]
         timeout = arguments['timeout']
 
-        from puliclient.contrib.helper.helper import PuliActionHelper
-        helper = PuliActionHelper(cleanTemp=True)
 
         updateCompletion(0)
 
@@ -280,10 +295,8 @@ class DefaultCommandRunner(CommandRunner):
                 currCommand = currCommand.replace("%%MI_START%%", str(arguments['start']))
                 currCommand = currCommand.replace("%%MI_END%%", str(arguments['end']))
 
-                if int(arguments['timeout']) == 0:
-                    helper.execute( currCommand.split(" "), env=os.environ )
-                else:
-                    helper.executeWithTimeout( currCommand.split(" "), env=os.environ, timeout=timeout )
+                print "Command: %s" % currCommand
+                subprocess.check_call(currCommand, close_fds=True, shell=True)
 
                 completion += completionIncrement
                 updateCompletion( completion )
@@ -292,11 +305,7 @@ class DefaultCommandRunner(CommandRunner):
         # Else it is a single block command, no need to iterate
         else:
             print "Command: %s" % cmd
-            if int(arguments['timeout']) == 0:
-                helper.execute( cmd.split(" "), env=os.environ )
-            else:
-                helper.executeWithTimeout( cmd.split(" "), env=os.environ, timeout=timeout )
-
+            subprocess.check_call(cmd, close_fds=True, shell=True)
         updateCompletion(1)
 
 
@@ -352,9 +361,7 @@ class DefaultTaskDecomposer(TaskDecomposer):
             packetSize = task.arguments.get(self.PACKETSIZE_LABEL, 1)
             framesList = task.arguments.get(self.FRAMESLIST_LABEL, "")
 
-            from puliclient.contrib.helper.helper import PuliActionHelper
-            PuliActionHelper().decompose( start=start, end=end, packetSize=packetSize, callback=self, framesList=framesList )
-
+            self.decompose( start=start, end=end, packetSize=packetSize, callback=self, framesList=framesList )
         else:
             # If arguments given but no standard behaviour, simply transmit task arguments to single command
             self.task.addCommand(task.name+"_1_1", task.arguments)
@@ -377,7 +384,56 @@ class DefaultTaskDecomposer(TaskDecomposer):
         self.task.addCommand(cmdName, cmdArgs)
 
 
+    def decompose(self, start, end, packetSize, callback, framesList=""):
+        ''' Method extracted from PuliActionHelper. Default behaviour for decompozing a task.
 
+        :param start: Integer representing the first frame
+        :param end: Integer representing the last frame
+        :param packetSize: The number of frames to process in each command
+        :param callback: A specific callback given to replace default's "addCommand" if necessary
+        :param framesList: A string representing a list of frames
+        '''
+        packetSize = int(packetSize)
+        if len(framesList) != 0:
+            frames = framesList.split(",")
+            for frame in frames:
+                if "-" in frame:
+                    frameList = frame.split("-")
+                    start = int(frameList[0])
+                    end = int(frameList[1])
+
+                    length = end - start + 1
+                    fullPacketCount, lastPacketCount = divmod(length, packetSize)
+
+                    if length < packetSize:
+                        callback.addCommand(start, end)
+                    else:
+                        for i in range(fullPacketCount):
+                            packetStart = start + i * packetSize
+                            packetEnd = packetStart + packetSize - 1
+                            callback.addCommand(packetStart, packetEnd)
+                        if lastPacketCount:
+                            packetStart = start + (i + 1) * packetSize
+                            callback.addCommand(packetStart, end)
+                else:
+                    callback.addCommand(int(frame), int(frame))
+        else:
+            start = int(start)
+            end = int(end)
+
+            length = end - start + 1
+            fullPacketCount, lastPacketCount = divmod(length, packetSize)
+
+            if length < packetSize:
+                callback.addCommand(start, end)
+            else:
+                for i in range(fullPacketCount):
+                    packetStart = start + i * packetSize
+                    packetEnd = packetStart + packetSize - 1
+                    callback.addCommand(packetStart, packetEnd)
+                if lastPacketCount:
+                    packetStart = start + (i + 1) * packetSize
+                    callback.addCommand(packetStart, end)
 
 
 

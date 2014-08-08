@@ -135,7 +135,6 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
         else:
             tree=False
 
-        # import pudb; pu.db
         try:
             start_time = time.time()
             resultData = []

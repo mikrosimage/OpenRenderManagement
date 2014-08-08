@@ -272,6 +272,10 @@ class RenderNode(models.Model):
             self.status = RN_FINISHING
         elif CMD_DONE in commandStatus:
             self.status = RN_FINISHING  # do not set the status to IDLE immediately, to ensure that the order of affectation will be respected
+
+        elif CMD_TIMEOUT in commandStatus:
+            self.status = RN_FINISHING
+
         elif CMD_CANCELED in commandStatus:
             for cmd in self.commands.values():
                 # this should not happened, but if it does, ensure the command is no more registered to the rn

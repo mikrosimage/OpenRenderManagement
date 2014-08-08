@@ -432,7 +432,7 @@ class Dispatcher(MainLoopApplication):
         try:
             import subprocess
             strRlmKatanaUsed=''
-            strRlmKatanaUsed = subprocess.Popen(["/s/apps/lin/farm/tools/rlm_katana_free.sh"], stdout=subprocess.PIPE).communicate()[0]
+            strRlmKatanaUsed = subprocess.Popen(["/s/apps/lin/farm/tools/rlm_katana_used.sh"], stdout=subprocess.PIPE).communicate()[0]
 
             katanaUsed = int(strRlmKatanaUsed)
             LOGGER.debug("HACK update katana license: used = %d" % (katanaUsed))

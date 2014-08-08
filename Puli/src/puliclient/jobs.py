@@ -9,6 +9,8 @@ import sys
 import traceback
 import logging
 
+class TimeoutError ( Exception ):
+    ''' Raised when helper execution is too long. '''
 
 class CommandError(Exception):
     '''Raised to signal failure of a CommandRunner execution.'''
@@ -221,6 +223,7 @@ class CommandRunner(object):
         for parameter in self.parameters:
             logger.info("  - %s" % parameter)
             parameter.validate(arguments)
+
 
 class DefaultCommandRunner(CommandRunner):
     

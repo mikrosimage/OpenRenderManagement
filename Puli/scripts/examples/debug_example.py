@@ -36,7 +36,7 @@ if __name__ == '__main__':
     #
     # Create custom graph
     #
-    simpleTask = Task( name=options.jobname, arguments=args, tags=tags, runner="puliclient.jobs.DefaultCommandRunner" )
+    simpleTask = Task( name=options.jobname, arguments=args, tags=tags, runner="puliclient.contrib.commandlinerunner.CommandLineRunner", lic="katana" )
     # simpleTask = Task( name="T-Generic", arguments=args, tags=tags, runner="puliclient.contrib.debug.WaitRunner" )
     graph = Graph( options.jobname, simpleTask, tags=tags, poolName='default' )
 

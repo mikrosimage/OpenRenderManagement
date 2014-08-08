@@ -187,7 +187,7 @@ Here is the list of field on which a constraint can be set and the expected filt
     parser.add_option("-c", "--csv", action="store_true", dest="csv", help="Returns data formatted as raw CSV file [%default]", default=False)
     parser.add_option("-j", "--json", action="store_true", dest="json", help="Returns data formatted as JSON [%default]", default=False)
 
-    parser.add_option("-o", "--sort", action="store", dest="sortField", help="Sort items with the given field [%default]", default='id')
+    parser.add_option("-o", "--sort", action="store", dest="sortField", help="Sort items with the given field [%default]", default='name')
     parser.add_option("-r", "--reverse-order", action="store_true", dest="reverseOrder", help="Sort item in reverse order [%default]", default=False)
     
     parser.add_option("-C", "--constraint", action="append", type="string", help="Allow user to specify one or more filter constraints")

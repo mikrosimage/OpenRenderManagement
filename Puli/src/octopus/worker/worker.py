@@ -17,13 +17,8 @@ from subprocess import PIPE
 
 try:
     import psutil
-    print("INFO: psutil properly imported")
-    print("INFO:   PYTHONPATH=%r"%os.getenv("PYTHONPATH"))
-    print("INFO:   PYTHONHOME=%r"%os.getenv("PYTHONHOME"))
 except ImportError:
     print("WARNING: impossible to import psutil")
-    print("WARNING:   PYTHONPATH=%r"%os.getenv("PYTHONPATH"))
-    print("WARNING:   PYTHONHOME=%r"%os.getenv("PYTHONHOME"))
 
 from octopus.core.framework.mainloopapplication import MainLoopApplication
 from octopus.core.communication.requestmanager import RequestManager
@@ -449,7 +444,6 @@ class Worker(MainLoopApplication):
         :param paused: boolean flag indicating the status to set for this worker
         :param killproc: boolean flag indicating if all running processes must be killed or not
         """
-
         while True:
             url = "/rendernodes/%s/paused/" % (self.computerName)
             dct = {}

@@ -2,40 +2,57 @@ IN PROGRESS - Module reference
 *********************************************
 
 
-:mod:`octopus.dispatcher` 
+Dispatcher 
 =============================================
 
-.. autoclass:: octopus.dispatcher.dispatcher.Dispatcher
+.. automodule:: octopus.dispatcher.dispatcher
+
+.. autoclass:: Dispatcher()
+  :special-members: __init__
   :members:
 
 
-:mod:`octopus.dispatcher.db` 
+Db 
 =============================================
 
-.. autoclass:: octopus.dispatcher.db.pulidb.PuliDB
+.. automodule:: octopus.dispatcher.db.pulidb
+
+.. autoclass:: PuliDB()
+  :special-members: __init__
   :members:
 
 
-:mod:`octopus.dispatcher.licences` 
+
+LicenseManager 
 =============================================
 
 .. automodule:: octopus.dispatcher.licenses.licensemanager
+
+.. autoclass:: LicenseManager()
+  :special-members: __init__
   :members:
 
 
-:mod:`octopus.worker.worker` 
+Worker 
 =============================================
 
-.. autoclass:: octopus.worker.worker.Worker
+.. automodule:: octopus.worker.worker
+
+.. autoclass:: Worker()
+  :special-members: __init__
   :members:
 
 
+CommandWatcher
+==============
 
-:mod:`tools.common` 
-=============================================
+.. automodule:: octopus.commandwatcher.commandwatcher
 
-.. automodule:: tools.common
-     :members:
+.. autoclass::  CmdThreader()	
+   :special-members: __init__
+   :members:
 
-
+.. autoclass::  CommandWatcher()	
+   :special-members: __init__
+   :members:
 

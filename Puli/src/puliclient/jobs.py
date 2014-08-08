@@ -10,6 +10,8 @@ import traceback
 import logging
 import subprocess
 
+class TimeoutError ( Exception ):
+    ''' Raised when helper execution is too long. '''
 
 class CommandDone(Exception):
     '''Raised to manually end a command execution.'''

@@ -1,13 +1,8 @@
 #Fchier d'environnement pour le puliworker.service (systemd)
 
-#
-# TEST MODE
-#
-PYTHONPATH="/s/apps/lin/eval/puli/distrib/OpenRenderManagement/Puli/src:$PYTHONPATH"
+
+# Dispatcher port
 PORT="8004"
 
-#
-# PROD MODE
-#
-# PYTHONPATH="/s/apps/lin/puli:$PYTHONPATH"
-# PORT="8004"
+# Dispatcher PID file
+PIDFILE=/var/run/puli/dispatcher.pid

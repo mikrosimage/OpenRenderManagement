@@ -279,7 +279,7 @@ def mik_eval():
     env.confdir = '/opt/puli/conf'
 
     mik_puli(env.source_path, env.target_path, env.shared_path, env.common_path)
-    
+
     # Change settings on dispatcher to have proper LOGDIR and CONFDIR
     print ""
     print(green("Update settings on server:", bold=True))
@@ -303,7 +303,31 @@ def mik_dev():
     env.confdir = '/datas/jsa/puli_runtime/conf'
 
     mik_puli(env.source_path, env.target_path, env.shared_path, env.common_path)
-    
+
+    # Change settings on dispatcher to have proper LOGDIR and CONFDIR
+    print ""
+    print(green("Update settings on server:", bold=True))
+    print(green(" - LOGDIR = %s" % env.logdir, bold=True))
+    print(green(" - CONFDIR = %s" % env.confdir, bold=True))
+
+    settings_file = "%s/octopus/dispatcher/settings.py" % env.target_path
+    run("sudo sed -i 's:__LOGDIR_PLACEHOLDER__:%s:g' %s" % (env.logdir, settings_file))
+    run("sudo sed -i 's:__CONFDIR_PLACEHOLDER__:%s:g' %s" % (env.confdir, settings_file))
+
+
+@task()
+def mik_prod():
+    """Mikros: install prod env
+    """
+    env.source_path = '/s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli'
+    env.target_path = '/opt/puli'
+    env.shared_path = '/s/apps/lin/puli'
+    env.common_path = '/s/apps/lin/bin'
+    env.logdir = '/opt/puli/logs'
+    env.confdir = '/opt/puli/conf'
+
+    mik_puli(env.source_path, env.target_path, env.shared_path, env.common_path)
+
     # Change settings on dispatcher to have proper LOGDIR and CONFDIR
     print ""
     print(green("Update settings on server:", bold=True))

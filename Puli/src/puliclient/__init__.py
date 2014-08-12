@@ -666,7 +666,8 @@ class Graph(object):
         :type host: string
         :param port: server port to connect to
         :type port: int
-        :return: the server response
+        :return: the server response ie. ('SERVER_URL/nodes/Id', 'Graph created.\nCreated nodes: ...')
+        :rtype: tuple        
         :raise: GraphSubmissionError
         """
 
@@ -709,6 +710,7 @@ class Graph(object):
         |   4. Write summary and return
 
         :return: the final state of the graph
+        :rtype: int
         :raise: GraphExecError
         
         """

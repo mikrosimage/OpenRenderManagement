@@ -176,7 +176,7 @@ class Task(object):
         :param requirements: -
         :param lic: a flag indicating one or several licence token to reserve for each command
         :param tags: - 
-        :param timer: a date to wait before assigning commands of the current task 
+        :param timer: a date (as a timestamp) to wait before assigning commands of the current task
         """
 
         self.parent = None
@@ -666,7 +666,8 @@ class Graph(object):
         :type host: string
         :param port: server port to connect to
         :type port: int
-        :return: the server response
+        :return: the server response ie. ('SERVER_URL/nodes/Id', 'Graph created.\nCreated nodes: ...')
+        :rtype: tuple
         :raise: GraphSubmissionError
         """
 

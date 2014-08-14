@@ -710,6 +710,7 @@ class Graph(object):
         |   4. Write summary and return
 
         :return: the final state of the graph
+        :rtype: int
         :raise: GraphExecError
         
         """

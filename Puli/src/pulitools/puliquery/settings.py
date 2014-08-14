@@ -18,4 +18,6 @@ class Settings(object):
 
     # Default formating & enums
     date_format = '%m/%d %H:%M'
+    time_format = '%H:%M'
     precise_date_format = '%m/%d %H:%M:%S'
+    precise_time_format = '%H:%M:%S'

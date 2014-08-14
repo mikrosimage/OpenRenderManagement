@@ -75,7 +75,7 @@ def handle_request(response):
     Callback for handling the request result.
     We try to load the data as JSON and display it according to the arguments or default specification
     """
-    # import pudb;pu.db
+
     REQUEST_END_TIME = time.time() - REQUEST_BEGIN_TIME
 
     if VERBOSE: print ""
@@ -287,7 +287,7 @@ Reminder: Possible values for a job status
 
 if __name__ == '__main__':
 
-
+    # import pudb;pu.db
     options, args = process_args()
     VERBOSE = options.verbose
     

@@ -69,7 +69,6 @@ class Dispatcher(MainLoopApplication):
         # Class holding custom infos on the dispatcher.
         # This data can be periodically flushed in a specific log file for later use
         #
-
         self.cycle = 1
         self.dispatchTree = DispatchTree()
         self.licenseManager = LicenseManager()

@@ -255,6 +255,7 @@ class TaskCommandResource(TaskResource):
                 commands += [c for c in task.commands if filterfunc(c)]
         while root.parent:
             root = root.parent
+
         return [c.to_json() for c in commands], root.id
 
 

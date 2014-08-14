@@ -89,7 +89,7 @@ class CustomTable:
                 result = datetime.fromtimestamp( pEndTime ) - datetime.fromtimestamp( pStartTime )
             else:
                 result = datetime.now() - datetime.fromtimestamp( pStartTime )
-        return result
+        return result.seconds
 
 
     #
@@ -97,16 +97,28 @@ class CustomTable:
     #
     @staticmethod
     def timeToStr(pValue):
-        return str(timedelta (seconds=pValue))
+        return str(timedelta(seconds=round(int(pValue))))
+
+    # @staticmethod
+    # def runtimeToStr(pValue):
+    #     return str(timedelta(seconds=pValue)))
 
 
     @staticmethod
     def dateToStr(pValue):
-        return str(datetime.strftime( datetime.fromtimestamp( float(pValue) ), Settings.date_format ))
+        if datetime.now().day == datetime.fromtimestamp( pValue ).day:
+            result = datetime.strftime( datetime.fromtimestamp( float(pValue) ), Settings.time_format )
+        else:
+            result = datetime.strftime( datetime.fromtimestamp( float(pValue) ), Settings.date_format )
+        return str(result)
 
     @staticmethod
     def preciseDateToStr(pValue):
-        return str(datetime.strftime( datetime.fromtimestamp( float(pValue) ), Settings.precise_date_format ))
+        if datetime.now().day == datetime.fromtimestamp( pValue ).day:
+            result = datetime.strftime( datetime.fromtimestamp( float(pValue) ), Settings.precise_time_format )
+        else:
+            result = datetime.strftime( datetime.fromtimestamp( float(pValue) ), Settings.precise_date_format )
+        return str(result)
 
     @staticmethod
     def listToStr(pValue):
@@ -125,6 +137,11 @@ class CustomTable:
     def jobStatusToStr(pValue):
         from octopus.core.enums.node import NODE_STATUS_SHORT_NAMES
         return str( NODE_STATUS_SHORT_NAMES[pValue] )
+
+    @staticmethod
+    def formatMaxAttempt(pValue):
+        result = '-' if pValue=="undefined" else pValue
+        return str( result )
 
     @staticmethod
     def displayHeader( pDescription ):
@@ -168,7 +185,7 @@ class CustomTable:
                             try:
                                 data = column['transform']( data )
                             except Exception, e:
-                                print "Invalid transformation for column %r --> %r" % (data, e)
+                                print "Invalid transformation for column %s = %r --> %r" % (column['label'], data, e)
                                 sys.exit()
 
                     elif pRow[column['field']] is None:
@@ -319,6 +336,14 @@ class JobTable( CustomTable ):
                 "labelFormat":  " %5s",
             },
             {
+                "field":        "maxAttempt", 
+                "label":        "RETRY", 
+                "visible":      True, 
+                "dataFormat":   " %5.5s",
+                "labelFormat":  " %5s",
+                "transform":    CustomTable.formatMaxAttempt,
+            },            
+            {
                 "field":        "creationTime", 
                 "label":        "SUBMITTED", 
                 "visible":      True, 
@@ -349,6 +374,7 @@ class JobTable( CustomTable ):
                 "visible":      True, 
                 "dataFormat":   " %10s",
                 "labelFormat":  " %10s",
+                "transform":    CustomTable.timeToStr,
             },
 
             {
@@ -358,9 +384,9 @@ class JobTable( CustomTable ):
                 "dataFormat":   " %10s",
                 "labelFormat":  " %10s",
                 "transform":    CustomTable.timeToStr,
-
             },
         ]
+
 
 
 
@@ -492,6 +518,7 @@ class CommandTable( CustomTable ):
     |     - labelFormat: idem for label info
     |     - transform: Optionnal attribute, the name of a static method of the parent CustomTable class.
     |                  It will preprocess the value before displaying it at a string (example: date format, status short name)
+     'completion', 'attempt', 'message'
     """
     columns = [
             {
@@ -508,6 +535,14 @@ class CommandTable( CustomTable ):
                 "dataFormat":   " %-40s",
                 "labelFormat":  " %-40s",
                 "truncate":     40,
+            },
+            {
+                "field":        "completion", 
+                "label":        "%", 
+                "visible":      True, 
+                "dataFormat":   " %3.f",
+                "labelFormat":  " %3s",  
+                "transform":    CustomTable.percentToFloat,
             },
             {
                 "field":        "creationTime", 
@@ -548,6 +583,15 @@ class CommandTable( CustomTable ):
                 "dataFormat":   " %-15s",
                 "labelFormat":  " %-15s",
                 "truncate":     15
+            },
+
+            {
+                "field":        "message",
+                "label":        "CMD MESSAGE",
+                "visible":      True, 
+                "dataFormat":   " %-20s",
+                "labelFormat":  " %-20s",
+                "truncate":     20,
             },
 
 

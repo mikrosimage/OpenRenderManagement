@@ -59,7 +59,7 @@ PIDFILE = "/var/run/puli/dispatcher.pid"
 # PERSISTENCE MECANISM
 #
 POOLS_BACKEND_TYPE = "db"
-# POOLS_BACKEND_TYPE = "file"
+#POOLS_BACKEND_TYPE = "file"
 #POOLS_BACKEND_TYPE = "ws"
 
 FILE_BACKEND_RN_PATH = os.path.join(CONFDIR, "workers.lst")

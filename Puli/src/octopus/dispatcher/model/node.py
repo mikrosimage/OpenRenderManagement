@@ -478,6 +478,7 @@ class TaskNode(BaseNode):
 
     task = models.ModelField()
     paused = models.BooleanField()
+    maxAttempt = models.IntegerField()
 
     @property
     def tags(self):
@@ -495,10 +496,11 @@ class TaskNode(BaseNode):
     #              nodes that can be allocated to this tree node.
     # @param task a Task object
     #
-    def __init__(self, id, name, parent, user, priority, dispatchKey, maxRN, task, creationTime=None, startTime=None, updateTime=None, endTime=None, status=NODE_BLOCKED, paused=False):
+    def __init__(self, id, name, parent, user, priority, dispatchKey, maxRN, task, creationTime=None, startTime=None, updateTime=None, endTime=None, status=NODE_BLOCKED, paused=False, maxAttempt=1):
         BaseNode.__init__(self, id, name, parent, user, priority, dispatchKey, maxRN, creationTime, startTime, updateTime, endTime, status)
         self.task = task
         self.paused = paused
+        self.maxAttempt = int(maxAttempt)
         if task is not None:
             self.timer = task.timer
 

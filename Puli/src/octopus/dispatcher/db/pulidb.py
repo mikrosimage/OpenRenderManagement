@@ -713,6 +713,7 @@ class PuliDB(object):
 
         print "%s -- foldernodes complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
         ### recreate the task nodes with the correct ids
+        # import pudb;pu.db
         conn = TaskNodes._connection
         fields = [TaskNodes.q.id,
                   TaskNodes.q.name,
@@ -743,7 +744,7 @@ class PuliDB(object):
                                     self.getTimeStampFromDate(startTime),
                                     self.getTimeStampFromDate(updateTime),
                                     self.getTimeStampFromDate(endTime),
-                                    maxAttempt)
+                                    maxAttempt=maxAttempt)
             nodesById[realTaskNode.id] = realTaskNode
 
         print "%s -- tasknodes complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
@@ -848,9 +849,9 @@ class PuliDB(object):
                               self.getTimeStampFromDate(startTime),
                               self.getTimeStampFromDate(updateTime),
                               self.getTimeStampFromDate(endTime),
-                              attempt,
-                              eval(stats),
-                              message)
+                              attempt=attempt,
+                              stats=eval(stats),
+                              message=message)
             if status in [2, 3, 4] and realCmd.renderNode is None:
               print "%s -- invalid status for command %d, setting to READY" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)), realCmd.id)
               realCmd.status = 1
@@ -912,7 +913,7 @@ class PuliDB(object):
                             {},
                             licence,
                             json.loads(tags), 
-                            maxAttempt)
+                            maxAttempt=maxAttempt)
             tree.tasks[realTask.id] = realTask
             realTasksList[realTask.id] = realTask
             # set the task on the appropriate commands

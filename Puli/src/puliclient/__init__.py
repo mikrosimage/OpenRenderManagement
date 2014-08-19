@@ -152,7 +152,8 @@ class Task(object):
                  requirements={},
                  lic="",
                  tags={},
-                 timer=None):
+                 timer=None,
+                 maxAttempt=1):
         """
         | A task contains one or more command to be executed on the render farm.
         | The parameters that will be used to create commands (decomposing) are the following:
@@ -201,6 +202,7 @@ class Task(object):
         self.lic = lic
         self.tags = tags.copy()
         self.timer = timer
+        self.maxAttempt = maxAttempt
 
     def updateTags(self, pTags):
         """
@@ -1064,6 +1066,7 @@ class GraphDumper():
             'licence': task.lic,
             'tags': task.tags,
             'timer': task.timer,
+            'maxAttempt': task.maxAttempt,
         }
 
     def computeTaskGroupRepresentation(self, taskGroup):

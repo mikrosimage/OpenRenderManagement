@@ -501,8 +501,10 @@ class TaskNode(BaseNode):
         self.task = task
         self.paused = paused
         self.maxAttempt = int(maxAttempt)
+
         if task is not None:
             self.timer = task.timer
+            self.maxAttempt = int(task.maxAttempt)
 
 
     def cmdIterator(self):

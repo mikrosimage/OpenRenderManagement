@@ -8,7 +8,7 @@
 The custom table is a generic definition
 
 """
-__author__      = "Jérôme Samson"
+__author__      = "Jerome Samson"
 __copyright__   = "Copyright 2013, Mikros Image"
 
 
@@ -89,7 +89,8 @@ class CustomTable:
                 result = datetime.fromtimestamp( pEndTime ) - datetime.fromtimestamp( pStartTime )
             else:
                 result = datetime.now() - datetime.fromtimestamp( pStartTime )
-        return result.seconds
+            result = str(timedelta(seconds=round(result.seconds)))
+        return result
 
 
     #
@@ -137,6 +138,11 @@ class CustomTable:
     def jobStatusToStr(pValue):
         from octopus.core.enums.node import NODE_STATUS_SHORT_NAMES
         return str( NODE_STATUS_SHORT_NAMES[pValue] )
+
+    @staticmethod
+    def cmdStatusToStr(pValue):
+        from octopus.core.enums.command import CMD_STATUS_SHORT_NAMES
+        return str( CMD_STATUS_SHORT_NAMES[pValue] )
 
     @staticmethod
     def formatMaxAttempt(pValue):
@@ -337,10 +343,10 @@ class JobTable( CustomTable ):
             },
             {
                 "field":        "maxAttempt", 
-                "label":        "RETRY", 
+                "label":        "ATTEMPT", 
                 "visible":      True, 
-                "dataFormat":   " %5.5s",
-                "labelFormat":  " %5s",
+                "dataFormat":   " %7.7s",
+                "labelFormat":  " %7s",
                 "transform":    CustomTable.formatMaxAttempt,
             },            
             {
@@ -373,8 +379,7 @@ class JobTable( CustomTable ):
                 "label":        "RUN TIME", 
                 "visible":      True, 
                 "dataFormat":   " %10s",
-                "labelFormat":  " %10s",
-                "transform":    CustomTable.timeToStr,
+                "labelFormat":  " %10s"
             },
 
             {
@@ -518,7 +523,6 @@ class CommandTable( CustomTable ):
     |     - labelFormat: idem for label info
     |     - transform: Optionnal attribute, the name of a static method of the parent CustomTable class.
     |                  It will preprocess the value before displaying it at a string (example: date format, status short name)
-     'completion', 'attempt', 'message'
     """
     columns = [
             {
@@ -529,12 +533,20 @@ class CommandTable( CustomTable ):
                 "labelFormat":  " %-5s"
             },
             {
+                "field":        "status", 
+                "label":        "ST", 
+                "visible":      True, 
+                "dataFormat":   " %2s",
+                "labelFormat":  " %2s",
+                "transform":    CustomTable.cmdStatusToStr,
+            },
+            {
                 "field":        "description", 
                 "label":        "DESC", 
                 "visible":      True, 
-                "dataFormat":   " %-40s",
-                "labelFormat":  " %-40s",
-                "truncate":     40,
+                "dataFormat":   " %-30s",
+                "labelFormat":  " %-30s",
+                "truncate":     30,
             },
             {
                 "field":        "completion", 
@@ -543,6 +555,13 @@ class CommandTable( CustomTable ):
                 "dataFormat":   " %3.f",
                 "labelFormat":  " %3s",  
                 "transform":    CustomTable.percentToFloat,
+            },
+            {
+                "field":        "attempt", 
+                "label":        "ATTEMPT", 
+                "visible":      True, 
+                "dataFormat":   " %7d",
+                "labelFormat":  " %7s",
             },
             {
                 "field":        "creationTime", 

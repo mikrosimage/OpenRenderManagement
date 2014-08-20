@@ -100,6 +100,14 @@ class CustomTable:
     def timeToStr(pValue):
         return str(timedelta(seconds=round(int(pValue))))
 
+    @staticmethod
+    def millisecToStr(pValue):
+        if pValue!=0:
+            return str(timedelta(seconds=round(int(pValue)/1000.0)))
+        else:
+            return "-"
+    
+
     # @staticmethod
     # def runtimeToStr(pValue):
     #     return str(timedelta(seconds=pValue)))
@@ -194,8 +202,8 @@ class CustomTable:
                                 print "Invalid transformation for column %s = %r --> %r" % (column['label'], data, e)
                                 sys.exit()
 
-                    elif pRow[column['field']] is None:
-                        # The field is None, use replacement text
+                    elif column['field'] not in pRow or pRow[column['field']] is None:
+                        # The field is None or does not exists in row, use replacement text
                         data = "-"
                     else:
                         data = pRow[column['field']]
@@ -388,7 +396,7 @@ class JobTable( CustomTable ):
                 "visible":      True, 
                 "dataFormat":   " %10s",
                 "labelFormat":  " %10s",
-                "transform":    CustomTable.timeToStr,
+                "transform":    CustomTable.millisecToStr,
             },
         ]
 

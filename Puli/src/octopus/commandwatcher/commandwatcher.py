@@ -47,11 +47,20 @@ logger.setLevel(logging.INFO)
 
 handler = logging.StreamHandler(sys.stderr)
 
-FORMAT = '# [%(levelname)s] %(asctime)s - %(message)s'
-DATE_FORMAT = '%b %d %H:%M:%S'
+FORMAT = '[WATCHER][%(levelname)s] %(asctime)s - %(message)s'
+DATE_FORMAT = '%d/%m %H:%M:%S'
 
 handler.setFormatter( logging.Formatter(fmt=FORMAT, datefmt=DATE_FORMAT) )
 logger.addHandler(handler)
+
+
+runnerlog = logging.getLogger('puli.runner')
+runnerlog.setLevel(logging.INFO)
+runnerhandler = logging.StreamHandler(sys.stdout)
+
+FORMAT = '         [%(levelname)s] %(asctime)s - %(message)s'
+runnerhandler.setFormatter( logging.Formatter(fmt=FORMAT, datefmt=DATE_FORMAT) )
+runnerlog.addHandler(runnerhandler)
 
 
 ## This class is used to thread a command.
@@ -427,7 +436,7 @@ class CommandWatcher(object):
 
         if self.threadList[EXEC].stopped == COMMAND_FAILED:
             self.finalState = CMD_ERROR
-            logger.error("Error: %s", self.threadList[EXEC].errorInfo)
+            logger.error("CommandError detected with the following message: %s", self.threadList[EXEC].errorInfo)
             self.runnerErrorInExec = str(self.threadList[EXEC].errorInfo)
         elif self.threadList[EXEC].stopped == COMMAND_CRASHED:
             logger.error("Job script raised some unexpected exception :")

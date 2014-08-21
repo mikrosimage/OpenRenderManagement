@@ -206,6 +206,7 @@ class CommandRunner(object):
 
     __metaclass__ = CommandRunnerMetaclass
 
+    log = logging.getLogger('puli.runner')
     scriptTimeOut = None
     parameters = []
 

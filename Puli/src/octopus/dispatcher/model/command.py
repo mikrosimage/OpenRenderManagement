@@ -175,6 +175,8 @@ class Command(models.Model):
         self.status = CMD_READY
         self.clearAssignment()
         self.completion = 0.0
+        self.attempt = 0
+        self.retryCount = 0
         self.message = ""
 
     def computeAvgTimeByFrame(self):
@@ -259,7 +261,7 @@ class CommandDatesUpdater(object):
         elif cmd.status is CMD_ERROR:
             cmd.attempt += 1
 
-            print "Updating status - attempt %d/%d" % (cmd.attempt, cmd.task.maxAttempt)
+            LOGGER.debug("Mark command %d for auto retry in %ds  (%d/%d)" % (cmd.id, singletonconfig.get('CORE','DELAY_BEFORE_AUTORETRY'), cmd.attempt, cmd.task.maxAttempt))
             if cmd.attempt < cmd.task.maxAttempt:
                 t = Timer(singletonconfig.get('CORE','DELAY_BEFORE_AUTORETRY'), self.autoretry, [cmd])
                 t.start()
@@ -272,7 +274,13 @@ class CommandDatesUpdater(object):
     def autoretry(self, cmd):
         rn = cmd.renderNode
         cmd.retryRnList.append(rn.name)
-        cmd.setReadyStatusAndClear()
+
+        # cmd.setReadyStatusAndClear()
+        cmd.status = CMD_READY
+        cmd.clearAssignment()
+        cmd.completion = 0.0
+        cmd.message = ""
+
         rn.clearAssignment(cmd)
         rn.status = RN_FINISHING
         cmd.retryCount += 1

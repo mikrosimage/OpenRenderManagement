@@ -66,6 +66,7 @@ class WebServiceDispatcher(Application):
             (r'^/nodes/(\d+)/children/?$', nodes.NodeChildrenResource, dict(framework=framework)),
             (r'^/nodes/(\d+)/user/?$', nodes.NodeUserResource, dict(framework=framework)),
             (r'^/nodes/(\d+)/prod/?$', nodes.NodeProdResource, dict(framework=framework)),
+            (r'^/nodes/(\d+)/maxAttempt/?$', nodes.NodeMaxAttemptResource, dict(framework=framework)),
 
             (r'^/tasks/?$', tasks.TasksResource, dict(framework=framework)),
             (r'^/tasks/delete/?$', tasks.DeleteTasksResource, dict(framework=framework)),

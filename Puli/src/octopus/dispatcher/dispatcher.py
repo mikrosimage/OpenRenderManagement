@@ -591,7 +591,7 @@ class Dispatcher(MainLoopApplication):
             # rn = command.renderNode
             # rn.clearAssignment(command)
             # rn.request("DELETE", "/commands/" + str(commandId) + "/")
-            LOGGER.warning("The emitting RN %s is different from the RN assigned to the command in pulimodel: %s." % ( renderNodeName, rn.name ) )
+            LOGGER.warning("The emitting RN %s is different from the RN assigned to the command in pulimodel: %s." % ( renderNodeName, command.renderNode.name ) )
             raise KeyError("Command %d is running on a different rendernode (%s) than the one in puli's model (%s)." % (commandId, renderNodeName, command.renderNode.name))
 
         rn = command.renderNode

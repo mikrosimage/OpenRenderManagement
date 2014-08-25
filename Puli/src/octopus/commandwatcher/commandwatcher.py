@@ -81,7 +81,7 @@ class CmdThreader(Thread):
     def __init__(self, cmd, methodName, arguments, updateCompletion, updateMessage, updateStats, updateLicense):
         Thread.__init__(self)
 
-        self.logger = logging.getLogger('puli.runner')
+        self.logger = logging.getLogger('puli.commandwatcher')
         self.logger.debug("cmd = %s" % cmd)
         self.logger.debug("methodName = %s" % methodName)
         self.cmd = cmd

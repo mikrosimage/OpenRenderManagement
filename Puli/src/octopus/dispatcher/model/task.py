@@ -155,8 +155,9 @@ class Task(Model):
     endTime = FloatField(allow_null=True)
     lic = StringField()
     timer = FloatField(allow_null=True)
+    maxAttempt = IntegerField()
 
-    def __init__(self, id, name, parent, user, maxRN, priority, dispatchKey, runner, arguments, validationExpression, commands, requirements=[], minNbCores=1, maxNbCores=0, ramUse=0, environment={}, nodes={}, lic="", tags={}, timer=None):
+    def __init__(self, id, name, parent, user, maxRN, priority, dispatchKey, runner, arguments, validationExpression, commands, requirements=[], minNbCores=1, maxNbCores=0, ramUse=0, environment={}, nodes={}, lic="", tags={}, maxAttempt=1, timer=None):
         assert parent is None or isinstance(parent, TaskGroup)
         Model.__init__(self)
         self.id = int(id) if id else None
@@ -176,6 +177,7 @@ class Task(Model):
         self.maxNbCores = int(maxNbCores)
         self.ramUse = int(ramUse)
         self.nodes = nodes.copy()
+        self.maxAttempt = int(maxAttempt)
         self.lic = lic
         self.tags = tags.copy()
         self.completion = 0
@@ -209,8 +211,9 @@ class Task(Model):
         #                                                      self.commands,
         #                                                      self.requirements,
         #                                                      self.lic)
-        return "Task(%r, %r, %r, %r, %r)" % (self.id,
+        return "Task(%r, %r, %r, %r, %r, %r)" % (self.id,
                                                  self.name,
+                                                 self.maxAttempt,
                                                  self.nodes,
                                                  self.runner,
                                                  self.commands)

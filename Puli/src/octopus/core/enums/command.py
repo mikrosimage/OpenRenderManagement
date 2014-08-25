@@ -23,6 +23,7 @@ CMD_STATUS_NAME = ('BLOCKED',
                     'ERROR',
                     'CANCELED')
 
+CMD_STATUS_SHORT_NAMES = ("B", "I", "A", "R", "F", "D", "T", "E", "C")
 
 def isFinalStatus(status):
     return status in (CMD_DONE, CMD_ERROR, CMD_CANCELED, CMD_TIMEOUT)

@@ -32,7 +32,7 @@ allocatedRN     --> current number of allocated render nodes on this task
 averageTimeByFrame --> 
 
 """
-__author__      = "Jérôme Samson"
+__author__      = "Jerome Samson"
 __copyright__   = "Copyright 2013, Mikros Image"
 
 
@@ -286,7 +286,7 @@ Reminder: Possible values for a job status
 
 if __name__ == '__main__':
 
-
+    # import pudb;pu.db
     options, args = process_args()
     VERBOSE = options.verbose
     

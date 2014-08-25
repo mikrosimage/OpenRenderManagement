@@ -137,7 +137,7 @@ class CommandQueryResource(DispatcherBaseResource, IQueryNode):
 
 
     ADDITIONNAL_SUPPORTED_FIELDS = []
-    DEFAULT_FIELDS = ['id', 'task', 'description', 'renderNode', 'nbFrames', 'avgTimeByFrame', 'status', 'creationTime', 'startTime', 'endTime', 'updateTime' ]
+    DEFAULT_FIELDS = ['id', 'task', 'description', 'renderNode', 'nbFrames', 'avgTimeByFrame', 'status', 'creationTime', 'startTime', 'endTime', 'updateTime', 'completion', 'attempt', 'message' ]
 
 
     def createRepr( self, pItem, pAttributes ):

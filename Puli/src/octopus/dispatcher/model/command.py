@@ -38,10 +38,14 @@ class Command(models.Model):
     endTime = models.FloatField(allow_null=True)
     nbFrames = models.IntegerField(allow_null=True)
     avgTimeByFrame = models.FloatField(allow_null=True)
+
+    attempt = models.IntegerField()
+
+    # DEPRECATED: Fields used at runtime only (not saved in db)
     retryCount = models.IntegerField()
     retryRnList = models.ListField()
 
-    def __init__(self, id, description, task, arguments, status=CMD_READY, completion=None, renderNode=None, creationTime=None, startTime=None, updateTime=None, endTime=None, stats={}, message=""):
+    def __init__(self, id, description, task, arguments, status=CMD_READY, completion=None, renderNode=None, creationTime=None, startTime=None, updateTime=None, endTime=None, attempt=0, stats={}, message=""):
 
         from octopus.dispatcher.model import Task
         models.Model.__init__(self)
@@ -77,7 +81,12 @@ class Command(models.Model):
             self.updateTime = updateTime
             self.startTime = startTime
             self.endTime = endTime
+
+        # Retrieving actuel number of retries and max retries alloawed
+        self.attempt = int(attempt)
+
         self.message = str(message)
+
         # compute the average time by frame
         self.computeAvgTimeByFrame()
         self.retryCount = 0
@@ -166,6 +175,8 @@ class Command(models.Model):
         self.status = CMD_READY
         self.clearAssignment()
         self.completion = 0.0
+        self.attempt = 0
+        self.retryCount = 0
         self.message = ""
 
     def computeAvgTimeByFrame(self):
@@ -244,13 +255,17 @@ class CommandDatesUpdater(object):
             # job so that it can be properly cleaned
             cmd.endTime = cmd.updateTime
             cmd.computeAvgTimeByFrame()
+            cmd.attempt += 1
+
         # autoretry
         elif cmd.status is CMD_ERROR:
-            if cmd.retryCount == singletonconfig.get('CORE','MAX_RETRY_CMD_COUNT'):
-                cmd.retryRnList.append(cmd.renderNode.name)
-            elif cmd.retryCount < singletonconfig.get('CORE','MAX_RETRY_CMD_COUNT'):
+            cmd.attempt += 1
+
+            LOGGER.debug("Mark command %d for auto retry in %ds  (%d/%d)" % (cmd.id, singletonconfig.get('CORE','DELAY_BEFORE_AUTORETRY'), cmd.attempt, cmd.task.maxAttempt))
+            if cmd.attempt < cmd.task.maxAttempt:
                 t = Timer(singletonconfig.get('CORE','DELAY_BEFORE_AUTORETRY'), self.autoretry, [cmd])
                 t.start()
+
         elif cmd.status is CMD_ASSIGNED:
             cmd.startTime = cmd.updateTime
         elif cmd.status < CMD_ASSIGNED:
@@ -259,7 +274,13 @@ class CommandDatesUpdater(object):
     def autoretry(self, cmd):
         rn = cmd.renderNode
         cmd.retryRnList.append(rn.name)
-        cmd.setReadyStatusAndClear()
+
+        # cmd.setReadyStatusAndClear()
+        cmd.status = CMD_READY
+        cmd.clearAssignment()
+        cmd.completion = 0.0
+        cmd.message = ""
+
         rn.clearAssignment(cmd)
         rn.status = RN_FINISHING
         cmd.retryCount += 1

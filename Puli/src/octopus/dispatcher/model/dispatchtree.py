@@ -390,9 +390,12 @@ class DispatchTree(object):
         timer = None
         if 'timer' in taskDefinition.keys():
             timer = taskDefinition['timer']
+
+        maxAttempt = taskDefinition.get('maxAttempt', 1)
+
         task = Task(None, name, None, user, maxRN, priority, dispatchKey, runner,
                     arguments, validationExpression, [], requirements, minNbCores,
-                    maxNbCores, ramUse, environment, lic=lic, tags=tags, timer=timer)
+                    maxNbCores, ramUse, environment, lic=lic, tags=tags, timer=timer, maxAttempt=maxAttempt)
 
         for commandDef in taskDefinition['commands']:
             description = commandDef['description']

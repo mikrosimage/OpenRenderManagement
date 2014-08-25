@@ -3,6 +3,7 @@ from collections import defaultdict
 from weakref import WeakKeyDictionary
 
 from octopus.dispatcher.model.enums import *
+from octopus.dispatcher.model import Task, TaskGroup
 
 from . import models
 
@@ -464,6 +465,20 @@ class FolderNode(BaseNode):
         return True
 
 
+    def setMaxAttempt(self, maxAttempt):
+        '''
+        '''
+        globalResult = True
+        
+        for child in self.children:
+            res = child.setMaxAttempt( maxAttempt )
+            if res == False:
+                globalResult = False
+
+        self.dispatcher.dispatchTree.toModifyElements.append(self)
+        return globalResult
+
+
     # TODO
     # def getAllCommands(self):
     #     """
@@ -478,6 +493,7 @@ class TaskNode(BaseNode):
 
     task = models.ModelField()
     paused = models.BooleanField()
+    maxAttempt = models.IntegerField()
 
     @property
     def tags(self):
@@ -495,12 +511,15 @@ class TaskNode(BaseNode):
     #              nodes that can be allocated to this tree node.
     # @param task a Task object
     #
-    def __init__(self, id, name, parent, user, priority, dispatchKey, maxRN, task, creationTime=None, startTime=None, updateTime=None, endTime=None, status=NODE_BLOCKED, paused=False):
+    def __init__(self, id, name, parent, user, priority, dispatchKey, maxRN, task, creationTime=None, startTime=None, updateTime=None, endTime=None, status=NODE_BLOCKED, paused=False, maxAttempt=1):
         BaseNode.__init__(self, id, name, parent, user, priority, dispatchKey, maxRN, creationTime, startTime, updateTime, endTime, status)
         self.task = task
         self.paused = paused
+        self.maxAttempt = int(maxAttempt)
+
         if task is not None:
             self.timer = task.timer
+            self.maxAttempt = int(task.maxAttempt)
 
 
     def cmdIterator(self):
@@ -655,6 +674,25 @@ class TaskNode(BaseNode):
         if self.status == NODE_PAUSED and not paused:
             self.status = NODE_READY
         self.invalidate()
+
+
+    def setMaxAttempt(self, maxAttempt):
+        '''
+        '''
+        if not isinstance(self.task, Task):
+            return False
+    
+        # Update node's task if exists
+        self.task.maxAttempt = maxAttempt
+
+        # Update node
+        self.maxAttempt = maxAttempt
+
+        self.dispatcher.dispatchTree.toModifyElements.append(self.task)
+        self.dispatcher.dispatchTree.toModifyElements.append(self)
+
+        return True
+
 
     def resetCompletion(self):
 

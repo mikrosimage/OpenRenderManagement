@@ -76,7 +76,7 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
                      'status', 'completion', 'dispatchKey', \
                      'startTime', 'creationTime', 'endTime', 'updateTime', \
                      'averageTimeByFrame', 'maxTimeByFrame', 'minTimeByFrame', \
-                     'maxRN', 'allocatedRN']
+                     'maxRN', 'allocatedRN', 'maxAttempt']
 
 
     def createTaskRepr( self, pNode, pAttributes, pTree=False ):
@@ -164,14 +164,17 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
             #       - simple node attributes
             #       - "tags" node attributes (no verification, it is not mandatory)
             #
-            if 'attr' in args:
-                for currAttribute in args['attr']:
-                    if not currAttribute.startswith("tags:"):
-                        if not hasattr(nodes[0],currAttribute):
-                            if currAttribute not in QueryResource.ADDITIONNAL_SUPPORTED_FIELDS :
-                                logger.warning('Error retrieving data, invalid attribute requested : %s', currAttribute )
-                                raise HTTPError( 500, "Invalid attribute requested: %s" % (currAttribute) )
-            else:
+            # if 'attr' in args:
+            #     for currAttribute in args['attr']:
+            #         if not currAttribute.startswith("tags:"):
+            #             if not hasattr(nodes[0],currAttribute):
+            #                 if currAttribute not in QueryResource.ADDITIONNAL_SUPPORTED_FIELDS :
+            #                     logger.warning('Error retrieving data, invalid attribute requested : %s', currAttribute )
+            #                     raise HTTPError( 500, "Invalid attribute requested: %s" % (currAttribute) )
+            # else:
+            #     # Using default result attributes
+            #     args['attr'] = QueryResource.DEFAULT_FIELDS
+            if 'attr' not in args:
                 # Using default result attributes
                 args['attr'] = QueryResource.DEFAULT_FIELDS
 
@@ -207,6 +210,9 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
         except KeyError:
             raise Http404('Error unknown key')
         
+        except HTTPError, e:
+            raise e
+
         except Exception, e:
             logger.warning('Impossible to retrieve result for query: %s', self.request.uri)
             raise HTTPError( 500, "Internal error")

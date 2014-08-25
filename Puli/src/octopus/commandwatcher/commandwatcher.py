@@ -50,15 +50,23 @@ logger.setLevel(logging.INFO)
 
 handler = logging.StreamHandler(sys.stderr)
 
-FORMAT = '# [%(levelname)s] %(asctime)s - %(message)s'
-DATE_FORMAT = '%b %d %H:%M:%S'
+FORMAT = '[WATCHER][%(levelname)s] %(asctime)s - %(message)s'
+DATE_FORMAT = '%d/%m %H:%M:%S'
 
 handler.setFormatter( logging.Formatter(fmt=FORMAT, datefmt=DATE_FORMAT) )
 logger.addHandler(handler)
 
-
 class ThreadInterruption(Exception):
     pass
+
+runnerlog = logging.getLogger('puli.runner')
+runnerlog.setLevel(logging.INFO)
+runnerhandler = logging.StreamHandler(sys.stdout)
+
+FORMAT = '         [%(levelname)s] %(asctime)s - %(message)s'
+runnerhandler.setFormatter( logging.Formatter(fmt=FORMAT, datefmt=DATE_FORMAT) )
+runnerlog.addHandler(runnerhandler)
+
 
 ## This class is used to thread a command.
 #
@@ -73,7 +81,7 @@ class CmdThreader(Thread):
     def __init__(self, cmd, methodName, arguments, updateCompletion, updateMessage, updateStats, updateLicense):
         Thread.__init__(self)
 
-        self.logger = logging.getLogger('puli.commandwatcher')
+        self.logger = logging.getLogger('puli.runner')
         self.logger.debug("cmd = %s" % cmd)
         self.logger.debug("methodName = %s" % methodName)
         self.cmd = cmd
@@ -463,7 +471,7 @@ class CommandWatcher(object):
 
         elif self.threadList[EXEC].stopped == COMMAND_FAILED:
             self.finalState = CMD_ERROR
-            logger.error("Error: %s", self.threadList[EXEC].errorInfo)
+            logger.error("CommandError detected with the following message: %s", self.threadList[EXEC].errorInfo)
             self.runnerErrorInExec = str(self.threadList[EXEC].errorInfo)
 
 

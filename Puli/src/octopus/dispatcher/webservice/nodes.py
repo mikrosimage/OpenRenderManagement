@@ -21,7 +21,8 @@ logger = logging.getLogger("dispatcher.webservice.NodeController")
 
 from octopus.core.communication import *
 from octopus.core.framework import ResourceNotFoundError, ControllerError, queue
-from octopus.dispatcher.model import FolderNode
+from octopus.dispatcher.model import FolderNode, TaskNode, Task
+from octopus.dispatcher.webservice.tasks import TaskNotFoundError
 
 from octopus.dispatcher.model.enums import NODE_STATUS
 
@@ -72,7 +73,6 @@ class NodesResource(DispatcherBaseResource):
             return self.getDispatchTree().nodes[int(nodeId)]
         except KeyError:
             raise NodeNotFoundError(nodeId)
-
 
 class NodeResource(NodesResource):
     ##@queue
@@ -486,3 +486,43 @@ class NodeChildrenResource(NodesResource):
         body = json.dumps(odict, separators=(',', ':'))
         self.set_status(200)
         self.writeCallback(body)
+
+
+
+
+class NodeMaxAttemptResource(NodesResource):
+
+    def put(self, nodeId):
+        '''
+        | Put a new value for the maxAttempt attribute of a task node
+        | The new maxAttempt value is taken from request body, for instance : "{ maxAttempt : 10 }"
+
+        :param nodeId: id of the task node to update
+        '''
+
+        # Get task object
+        try:
+            nodeId = int(nodeId)
+            node = self._findNode( nodeId )
+        except NodeNotFoundError:
+            raise HTTPError(404, "Node not found: %d" % nodeId)
+
+        # Get maxAttemtp from request body
+        data = self.getBodyAsJSON()
+        try:
+            maxAttempt = int(data['maxAttempt'])
+        except KeyError, e:
+            raise HTTPError(400, 'Missing entry: "maxAttempt".')
+        except (TypeError, ValueError), e:
+            raise HTTPError(400, 'Invalid type for "maxAttempt" (integer expected): %r' % data['maxAttempt'])
+
+        # Update selected node and associated task
+        if isinstance(node, TaskNode) or isinstance(node, FolderNode):
+            result = node.setMaxAttempt( maxAttempt )
+            if result == False:
+                raise HTTPError(404, "Impossible to set 'maxAttempt' on node %d" % nodeId)
+        else:
+            raise HTTPError(404, "Invalid element selected: %r" % type(node))
+
+        message = "Attribute maxAttempt of node %d has successfully been updated." % nodeId
+        self.writeCallback(message)

@@ -68,7 +68,8 @@ class TaskNodes(SQLObject):
     endTime = DateTimeCol()
     archived = BoolCol()
     dependencies = MultipleJoin('Dependencies')
-
+    # Adding autoretry capability on task
+    maxAttempt = IntCol()
 
 class Dependencies(SQLObject):
     class sqlmeta:
@@ -126,6 +127,9 @@ class Tasks(SQLObject):
     archived = BoolCol()
     args = UnicodeCol()
 
+    # Adding autoretry capability on task
+    maxAttempt = IntCol()
+
 
 class Commands(SQLObject):
     class sqlmeta:
@@ -143,6 +147,9 @@ class Commands(SQLObject):
     stats = UnicodeCol()
     archived = BoolCol()
     args = UnicodeCol()
+
+    # Adding autoretry capability on command
+    attempt = IntCol()
 
 
 class Pools(SQLObject):
@@ -244,6 +251,7 @@ class PuliDB(object):
                           TaskNodes.q.startTime.fieldName: self.getDateFromTimeStamp(element.startTime),
                           TaskNodes.q.updateTime.fieldName: self.getDateFromTimeStamp(element.updateTime),
                           TaskNodes.q.endTime.fieldName: self.getDateFromTimeStamp(element.endTime),
+                          TaskNodes.q.maxAttempt.fieldName: element.maxAttempt,
                           TaskNodes.q.archived.fieldName: False}
                 conn.query(conn.sqlrepr(Insert(TaskNodes.q, values=fields)))
                 conn.cache.clear()
@@ -343,7 +351,9 @@ class PuliDB(object):
                           Tasks.q.tags.fieldName: json.dumps(element.tags),
                           Tasks.q.validationExpression.fieldName: element.validationExpression,
                           Tasks.q.archived.fieldName: False,
-                          Tasks.q.args.fieldName: str(element.arguments)}
+                          Tasks.q.args.fieldName: str(element.arguments),
+                          Tasks.q.maxAttempt.fieldName: element.maxAttempt
+                          }
                 conn.query(conn.sqlrepr(Insert(Tasks.q, values=fields)))
                 conn.cache.clear()
 
@@ -363,7 +373,9 @@ class PuliDB(object):
                           Commands.q.message.fieldName: element.message,
                           Commands.q.stats.fieldName: str(element.stats),
                           Commands.q.archived.fieldName: False,
-                          Commands.q.args.fieldName: str(element.arguments)}
+                          Commands.q.args.fieldName: str(element.arguments),
+                          Commands.q.attempt.fieldName: str(element.attempt)
+                          }
                 conn.query(conn.sqlrepr(Insert(Commands.q, values=fields)))
                 conn.cache.clear()
 
@@ -425,6 +437,7 @@ class PuliDB(object):
                               Commands.q.startTime.fieldName: startTime,
                               Commands.q.updateTime.fieldName: updateTime,
                               Commands.q.stats.fieldName: str(element.stats),
+                              Commands.q.attempt.fieldName: str(element.attempt),
                               Commands.q.endTime.fieldName: endTime}
                     if element.renderNode:
                         fields[Commands.q.assignedRNId.fieldName] = element.renderNode.id
@@ -437,7 +450,9 @@ class PuliDB(object):
                     conn = TaskNodes._connection
                     fields = {TaskNodes.q.startTime.fieldName: startTime,
                               TaskNodes.q.updateTime.fieldName: updateTime,
-                              TaskNodes.q.endTime.fieldName: endTime}
+                              TaskNodes.q.endTime.fieldName: endTime,
+                              TaskNodes.q.maxAttempt.fieldName: str(element.maxAttempt)
+                              }
                     conn.query(conn.sqlrepr(Update(TaskNodes.q, values=fields, where=(TaskNodes.q.id == element.id))))
                     conn.cache.clear()
 
@@ -483,7 +498,8 @@ class PuliDB(object):
               # The model listener will only register this elem when "tags" field is updated
               if element.id:
                   conn = Tasks._connection
-                  fields = { Tasks.q.tags.fieldName: json.dumps(element.tags) }
+                  fields = { Tasks.q.tags.fieldName: json.dumps(element.tags),
+                            Tasks.q.maxAttempt.fieldName: str(element.maxAttempt) }
                   conn.query(conn.sqlrepr(Update(Tasks.q, values=fields, where=(Tasks.q.id == element.id))))
                   conn.cache.clear()
 
@@ -697,6 +713,7 @@ class PuliDB(object):
 
         print "%s -- foldernodes complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
         ### recreate the task nodes with the correct ids
+        # import pudb;pu.db
         conn = TaskNodes._connection
         fields = [TaskNodes.q.id,
                   TaskNodes.q.name,
@@ -710,10 +727,11 @@ class PuliDB(object):
                   TaskNodes.q.startTime,
                   TaskNodes.q.updateTime,
                   TaskNodes.q.endTime,
-                  TaskNodes.q.archived]
+                  TaskNodes.q.archived,
+                  TaskNodes.q.maxAttempt]
         taskNodes = conn.queryAll(conn.sqlrepr(Select(fields, where=(TaskNodes.q.archived == False))))
         for num, dbTaskNode in enumerate(taskNodes):
-            id, name, parentId, user, priority, dispatchKey, maxRN, taskId, creationTime, startTime, updateTime, endTime, archived = dbTaskNode
+            id, name, parentId, user, priority, dispatchKey, maxRN, taskId, creationTime, startTime, updateTime, endTime, archived, maxAttempt = dbTaskNode
             realTaskNode = TaskNode(id,
                                     name,
                                     None,
@@ -725,7 +743,8 @@ class PuliDB(object):
                                     self.getTimeStampFromDate(creationTime),
                                     self.getTimeStampFromDate(startTime),
                                     self.getTimeStampFromDate(updateTime),
-                                    self.getTimeStampFromDate(endTime))
+                                    self.getTimeStampFromDate(endTime),
+                                    maxAttempt=maxAttempt)
             nodesById[realTaskNode.id] = realTaskNode
 
         print "%s -- tasknodes complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
@@ -749,7 +768,7 @@ class PuliDB(object):
                 nodesById[id].addDependency(nodesById[toNodeId], statusIntList)
 
         for num, dbTaskNode in enumerate(taskNodes):
-            id, name, parentId, user, priority, dispatchKey, maxRN, taskId, creationTime, startTime, updateTime, endTime, archived = dbTaskNode
+            id, name, parentId, user, priority, dispatchKey, maxRN, taskId, creationTime, startTime, updateTime, endTime, archived, maxAttempt = dbTaskNode
             # recreate the parents of the task nodes
             if parentId == 0:
                 nodesById[id].setParentValue(tree.nodes[0])
@@ -787,6 +806,7 @@ class PuliDB(object):
             tree.poolShares[realPoolShare.id] = realPoolShare
 
         print "%s -- poolshares complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
+
         ### recreate the commands
         cmdTaskIdList = defaultdict(list)
         cmdDict = {}
@@ -804,12 +824,15 @@ class PuliDB(object):
                   Commands.q.message,
                   Commands.q.stats,
                   Commands.q.archived,
-                  Commands.q.args]
+                  Commands.q.args,
+                  Commands.q.attempt
+                  ]
         commands = conn.queryAll(conn.sqlrepr(Select(fields, where=(Commands.q.archived == False))))
+
 
         print "%s -- req for cmd complete %s --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)), len(commands))
         for num, dbCmd in enumerate(commands):
-            id, description, taskId, status, completion, creationTime, startTime, updateTime, endTime, assignedRNId, message, stats, archived, args = dbCmd
+            id, description, taskId, status, completion, creationTime, startTime, updateTime, endTime, assignedRNId, message, stats, archived, args, attempt = dbCmd
             if args is None:
                 args = "{}"
             if stats is None:
@@ -826,8 +849,9 @@ class PuliDB(object):
                               self.getTimeStampFromDate(startTime),
                               self.getTimeStampFromDate(updateTime),
                               self.getTimeStampFromDate(endTime),
-                              eval(stats),
-                              message)
+                              attempt=attempt,
+                              stats=eval(stats),
+                              message=message)
             if status in [2, 3, 4] and realCmd.renderNode is None:
               print "%s -- invalid status for command %d, setting to READY" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)), realCmd.id)
               realCmd.status = 1
@@ -860,10 +884,11 @@ class PuliDB(object):
                   Tasks.q.tags,
                   Tasks.q.validationExpression,
                   Tasks.q.archived,
-                  Tasks.q.args]
+                  Tasks.q.args,
+                  Tasks.q.maxAttempt]
         tasks = conn.queryAll(conn.sqlrepr(Select(fields, where=(Tasks.q.archived == False))))
         for num, dbTask in enumerate(tasks):
-            id, name, parentId, user, priority, dispatchKey, maxRN, runner, environment, requirements, minNbCores, maxNbCores, ramUse, licence, tags, validationExpression, archived, args = dbTask
+            id, name, parentId, user, priority, dispatchKey, maxRN, runner, environment, requirements, minNbCores, maxNbCores, ramUse, licence, tags, validationExpression, archived, args, maxAttempt = dbTask
             taskCmds = []
             if args is None:
                 args = '{}'
@@ -887,7 +912,8 @@ class PuliDB(object):
                             json.loads(environment),
                             {},
                             licence,
-                            json.loads(tags))
+                            json.loads(tags), 
+                            maxAttempt=maxAttempt)
             tree.tasks[realTask.id] = realTask
             realTasksList[realTask.id] = realTask
             # set the task on the appropriate commands
@@ -953,7 +979,7 @@ class PuliDB(object):
 
         # set the parents of the tasks
         for num, dbTask in enumerate(tasks):
-            id, name, parentId, user, priority, dispatchKey, maxRN, runner, environment, requirements, minNbCores, maxNbCores, ramUse, licence, tags, validationExpression, archived, args = dbTask
+            id, name, parentId, user, priority, dispatchKey, maxRN, runner, environment, requirements, minNbCores, maxNbCores, ramUse, licence, tags, validationExpression, archived, args, maxAttempt = dbTask
             if parentId:
                 #FIXME temp
                 if int(parentId) in realTaskGroupsList.keys():
@@ -964,7 +990,7 @@ class PuliDB(object):
 
         ### affect the task objects to the corresponding TaskNodes
         for num, dbTaskNode in enumerate(taskNodes):
-            id, name, parentId, user, priority, dispatchKey, maxRN, taskId, creationTime, startTime, updateTime, endTime, archived = dbTaskNode
+            id, name, parentId, user, priority, dispatchKey, maxRN, taskId, creationTime, startTime, updateTime, endTime, archived, maxAttempt = dbTaskNode
             # set the real task
             dbTaskNodeId = int(id)
             if dbTaskNodeId in nodesById.keys() and int(taskId) in realTasksList.keys():

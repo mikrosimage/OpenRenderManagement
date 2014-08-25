@@ -1,6 +1,8 @@
 #!/usr/bin/python
 # coding: utf-8
 
+import time
+
 from puliclient import Task, Graph
 from optparse import OptionParser
 
@@ -31,12 +33,14 @@ if __name__ == '__main__':
     # command = "bash /tmp/test.bash"
     # command = "/datas/jsa/01_test/memcrash/mem.py -l %s -k 0.01" % options.min
     args =  { "cmd":command, "delay": options.min, "start":1, "end":options.num, "packetSize":1, "scriptTimeOut":45 }
+    args =  { "args":command, "delay": options.min, "start":1, "end":options.num, "packetSize":1 }
     tags =  { "prod":"test", "shot":"test", "nbFrames":options.num }
 
     #
     # Create custom graph
     #
-    simpleTask = Task( name=options.jobname, arguments=args, tags=tags, runner="puliclient.contrib.commandlinerunner.CommandLineRunner", lic="katana" )
+    simpleTask = Task( name=options.jobname, arguments=args, tags=tags, runner="puliclient.contrib.commandlinerunner.CommandLineRunner" )
+    simpleTask = Task( name=options.jobname, arguments=args, tags=tags, runner="puliclient.contrib.commandlinerunner.CommandLineRunner", timer=timer )
     # simpleTask = Task( name="T-Generic", arguments=args, tags=tags, runner="puliclient.contrib.debug.WaitRunner" )
     graph = Graph( options.jobname, simpleTask, tags=tags, poolName='default' )
 

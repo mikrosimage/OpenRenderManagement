@@ -69,8 +69,6 @@ class Dispatcher(MainLoopApplication):
         # Class holding custom infos on the dispatcher.
         # This data can be periodically flushed in a specific log file for later use
         #
-        
-
         self.cycle = 1
         self.dispatchTree = DispatchTree()
         self.licenseManager = LicenseManager()
@@ -98,6 +96,12 @@ class Dispatcher(MainLoopApplication):
         self.dispatchTree.validateDependencies()
         if self.enablePuliDB and not self.cleanDB:
             self.dispatchTree.toModifyElements = []
+
+        # If no 'default' pool exists, create default pool
+        if 'default' not in self.dispatchTree.pools:
+            newId = len(self.dispatchTree.pools)+1
+            pool = Pool(id=newId, name='default')
+            self.dispatchTree.toCreateElements.append(pool)
         self.defaultPool = self.dispatchTree.pools['default']
 
         LOGGER.warning("loading dispatch rules")
@@ -167,7 +171,7 @@ class Dispatcher(MainLoopApplication):
         from .rules.graphview import GraphViewBuilder
         graphs = self.dispatchTree.findNodeByPath("/graphs", None)
         if graphs is None:
-            LOGGER.fatal("No /graphs node, impossible to load rule for /graphs.")
+            LOGGER.fatal("No '/graphs' node, impossible to load rule for /graphs.")
             self.stop()
         self.dispatchTree.rules.append(GraphViewBuilder(self.dispatchTree, graphs))
 
@@ -286,21 +290,6 @@ class Dispatcher(MainLoopApplication):
 
 
     def updateDB(self):
-
-        # TODO: Study how to change the DB subsystem to a simple file dump (json or pickle)
-
-        # data1 = {'a': [1, 2.0, 3, 4],
-        #          'b': ('string', u'Unicode string'),
-        #          'c': None}
-        # with open('/datas/puli/Puli/data.json', 'wb') as fp:
-        #     json.dump(self.dispatchTree, fp)
-
-        # import shelve
-
-        # d = shelve.open('/datas/puli/Puli/data.pkl')
-        # d['test'] = self.dispatchTree
-        # d.close()
-
         if settings.DB_ENABLE:
             self.pulidb.createElements(self.dispatchTree.toCreateElements)
             self.pulidb.updateElements(self.dispatchTree.toModifyElements)

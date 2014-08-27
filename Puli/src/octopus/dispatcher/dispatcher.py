@@ -309,7 +309,8 @@ class Dispatcher(MainLoopApplication):
 
         # first create a set of entrypoints that are not done nor cancelled nor blocked nor paused and that have at least one command ready
         # FIXME: hack to avoid getting the 'graphs' poolShare node in entryPoints, need to avoid it more nicely...
-        entryPoints = set([poolShare.node for poolShare in self.dispatchTree.poolShares.values() if poolShare.node.status not in [NODE_BLOCKED, NODE_DONE, NODE_CANCELED, NODE_PAUSED] and poolShare.node.readyCommandCount > 0 and poolShare.node.name != 'graphs'])
+        # entryPoints = set([poolShare.node for poolShare in self.dispatchTree.poolShares.values() if poolShare.node.status not in [NODE_BLOCKED, NODE_DONE, NODE_CANCELED, NODE_PAUSED] and poolShare.node.readyCommandCount > 0 and poolShare.node.name != 'graphs'])
+        entryPoints = set([poolShare.node for poolShare in self.dispatchTree.poolShares.values() if poolShare.node.status not in [NODE_BLOCKED, NODE_DONE, NODE_CANCELED, NODE_PAUSED] and poolShare.node.name != 'graphs'])
 
         # don't proceed to the calculation if no rns availables in the requested pools
         rnsBool = False
@@ -383,16 +384,27 @@ class Dispatcher(MainLoopApplication):
                     updatedmaxRN = int(round( rnsSize / float(nbJobs) ))
 
                 for node in nodes:
-                    node.poolShares.values()[0].maxRN = updatedmaxRN
-                    nbRNAssigned += updatedmaxRN
+                    node.optimalMaxRN = updatedmaxRN
+                    if updatedmaxRN > node.commandCount:
+                        # Limit maxRN when no more ready commands
+                        node.poolShares.values()[0].maxRN = node.commandCount
+                        nbRNAssigned += node.commandCount
+                    else:
+                        node.poolShares.values()[0].maxRN = updatedmaxRN
+                        nbRNAssigned += updatedmaxRN
 
-            # Add remaining RNs to most important jobs
+            # Add remaining RNs to most important jobs BUT avoiding to increment maxRN if no more commands to assign
             unassignedRN = rnsSize - nbRNAssigned
-            while unassignedRN > 0:
+            numNodesFull = 0
+            while 0 < unassignedRN and numNodesFull<len(nodesList):
+                numNodesFull = 0
                 for node in nodesList:
-                    if unassignedRN > 0:
-                        node.poolShares.values()[0].maxRN += 1
-                        unassignedRN -= 1
+                    if 0 < unassignedRN:
+                        if updatedmaxRN < node.commandCount:
+                            node.poolShares.values()[0].maxRN += 1
+                            unassignedRN -= 1
+                        else:
+                            numNodesFull += 1
                     else:
                         break
 
@@ -400,17 +412,27 @@ class Dispatcher(MainLoopApplication):
             singletonstats.theStats.assignmentTimers['update_max_rn'] = time.time() - prevTimer
         LOGGER.info( "%8.2f ms --> .... updating max RN values", (time.time() - prevTimer)*1000 )
 
+
+        # Log time dispatching RNs
+        prevTimer = time.time()
+        # Filter nodes to remove those with node ready command
+        entryPoints = filter(lambda node: node.readyCommandCount>0, entryPoints)
+        LOGGER.info( "%8.2f ms --> .... filter nodes with commands ready", (time.time() - prevTimer)*1000 )
+
         # now, we are treating every nodes
         # sort by id (fifo)
         entryPoints = sorted(entryPoints, key=lambda node: node.id)
         # then sort by dispatchKey (priority)
         entryPoints = sorted(entryPoints, key=lambda node: node.dispatchKey, reverse=True)
 
+        # Exit loop here if no nodes need new assignment
+        if len(entryPoints)==0:
+            return []
+
         # Put nodes with a userDefinedMaxRN first
         userDefEntryPoints = ifilter( lambda node: node.poolShares.values()[0].userDefinedMaxRN, entryPoints )
         standardEntryPoints = ifilter( lambda node: not node.poolShares.values()[0].userDefinedMaxRN, entryPoints )
         scoredEntryPoints = chain( userDefEntryPoints, standardEntryPoints)
-
 
         # Log time dispatching RNs
         prevTimer = time.time()

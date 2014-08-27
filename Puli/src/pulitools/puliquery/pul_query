@@ -56,7 +56,7 @@ import errno
 # Imports from local dir
 from settings import Settings
 from common import ConstraintFactory
-from common import JobTable, CustomTable, CommandTable
+from common import JobTable, CustomTable, CommandTable, DetailJobTable
 from octopus.core.enums.node import NODE_STATUS_SHORT_NAMES
 
 
@@ -137,7 +137,10 @@ def handle_request(response):
 
         else:
             if options.data == 'job':
-                tableDescription = JobTable
+                if options.detail == True:
+                    tableDescription = DetailJobTable
+                else:
+                    tableDescription = JobTable
             elif options.data == 'command':
                 tableDescription = CommandTable
 
@@ -277,6 +280,7 @@ Reminder: Possible values for a job status
     parser.add_option("-s", "--server", action="store", dest="hostname", help="Specify a target host to send the request")
     parser.add_option("-p", "--port", action="store", dest="port", help="Specify a target port")
 
+    parser.add_option("-l", "--long", action="store_true", dest="detail", help="Enables a more detailled view", default="job")
     parser.add_option("-d", "--data", action="store", dest="data", type="string", help="request a specific type of data: command/job [%default]", default="job")
     options, args = parser.parse_args()
 

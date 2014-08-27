@@ -76,7 +76,7 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
                      'status', 'completion', 'dispatchKey', \
                      'startTime', 'creationTime', 'endTime', 'updateTime', \
                      'averageTimeByFrame', 'maxTimeByFrame', 'minTimeByFrame', \
-                     'maxRN', 'allocatedRN', 'maxAttempt']
+                     'maxRN', 'optimalMaxRN', 'allocatedRN', 'maxAttempt', 'commandCount', 'readyCommandCount', 'doneCommandCount']
 
 
     def createTaskRepr( self, pNode, pAttributes, pTree=False ):

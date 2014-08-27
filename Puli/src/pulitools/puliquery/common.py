@@ -248,8 +248,6 @@ class CustomTable:
         print ""
 
 
-
-
 class JobTable( CustomTable ):
     """
     | Definition of a table representation for jobs.
@@ -285,9 +283,9 @@ class JobTable( CustomTable ):
                 "field":        "name", 
                 "label":        "NAME", 
                 "visible":      True, 
-                "dataFormat":   " %-30s",
-                "labelFormat":  " %-30s",
-                "truncate":     30,
+                "dataFormat":   " %-45s",
+                "labelFormat":  " %-45s",
+                "truncate":     45,
             },
             {
                 "field":        "prod", 
@@ -300,17 +298,10 @@ class JobTable( CustomTable ):
             {
                 "field":        "shot", 
                 "label":        "SHOT", 
-                "visible":      True, 
-                "dataFormat":   " %-10s",
-                "labelFormat":  " %-10s",
-                "truncate":     10,
-            },
-            {
-                "field":        "", 
-                "label":        "IMG", 
                 "visible":      False, 
                 "dataFormat":   " %-10s",
                 "labelFormat":  " %-10s",
+                "truncate":     10,
             },
             {
                 "field":        "user", 
@@ -321,11 +312,116 @@ class JobTable( CustomTable ):
                 "truncate":     5,
             },
             {
+                "field":        "completion", 
+                "label":        "%", 
+                "visible":      True, 
+                "dataFormat":   " %3.f",
+                "labelFormat":  " %3s",
+                "transform":    CustomTable.percentToFloat,
+            },
+            {
                 "field":        "dispatchKey", 
                 "label":        "PRIO", 
                 "visible":      True, 
                 "dataFormat":   " %4d",
                 "labelFormat":  " %4s",
+            },
+            {
+                "field":        "maxRN", 
+                "label":        "MAXRN", 
+                "visible":      True, 
+                "dataFormat":   " %5d",
+                "labelFormat":  " %5s",
+            },
+            {
+                "field":        "allocatedRN", 
+                "label":        "ALLOC", 
+                "visible":      True, 
+                "dataFormat":   " %5d",
+                "labelFormat":  " %5s",
+            },
+            {
+                "field":        "maxAttempt", 
+                "label":        "ATTEMPT", 
+                "visible":      True, 
+                "dataFormat":   " %7.7s",
+                "labelFormat":  " %7s",
+                "transform":    CustomTable.formatMaxAttempt,
+            },            
+            {
+                "field":        "creationTime", 
+                "label":        "SUBMITTED", 
+                "visible":      True, 
+                "dataFormat":   " %-12s",
+                "labelFormat":  " %-12s",
+                "transform":    CustomTable.dateToStr,
+            },
+            {
+                "field":        "startTime", 
+                "label":        "START", 
+                "visible":      True, 
+                "dataFormat":   " %-12s",
+                "labelFormat":  " %-12s",
+                "transform":    CustomTable.dateToStr,
+            },
+            {
+                "field":        "endTime", 
+                "label":        "END", 
+                "visible":      True, 
+                "dataFormat":   " %-12s",
+                "labelFormat":  " %-12s",
+                "transform":    CustomTable.dateToStr,
+            },
+
+            {
+                "field":        ( CustomTable.formulaRuntime, "endTime", "startTime" ),
+                "label":        "RUN TIME", 
+                "visible":      True, 
+                "dataFormat":   " %10s",
+                "labelFormat":  " %10s"
+            },
+
+            {
+                "field":        "averageTimeByFrame",
+                "label":        "AVG TIME", 
+                "visible":      True, 
+                "dataFormat":   " %10s",
+                "labelFormat":  " %10s",
+                "transform":    CustomTable.millisecToStr,
+            },
+        ]
+
+
+class DetailJobTable( CustomTable ):
+    """
+    | Definition of a table representation for jobs.
+    | 
+    | Usage:
+    |     - field:        the data to display, supported fields are those defined in job object
+    |     - label:        a text used for table header
+    |     - visible:      a flag indicating if the column will be printed
+    |     - dataFormat:   a format for the corresponding field, it uses the 'print' (and similar to POSIX print) function
+    |     - labelFormat:  idem for label info
+    |     - truncate:     Optionnal attribute, the max length that should be displayed (to avoid messing with columns alignment)
+    |     - transform:    Optionnal attribute, the name of a static method of the parent CustomTable class.
+    |                     It will preprocess the value before displaying it at a string (example: date format, status short name)
+    """
+
+    columns = [
+            {
+                "field":        "id", 
+                "label":        "ID", 
+                "visible":      True, 
+                "dataFormat":   "%-6d",
+                "labelFormat":  "%-6s",
+            },
+            {
+                "field":        "status", 
+                "label":        "ST", 
+                "visible":      True, 
+                "dataFormat":   " %-2s",
+                "labelFormat":  " %-2s",
+                "transform":    CustomTable.jobStatusToStr,
             },
             {
                 "field":        "completion", 
@@ -336,11 +432,65 @@ class JobTable( CustomTable ):
                 "transform":    CustomTable.percentToFloat,
             },
             {
-                "field":        "maxRN", 
-                "label":        "MAX", 
+                "field":        "name", 
+                "label":        "NAME", 
                 "visible":      True, 
-                "dataFormat":   " %3d",
-                "labelFormat":  " %3s",
+                "dataFormat":   " %-30s",
+                "labelFormat":  " %-30s",
+                "truncate":     30,
+            },
+            {
+                "field":        "prod", 
+                "label":        "PROD", 
+                "visible":      True, 
+                "dataFormat":   " %-10s",
+                "labelFormat":  " %-10s",
+                "truncate":     10,
+            },
+            { "field":"shot", "label":"SHOT", "visible":True, "dataFormat":" %-10s","labelFormat":" %-10s","truncate":10 },
+            { "field":"user", "label":"OWNER", "visible":True, "dataFormat":" %-5s", "labelFormat":" %-5s", "truncate":5 },
+            {
+                "field":        "dispatchKey", 
+                "label":        "PRIO", 
+                "visible":      True, 
+                "dataFormat":   " %4d",
+                "labelFormat":  " %4s",
+            },
+            {
+                "field":        "commandCount", 
+                "label":        "TOTAL", 
+                "visible":      True, 
+                "dataFormat":   " %5d",
+                "labelFormat":  " %5s",
+            },
+            {
+                "field":        "readyCommandCount", 
+                "label":        "READY", 
+                "visible":      True, 
+                "dataFormat":   " %5d",
+                "labelFormat":  " %5s",
+            },
+            {
+                "field":        "doneCommandCount", 
+                "label":        "DONE", 
+                "visible":      True, 
+                "dataFormat":   " %4d",
+                "labelFormat":  " %4s",
+            },
+
+            {
+                "field":        "optimalMaxRN", 
+                "label":        "MAXRN-optimal", 
+                "visible":      True, 
+                "dataFormat":   " %12d",
+                "labelFormat":  " %12s",
+            },
+            {
+                "field":        "maxRN", 
+                "label":        "MAXRN-real", 
+                "visible":      True, 
+                "dataFormat":   " %10d",
+                "labelFormat":  " %10s",
             },
             {
                 "field":        "allocatedRN", 

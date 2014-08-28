@@ -14,7 +14,7 @@ from puliclient import Task, TaskGroup, Graph, DONE
 
 if __name__ == '__main__':
 
-    args =  { "cmd":"sleep 30", "start":1, "end":10, "packetSize":1 }
+    args =  { "cmd":"sleep 30", "start":1, "end":5, "packetSize":1 }
     tags =  { "prod":"test", "shot":"test" }
     decomposer = "puliclient.contrib.generic.GenericDecomposer"
 
@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
     # Create a chain of dependencies, execution order will be: 
     # task1 > task4 > task3 > task2 > task5 > task6
-    graph.addChain( [task1, task4, task3, task2, task5, task6] )
+    graph.addChain( [task1, task2, task3, task4, task5, task6] )
 
     graph.submit(host="vfxpc64")
 

@@ -712,7 +712,7 @@ class TaskNode(BaseNode):
 
         if pCascadeUpdate:
             for dependingNode in self.reverseDependencies:
-                dependingNode.setStatus( pStatus )
+                dependingNode.setStatus( pStatus, pCascadeUpdate )
 
         if pStatus == NODE_CANCELED and self.status != NODE_DONE:
             for command in self.task.commands:

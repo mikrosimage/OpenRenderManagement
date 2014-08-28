@@ -447,11 +447,11 @@ class Dispatcher(MainLoopApplication):
             strRlmKatanaUsed = subprocess.Popen(["/s/apps/lin/farm/tools/rlm_katana_used.sh"], stdout=subprocess.PIPE).communicate()[0]
 
             katanaUsed = int(strRlmKatanaUsed)
-            LOGGER.debug("HACK update katana license: used = %d" % (katanaUsed))
+            LOGGER.debug("HACK update katana license: used = %d (+buffer in config:%d)" % (katanaUsed,singletonconfig.get('HACK','KATANA_BUFFER')))
 
             # Sets used license number
             try:
-                self.licenseManager.licenses["katana"].used = katanaUsed
+                self.licenseManager.licenses["katana"].used = katanaUsed + singletonconfig.get('HACK','KATANA_BUFFER')
             except KeyError:
                 LOGGER.warning("License katana not found... Impossible to set 'used' value: %d" % katanaUsed)
         except Exception, e:
@@ -613,7 +613,7 @@ class Dispatcher(MainLoopApplication):
             # rn = command.renderNode
             # rn.clearAssignment(command)
             # rn.request("DELETE", "/commands/" + str(commandId) + "/")
-            LOGGER.warning("The emitting RN %s is different from the RN assigned to the command in pulimodel." % ( renderNodeName, rn.name ) )
+            LOGGER.warning("The emitting RN %s is different from the RN assigned to the command in pulimodel: %s." % ( renderNodeName, command.renderNode.name ) )
             raise KeyError("Command %d is running on a different rendernode (%s) than the one in puli's model (%s)." % (commandId, renderNodeName, command.renderNode.name))
 
         rn = command.renderNode

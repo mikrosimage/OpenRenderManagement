@@ -550,7 +550,7 @@ class Dispatcher(MainLoopApplication):
                     else:
                         LOGGER.info("Sent assignment of command %d to worker %s", command.id, rendernode.name)
                 except rendernode.RequestFailed, e:
-                    LOGGER.exception("Assignment of command %d to worker %s failed: %r", command.id, rendernode.name, e)
+                    LOGGER.error("Assignment of command %d to worker %s failed: %r", command.id, rendernode.name, e)
                     failures.append((rendernode, command))
             return failures
 

@@ -46,7 +46,7 @@ def spawnCommandWatcher(pidfile, logfile, args, env):
         #                    stderr=subprocess.STDOUT, close_fds=CLOSE_FDS,
         #                    preexec_fn=setlimits, env=envN).pid
         process = subprocess.Popen(args, bufsize=-1, stdin=devnull, stdout=logfile,
-                           stderr=subprocess.STDOUT, close_fds=CLOSE_FDS,
+                           stderr=logfile, close_fds=CLOSE_FDS,
                            preexec_fn=setlimits, env=envN)
 
     except Exception,e:

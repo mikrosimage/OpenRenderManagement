@@ -41,7 +41,7 @@ class RequestManager(object):
 
 
     def request(self, method, path, data=None, headers=None):
-        # logging.getLogger().debug("Using request manager for: %s %s" % (method, path))
+        logger = logging.getLogger()
 
         if not headers:
             headers = {}
@@ -64,7 +64,7 @@ class RequestManager(object):
                 conn.close()
                 break
             except socket.error, e:
-                print("Warning: a socket error occured in requestmanager '%s %s' - retries left: %d" % (method, path, maxi))
+                logger.error("Warning: a socket error occured in requestmanager '%s %s'" % (method, path))
                 try:
                     conn.close()
                 except:
@@ -73,14 +73,18 @@ class RequestManager(object):
                     errno, msg = e
                 except ValueError:
                     errno = 0
-                print e, self.host, self.port
+                logger.error("Error: %r (errno=%r)", e, errno)
+
                 if errno == 111 or errno == 0:
                     return "ERROR"
-                maxi -= 1
 
-                #print e
+                # When socket.error occur it is usally a bad adress famaily when the server is done. In this case we simply return
+                # an "ERROR" message without retrying. retry will occur if the caller needs to.
+                maxi -= 1
                 time.sleep(.1)
+
             except http.BadStatusLine, e:
+                logger.error("Warning: unrecognized HTTP code was returned '%s %s' (reties lieft:%d)" % (method, path, maxi))
                 try:
                     conn.close()
                 except:

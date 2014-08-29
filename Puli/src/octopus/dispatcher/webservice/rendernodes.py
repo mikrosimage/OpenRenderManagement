@@ -8,7 +8,7 @@ except ImportError:
 import logging
 from tornado.web import HTTPError
 
-from octopus.core.communication import HttpResponse, Http400, Http404, Http403, HttpConflict
+from octopus.core.communication import HttpResponse, Http400, Http404, Http403, HttpConflict, Http500
 # from octopus.core.enums.rendernode import RN_PAUSED, RN_IDLE, RN_UNKNOWN, RN_BOOTING, RN_ASSIGNED
 from octopus.core.enums.rendernode import *
 
@@ -182,10 +182,11 @@ class RenderNodeCommandsResource(DispatcherBaseResource):
 
         try:
             self.framework.application.updateCommandApply(updateDict)
-        except KeyError, e:
-            return Http404(str(e))
-        except IndexError, e:
-            return Http404(str(e))
+        except (KeyError,IndexError) as e:
+            raise Http404(str(e))
+        except Exception, e:
+            raise Http500("Exception during command update")
+
         self.writeCallback("Command updated")
 
     # def sanitizeUpdateDict(self, dct):
@@ -265,10 +266,6 @@ class RenderNodeSysInfosResource(DispatcherBaseResource):
             renderNode.performance = float(dct["performance"])
         if "status" in dct:
             if renderNode.status == RN_UNKNOWN:
-                # if int(dct["status"]) == RN_PAUSED:
-                #     renderNode.status = RN_PAUSED
-                # else:
-                    #renderNode.status = RN_IDLE
                 renderNode.status = int(dct["status"])
                 logger.info("status reported is %d" % renderNode.status)
 

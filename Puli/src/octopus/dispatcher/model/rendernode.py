@@ -330,7 +330,6 @@ class RenderNode(models.Model):
         """
         
         # from octopus.dispatcher import settings
-
         LOGGER.debug("Send request to RN: http://%s:%s%s %s (%s)"%(self.host, self.port , url, method, headers))
         
         err=None
@@ -431,7 +430,7 @@ class RenderNode(models.Model):
             # LOGGER.debug("RAM constraint defined on task %r -> min %d MB, current systemFreeRam is %d MB" % 
             #                 ( command.task.id, command.task.ramUse, self.systemFreeRam) )
             if self.systemFreeRam < command.task.ramUse:
-                LOGGER.warning("Not enough ram on %s. %d needed, %d avail." % (self.name, int(command.task.ramUse), self.systemFreeRam))
+                LOGGER.info("Not enough ram on %s. %d needed, %d avail." % (self.name, int(command.task.ramUse), self.systemFreeRam))
                 return False
 
         #
@@ -440,7 +439,7 @@ class RenderNode(models.Model):
         if command.task.timer is not None:
             # LOGGER.debug("Current command %r has a timer : %s" % (command.id, datetime.datetime.fromtimestamp(command.task.timer) ) )
             if time.time() < command.task.timer:
-                LOGGER.warning("Prevented execution of command %d because of timer present (%s)" % (command.id, datetime.datetime.fromtimestamp(command.task.timer)))
+                LOGGER.info("Prevented execution of command %d because of timer present (%s)" % (command.id, datetime.datetime.fromtimestamp(command.task.timer)))
                 return False
 
         return True

@@ -402,10 +402,12 @@ class Worker(MainLoopApplication):
             try:
                 self.httpconn.request('PUT', url, body, headers)
                 response = self.httpconn.getresponse()
-            except httplib.HTTPException:
-                LOGGER.exception('"PUT %s" failed', url)
-            except socket.error:
-                LOGGER.exception('"PUT %s" failed', url)
+            except httplib.HTTPException, e:
+                LOGGER.error('"PUT %s" failed (error:%r)', url, e)
+            except socket.error, e:
+                LOGGER.error('"PUT %s" failed (error:%r)', url, e)
+            except Exception, e:
+                LOGGER.info('"PUT %s" failed (unhandled exception: %r', url, e)
             else:
                 if response.status == 200:
                     response = response.read()
@@ -418,7 +420,7 @@ class Worker(MainLoopApplication):
                     break
                 else:
                     data = response.read()
-                    print "unexpected status %d: %s %s" % (response.status, response.reason, data)
+                    LOGGER.warning("unexpected status %d: %s %s" % (response.status, response.reason, data))
             finally:
                 self.httpconn.close()
 
@@ -426,7 +428,7 @@ class Worker(MainLoopApplication):
             LOGGER.warning('Next retry will occur in %.2f s' % delayRetry )
             time.sleep( delayRetry )
             i += 1
-            delayRetry *= 2
+            delayRetry *= 1.5
 
         # Request error encountered "maxRetry" times, removing the command watcher to avoid
         # recalling this update in next main loop iter

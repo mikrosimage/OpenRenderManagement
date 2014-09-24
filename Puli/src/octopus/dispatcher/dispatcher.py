@@ -75,6 +75,7 @@ class Dispatcher(MainLoopApplication):
         self.enablePuliDB = settings.DB_ENABLE
         self.cleanDB = settings.DB_CLEAN_DATA
 
+        
         self.pulidb = None
         if self.enablePuliDB:
             self.pulidb = PuliDB(self.cleanDB, self.licenseManager)
@@ -89,19 +90,22 @@ class Dispatcher(MainLoopApplication):
             LOGGER.warning("reloading took %.2fs" % (time.time() - beginTime))
             LOGGER.warning("done reloading jobs from database")
             LOGGER.warning("reloaded %d tasks" % len(self.dispatchTree.tasks))
-        LOGGER.warning("checking dispatcher state")
 
+        LOGGER.warning("checking dispatcher state")
         self.dispatchTree.updateCompletionAndStatus()
+        LOGGER.warning("updating render nodes")
         self.updateRenderNodes()
+        LOGGER.warning("validating dependencies")
         self.dispatchTree.validateDependencies()
+
         if self.enablePuliDB and not self.cleanDB:
             self.dispatchTree.toModifyElements = []
 
         # If no 'default' pool exists, create default pool
+        # When creating a pool with id=None, it is automatically appended in "toCreateElement" list in dispatcher and in the dispatcher's "pools" attribute
         if 'default' not in self.dispatchTree.pools:
-            newId = len(self.dispatchTree.pools)+1
-            pool = Pool(id=newId, name='default')
-            self.dispatchTree.toCreateElements.append(pool)
+            LOGGER.warning("Default pool was not loaded from DB, create a new default pool")
+            pool = Pool(None, name='default')
         self.defaultPool = self.dispatchTree.pools['default']
 
         LOGGER.warning("loading dispatch rules")
@@ -299,7 +303,6 @@ class Dispatcher(MainLoopApplication):
 
     def computeAssignments(self):
         '''Computes and returns a list of (rendernode, command) assignments.'''
-
         from .model.node import NoRenderNodeAvailable, NoLicenseAvailableForTask
         # if no rendernodes available, return
         if not any(rn.isAvailable() for rn in self.dispatchTree.renderNodes.values()):

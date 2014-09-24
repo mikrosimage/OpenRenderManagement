@@ -216,10 +216,10 @@ class PuliDB(object):
         sqlhub.processConnection = connectionForURI(settings.DB_URL)
         # drop all the tables
         if cleanDB:
-            LOGGER.info("dropping database tables")
+            LOGGER.warning("dropping database tables")
             dropTables()
         # create the tables, if necessary
-        LOGGER.info("checking database")
+        LOGGER.warning("creating database tables")
         createTables()
         self.licenseManager = licManager
 

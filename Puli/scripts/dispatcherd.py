@@ -100,7 +100,7 @@ def setup_logging(options):
                     backupCount=singletonconfig.get('CORE','LOG_BACKUPS'), 
                     encoding="UTF-8")
 
-    fileHandler.setFormatter(logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s"))
+    fileHandler.setFormatter(logging.Formatter("%(asctime)s %(name)10s %(levelname)s %(message)s"))
     logger = logging.getLogger()
 
     # logLevel = logging.DEBUG if options.DEBUG else logging.WARNING
@@ -139,27 +139,35 @@ def main():
     options = process_args()
     setup_logging(options)
 
-    logging.getLogger('daemon').info( "" )
-    logging.getLogger('daemon').info( "-----------------------------------------------" )
-    logging.getLogger('daemon').info( "Starting PULI server on port:%d.", settings.PORT)
-    logging.getLogger('daemon').info( "-----------------------------------------------" )
-    logging.getLogger('daemon').info( " version = %s" % settings.VERSION )
-    logging.getLogger('daemon').info( " command = %s" % " ".join(sys.argv) )
-    logging.getLogger('daemon').info( "  daemon = %r" % options.DAEMONIZE )
-    logging.getLogger('daemon').info( " console = %r" % options.CONSOLE )
-    logging.getLogger('daemon').info( "    port = %s" % settings.PORT )
+    logging.getLogger('daemon').warning( "" )
+    logging.getLogger('daemon').warning( "-----------------------------------------------" )
+    logging.getLogger('daemon').warning( "Starting PULI server on port:%d.", settings.PORT)
+    logging.getLogger('daemon').warning( "-----------------------------------------------" )
+    logging.getLogger('daemon').warning( " version = %s" % settings.VERSION )
+    logging.getLogger('daemon').warning( " command = %s" % " ".join(sys.argv) )
+    logging.getLogger('daemon').warning( "  daemon = %r" % options.DAEMONIZE )
+    logging.getLogger('daemon').warning( " console = %r" % options.CONSOLE )
+    logging.getLogger('daemon').warning( "    port = %s" % settings.PORT )
+    logging.getLogger('daemon').warning( "--" )
 
     if options.DAEMONIZE:
+        logging.getLogger('daemon').warning( "make current process a daemon and redirecting stdout/stderr to logfile" )
         daemonize(settings.RUN_AS)
 
+        # Redirect stdout and stderr to log file (using the first handler set in logging)
+        sys.stdout = logging.getLogger().handlers[0].stream
+        sys.stderr = logging.getLogger().handlers[0].stream
+
+    logging.getLogger('daemon').warning( "creating dispatcher main application" )
     dispatcherApplication = make_dispatcher()
 
     periodic = tornado.ioloop.PeriodicCallback( dispatcherApplication.loop, singletonconfig.get('CORE','MASTER_UPDATE_INTERVAL') )
     periodic.start()
     try:
+        logging.getLogger('daemon').warning( "starting tornado main loop" )
         tornado.ioloop.IOLoop.instance().start()
     except KeyboardInterrupt, SystemExit:
-        logging.getLogger('dispatcher').info("Exit event caught: closing dispatcher...")
+        logging.getLogger('dispatcher').warning("Exit event caught: closing dispatcher...")
 
 if __name__ == '__main__':
     main()

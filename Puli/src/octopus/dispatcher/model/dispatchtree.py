@@ -213,7 +213,7 @@ class DispatchTree(object):
         del self.modifiedNodes[:]
         for node in nodes:
             # logger.debug("Dependencies on %r = %r"% (node.name, node.checkDependenciesSatisfaction() ) )
-            if not hasattr(node,"task"):
+            if not hasattr(node,"task") or node.task is None:
                 continue
             if isinstance(node, TaskNode):
                 if node.checkDependenciesSatisfaction():

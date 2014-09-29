@@ -22,6 +22,7 @@ from octopus.core import singletonconfig, singletonstats
 
 from octopus.core.threadpool import ThreadPool, makeRequests, NoResultsPending
 from octopus.core.framework import MainLoopApplication
+from octopus.core.tools import elapsedTimeToString
 
 from octopus.dispatcher.model import (DispatchTree, FolderNode, RenderNode,
                                       Pool, PoolShare, enums)
@@ -36,6 +37,7 @@ from octopus.dispatcher.licenses.licensemanager import LicenseManager
 
 
 LOGGER = logging.getLogger('dispatcher')
+
 
 
 class Dispatcher(MainLoopApplication):
@@ -84,19 +86,31 @@ class Dispatcher(MainLoopApplication):
         rnsAlreadyInitialized = self.initPoolsDataFromBackend()
 
         if self.enablePuliDB and not self.cleanDB:
-            LOGGER.warning("reloading jobs from database")
-            beginTime = time.time()
+            LOGGER.warning("--- Reloading database (9 steps) ---")
+            prevTimer=time.time()
             self.pulidb.restoreStateFromDb(self.dispatchTree, rnsAlreadyInitialized)
-            LOGGER.warning("reloading took %.2fs" % (time.time() - beginTime))
-            LOGGER.warning("done reloading jobs from database")
-            LOGGER.warning("reloaded %d tasks" % len(self.dispatchTree.tasks))
 
-        LOGGER.warning("checking dispatcher state")
+            LOGGER.warning("%d jobs reloaded from database"%len(self.dispatchTree.tasks))
+            LOGGER.warning("Total time elapsed %s"% elapsedTimeToString(prevTimer) )
+            LOGGER.warning("")
+
+        LOGGER.warning("--- Checking dispatcher state (3 steps) ---")
+        startTimer=time.time()
+        LOGGER.warning("1/3 Update completion and status")
         self.dispatchTree.updateCompletionAndStatus()
-        LOGGER.warning("updating render nodes")
+        LOGGER.warning("    Elapsed time %s"% elapsedTimeToString(startTimer) )
+
+        prevTimer=time.time()
+        LOGGER.warning("2/3 Update rendernodes")
         self.updateRenderNodes()
-        LOGGER.warning("validating dependencies")
+        LOGGER.warning("    Elapsed time %s"% elapsedTimeToString(prevTimer) )
+
+        prevTimer=time.time()
+        LOGGER.warning("3/3 Validate dependencies")
         self.dispatchTree.validateDependencies()
+        LOGGER.warning("    Elapsed time %s"% elapsedTimeToString(prevTimer) )
+        LOGGER.warning("Total time elapsed %s"% elapsedTimeToString(startTimer) )
+        LOGGER.warning("")
 
         if self.enablePuliDB and not self.cleanDB:
             self.dispatchTree.toModifyElements = []
@@ -108,8 +122,12 @@ class Dispatcher(MainLoopApplication):
             pool = Pool(None, name='default')
         self.defaultPool = self.dispatchTree.pools['default']
 
-        LOGGER.warning("loading dispatch rules")
+        LOGGER.warning("--- Loading dispatch rules ---")
+        startTimer=time.time()
         self.loadRules()
+        LOGGER.warning("Total time elapsed %s"% elapsedTimeToString(startTimer) )
+        LOGGER.warning("")
+
         # it should be better to have a maxsize
         self.queue = Queue(maxsize=10000)
 

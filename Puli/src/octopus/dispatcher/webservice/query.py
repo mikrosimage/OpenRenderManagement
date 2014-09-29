@@ -93,24 +93,29 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
             #
             # Get value of additionnally supported field
             #
-            if currArg.startswith("tags:"):
-                # Attribute name references a "tags" item
-                tag = unicode(currArg[5:])
-                value = unicode(pNode.tags.get(tag,''))
-                currTask[tag] = value
-            elif currArg == "pool":
-                # Attribute 'pool' is a specific item
-                currTask[currArg] = pNode.poolShares.keys()[0].name
-            elif currArg == "userDefinedMaxRn":
-                # Attribute 'userDefiniedMaxRN' is a specific item
-                currTask[currArg] = pNode.poolShares.values()[0].userDefinedMaxRN
+            try:
+                if currArg.startswith("tags:"):
+                    # Attribute name references a "tags" item
+                    currArg = unicode(currArg[5:])
+                    value = unicode(pNode.tags.get(currArg,''))
+                    currTask[currArg] = value
+                elif currArg == "pool":
+                    # Attribute 'pool' is a specific item
+                    currTask[currArg] = pNode.poolShares.keys()[0].name
+                elif currArg == "userDefinedMaxRn":
+                    # Attribute 'userDefiniedMaxRN' is a specific item
+                    currTask[currArg] = pNode.poolShares.values()[0].userDefinedMaxRN
 
-            #
-            # Get value of standard field
-            #
-            else:
-                # Attribute is a standard attribute of a Node
-                currTask[currArg] =  getattr(pNode, currArg, 'undefined')
+                #
+                # Get value of standard field
+                #
+                else:
+                    # Attribute is a standard attribute of a Node
+                    currTask[currArg] =  getattr(pNode, currArg, 'undefined')
+
+            except AttributeError, e:
+                currTask[currArg] =  'undefined'
+                logger.warning("Impossible to get attribute '%s' on object %r" % (currArg, pNode))
 
         if pTree and hasattr(pNode, 'children'):
             childTasks = []
@@ -129,7 +134,6 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
           4. for each filtered node: add info in result
         """
         args = self.request.arguments
-        
         if 'tree' in args:
             tree = bool(args['tree'])
         else:

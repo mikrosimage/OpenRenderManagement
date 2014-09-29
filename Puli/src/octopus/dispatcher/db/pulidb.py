@@ -29,6 +29,9 @@ from octopus.dispatcher.model.command import Command
 from octopus.dispatcher.model.rendernode import RenderNode
 from octopus.dispatcher.model.pool import Pool, PoolShare
 from octopus.dispatcher.strategies import createStrategyInstance
+from octopus.core.tools import elapsedTimeToString
+
+from octopus.core import singletonconfig
 
 LOGGER = logging.getLogger('dispatcher')
 
@@ -529,7 +532,6 @@ class PuliDB(object):
         poolsharesList = []
         rendernodesList = []
         for element in elements:
-            # LOGGER.info("            ----> Archiving elem = %s" % element )
             if isinstance(element, Task):
                 tasksList.append(element.id)
             elif isinstance(element, TaskGroup):
@@ -540,8 +542,10 @@ class PuliDB(object):
                 # gc.collect()
                 # LOGGER.warning("referrers of %s : %s" % (str(type(element)), str(gc.get_referrers(element))))
             elif isinstance(element, TaskNode):
+                # LOGGER.info("            ----> Archiving task node = %s" % element )
                 taskNodesList.append(element.id)
             elif isinstance(element, FolderNode):
+                # LOGGER.info("            ----> Archiving folder node = %s" % element )
                 folderNodesList.append(element.id)
             elif isinstance(element, Pool):
                 poolsList.append(element.id)
@@ -615,7 +619,13 @@ class PuliDB(object):
     #
     def restoreStateFromDb(self, tree, rnsAlreadyLoaded):
         begintime = time.time()
+        refreshDelay = singletonconfig.get('DB','REFRESH_DELAY', default=5)
+
         # reload the pools and rns from the database
+        LOGGER.warning("1/9 Reloading pools")
+        prevTimer = time.time()
+        tmpTimer = prevTimer
+
         if not rnsAlreadyLoaded:
             ### recreate the pools
             poolsById = {}
@@ -642,6 +652,11 @@ class PuliDB(object):
                       RenderNodes.q.caracteristics,
                       RenderNodes.q.performance]
             renderNodes = conn.queryAll(conn.sqlrepr(Select(fields)))
+
+            LOGGER.warning("  - sql query executed in %.3f s "%( (time.time()-prevTimer) ) )
+            nbElems = len(renderNodes)
+            LOGGER.warning("  - creating %d elems"% nbElems)
+
             for num, dbRenderNode in enumerate(renderNodes):
                 id, name, coresNumber, speed, ip, port, ramSize, caracteristics, performance = dbRenderNode
                 realRenderNode = RenderNode(id,
@@ -657,12 +672,16 @@ class PuliDB(object):
                 prn = Table('pools_render_nodes')
                 join = INNERJOINOn(None, Pools, Pools.q.id == prn.pools_id)
                 dbPools = poolConn.queryAll(poolConn.sqlrepr(Select(poolFields, join=join, where=AND(prn.render_nodes_id == id, Pools.q.archived == False))))
-                for num, dbPool in enumerate(dbPools):
+                for idx, dbPool in enumerate(dbPools):
                     id, name = dbPool
                     poolsById[id].renderNodes.append(realRenderNode)
                     realRenderNode.pools.append(poolsById[id])
                 tree.renderNodes[str(realRenderNode.name)] = realRenderNode
                 rnById[realRenderNode.id] = realRenderNode
+
+                if (time.time() - tmpTimer) > refreshDelay:
+                    tmpTimer=time.time()
+                    LOGGER.warning("    - progress: %d%%"% (100*num/float(nbElems-1)) )
 
             # add the pools to the dispatch tree
             for pool in poolsById.values():
@@ -676,8 +695,15 @@ class PuliDB(object):
             for rn in tree.renderNodes.values():
                 rnById[rn.id] = rn
 
-        print "%s -- rendernodes complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
+        LOGGER.warning("  - elapsed time %s"% elapsedTimeToString(prevTimer) )
+
+        # print "%s -- rendernodes complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
+
         ####### recreate the folder nodes with the correct ids
+        LOGGER.warning("2/9 Reloading folder nodes")
+        prevTimer = time.time()
+        tmpTimer = prevTimer
+
         nodesById = {}
         conn = FolderNodes._connection
         fields = [FolderNodes.q.id,
@@ -695,6 +721,10 @@ class PuliDB(object):
                   FolderNodes.q.endTime,
                   FolderNodes.q.archived]
         folderNodes = conn.queryAll(conn.sqlrepr(Select(fields, where=(FolderNodes.q.archived == False))))
+
+        LOGGER.warning("  - sql query executed in %.3f s "%( (time.time()-prevTimer) ) )
+        nbElems = len(folderNodes)
+        LOGGER.warning("  - creating %d elems"% nbElems)
         for num, dbFolderNode in enumerate(folderNodes):
             id, name, parentId, user, priority, dispatchKey, maxRN, taskGroupId, strategy, creationTime, startTime, updateTime, endTime, archived = dbFolderNode
             realFolder = FolderNode(id,
@@ -711,9 +741,18 @@ class PuliDB(object):
                                     self.getTimeStampFromDate(endTime))
             nodesById[realFolder.id] = realFolder
 
-        print "%s -- foldernodes complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
+            if (time.time() - tmpTimer) > refreshDelay:
+                tmpTimer=time.time()
+                LOGGER.warning("    - progress: %d%%"% (100*num/float(nbElems-1)) )
+        LOGGER.warning("  - elapsed time %s"% elapsedTimeToString(prevTimer) )
+
+        # print "%s -- foldernodes complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
+
         ### recreate the task nodes with the correct ids
-        # import pudb;pu.db
+        LOGGER.warning("3/9 Reloading task nodes")
+        prevTimer = time.time()
+        tmpTimer = prevTimer
+
         conn = TaskNodes._connection
         fields = [TaskNodes.q.id,
                   TaskNodes.q.name,
@@ -730,6 +769,10 @@ class PuliDB(object):
                   TaskNodes.q.archived,
                   TaskNodes.q.maxAttempt]
         taskNodes = conn.queryAll(conn.sqlrepr(Select(fields, where=(TaskNodes.q.archived == False))))
+
+        LOGGER.warning("  - sql query executed in %.3f s "%( (time.time()-prevTimer) ) )
+        nbElems = len(taskNodes)
+        LOGGER.warning("  - creating %d elems"% nbElems)
         for num, dbTaskNode in enumerate(taskNodes):
             id, name, parentId, user, priority, dispatchKey, maxRN, taskId, creationTime, startTime, updateTime, endTime, archived, maxAttempt = dbTaskNode
             realTaskNode = TaskNode(id,
@@ -746,9 +789,22 @@ class PuliDB(object):
                                     self.getTimeStampFromDate(endTime),
                                     maxAttempt=maxAttempt)
             nodesById[realTaskNode.id] = realTaskNode
+            if (time.time() - tmpTimer) > refreshDelay:
+                tmpTimer=time.time()
+                LOGGER.warning("    - progress: %d%%"% (100*num/float(nbElems-1)) )
+        LOGGER.warning("  - elapsed time %s"% elapsedTimeToString(prevTimer) )
 
-        print "%s -- tasknodes complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
+
+        # print "%s -- tasknodes complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
+
         ###### additional loops for nodes
+        LOGGER.warning("4/9 Reparenting folder and task nodes")
+
+        nbElems = len(folderNodes)
+        prevTimer = time.time()
+        tmpTimer = prevTimer
+
+        LOGGER.warning("  - parsing %d folder nodes"% nbElems)
         for num, dbFolderNode in enumerate(folderNodes):
             id, name, parentId, user, priority, dispatchKey, maxRN, taskGroupId, strategy, creationTime, startTime, updateTime, endTime, archived = dbFolderNode
             # recreate the parents of the folder nodes
@@ -762,11 +818,18 @@ class PuliDB(object):
             fields = [Dependencies.q.toNodeId,
                       Dependencies.q.statusList]
             dependencies = conn.queryAll(conn.sqlrepr(Select(fields, where=(Dependencies.q.folderNodes == id))))
-            for num, dbDependency in enumerate(dependencies):
+            for idx, dbDependency in enumerate(dependencies):
                 toNodeId, statusList = dbDependency
                 statusIntList = [int(i) for i in statusList.split(",")]
                 nodesById[id].addDependency(nodesById[toNodeId], statusIntList)
 
+            # Log progress info
+            if (time.time() - tmpTimer) > refreshDelay:
+                tmpTimer=time.time()
+                LOGGER.warning("    - progress: %d%%"% (100*num/float(nbElems-1)) )
+
+        nbElems = len(taskNodes)
+        LOGGER.warning("  - parsing %d task nodes"% nbElems)
         for num, dbTaskNode in enumerate(taskNodes):
             id, name, parentId, user, priority, dispatchKey, maxRN, taskId, creationTime, startTime, updateTime, endTime, archived, maxAttempt = dbTaskNode
             # recreate the parents of the task nodes
@@ -779,15 +842,26 @@ class PuliDB(object):
                 fields = [Dependencies.q.toNodeId,
                           Dependencies.q.statusList]
                 dependencies = conn.queryAll(conn.sqlrepr(Select(fields, where=(Dependencies.q.taskNodes == id))))
-                for num, dbDependency in enumerate(dependencies):
+                for idx, dbDependency in enumerate(dependencies):
                     toNodeId, statusList = dbDependency
                     statusIntList = [int(i) for i in statusList.split(",")]
                     #FIXME temp
                     if toNodeId in nodesById.keys():
                         nodesById[id].addDependency(nodesById[toNodeId], statusIntList)
 
-        print "%s -- add loop complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
+            # Log progress info
+            if (time.time() - tmpTimer) > refreshDelay:
+                tmpTimer=time.time()
+                LOGGER.warning("    - progress: %d%%"% (100*num/float(nbElems-1)) )
+        LOGGER.warning("  - elapsed time %s"% elapsedTimeToString(prevTimer) )
+
+        # print "%s -- add loop complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
+
         ### recreate the poolShares
+        LOGGER.warning("5/9 Reloading pool shares")
+        prevTimer = time.time()
+        tmpTimer = prevTimer
+
         conn = PoolShares._connection
         fields = [PoolShares.q.id,
                   PoolShares.q.poolId,
@@ -795,6 +869,11 @@ class PuliDB(object):
                   PoolShares.q.maxRN,
                   PoolShares.q.archived]
         poolShares = conn.queryAll(conn.sqlrepr(Select(fields, where=(PoolShares.q.archived == False))))
+
+        LOGGER.warning("  - sql query executed in %.3f s "%( (time.time()-prevTimer) ) )
+        nbElems = len(poolShares)
+        LOGGER.warning("  - creating %d elems"% nbElems)
+
         for num, dbPoolShare in enumerate(poolShares):
             id, poolId, nodeId, maxRN, archived = dbPoolShare
             #FIXME temp
@@ -804,10 +883,17 @@ class PuliDB(object):
                                       nodesById[nodeId],
                                       maxRN)
             tree.poolShares[realPoolShare.id] = realPoolShare
-
-        print "%s -- poolshares complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
+            # Log progress info
+            if (time.time() - tmpTimer) > refreshDelay:
+                tmpTimer=time.time()
+                LOGGER.warning("    - progress: %d%%"% (100*num/float(nbElems-1)) )
+        LOGGER.warning("  - elapsed time %s"% elapsedTimeToString(prevTimer) )
 
         ### recreate the commands
+        LOGGER.warning("6/9 Reloading commands (use 'mysqladmin -u root processlist' to check mysql workload)")
+        prevTimer = time.time()
+        tmpTimer = prevTimer
+
         cmdTaskIdList = defaultdict(list)
         cmdDict = {}
         conn = Commands._connection
@@ -829,8 +915,10 @@ class PuliDB(object):
                   ]
         commands = conn.queryAll(conn.sqlrepr(Select(fields, where=(Commands.q.archived == False))))
 
+        LOGGER.warning("  - sql query executed in %.3f s "%( (time.time()-prevTimer) ) )
+        nbElems = len(commands)
+        LOGGER.warning("  - creating %d elems"% nbElems)
 
-        print "%s -- req for cmd complete %s --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)), len(commands))
         for num, dbCmd in enumerate(commands):
             id, description, taskId, status, completion, creationTime, startTime, updateTime, endTime, assignedRNId, message, stats, archived, args, attempt = dbCmd
             if args is None:
@@ -862,9 +950,18 @@ class PuliDB(object):
             cmdTaskIdList[taskId].append(realCmd)
             cmdDict[realCmd.id] = realCmd
 
-        print "%s -- commands complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
+            # Log progress info
+            if (time.time() - tmpTimer) > refreshDelay:
+                tmpTimer=time.time()
+                LOGGER.warning("    - progress: %d%%"% (100*num/float(nbElems-1)) )
+        LOGGER.warning("  - elapsed time %s"% elapsedTimeToString(prevTimer) )
+
 
         ### recreate the tasks
+        LOGGER.warning("7/9 Reloading tasks")
+        prevTimer = time.time()
+        tmpTimer = prevTimer
+
         realTasksList = {}
         conn = Tasks._connection
         fields = [Tasks.q.id,
@@ -886,7 +983,17 @@ class PuliDB(object):
                   Tasks.q.archived,
                   Tasks.q.args,
                   Tasks.q.maxAttempt]
-        tasks = conn.queryAll(conn.sqlrepr(Select(fields, where=(Tasks.q.archived == False))))
+
+        tasks = conn.queryAll(conn.sqlrepr(Select( 
+                  fields, where=( 
+                      IN( Tasks.q.id, Select( TaskNodes.q.taskId, where=(TaskNodes.q.archived == False) ) )
+                    )
+                )))
+
+        LOGGER.warning("  - sql query executed in %.3f s "%( (time.time()-prevTimer) ) )
+        nbElems = len(tasks)
+        LOGGER.warning("  - creating %d elems"% nbElems)
+
         for num, dbTask in enumerate(tasks):
             id, name, parentId, user, priority, dispatchKey, maxRN, runner, environment, requirements, minNbCores, maxNbCores, ramUse, licence, tags, validationExpression, archived, args, maxAttempt = dbTask
             taskCmds = []
@@ -928,9 +1035,19 @@ class PuliDB(object):
                     cmd.renderNode.reserveLicense(cmd, self.licenseManager)
                     cmd.renderNode.reserveRessources(cmd)
 
-        print "%s -- tasks complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
+            # Log progress info
+            if (time.time() - tmpTimer) > refreshDelay:
+                tmpTimer=time.time()
+                LOGGER.warning("    - progress: %d%%"% (100*num/float(nbElems-1)) )
+        LOGGER.warning("  - elapsed time %s"% elapsedTimeToString(prevTimer) )
+
+        # print "%s -- tasks complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
 
         ### recreate the taskGroups
+        LOGGER.warning("8/9 Reloading task groups")
+        prevTimer = time.time()
+        tmpTimer = prevTimer
+
         realTaskGroupsList = {}
         conn = TaskGroups._connection
         fields = [TaskGroups.q.id,
@@ -946,7 +1063,13 @@ class PuliDB(object):
                   TaskGroups.q.strategy,
                   TaskGroups.q.archived,
                   TaskGroups.q.args]
-        taskGroups = conn.queryAll(conn.sqlrepr(Select(fields, where=(TaskGroups.q.archived == False))))
+        taskGroups = conn.queryAll(conn.sqlrepr(Select(fields, where=(
+                      IN( TaskGroups.q.id, Select( FolderNodes.q.taskGroupId, where=(FolderNodes.q.archived == False) ) )
+                      ))))
+        LOGGER.warning("  - sql query executed in %.3f s "%( (time.time()-prevTimer) ) )
+        nbElems = len(taskGroups)
+        LOGGER.warning("  - creating %d elems"% nbElems)
+
         for num, dbTaskGroup in enumerate(taskGroups):
             id, name, parentId, user, priority, dispatcherKey, maxRN, environment, requirements, tags, strategy, archived, args = dbTaskGroup
             if args is None:
@@ -966,7 +1089,15 @@ class PuliDB(object):
                                       json.loads(tags))
             realTaskGroupsList[realTaskGroup.id] = realTaskGroup
 
+            # Log progress info
+            if (time.time() - tmpTimer) > refreshDelay:
+                tmpTimer=time.time()
+                LOGGER.warning("    - progress: %d%%"% (100*num/float(nbElems-1)) )
+
         # set the parents of the taskGroups
+        nbElems = len(taskGroups)
+        LOGGER.warning("  - parsing %d task groups"% nbElems)
+
         for num, dbTaskGroup in enumerate(taskGroups):
             id, name, parentId, user, priority, dispatcherKey, maxRN, environment, requirements, tags, strategy, archived, args = dbTaskGroup
             if parentId:
@@ -977,7 +1108,15 @@ class PuliDB(object):
 
             tree.tasks[int(id)] = realTaskGroupsList[int(id)]
 
+            # Log progress info
+            if (time.time() - tmpTimer) > refreshDelay:
+                tmpTimer=time.time()
+                LOGGER.warning("    - progress: %d%%"% (100*num/float(nbElems-1)) )
+
+
         # set the parents of the tasks
+        nbElems = len(tasks)
+        LOGGER.warning("  - parsing %d tasks"% nbElems)
         for num, dbTask in enumerate(tasks):
             id, name, parentId, user, priority, dispatchKey, maxRN, runner, environment, requirements, minNbCores, maxNbCores, ramUse, licence, tags, validationExpression, archived, args, maxAttempt = dbTask
             if parentId:
@@ -985,10 +1124,16 @@ class PuliDB(object):
                 if int(parentId) in realTaskGroupsList.keys():
                     realTaskGroupsList[int(parentId)].addTask(realTasksList[int(id)])
                     realTasksList[int(id)].parent = realTaskGroupsList[int(parentId)]
+            # Log progress info
+            if (time.time() - tmpTimer) > refreshDelay:
+                tmpTimer=time.time()
+                LOGGER.warning("    - progress: %d%%"% (100*num/float(nbElems-1)) )
 
-        print "%s -- taskgroups complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
+        # print "%s -- taskgroups complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
 
         ### affect the task objects to the corresponding TaskNodes
+        nbElems = len(taskNodes)
+        LOGGER.warning("  - affecting task to %d task nodes"% nbElems)
         for num, dbTaskNode in enumerate(taskNodes):
             id, name, parentId, user, priority, dispatchKey, maxRN, taskId, creationTime, startTime, updateTime, endTime, archived, maxAttempt = dbTaskNode
             # set the real task
@@ -999,8 +1144,15 @@ class PuliDB(object):
                 tree.tasks[nodesById[dbTaskNodeId].task.id].nodes["graph_rule"] = nodesById[dbTaskNodeId]
                 tree.nodes[dbTaskNodeId] = nodesById[dbTaskNodeId]
 
-        print "%s -- affect task complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
+            # Log progress info
+            if (time.time() - tmpTimer) > refreshDelay:
+                tmpTimer=time.time()
+                LOGGER.warning("    - progress: %d%%"% (100*num/float(nbElems-1)) )
+
+        # print "%s -- affect task complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
         ### affect the taskGroup objects to the corresponding FolderNodes
+        nbElems = len(folderNodes)
+        LOGGER.warning("  - affecting task groups to %d folder nodes"% nbElems)
         for num, dbFolderNode in enumerate(folderNodes):
             id, name, parentId, user, priority, dispatchKey, maxRN, taskGroupId, strategy, creationTime, startTime, updateTime, endTime, archived = dbFolderNode
             if taskGroupId:
@@ -1010,41 +1162,67 @@ class PuliDB(object):
                     nodesById[int(id)].taskGroup = tree.tasks[tgId]
                     tree.tasks[tgId].nodes["graph_rule"] = nodesById[int(id)]
             tree.nodes[int(id)] = nodesById[int(id)]
+            # Log progress info
+            if (time.time() - tmpTimer) > refreshDelay:
+                tmpTimer=time.time()
+                LOGGER.warning("    - progress: %d%%"% (100*num/float(nbElems-1)) )
+        LOGGER.warning("  - elapsed time %s"% elapsedTimeToString(prevTimer) )
 
-        print "%s -- affect taskgroup complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
+        # print "%s -- affect taskgroup complete --" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)))
+        
+
         # calculate the average time by frame
+        LOGGER.warning("9/9 Computing avg time and max ids")
+        startTimer = time.time()
+        prevTimer = time.time()
+
         for cmd in tree.commands.values():
             cmd.computeAvgTimeByFrame()
 
+        LOGGER.warning("  - Average time by frame recomputed in %.3f s"% (time.time()-prevTimer) )
+
         ### calculate the correct max ids for all elements, get them from db in case of archived elements that would not appear in the dispatchtree
+        prevTimer = time.time()
         try:
             tree.nodeMaxId = int(max([FolderNodes.select().max(FolderNodes.q.id), TaskNodes.select().max(TaskNodes.q.id)]))
         except:
             tree.nodeMaxId = 0
+        LOGGER.warning("  - Set max id for nodes in %.3f s"% (time.time()-prevTimer) )
 
+        prevTimer = time.time()
         try:
             tree.poolMaxId = int(Pools.select().max(Pools.q.id))
         except:
             tree.poolMaxId = 0
+        LOGGER.warning("  - Set max id for pools in %.3f s"% (time.time()-prevTimer) )
 
+        prevTimer = time.time()
         try:
             tree.renderNodeMaxId = int(RenderNodes.select().max(RenderNodes.q.id))
         except:
             tree.renderNodeMaxId = 0
+        LOGGER.warning("  - Set max id for render nodes in %.3f s"% (time.time()-prevTimer) )
 
+        prevTimer = time.time()
         try:
             tree.taskMaxId = int(Tasks.select().max(Tasks.q.id))
         except:
             tree.taskMaxId = 0
+        LOGGER.warning("  - Set max id for tasks in %.3f s"% (time.time()-prevTimer) )
 
+        prevTimer = time.time()
         try:
             tree.commandMaxId = int(Commands.select().max(Commands.q.id))
         except:
             tree.commandMaxId = 0
+        LOGGER.warning("  - Set max id for commands in %.3f s"% (time.time()-prevTimer) )
 
+        prevTimer = time.time()
         try:
             tree.poolShareMaxId = int(PoolShares.select().max(PoolShares.q.id))
         except:
             tree.poolShareMaxId = 0
+        LOGGER.warning("  - Set max id for pool shares in %.3f s"% (time.time()-prevTimer) )
+        LOGGER.warning("  - elapsed time %s"% elapsedTimeToString(startTimer) )
 
         tree.toCreateElements = []

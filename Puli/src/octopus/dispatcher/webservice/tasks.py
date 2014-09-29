@@ -46,10 +46,12 @@ class DeleteTasksResource(DispatcherBaseResource):
         try:
             taskids = data['taskids']
         except:
-            return HTTPError(400, 'Missing entry: "taskids".')
+            raise HTTPError(400, 'Missing entry: "taskids".')
         else:
             taskidsList = taskids.split(",")
-            for taskId in taskidsList:
+            resultList=[]
+
+            for i, taskId in enumerate(taskidsList):
                 try:
                     taskId = int(taskId)
                 except ValueError,e:
@@ -67,8 +69,10 @@ class DeleteTasksResource(DispatcherBaseResource):
                     continue
                     #return BadStatusValueResponse()
 
+                resultList.append(taskId)
                 task.archive()
-            self.writeCallback("Tasks archived successfully.")
+                
+            self.writeCallback("%d tasks archived successfully" % len(resultList))
 
 
 class TaskResource(DispatcherBaseResource):

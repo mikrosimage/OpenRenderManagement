@@ -21,23 +21,29 @@ except ImportError:
     import httplib
 
 VERSION = "1.0"
-DISPATCHER = "localhost"
+DISPATCHER = "puliserver"
 
 
 class PuliJobCleaner(object):
-    def __init__(self, delay):
+    def __init__(self, delay, delay_start_time=30):
         self.delay = delay
+        self.delay_start_time = delay_start_time
         sqlhub.processConnection = connectionForURI("mysql://puliuser:0ct0pus@127.0.0.1/pulidb")
 
     def processFolderNodes(self):
-        taskGroupsResult = sqlhub.processConnection.queryAll("select task_group_id from folder_nodes where end_time < DATE_SUB(now(), interval %s day) and archived = 0" % self.delay)
+        taskGroupsResult = sqlhub.processConnection.queryAll(
+                "select task_group_id from folder_nodes where ( (end_time < DATE_SUB(now(), interval %s day)) or (creation_time < DATE_SUB(now(), interval %s day)) ) and archived = 0 order by id" 
+                % (self.delay, self.delay_start_time)
+            )
+
+        # taskGroupsResult = sqlhub.processConnection.queryAll("select task_group_id from folder_nodes where (end_time < DATE_SUB(now(), interval %s day)) and archived = 0" % self.delay)
         taskgroupsIds = ""
         for taskId in taskGroupsResult:
             if taskId[0] is not None:
                 taskgroupsIds += str(taskId[0]) + ","
         taskgroupsIds = taskgroupsIds.rstrip(',')
 
-        logging.info( "archiving taskgroups older than %s days --> %r" % (self.delay, taskgroupsIds) )
+        logging.info( "archiving %d taskgroups older than %s days --> %r" % (len(taskgroupsIds), self.delay, taskgroupsIds) )
 
         result = True
         if options.noaction is False:
@@ -45,13 +51,17 @@ class PuliJobCleaner(object):
         return result 
 
     def processTaskNodes(self):
-        tasksResult = sqlhub.processConnection.queryAll("select task_id from task_nodes where end_time < DATE_SUB(now(), interval %s day) and archived = 0 and parent_id = 1" % self.delay)
+        tasksResult = sqlhub.processConnection.queryAll(
+                "select task_id from task_nodes where ( (end_time < DATE_SUB(now(), interval %s day)) or (creation_time < DATE_SUB(now(), interval %s day)) ) and archived = 0 and parent_id = 1 order by id" 
+                % (self.delay, self.delay_start_time)
+            )
+        # tasksResult = sqlhub.processConnection.queryAll("select task_id from task_nodes where end_time < DATE_SUB(now(), interval %s day) and archived = 0 and parent_id = 1" % self.delay)
         tasksIds = ""
         for taskId in tasksResult:
             if taskId[0] is not None:
                 tasksIds += str(taskId[0]) + ","
         tasksIds = tasksIds.rstrip(',')
-        logging.info( "archiving tasks older than %s days --> %r" % (self.delay, tasksIds) )
+        logging.info( "archiving %d tasks older than %s days --> %r" % (len(tasksIds), self.delay, tasksIds) )
 
         result = True
         if options.noaction is False:
@@ -62,27 +72,44 @@ class PuliJobCleaner(object):
     @staticmethod
     def clean(tasksIds):
         if len(tasksIds):
-            print "ids :" + tasksIds
             url = "/tasks/delete/"
             dct = { 'taskids': tasksIds }
             body = json.dumps(dct)
             headers = {'Content-Length': len(body)}
             try:
-                httpconn = httplib.HTTPConnection(DISPATCHER, 8004)
-                httpconn.request('POST', url, body, headers)
-                response = httpconn.getresponse()
-                httpconn.close()
-            except httplib.HTTPException, e:
+
+                from tornado.httpclient import HTTPClient
+                http_client = HTTPClient()
+                response = http_client.fetch( "http://%s:%d/tasks/delete" % (DISPATCHER,8004), method="POST", body=body, headers=headers)
+            except HTTPError,e:
                 logging.warning( '"DELETE %s" failed : %s' % (url, e) )
-            except socket.error, e:
+            except socket.error,e:
                 logging.warning( '"DELETE %s" failed : %s' % (url, e) )
             else:
-                if response.status == 200:
-                    logging.info("archived %s elements" % len(tasksIds) )
-                    return True
+                if response.error:
+                    logging.warning( "" )
+                    logging.warning( "Error:   %s" % response.error )
+                    logging.warning( "         %s" % response.body )
+                    logging.warning( "" )
                 else:
-                    logging.warning("A problem occured : %s" % response.msg)
-                    raise Exception() # A quoi ca sert ! on perd toutes les infos
+                    logging.info("Result: %s" % response.body )
+                    return True
+
+                # httpconn = httplib.HTTPConnection(DISPATCHER, 8004)
+                # httpconn.request('POST', url, body, headers)
+                # response = httpconn.getresponse()
+                # httpconn.close()
+            # except httplib.HTTPException, e:
+            #     logging.warning( '"DELETE %s" failed : %s' % (url, e) )
+            # except socket.error, e:
+            #     logging.warning( '"DELETE %s" failed : %s' % (url, e) )
+            # else:
+            #     if response.status == 200:
+            #         logging.info("archived %s elements" % len(tasksIds) )
+            #         return True
+            #     else:
+            #         logging.warning("A problem occured : %s" % response.msg)
+            #         raise Exception() # A quoi ca sert ! on perd toutes les infos
         return False
 
     @staticmethod
@@ -98,10 +125,11 @@ if __name__ == '__main__':
 
     # import pudb;pu.db
     parser = OptionParser("PuliJobCleaner v%s - Commandline to archive jobs on Puli" % VERSION)
-    parser.add_option("-d", "--delay", action="store", dest="delay", help="number of days from today. All jobs older than that will be archived", default="7")
+    parser.add_option("-d", "--delay_end_time", action="store", dest="delay", help="number of days from today. All jobs ended before the number specified will be archived", default="7")
+    parser.add_option("-e", "--delay_start_time", action="store", dest="delay_start_time", help="number of days from today. All jobs started before the number specified will be archived", default="30")
     parser.add_option("-n", "--noaction", action="store_true", dest="noaction", help="", default=False)
     options, args = parser.parse_args()
-    jc = PuliJobCleaner(options.delay)
+    jc = PuliJobCleaner(options.delay, options.delay_start_time)
 
     if options.noaction is True:
         logging.info("NO ACTION flag is set: nothing will be completed")

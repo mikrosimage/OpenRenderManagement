@@ -532,7 +532,6 @@ class PuliDB(object):
         poolsharesList = []
         rendernodesList = []
         for element in elements:
-            # LOGGER.info("            ----> Archiving elem = %s" % element )
             if isinstance(element, Task):
                 tasksList.append(element.id)
             elif isinstance(element, TaskGroup):
@@ -543,8 +542,10 @@ class PuliDB(object):
                 # gc.collect()
                 # LOGGER.warning("referrers of %s : %s" % (str(type(element)), str(gc.get_referrers(element))))
             elif isinstance(element, TaskNode):
+                # LOGGER.info("            ----> Archiving task node = %s" % element )
                 taskNodesList.append(element.id)
             elif isinstance(element, FolderNode):
+                # LOGGER.info("            ----> Archiving folder node = %s" % element )
                 folderNodesList.append(element.id)
             elif isinstance(element, Pool):
                 poolsList.append(element.id)
@@ -982,7 +983,13 @@ class PuliDB(object):
                   Tasks.q.archived,
                   Tasks.q.args,
                   Tasks.q.maxAttempt]
-        tasks = conn.queryAll(conn.sqlrepr(Select(fields, where=(Tasks.q.archived == False))))
+
+        tasks = conn.queryAll(conn.sqlrepr(Select( 
+                  fields, where=( 
+                      IN( Tasks.q.id, Select( TaskNodes.q.taskId, where=(TaskNodes.q.archived == False) ) )
+                    )
+                )))
+
         LOGGER.warning("  - sql query executed in %.3f s "%( (time.time()-prevTimer) ) )
         nbElems = len(tasks)
         LOGGER.warning("  - creating %d elems"% nbElems)
@@ -1056,7 +1063,9 @@ class PuliDB(object):
                   TaskGroups.q.strategy,
                   TaskGroups.q.archived,
                   TaskGroups.q.args]
-        taskGroups = conn.queryAll(conn.sqlrepr(Select(fields, where=(TaskGroups.q.archived == False))))
+        taskGroups = conn.queryAll(conn.sqlrepr(Select(fields, where=(
+                      IN( TaskGroups.q.id, Select( FolderNodes.q.taskGroupId, where=(FolderNodes.q.archived == False) ) )
+                      ))))
         LOGGER.warning("  - sql query executed in %.3f s "%( (time.time()-prevTimer) ) )
         nbElems = len(taskGroups)
         LOGGER.warning("  - creating %d elems"% nbElems)

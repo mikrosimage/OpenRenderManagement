@@ -204,9 +204,14 @@ class Worker(MainLoopApplication):
         """
         swapUsage=0.0
         try:
-            swapUsage=psutil.swap_memory().percent
-        except psutil.Error:
-            LOGGER.warning("An error occured when retrieving swap percentage.")
+            try:
+                swapUsage=psutil.swap_memory().percent
+            except psutil.Error:
+                LOGGER.warning("An error occured when retrieving swap percentage.")
+        except NameError, e:
+            LOGGER.debug("Impossible to use psutil module on this host: %r" % e)
+        except Exception, e:
+            LOGGER.warning("An unexpected error occured: %r" % e)
 
         return swapUsage
 
@@ -872,36 +877,21 @@ class Worker(MainLoopApplication):
         #
         # Create a list of child processes
         #
-        p = psutil.Process()
-        childProcs = p.children(recursive=True)
+        try:
+            p = psutil.Process()
+            childProcs = p.children(recursive=True)
 
-        for proc in childProcs:
-            try:
-                pinfo = proc.as_dict(attrs=['pid', 'name', 'username', 'status', 'cmdline','create_time'])                  
-            except psutil.NoSuchProcess:
-                pass
-            else:
-                existingProcInfo.append(pinfo.copy())
-                LOGGER.info("Existing child processes: %d %.10s %s %s %.20s" % (pinfo["pid"], pinfo["name"], pinfo["status"], datetime.datetime.fromtimestamp(pinfo["create_time"]).strftime("%Y-%m-%d %H:%M:%S"), pinfo["cmdline"]) )
-
-        # #
-        # # Create a list of commandwatcher processes
-        # #
-        # cmdProcs = []
-        # for proc in  psutil.process_iter():
-        #     for arg in proc.cmdline():
-        #         if "commandwatcher.py" in arg:
-        #             cmdProcs.append(proc)
-
-        # for proc in cmdProcs:
-        #     try:
-        #         pinfo = proc.as_dict(attrs=['pid', 'name', 'username', 'status', 'cmdline','create_time'])                  
-        #     except psutil.NoSuchProcess:
-        #         pass
-        #     else:
-        #         existingProcInfo.append(pinfo.copy())
-        #         LOGGER.info("Existing cmdWatcher processes: %d %.10s %s %s %.20s" % (pinfo["pid"], pinfo["name"], pinfo["status"], datetime.datetime.fromtimestamp(pinfo["create_time"]).strftime("%Y-%m-%d %H:%M:%S"), pinfo["cmdline"]))
-
+            for proc in childProcs:
+                try:
+                    pinfo = proc.as_dict(attrs=['pid', 'name', 'username', 'status', 'cmdline','create_time'])                  
+                except psutil.NoSuchProcess:
+                    pass
+                else:
+                    existingProcInfo.append(pinfo.copy())
+                    LOGGER.info("Existing child processes: %d %.10s %s %s %.20s" % (pinfo["pid"], pinfo["name"], pinfo["status"], datetime.datetime.fromtimestamp(pinfo["create_time"]).strftime("%Y-%m-%d %H:%M:%S"), pinfo["cmdline"]) )
+        except NameError,e:
+            LOGGER.debug("Impossible to use pstuil on this host: %r"%e)
+            return
 
         #
         # Write short recap on shared path if needed

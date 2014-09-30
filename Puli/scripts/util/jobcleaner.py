@@ -21,7 +21,7 @@ except ImportError:
     import httplib
 
 VERSION = "1.0"
-DISPATCHER = "puliserver"
+DISPATCHER = "localhost"
 
 
 class PuliJobCleaner(object):

@@ -39,7 +39,7 @@ else:
 ## SETTINGS ###########################################################
 ## These settings cannot be reloaded during worker execution because some of the values can be overriden with program user arguments
 ## To change these values, the worker must be restarted
-VERSION = "1.7.2"
+VERSION = "1.7.3"
 
 DEBUG = True
 computername = computername.lower()

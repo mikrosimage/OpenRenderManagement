@@ -22,6 +22,7 @@ from octopus.core import singletonconfig, singletonstats
 
 from octopus.core.threadpool import ThreadPool, makeRequests, NoResultsPending
 from octopus.core.framework import MainLoopApplication
+from octopus.core.tools import elapsedTimeToString
 
 from octopus.dispatcher.model import (DispatchTree, FolderNode, RenderNode,
                                       Pool, PoolShare, enums)
@@ -36,6 +37,7 @@ from octopus.dispatcher.licenses.licensemanager import LicenseManager
 
 
 LOGGER = logging.getLogger('dispatcher')
+
 
 
 class Dispatcher(MainLoopApplication):
@@ -75,6 +77,7 @@ class Dispatcher(MainLoopApplication):
         self.enablePuliDB = settings.DB_ENABLE
         self.cleanDB = settings.DB_CLEAN_DATA
 
+        
         self.pulidb = None
         if self.enablePuliDB:
             self.pulidb = PuliDB(self.cleanDB, self.licenseManager)
@@ -83,29 +86,48 @@ class Dispatcher(MainLoopApplication):
         rnsAlreadyInitialized = self.initPoolsDataFromBackend()
 
         if self.enablePuliDB and not self.cleanDB:
-            LOGGER.warning("reloading jobs from database")
-            beginTime = time.time()
+            LOGGER.warning("--- Reloading database (9 steps) ---")
+            prevTimer=time.time()
             self.pulidb.restoreStateFromDb(self.dispatchTree, rnsAlreadyInitialized)
-            LOGGER.warning("reloading took %.2fs" % (time.time() - beginTime))
-            LOGGER.warning("done reloading jobs from database")
-            LOGGER.warning("reloaded %d tasks" % len(self.dispatchTree.tasks))
-        LOGGER.warning("checking dispatcher state")
 
+            LOGGER.warning("%d jobs reloaded from database"%len(self.dispatchTree.tasks))
+            LOGGER.warning("Total time elapsed %s"% elapsedTimeToString(prevTimer) )
+            LOGGER.warning("")
+
+        LOGGER.warning("--- Checking dispatcher state (3 steps) ---")
+        startTimer=time.time()
+        LOGGER.warning("1/3 Update completion and status")
         self.dispatchTree.updateCompletionAndStatus()
+        LOGGER.warning("    Elapsed time %s"% elapsedTimeToString(startTimer) )
+
+        prevTimer=time.time()
+        LOGGER.warning("2/3 Update rendernodes")
         self.updateRenderNodes()
+        LOGGER.warning("    Elapsed time %s"% elapsedTimeToString(prevTimer) )
+
+        prevTimer=time.time()
+        LOGGER.warning("3/3 Validate dependencies")
         self.dispatchTree.validateDependencies()
+        LOGGER.warning("    Elapsed time %s"% elapsedTimeToString(prevTimer) )
+        LOGGER.warning("Total time elapsed %s"% elapsedTimeToString(startTimer) )
+        LOGGER.warning("")
+
         if self.enablePuliDB and not self.cleanDB:
             self.dispatchTree.toModifyElements = []
 
         # If no 'default' pool exists, create default pool
+        # When creating a pool with id=None, it is automatically appended in "toCreateElement" list in dispatcher and in the dispatcher's "pools" attribute
         if 'default' not in self.dispatchTree.pools:
-            newId = len(self.dispatchTree.pools)+1
-            pool = Pool(id=newId, name='default')
-            self.dispatchTree.toCreateElements.append(pool)
+            LOGGER.warning("Default pool was not loaded from DB, create a new default pool")
+            pool = Pool(None, name='default')
         self.defaultPool = self.dispatchTree.pools['default']
 
-        LOGGER.warning("loading dispatch rules")
+        LOGGER.warning("--- Loading dispatch rules ---")
+        startTimer=time.time()
         self.loadRules()
+        LOGGER.warning("Total time elapsed %s"% elapsedTimeToString(startTimer) )
+        LOGGER.warning("")
+
         # it should be better to have a maxsize
         self.queue = Queue(maxsize=10000)
 
@@ -299,7 +321,6 @@ class Dispatcher(MainLoopApplication):
 
     def computeAssignments(self):
         '''Computes and returns a list of (rendernode, command) assignments.'''
-
         from .model.node import NoRenderNodeAvailable, NoLicenseAvailableForTask
         # if no rendernodes available, return
         if not any(rn.isAvailable() for rn in self.dispatchTree.renderNodes.values()):
@@ -309,7 +330,8 @@ class Dispatcher(MainLoopApplication):
 
         # first create a set of entrypoints that are not done nor cancelled nor blocked nor paused and that have at least one command ready
         # FIXME: hack to avoid getting the 'graphs' poolShare node in entryPoints, need to avoid it more nicely...
-        entryPoints = set([poolShare.node for poolShare in self.dispatchTree.poolShares.values() if poolShare.node.status not in [NODE_BLOCKED, NODE_DONE, NODE_CANCELED, NODE_PAUSED] and poolShare.node.readyCommandCount > 0 and poolShare.node.name != 'graphs'])
+        # entryPoints = set([poolShare.node for poolShare in self.dispatchTree.poolShares.values() if poolShare.node.status not in [NODE_BLOCKED, NODE_DONE, NODE_CANCELED, NODE_PAUSED] and poolShare.node.readyCommandCount > 0 and poolShare.node.name != 'graphs'])
+        entryPoints = set([poolShare.node for poolShare in self.dispatchTree.poolShares.values() if poolShare.node.status not in [NODE_BLOCKED, NODE_DONE, NODE_CANCELED, NODE_PAUSED] and poolShare.node.name != 'graphs'])
 
         # don't proceed to the calculation if no rns availables in the requested pools
         rnsBool = False
@@ -383,16 +405,27 @@ class Dispatcher(MainLoopApplication):
                     updatedmaxRN = int(round( rnsSize / float(nbJobs) ))
 
                 for node in nodes:
-                    node.poolShares.values()[0].maxRN = updatedmaxRN
-                    nbRNAssigned += updatedmaxRN
+                    node.optimalMaxRN = updatedmaxRN
+                    if updatedmaxRN > node.commandCount:
+                        # Limit maxRN when no more ready commands
+                        node.poolShares.values()[0].maxRN = node.commandCount
+                        nbRNAssigned += node.commandCount
+                    else:
+                        node.poolShares.values()[0].maxRN = updatedmaxRN
+                        nbRNAssigned += updatedmaxRN
 
-            # Add remaining RNs to most important jobs
+            # Add remaining RNs to most important jobs BUT avoiding to increment maxRN if no more commands to assign
             unassignedRN = rnsSize - nbRNAssigned
-            while unassignedRN > 0:
+            numNodesFull = 0
+            while 0 < unassignedRN and numNodesFull<len(nodesList):
+                numNodesFull = 0
                 for node in nodesList:
-                    if unassignedRN > 0:
-                        node.poolShares.values()[0].maxRN += 1
-                        unassignedRN -= 1
+                    if 0 < unassignedRN:
+                        if updatedmaxRN < node.commandCount:
+                            node.poolShares.values()[0].maxRN += 1
+                            unassignedRN -= 1
+                        else:
+                            numNodesFull += 1
                     else:
                         break
 
@@ -400,42 +433,52 @@ class Dispatcher(MainLoopApplication):
             singletonstats.theStats.assignmentTimers['update_max_rn'] = time.time() - prevTimer
         LOGGER.info( "%8.2f ms --> .... updating max RN values", (time.time() - prevTimer)*1000 )
 
+
+        # Log time dispatching RNs
+        prevTimer = time.time()
+        # Filter nodes to remove those with node ready command
+        entryPoints = filter(lambda node: node.readyCommandCount>0, entryPoints)
+        LOGGER.info( "%8.2f ms --> .... filter nodes with commands ready", (time.time() - prevTimer)*1000 )
+
         # now, we are treating every nodes
         # sort by id (fifo)
         entryPoints = sorted(entryPoints, key=lambda node: node.id)
         # then sort by dispatchKey (priority)
         entryPoints = sorted(entryPoints, key=lambda node: node.dispatchKey, reverse=True)
 
+        # Exit loop here if no nodes need new assignment
+        if len(entryPoints)==0:
+            return []
+
         # Put nodes with a userDefinedMaxRN first
         userDefEntryPoints = ifilter( lambda node: node.poolShares.values()[0].userDefinedMaxRN, entryPoints )
         standardEntryPoints = ifilter( lambda node: not node.poolShares.values()[0].userDefinedMaxRN, entryPoints )
         scoredEntryPoints = chain( userDefEntryPoints, standardEntryPoints)
 
-
         # Log time dispatching RNs
         prevTimer = time.time()
 
-        # 
-        # HACK update license info for katana with rlmutils
-        # This helps having the real number of used licenses before finishing assignment
-        # This is done because katana rlm management sometime reserves 2 token (cf BUGLIST v1.4)
-        try:
-            import subprocess
-            strRlmKatanaUsed=''
-            strRlmKatanaUsed = subprocess.Popen(["/s/apps/lin/farm/tools/rlm_katana_used.sh"], stdout=subprocess.PIPE).communicate()[0]
+        # # 
+        # # HACK update license info for katana with rlmutils
+        # # This helps having the real number of used licenses before finishing assignment
+        # # This is done because katana rlm management sometime reserves 2 token (cf BUGLIST v1.4)
+        # try:
+        #     import subprocess
+        #     strRlmKatanaUsed=''
+        #     strRlmKatanaUsed = subprocess.Popen(["/s/apps/lin/farm/tools/rlm_katana_used.sh"], stdout=subprocess.PIPE).communicate()[0]
 
-            katanaUsed = int(strRlmKatanaUsed)
-            LOGGER.debug("HACK update katana license: used = %d (+buffer in config:%d)" % (katanaUsed,singletonconfig.get('HACK','KATANA_BUFFER')))
+        #     katanaUsed = int(strRlmKatanaUsed)
+        #     LOGGER.debug("HACK update katana license: used = %d (+buffer in config:%d)" % (katanaUsed,singletonconfig.get('HACK','KATANA_BUFFER')))
 
-            # Sets used license number
-            try:
-                self.licenseManager.licenses["katana"].used = katanaUsed + singletonconfig.get('HACK','KATANA_BUFFER')
-            except KeyError:
-                LOGGER.warning("License katana not found... Impossible to set 'used' value: %d" % katanaUsed)
-        except Exception, e:
-            LOGGER.warning("Error getting number of katana license used via rlmutil (e: %r, rlmoutput=%r)" % (e,strRlmKatanaUsed))
-        # ENDHACK
-        #
+        #     # Sets used license number
+        #     try:
+        #         self.licenseManager.licenses["katana"].used = katanaUsed + singletonconfig.get('HACK','KATANA_BUFFER')
+        #     except KeyError:
+        #         LOGGER.warning("License katana not found... Impossible to set 'used' value: %d" % katanaUsed)
+        # except Exception, e:
+        #     LOGGER.warning("Error getting number of katana license used via rlmutil (e: %r, rlmoutput=%r)" % (e,strRlmKatanaUsed))
+        # # ENDHACK
+        # #
 
         # Iterate over each entryPoint to get an assignment
         for entryPoint in scoredEntryPoints:

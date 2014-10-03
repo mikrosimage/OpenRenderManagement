@@ -88,6 +88,7 @@ class BaseNode(models.Model):
         self.priority = int(priority)
         self.dispatchKey = int(dispatchKey)
         self.maxRN = int(maxRN)
+        self.optimalMaxRN = 0
         self.allocatedRN = 0
         self.poolShares = WeakKeyDictionary()
         self.additionnalPoolShares = WeakKeyDictionary()
@@ -114,7 +115,7 @@ class BaseNode(models.Model):
     def to_json(self):
         base = super(BaseNode, self).to_json()
         base["allocatedRN"] = self.allocatedRN
-        base["maxRN"] = self.maxRN
+        base["optimalMaxRN"] = self.optimalMaxRN
         base["tags"] = self.tags.copy()
         base["readyCommandCount"] = self.readyCommandCount
         base["doneCommandCount"] = self.doneCommandCount
@@ -375,6 +376,7 @@ class FolderNode(BaseNode):
                 status[child.status] += 1
                 self.readyCommandCount += child.readyCommandCount
                 self.doneCommandCount += child.doneCommandCount
+                self.commandCount += child.commandCount
                 
             if hasattr(self,"commandCount") and int(self.commandCount)!=0:
                 self.completion = self.doneCommandCount / float(self.commandCount)
@@ -517,9 +519,12 @@ class TaskNode(BaseNode):
         self.paused = paused
         self.maxAttempt = int(maxAttempt)
 
+        self.commmandCount = 0
+
         if task is not None:
             self.timer = task.timer
             self.maxAttempt = int(task.maxAttempt)
+            self.commandCount = len(task.commands)
 
 
     def cmdIterator(self):
@@ -593,6 +598,8 @@ class TaskNode(BaseNode):
         status = defaultdict(int)
         self.readyCommandCount = 0
         self.doneCommandCount = 0
+        self.commandCount = len(self.task.commands)
+
         for command in self.task.commands:
             completion += command.completion
             status[command.status] += 1

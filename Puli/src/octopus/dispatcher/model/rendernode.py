@@ -430,7 +430,7 @@ class RenderNode(models.Model):
             # LOGGER.debug("RAM constraint defined on task %r -> min %d MB, current systemFreeRam is %d MB" % 
             #                 ( command.task.id, command.task.ramUse, self.systemFreeRam) )
             if self.systemFreeRam < command.task.ramUse:
-                LOGGER.info("Not enough ram on %s. %d needed, %d avail." % (self.name, int(command.task.ramUse), self.systemFreeRam))
+                LOGGER.info("Not enough ram on %s for command %d. %d needed, %d avail." % (self.name, command.id, int(command.task.ramUse), self.systemFreeRam))
                 return False
 
         #

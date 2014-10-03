@@ -101,7 +101,7 @@ class CmdThreader(Thread):
             self.stopped = COMMAND_RUNNING
 
             # 
-            # HACK: inspect method args to see if updateStats must be passed as argument or not
+            # Inspect method args to see if updateStats or any other callback must be passed as argument
             #
             constructArgs = [ self.arguments, self.updateCompletion, self.updateMessage ]
             if 'updateStats' in inspect.getargspec( getattr(self.cmd, self.methodName) ).args:

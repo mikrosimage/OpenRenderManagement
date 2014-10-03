@@ -458,27 +458,27 @@ class Dispatcher(MainLoopApplication):
         # Log time dispatching RNs
         prevTimer = time.time()
 
-        # 
-        # HACK update license info for katana with rlmutils
-        # This helps having the real number of used licenses before finishing assignment
-        # This is done because katana rlm management sometime reserves 2 token (cf BUGLIST v1.4)
-        try:
-            import subprocess
-            strRlmKatanaUsed=''
-            strRlmKatanaUsed = subprocess.Popen(["/s/apps/lin/farm/tools/rlm_katana_used.sh"], stdout=subprocess.PIPE).communicate()[0]
+        # # 
+        # # HACK update license info for katana with rlmutils
+        # # This helps having the real number of used licenses before finishing assignment
+        # # This is done because katana rlm management sometime reserves 2 token (cf BUGLIST v1.4)
+        # try:
+        #     import subprocess
+        #     strRlmKatanaUsed=''
+        #     strRlmKatanaUsed = subprocess.Popen(["/s/apps/lin/farm/tools/rlm_katana_used.sh"], stdout=subprocess.PIPE).communicate()[0]
 
-            katanaUsed = int(strRlmKatanaUsed)
-            LOGGER.debug("HACK update katana license: used = %d (+buffer in config:%d)" % (katanaUsed,singletonconfig.get('HACK','KATANA_BUFFER')))
+        #     katanaUsed = int(strRlmKatanaUsed)
+        #     LOGGER.debug("HACK update katana license: used = %d (+buffer in config:%d)" % (katanaUsed,singletonconfig.get('HACK','KATANA_BUFFER')))
 
-            # Sets used license number
-            try:
-                self.licenseManager.licenses["katana"].used = katanaUsed + singletonconfig.get('HACK','KATANA_BUFFER')
-            except KeyError:
-                LOGGER.warning("License katana not found... Impossible to set 'used' value: %d" % katanaUsed)
-        except Exception, e:
-            LOGGER.warning("Error getting number of katana license used via rlmutil (e: %r, rlmoutput=%r)" % (e,strRlmKatanaUsed))
-        # ENDHACK
-        #
+        #     # Sets used license number
+        #     try:
+        #         self.licenseManager.licenses["katana"].used = katanaUsed + singletonconfig.get('HACK','KATANA_BUFFER')
+        #     except KeyError:
+        #         LOGGER.warning("License katana not found... Impossible to set 'used' value: %d" % katanaUsed)
+        # except Exception, e:
+        #     LOGGER.warning("Error getting number of katana license used via rlmutil (e: %r, rlmoutput=%r)" % (e,strRlmKatanaUsed))
+        # # ENDHACK
+        # #
 
         # Iterate over each entryPoint to get an assignment
         for entryPoint in scoredEntryPoints:

@@ -840,11 +840,11 @@ class Worker(MainLoopApplication):
         args.extend(('%s=%s' % (str(name), str(value)) for (name, value) in command.arguments.items()))
         # args.append( str(command.arguments) )
 
-        #
-        # Check remaining child processes
-        #
-        if getattr(config, 'CHECK_EXISTING_PROCESS', False):
-            self.logExistingProcess(command)
+        # #
+        # # Check remaining child processes
+        # #
+        # if getattr(config, 'CHECK_EXISTING_PROCESS', False):
+        #     self.logExistingProcess(command)
 
 
         try:

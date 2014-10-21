@@ -30,21 +30,38 @@ if rn:
 	#rn._refresh()
 	#print "status=%s"% rn.status
 	
-job = JobHandler.getJob( id=2)
+job = JobHandler.getJob( id=3)
 if job:
 	print "----------------------"
 	print "Job: %s" % (job)
 	print "Detailled data: "
 	print job.to_JSON(indent=4)
 
+	#import pudb;pu.db
+	print "PRIO"
+	print "before: %d" % job.dispatchKey
+	job.setDispatchKey(job.dispatchKey+10)
+	print "after: %d" % job.dispatchKey
 
-#import pudb;pu.db
-jobs = JobHandler.getJobs( [2,3,40] )
-if jobs:
-	print "----------------------"
-	print "Jobs retrieved: %d" % (len(jobs))
-	print "Detailled data: "
-	for job in jobs:
-		print job
+	print "POOL:"
+	#print "  before: %d" % job.pool
+	job.setPool("toto")
+
+	#print "  after: %d" % job.pool
+
+	print "MAXRN"
+	print "before: %d" % job.maxRN
+	job.setMaxRn(job.maxRN+1)
+	print "after: %d" % job.maxRN
+	
+
+
+#jobs = JobHandler.getJobs( [13, 9] )
+#if jobs:
+#	print "----------------------"
+#	print "Jobs retrieved: %d" % (len(jobs))
+#	print "Detailled data: "
+#	for job in jobs:
+#		print job
 	
 	

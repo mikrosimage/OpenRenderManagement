@@ -30,7 +30,7 @@ class RequestError( Exception ):
 
 class IJson():
     """
-    Add simple serialization capability to any object
+    Add serialization capability to any object
     """
     def to_JSON(self, indent=0):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=indent)
@@ -88,9 +88,14 @@ def request( host, port, url, method="get", *args, **kwargs ):
                                 requests.codes.not_acceptable,
                                 requests.codes.internal_server_error,
                                 requests.codes.not_implemented,
-                                requests.codes.unavailable ]:
-            logging.error("Error return code: %s" % r.status_code)
-            raise RequestError
+                                requests.codes.unavailable,
+                                requests.codes.conflict ]:
+            try:
+                msg = r.text
+            except:
+                msg = ""
+            logging.error("Error return code: %s, response message: '%s'" % (r.status_code, msg))
+            raise RequestError(msg)
         else:
             raise RequestError
 
@@ -106,9 +111,12 @@ def request( host, port, url, method="get", *args, **kwargs ):
         logging.error("Unhandled request exception: %s" % e)
         raise RequestError
 
+    except RequestError, e:
+        raise
+
     except Exception, e:
         logging.error("Unhandled exception: %s" % e)
-        raise e
+        raise
 
 
 
@@ -152,12 +160,18 @@ class Job( object, IJson ):
         self.id = id
         self.name = ""
         self.user = ""
-        self.parent = None
+        #self.parent = None
         self.status = 0
         self.creationTime = 0
         self.updateTime = 0
         self.startTime = 0
         self.endTime = 0
+
+        # Additionnal infos
+        self.tags = {}
+        self.commandCount = 0
+        self.doneCommandCount = 0
+        self.readyCommandCount = 0
 
         # Assignment
         self.dispatchKey = 0
@@ -181,7 +195,90 @@ class Job( object, IJson ):
 
     def __str__(self):
         return "Job: %d - %s" % (self.id, self.name)
-    
+
+    def _refresh(self):
+        url = "/nodes/%d/" % (self.id)
+
+        try:
+            dataDict = Server.get(url)
+            for key, val in dataDict.iteritems():
+                if hasattr(self, key):
+                    setattr(self, key, val)
+        except (RequestTimeoutError, RequestError), e:
+            logging.error("Impossible to refresh job with query: %s" % url)
+            
+    def setDispatchKey(self, prio):
+        '''
+        | Updates dispatchKey (i.e. prio) of a particular node to the server
+        | Internal data is updated on succeed to reflect server change
+        :param prio: Integer
+        :return: A boolean indicating success or failure
+        '''
+        url = "/nodes/%d/dispatchKey/" % self.id
+        body = json.dumps( {'dispatchKey': prio} )
+        try:
+           Server.put(url, data=body)
+        except (RequestTimeoutError, RequestError), e:
+            logging.error("Impossible to update prio with url %s and content: %s" % (url, body))
+            return False
+
+        # Update internal value (or refresh)        
+        self.dispatchKey = prio
+        #self._refresh()
+        return True
+
+    def setPool(self, pool):
+        '''
+        | Updates pool name of a particular node
+        | Internal data is updated on succeed to reflect server change
+        :param pool: String representing a pool name
+        :return: A boolean indicating success or failure
+        '''
+        url = "/poolshares/"
+        body = json.dumps( {'poolName': pool, 'nodeId':self.id, 'maxRN': -1} )
+        try:
+           Server.post(url, data=body)
+        except (RequestTimeoutError, RequestError), e:
+            logging.error("Impossible to update data with url %s and content: %s" % (url, body))
+            return False
+
+        # Update internal value (or refresh)        
+        #self.pool = pool
+        return True
+
+    def setMaxRn(self, maxRn):
+        '''
+        | Updates maxRn of a particular node i.e. the number of RN to affect to this node
+        | Internal data is updated on succeed to reflect server change
+        :param maxRn: Integer
+        :return: A boolean indicating success or failure
+        '''
+        url = "/nodes/%d/maxRN/" % self.id
+        body = json.dumps( {'maxRN': maxRn} )
+        try:
+           Server.put(url, data=body)
+        except (RequestTimeoutError, RequestError), e:
+            logging.error("Impossible to update data with url %s and content: %s" % (url, body))
+            return False
+
+        # Update internal value (or refresh)        
+        self.maxRN = maxRn
+        return True
+
+        pass
+
+    def setProd(self, prod):
+        pass
+
+    def setShot(self, shot):
+        pass
+
+    def setTags(self, tags):
+        pass
+
+    def updateTags(self, tags):
+        pass
+
 
 class RenderNode( object, IJson ):
     '''

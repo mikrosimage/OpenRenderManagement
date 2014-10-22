@@ -9,18 +9,18 @@ The dispatcher handles a "reconfig" request wich ask the worker application to r
 
 Basic usage:
 
-	import singletonconfig
-	singletonconfig.load( settings.CONFDIR + "/config.ini" )
+    import singletonconfig
+    singletonconfig.load( settings.CONFDIR + "/config.ini" )
 
-	# Access the options with module's get() method
-	print "one_value = " + singletonconfig.get('ONE_SECTION','ONE_FIELD')
+    # Access the options with module's get() method
+    print "one_value = " + singletonconfig.get('ONE_SECTION','ONE_FIELD')
 
-	# Or with direct access to the key/value dict for faster access
-	print "one_value = " + singletonconfig.conf.['ONE_SECTION']['ONE_FIELD']
+    # Or with direct access to the key/value dict for faster access
+    print "one_value = " + singletonconfig.conf.['ONE_SECTION']['ONE_FIELD']
 
 """
-__author__      = "Jérôme Samson"
-__copyright__   = "Copyright 2013, Mikros Image"
+__author__ = "Jérôme Samson"
+__copyright__ = "Copyright 2013, Mikros Image"
 
 
 import ConfigParser
@@ -31,54 +31,56 @@ confWithString = None
 conf = {}
 
 
-def get( section, option, default=None ):
-	"""
-	Simple accessor to hide/protect the multiple depth dict access: conf["SECTION"]["OPTION"]
-	"""
-	if section in conf.keys():
-		if option in conf[section].keys():
-			return conf[section][option]
-	return default
+def get(section, option, default=None):
+    """
+    Simple accessor to hide/protect the multiple depth dict access: conf["SECTION"]["OPTION"]
+    """
+    if section in conf.keys():
+        if option in conf[section].keys():
+            return conf[section][option]
+    return default
+
 
 def parse():
-	"""
-	Load a conf object with evaluated options intead of strings (as returned by the ConfigParser)
-	We use the "ast" lib to eval the attributes more safely than with classic python eval()
-	"""
-	global confWithString, conf
-	
-	if confWithString is None:
-		return
+    """
+    Load a conf object with evaluated options intead of strings (as returned by the ConfigParser)
+    We use the "ast" lib to eval the attributes more safely than with classic python eval()
+    """
+    global confWithString, conf
 
-	conf={}
-	for section in confWithString.sections():
-		conf[section]={}
-		for item in confWithString.items(section):
-			optName, optValue = item
-			optValue = ast.literal_eval(optValue)
+    if confWithString is None:
+        return
 
-			conf[section][optName.upper()] = optValue
+    conf = {}
+    for section in confWithString.sections():
+        conf[section] = {}
+        for item in confWithString.items(section):
+            optName, optValue = item
+            optValue = ast.literal_eval(optValue)
 
-def load( pFilePath ):
-	"""
-	Load ini file for later use in application
-	"""
-	global confPath, confWithString
+            conf[section][optName.upper()] = optValue
 
-	confPath = pFilePath
 
-	confWithString = ConfigParser.ConfigParser()
-	confWithString.read(pFilePath)
+def load(pFilePath):
+    """
+    Load ini file for later use in application
+    """
+    global confPath, confWithString
 
-	# parse pour creer cleanconf
-	parse()
+    confPath = pFilePath
+
+    confWithString = ConfigParser.ConfigParser()
+    confWithString.read(pFilePath)
+
+    # parse pour creer cleanconf
+    parse()
+
 
 def reload():
-	"""
-	Reload conf file for later use in application
-	"""
-	global confPath, confWithString
+    """
+    Reload conf file for later use in application
+    """
+    global confPath, confWithString
 
-	confWithString.read(confPath)
-	parse()
-
+    confWithString.read(confPath)
+    parse()

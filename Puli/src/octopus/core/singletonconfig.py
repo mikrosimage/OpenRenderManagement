@@ -28,7 +28,7 @@ import ast
 
 confPath = None
 confWithString = None
-conf = None
+conf = {}
 
 
 def get( section, option, default=None ):

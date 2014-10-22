@@ -11,7 +11,7 @@ Puli's documentation
 
    user_guide
    admin_guide
-   pipe_dev_guide
+   API_reference
    dev_guide
    module_reference
 

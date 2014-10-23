@@ -3,7 +3,7 @@ from collections import defaultdict
 from weakref import WeakKeyDictionary
 
 from octopus.dispatcher.model.enums import *
-from octopus.dispatcher.model import Task, TaskGroup
+from octopus.dispatcher.model import Task
 
 from . import models
 
@@ -14,8 +14,10 @@ LOGGER = logging.getLogger("dispatcher.dispatchtree")
 class NoRenderNodeAvailable(BaseException):
     '''Raised to interrupt the dispatch iteration on an entry point node.'''
 
+
 class NoLicenseAvailableForTask(BaseException):
     '''Raised to interrupt the dispatch iteration on an entry point node.'''
+
 
 class DependencyListField(models.Field):
     def to_json(self, node):
@@ -25,6 +27,7 @@ class DependencyListField(models.Field):
 class PoolShareDictField(models.Field):
     def to_json(self, instance):
         return [[poolShare.id, poolShare.pool.name] for poolShare in instance.poolShares.values()]
+
 
 class AdditionnalPoolShareDictField(models.Field):
     def to_json(self, instance):
@@ -65,17 +68,26 @@ class BaseNode(models.Model):
     def tags(self):
         return {}
 
-    ##
-    #
-    # @param id an integer, unique for this node
-    # @param name a short string describing this node
-    # @param parent a FolderNode or None if this node is a root node
-    # @param priority an integer priority value
-    # @param dispatchKey a floating-point dispatchKey value
-    # @param maxRN an integer value representing the maximum number of render
-    #              nodes that can be allocated to this tree node.
-    #
-    def __init__(self, id, name, parent, user, priority, dispatchKey, maxRN, creationTime=None, startTime=None, updateTime=None, endTime=None, status=NODE_READY):
+    def __init__(self, id, name, parent, user, priority, dispatchKey, maxRN,
+                 creationTime=None, startTime=None,
+                 updateTime=None, endTime=None,
+                 status=NODE_READY):
+        '''
+        Base class for each node in dispatcher tree structure. Holds main model
+        fields.
+
+        :param id int: unique id for this node
+        :param name str:  a short string describing this node
+        :param parent: a FolderNode or None if this node is a root node
+        :param priority int: priority value
+        :param dispatchKey int: dispatchKey value
+        :param maxRN int: maximum number of render nodes that can be allocated to this tree node
+        :param creationTime: timestamp indicating when the node was created
+        :param startTime: timestamp indicating when the node was started
+        :param updateTime: timestamp indicating when the node was updated
+        :param endTime: timestamp indicating when the node was ended
+        :param status int: current node's status
+        '''
         if not self.dispatcher:
             from octopus.dispatcher.dispatcher import Dispatcher
             self.dispatcher = Dispatcher(None)
@@ -181,7 +193,6 @@ class BaseNode(models.Model):
     def dispatchIterator(self):
         raise NotImplementedError
 
-
     def updateAllocation(self):
         '''
         Called by subclasses during updateCompletion process to store maxRN and allocatedRN in the node.
@@ -200,10 +211,9 @@ class BaseNode(models.Model):
         for currPoolShare in self.poolShares.values():
             self.maxRN = currPoolShare.maxRN
             self.allocatedRN = currPoolShare.allocatedRN
-        
+
         for ps in self.additionnalPoolShares.values():
             self.allocatedRN += ps.allocatedRN
-
 
     def updateCompletionAndStatus(self):
         raise NotImplementedError
@@ -287,14 +297,11 @@ class FolderNode(BaseNode):
             except AttributeError:
                 pass
 
-
     def cmdIterator(self):
         # print "Dispatching FolderNode %s" % (self.name)
         for child in self.children:
             for command in child.cmdIterator():
                 yield command
-
-
         # if pCascadeUpdate:
         #     for dependingNode in self.reverseDependencies:
         #         dependingNode.setStatus( pStatus, pCascadeUpdate )
@@ -304,7 +311,6 @@ class FolderNode(BaseNode):
 
         # self.status = pStatus
         # return True
-
 
     ##
     # @return yields (node, command) tuples
@@ -368,6 +374,7 @@ class FolderNode(BaseNode):
             # Getting completion info
             self.readyCommandCount = 0
             self.doneCommandCount = 0
+            self.commandCount = 0
             completion = 0.0
             status = defaultdict(int)
             for child in self.children:
@@ -377,8 +384,8 @@ class FolderNode(BaseNode):
                 self.readyCommandCount += child.readyCommandCount
                 self.doneCommandCount += child.doneCommandCount
                 self.commandCount += child.commandCount
-                
-            if hasattr(self,"commandCount") and int(self.commandCount)!=0:
+
+            if hasattr(self, "commandCount") and int(self.commandCount) != 0:
                 self.completion = self.doneCommandCount / float(self.commandCount)
             else:
                 # LOGGER.warning("Warning: a folder node without \"commandCount\" value was found -> %s" % self.name  )
@@ -443,7 +450,6 @@ class FolderNode(BaseNode):
             child.setPaused(paused)
 
     def resetCompletion(self):
-
         self.completion = 0
         for child in self.children:
             child.resetCompletion()
@@ -458,7 +464,7 @@ class FolderNode(BaseNode):
         '''
         if pCascadeUpdate:
             for dependingNode in self.reverseDependencies:
-                dependingNode.setStatus( pStatus, pCascadeUpdate )
+                dependingNode.setStatus(pStatus, pCascadeUpdate)
 
         for child in self.children:
             child.setStatus(pStatus, pCascadeUpdate)
@@ -466,29 +472,18 @@ class FolderNode(BaseNode):
         self.status = pStatus
         return True
 
-
     def setMaxAttempt(self, maxAttempt):
         '''
         '''
         globalResult = True
-        
+
         for child in self.children:
-            res = child.setMaxAttempt( maxAttempt )
-            if res == False:
+            res = child.setMaxAttempt(maxAttempt)
+            if res is False:
                 globalResult = False
 
         self.dispatcher.dispatchTree.toModifyElements.append(self)
         return globalResult
-
-
-    # TODO
-    # def getAllCommands(self):
-    #     """
-    #     Parse a hierarchy of the current FolderNode to retrieve all commands.
-    #     Used when checking dependencies of a TaskGroup.
-    #     :return a list of commands
-    #     """
-    #     pass
 
 
 class TaskNode(BaseNode):
@@ -526,12 +521,10 @@ class TaskNode(BaseNode):
             self.maxAttempt = int(task.maxAttempt)
             self.commandCount = len(task.commands)
 
-
     def cmdIterator(self):
         # LOGGER.debug("Iterator on TaskNode %s" % (self.name))
         for command in self.task.commands:
             yield command
-
 
     def dispatchIterator(self, stopFunc, ep=None):
 
@@ -682,13 +675,12 @@ class TaskNode(BaseNode):
             self.status = NODE_READY
         self.invalidate()
 
-
     def setMaxAttempt(self, maxAttempt):
         '''
         '''
         if not isinstance(self.task, Task):
             return False
-    
+
         # Update node's task if exists
         self.task.maxAttempt = maxAttempt
 
@@ -700,15 +692,13 @@ class TaskNode(BaseNode):
 
         return True
 
-
     def resetCompletion(self):
-
 
         self.completion = 0
         for command in self.task.commands:
             command.completion = 0
 
-    def setStatus(self, pStatus, pCascadeUpdate = False):
+    def setStatus(self, pStatus, pCascadeUpdate=False):
         '''
         | Update commands in order to reach the required status.
         | If proper param is given, depending node will receive the same status.
@@ -719,7 +709,7 @@ class TaskNode(BaseNode):
 
         if pCascadeUpdate:
             for dependingNode in self.reverseDependencies:
-                dependingNode.setStatus( pStatus, pCascadeUpdate )
+                dependingNode.setStatus(pStatus, pCascadeUpdate)
 
         if pStatus == NODE_CANCELED and self.status != NODE_DONE:
             for command in self.task.commands:

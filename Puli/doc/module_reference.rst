@@ -11,25 +11,23 @@ Dispatcher
   :members:
 
 
-.. Db 
-.. =============================================
+Db 
+=============================================
+.. automodule:: octopus.dispatcher.db.pulidb
 
-.. .. automodule:: octopus.dispatcher.db.pulidb
-
-.. .. autoclass:: PuliDB()
-..   :special-members: __init__
-..   :members:
-
+.. autoclass:: octopus.dispatcher.db.pulidb.PuliDB()
+  :special-members: __init__
+  :members:
 
 
-.. LicenseManager 
-.. =============================================
 
-.. .. automodule:: octopus.dispatcher.licenses.licensemanager
+LicenseManager 
+=============================================
+.. automodule:: octopus.dispatcher.licenses.licensemanager
 
-.. .. autoclass:: LicenseManager()
-..   :special-members: __init__
-..   :members:
+.. autoclass:: octopus.dispatcher.licenses.licensemanager.LicenseManager()
+  :special-members: __init__
+  :members:
 
 
 .. Worker 

@@ -74,6 +74,7 @@ class TaskNodes(SQLObject):
     # Adding autoretry capability on task
     maxAttempt = IntCol()
 
+
 class Dependencies(SQLObject):
     class sqlmeta:
         lazyUpdate = True

@@ -39,7 +39,6 @@ from octopus.dispatcher.licenses.licensemanager import LicenseManager
 LOGGER = logging.getLogger('dispatcher')
 
 
-
 class Dispatcher(MainLoopApplication):
     '''The Dispatcher class is the core of the dispatcher application.
     It computes the assignments of commands to workers according to a
@@ -77,7 +76,6 @@ class Dispatcher(MainLoopApplication):
         self.enablePuliDB = settings.DB_ENABLE
         self.cleanDB = settings.DB_CLEAN_DATA
 
-        
         self.pulidb = None
         if self.enablePuliDB:
             self.pulidb = PuliDB(self.cleanDB, self.licenseManager)
@@ -87,29 +85,29 @@ class Dispatcher(MainLoopApplication):
 
         if self.enablePuliDB and not self.cleanDB:
             LOGGER.warning("--- Reloading database (9 steps) ---")
-            prevTimer=time.time()
+            prevTimer = time.time()
             self.pulidb.restoreStateFromDb(self.dispatchTree, rnsAlreadyInitialized)
 
-            LOGGER.warning("%d jobs reloaded from database"%len(self.dispatchTree.tasks))
-            LOGGER.warning("Total time elapsed %s"% elapsedTimeToString(prevTimer) )
+            LOGGER.warning("%d jobs reloaded from database" % len(self.dispatchTree.tasks))
+            LOGGER.warning("Total time elapsed %s" % elapsedTimeToString(prevTimer))
             LOGGER.warning("")
 
         LOGGER.warning("--- Checking dispatcher state (3 steps) ---")
-        startTimer=time.time()
+        startTimer = time.time()
         LOGGER.warning("1/3 Update completion and status")
         self.dispatchTree.updateCompletionAndStatus()
-        LOGGER.warning("    Elapsed time %s"% elapsedTimeToString(startTimer) )
+        LOGGER.warning("    Elapsed time %s" % elapsedTimeToString(startTimer))
 
-        prevTimer=time.time()
+        prevTimer = time.time()
         LOGGER.warning("2/3 Update rendernodes")
         self.updateRenderNodes()
-        LOGGER.warning("    Elapsed time %s"% elapsedTimeToString(prevTimer) )
+        LOGGER.warning("    Elapsed time %s" % elapsedTimeToString(prevTimer))
 
-        prevTimer=time.time()
+        prevTimer = time.time()
         LOGGER.warning("3/3 Validate dependencies")
         self.dispatchTree.validateDependencies()
-        LOGGER.warning("    Elapsed time %s"% elapsedTimeToString(prevTimer) )
-        LOGGER.warning("Total time elapsed %s"% elapsedTimeToString(startTimer) )
+        LOGGER.warning("    Elapsed time %s" % elapsedTimeToString(prevTimer))
+        LOGGER.warning("Total time elapsed %s" % elapsedTimeToString(startTimer))
         LOGGER.warning("")
 
         if self.enablePuliDB and not self.cleanDB:
@@ -197,7 +195,6 @@ class Dispatcher(MainLoopApplication):
             self.stop()
         self.dispatchTree.rules.append(GraphViewBuilder(self.dispatchTree, graphs))
 
-
     def prepare(self):
         pass
 
@@ -224,20 +221,17 @@ class Dispatcher(MainLoopApplication):
         |   - compute new assignments and send them to the proper rendernodes
         |   - release all finished jobs/rns
         '''
-        
-        # JSA DEBUG: timer pour profiler les etapes       
 
         loopStartTime = time.time()
         prevTimer = loopStartTime
 
-        if singletonconfig.get('CORE','GET_STATS'):
+        if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleDate = loopStartTime
 
         LOGGER.info("")
         LOGGER.info("-----------------------------------------------------")
         LOGGER.info(" Start dispatcher process cycle.")
         LOGGER.info("-----------------------------------------------------")
-
 
         # JSA: Check if requests are finished (necessaire ?)
         try:
@@ -251,65 +245,62 @@ class Dispatcher(MainLoopApplication):
 
         # Update of allocation is done when parsing the tree for completion and status update (done partially for invalidated node only i.e. when needed)
         self.dispatchTree.updateCompletionAndStatus()
-        if singletonconfig.get('CORE','GET_STATS'):
+        if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleTimers['update_tree'] = time.time() - prevTimer
-        LOGGER.info("%8.2f ms --> update completion status" % ( (time.time() - prevTimer)*1000 ) )
+        LOGGER.info("%8.2f ms --> update completion status" % ((time.time() - prevTimer) * 1000))
         prevTimer = time.time()
 
         # Update render nodes
         self.updateRenderNodes()
-        if singletonconfig.get('CORE','GET_STATS'):
+        if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleTimers['update_rn'] = time.time() - prevTimer
-        LOGGER.info("%8.2f ms --> update render node" % ( (time.time() - prevTimer)*1000 ) )
+        LOGGER.info("%8.2f ms --> update render node" % ((time.time() - prevTimer) * 1000))
         prevTimer = time.time()
 
         # Validate dependencies
         self.dispatchTree.validateDependencies()
-        if singletonconfig.get('CORE','GET_STATS'):
+        if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleTimers['update_dependencies'] = time.time() - prevTimer
-        LOGGER.info("%8.2f ms --> validate dependencies" % ( (time.time() - prevTimer)*1000 ) )
+        LOGGER.info("%8.2f ms --> validate dependencies" % ((time.time() - prevTimer) * 1000))
         prevTimer = time.time()
-
 
         # update db
         self.updateDB()
-        if singletonconfig.get('CORE','GET_STATS'):
+        if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleTimers['update_db'] = time.time() - prevTimer
-        LOGGER.info("%8.2f ms --> update DB" % ( (time.time() - prevTimer)*1000 ) )
+        LOGGER.info("%8.2f ms --> update DB" % ((time.time() - prevTimer) * 1000))
         prevTimer = time.time()
 
         # compute and send command assignments to rendernodes
         assignments = self.computeAssignments()
-        if singletonconfig.get('CORE','GET_STATS'):
+        if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleTimers['compute_assignment'] = time.time() - prevTimer
-        LOGGER.info("%8.2f ms --> compute assignments." % ( (time.time() - prevTimer)*1000)  )
+        LOGGER.info("%8.2f ms --> compute assignments." % ((time.time() - prevTimer) * 1000))
         prevTimer = time.time()
 
         self.sendAssignments(assignments)
-        if singletonconfig.get('CORE','GET_STATS'):
+        if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleTimers['send_assignment'] = time.time() - prevTimer
             singletonstats.theStats.cycleCounts['num_assignments'] = len(assignments)
-        LOGGER.info("%8.2f ms --> send %r assignments." % ( (time.time() - prevTimer)*1000, len(assignments) )  )
+        LOGGER.info("%8.2f ms --> send %r assignments." % ((time.time() - prevTimer) * 1000, len(assignments)))
         prevTimer = time.time()
 
         # call the release finishing status on all rendernodes
         for renderNode in self.dispatchTree.renderNodes.values():
             renderNode.releaseFinishingStatus()
-        if singletonconfig.get('CORE','GET_STATS'):
+        if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleTimers['release_finishing'] = time.time() - prevTimer
-        LOGGER.info("%8.2f ms --> releaseFinishingStatus" % ( (time.time() - prevTimer)*1000 ) )
+        LOGGER.info("%8.2f ms --> releaseFinishingStatus" % ((time.time() - prevTimer) * 1000))
         prevTimer = time.time()
 
         loopDuration = (time.time() - loopStartTime)*1000
-        LOGGER.info( "%8.2f ms --> cycle ended. " % loopDuration )
+        LOGGER.info("%8.2f ms --> cycle ended. " % loopDuration)
         LOGGER.info("-----------------------------------------------------")
 
         # TODO: process average and sums of datas in stats, if flush time, send it to disk
-        if singletonconfig.get('CORE','GET_STATS'):
+        if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleTimers['time_elapsed'] = time.time() - loopStartTime
             singletonstats.theStats.aggregate()
-
-
 
     def updateDB(self):
         if settings.DB_ENABLE:
@@ -342,7 +333,6 @@ class Dispatcher(MainLoopApplication):
 
         if not rnsBool:
             return []
-
 
         # Log time updating max rn
         prevTimer = time.time()
@@ -393,16 +383,16 @@ class Dispatcher(MainLoopApplication):
 
             # then sort by dispatchKey (priority)
             nodesList = sorted(nodesList, key=lambda x: x.dispatchKey, reverse=True)
-            
+
             for dk, nodeIterator in groupby(nodesList, lambda x: x.dispatchKey):
 
                 nodes = [node for node in nodeIterator]
-                dkPos = dkPositiveList[ dkList.index(dk) ]
+                dkPos = dkPositiveList[dkList.index(dk)]
 
-                if dkSum > 0:                  
-                    updatedmaxRN = int( round( rnsSize * (dkPos / float(dkSum) )))
+                if dkSum > 0:
+                    updatedmaxRN = int(round(rnsSize * (dkPos / float(dkSum))))
                 else:
-                    updatedmaxRN = int(round( rnsSize / float(nbJobs) ))
+                    updatedmaxRN = int(round(rnsSize / float(nbJobs)))
 
                 for node in nodes:
                     node.optimalMaxRN = updatedmaxRN
@@ -417,7 +407,7 @@ class Dispatcher(MainLoopApplication):
             # Add remaining RNs to most important jobs BUT avoiding to increment maxRN if no more commands to assign
             unassignedRN = rnsSize - nbRNAssigned
             numNodesFull = 0
-            while 0 < unassignedRN and numNodesFull<len(nodesList):
+            while 0 < unassignedRN and numNodesFull < len(nodesList):
                 numNodesFull = 0
                 for node in nodesList:
                     if 0 < unassignedRN:
@@ -429,16 +419,15 @@ class Dispatcher(MainLoopApplication):
                     else:
                         break
 
-        if singletonconfig.get('CORE','GET_STATS'):
+        if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.assignmentTimers['update_max_rn'] = time.time() - prevTimer
-        LOGGER.info( "%8.2f ms --> .... updating max RN values", (time.time() - prevTimer)*1000 )
-
+        LOGGER.info("%8.2f ms --> .... updating max RN values", (time.time() - prevTimer) * 1000)
 
         # Log time dispatching RNs
         prevTimer = time.time()
         # Filter nodes to remove those with node ready command
-        entryPoints = filter(lambda node: node.readyCommandCount>0, entryPoints)
-        LOGGER.info( "%8.2f ms --> .... filter nodes with commands ready", (time.time() - prevTimer)*1000 )
+        entryPoints = filter(lambda node: node.readyCommandCount > 0, entryPoints)
+        LOGGER.info("%8.2f ms --> .... filter nodes with commands ready", (time.time() - prevTimer)*1000)
 
         # now, we are treating every nodes
         # sort by id (fifo)
@@ -457,28 +446,6 @@ class Dispatcher(MainLoopApplication):
 
         # Log time dispatching RNs
         prevTimer = time.time()
-
-        # # 
-        # # HACK update license info for katana with rlmutils
-        # # This helps having the real number of used licenses before finishing assignment
-        # # This is done because katana rlm management sometime reserves 2 token (cf BUGLIST v1.4)
-        # try:
-        #     import subprocess
-        #     strRlmKatanaUsed=''
-        #     strRlmKatanaUsed = subprocess.Popen(["/s/apps/lin/farm/tools/rlm_katana_used.sh"], stdout=subprocess.PIPE).communicate()[0]
-
-        #     katanaUsed = int(strRlmKatanaUsed)
-        #     LOGGER.debug("HACK update katana license: used = %d (+buffer in config:%d)" % (katanaUsed,singletonconfig.get('HACK','KATANA_BUFFER')))
-
-        #     # Sets used license number
-        #     try:
-        #         self.licenseManager.licenses["katana"].used = katanaUsed + singletonconfig.get('HACK','KATANA_BUFFER')
-        #     except KeyError:
-        #         LOGGER.warning("License katana not found... Impossible to set 'used' value: %d" % katanaUsed)
-        # except Exception, e:
-        #     LOGGER.warning("Error getting number of katana license used via rlmutil (e: %r, rlmoutput=%r)" % (e,strRlmKatanaUsed))
-        # # ENDHACK
-        # #
 
         # Iterate over each entryPoint to get an assignment
         for entryPoint in scoredEntryPoints:

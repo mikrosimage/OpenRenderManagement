@@ -18,7 +18,7 @@ import logging
 __all__ = []
 
 
-LOGGER = logging.getLogger('poolshares')
+LOGGER = logging.getLogger('main.poolshares')
 
 class PoolSharesResource(DispatcherBaseResource):
     #@queue

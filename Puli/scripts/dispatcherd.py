@@ -14,7 +14,6 @@ import sys
 import atexit
 import signal
 import tornado
-import time
 
 #
 # Init singleton object holding reloadable config values
@@ -23,7 +22,7 @@ import time
 from octopus.dispatcher import settings
 from octopus.core import singletonconfig
 
-singletonconfig.load( settings.CONFDIR + "/config.ini" )
+singletonconfig.load(settings.CONFDIR + "/config.ini")
 
 #
 # Init the rest of dispatcher app
@@ -32,8 +31,6 @@ singletonconfig.load( settings.CONFDIR + "/config.ini" )
 from octopus.core.framework import WSAppFramework
 from octopus.dispatcher.webservice.webservicedispatcher import WebServiceDispatcher
 from octopus.dispatcher.dispatcher import Dispatcher
-
-os.path.dirname(__file__) + "/../logs/dispatcher/dispatcher.log"
 
 
 def daemonize(username=""):
@@ -51,9 +48,11 @@ def daemonize(username=""):
     pidfile.close()
     # register a cleanup callback
     pidfile = os.path.abspath(settings.PIDFILE)
+
     def delpidfile():
         os.remove(pidfile)
     atexit.register(delpidfile)
+
     def delpidfileonSIGTERM(a, b):
         sys.exit()
     signal.signal(signal.SIGTERM, delpidfileonSIGTERM)
@@ -68,6 +67,7 @@ def daemonize(username=""):
     f = os.open(os.devnull, os.O_WRONLY)
     os.dup2(f, sys.stderr.fileno())
     os.close(f)
+
 
 def process_args():
     parser = optparse.OptionParser()
@@ -89,87 +89,95 @@ def process_args():
             setattr(settings, setting, getattr(options, setting))
     return options
 
+
 def setup_logging(options):
     if not os.path.exists(settings.LOGDIR):
         os.makedirs(settings.LOGDIR, 0755)
 
-    logFile = os.path.join(settings.LOGDIR, "dispatcher.log")
+    mainLog = os.path.join(settings.LOGDIR, "dispatcher.log")
+    assignLog = os.path.join(settings.LOGDIR, "assign.log")
 
-    fileHandler = logging.handlers.RotatingFileHandler(logFile, 
-                    maxBytes=singletonconfig.get('CORE','LOG_SIZE'), 
-                    backupCount=singletonconfig.get('CORE','LOG_BACKUPS'), 
-                    encoding="UTF-8")
+    fileHandler = logging.handlers.RotatingFileHandler(
+        mainLog,
+        maxBytes=singletonconfig.get('CORE', 'LOG_SIZE'),
+        backupCount=singletonconfig.get('CORE', 'LOG_BACKUPS'),
+        encoding="UTF-8")
+
+    assignHandler = logging.handlers.RotatingFileHandler(
+        assignLog,
+        maxBytes=singletonconfig.get('CORE', 'LOG_SIZE'),
+        backupCount=singletonconfig.get('CORE', 'LOG_BACKUPS'),
+        encoding="UTF-8")
 
     fileHandler.setFormatter(logging.Formatter("%(asctime)s %(name)10s %(levelname)s %(message)s"))
-    logger = logging.getLogger()
+    assignHandler.setFormatter(logging.Formatter("%(asctime)s %(name)10s %(levelname)s %(message)s"))
 
-    # logLevel = logging.DEBUG if options.DEBUG else logging.WARNING
-    logLevel = logging.DEBUG if options.DEBUG else singletonconfig.get('CORE','LOG_LEVEL')
-    logger.setLevel(logLevel)
-    fileHandler.setLevel( logging.DEBUG ) # Must be set otherwise it will receive the statsLog data, but not higher than DEBUG otherwise we might loose some info if reconfig with higher lvl
+    logLevel = logging.DEBUG if options.DEBUG else singletonconfig.get('CORE', 'LOG_LEVEL')
 
-    logger.addHandler(fileHandler)
+    # Must be set otherwise it will receive the statsLog data, but not higher than DEBUG otherwise we might loose some info if reconfig with higher lvl
+    fileHandler.setLevel(logging.DEBUG)
+
+    # Create main logger
+    logging.getLogger().addHandler(fileHandler)
+    logging.getLogger().setLevel(logLevel)
+
+    # Create a specific logger for assignment information (force level to INFO)
+    logging.getLogger('assign').addHandler(assignHandler)
+    logging.getLogger('assign').setLevel(logging.DEBUG)
+    logging.getLogger('assign').propagate = False  # cut event to avoid getting this to the root log
 
     if options.CONSOLE and not options.DAEMONIZE:
         consoleHandler = logging.StreamHandler()
         consoleHandler.setFormatter(logging.Formatter("%(asctime)s %(name)10s %(levelname)6s %(message)s", '%Y-%m-%d %H:%M:%S'))
         consoleHandler.setLevel(logLevel)
-        logger.addHandler(consoleHandler)
+        logging.getLogger().addHandler(consoleHandler)
 
-    #
-    # Create a specific handler at DEBUG level for logging stats infos
-    #
-    # if singletonconfig.get('CORE','GET_STATS'):
-    #     statsFile = os.path.join(settings.LOGDIR, "stats.log")
-    #     statsLogger = logging.getLogger('stats')
-    #     statsLogger.setLevel( logging.DEBUG )
-    #     statsLogger.addHandler( logging.handlers.RotatingFileHandler( statsFile, 
-    #                             maxBytes=singletonconfig.get('CORE','LOG_SIZE'), 
-    #                             backupCount=singletonconfig.get('CORE','LOG_BACKUPS')) )
-
-
-    logging.getLogger('dispatcher').setLevel(logLevel)
-    logging.getLogger('webservice').setLevel(logging.ERROR)
+    logging.getLogger('main.dispatcher').setLevel(logLevel)
+    logging.getLogger('main.webservice').setLevel(logging.ERROR)
 
 
 def make_dispatcher():
-    return WSAppFramework( applicationClass=Dispatcher, webServiceClass=WebServiceDispatcher, port=settings.PORT )
+    return WSAppFramework(applicationClass=Dispatcher, webServiceClass=WebServiceDispatcher, port=settings.PORT)
+
 
 def main():
+    # import pudb;pu.db
     options = process_args()
     setup_logging(options)
 
-    logging.getLogger('daemon').warning( "" )
-    logging.getLogger('daemon').warning( "-----------------------------------------------" )
-    logging.getLogger('daemon').warning( "Starting PULI server on port:%d.", settings.PORT)
-    logging.getLogger('daemon').warning( "-----------------------------------------------" )
-    logging.getLogger('daemon').warning( " version = %s" % settings.VERSION )
-    logging.getLogger('daemon').warning( " command = %s" % " ".join(sys.argv) )
-    logging.getLogger('daemon').warning( "  daemon = %r" % options.DAEMONIZE )
-    logging.getLogger('daemon').warning( " console = %r" % options.CONSOLE )
-    logging.getLogger('daemon').warning( "    port = %s" % settings.PORT )
-    logging.getLogger('daemon').warning( "--" )
+    logging.getLogger('main').warning("")
+    logging.getLogger('main').warning("-----------------------------------------------")
+    logging.getLogger('main').warning("Starting PULI server on port:%d.", settings.PORT)
+    logging.getLogger('main').warning("-----------------------------------------------")
+    logging.getLogger('main').warning(" version = %s" % settings.VERSION)
+    logging.getLogger('main').warning(" command = %s" % " ".join(sys.argv))
+    logging.getLogger('main').warning("  daemon = %r" % options.DAEMONIZE)
+    logging.getLogger('main').warning(" console = %r" % options.CONSOLE)
+    logging.getLogger('main').warning("    port = %s" % settings.PORT)
+    logging.getLogger('main').warning("--")
 
     if options.DAEMONIZE:
-        logging.getLogger('daemon').warning( "make current process a daemon and redirecting stdout/stderr to logfile" )
+        logging.getLogger('main').warning("make current process a daemon and redirecting stdout/stderr to logfile")
         daemonize(settings.RUN_AS)
 
-        # Redirect stdout and stderr to log file (using the first handler set in logging)
-        sys.stdout = logging.getLogger().handlers[0].stream
-        sys.stderr = logging.getLogger().handlers[0].stream
+        try:
+            # Redirect stdout and stderr to log file (using the first handler set in logging)
+            sys.stdout = logging.getLogger().handlers[0].stream
+            sys.stderr = logging.getLogger().handlers[0].stream
+        except Exception:
+            logging.getLogger('main').error("Unexpected error occured when redirecting stdout/stderr to logfile")
 
-    logging.getLogger('daemon').warning( "creating dispatcher main application" )
+    logging.getLogger('main').warning("creating dispatcher main application")
     dispatcherApplication = make_dispatcher()
 
-    periodic = tornado.ioloop.PeriodicCallback( dispatcherApplication.loop, singletonconfig.get('CORE','MASTER_UPDATE_INTERVAL') )
+    periodic = tornado.ioloop.PeriodicCallback(dispatcherApplication.loop, singletonconfig.get('CORE', 'MASTER_UPDATE_INTERVAL'))
     periodic.start()
     try:
-        logging.getLogger('daemon').warning( "starting tornado main loop" )
+        logging.getLogger('main').warning("starting tornado main loop")
         tornado.ioloop.IOLoop.instance().start()
-    except KeyboardInterrupt, SystemExit:
-        logging.getLogger('dispatcher').warning("Exit event caught: closing dispatcher...")
+    except (KeyboardInterrupt, SystemExit):
+        # TODO UPDATE DB HERE TO AVOID LOOSING CMD UPDATES ?...
+        logging.getLogger('main').warning("Exit event caught: closing dispatcher...")
 
 if __name__ == '__main__':
     main()
-#    import cProfile
-#    cProfile.run("main()")

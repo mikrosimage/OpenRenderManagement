@@ -19,7 +19,7 @@ from . import models
 from octopus.dispatcher import settings
 from octopus.core import singletonconfig
 
-LOGGER = logging.getLogger('command')
+LOGGER = logging.getLogger('main.command')
 
 
 class Command(models.Model):

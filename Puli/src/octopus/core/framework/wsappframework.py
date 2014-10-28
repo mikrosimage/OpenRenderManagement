@@ -22,8 +22,6 @@ from tornado.web import Application
 from tornado.ioloop import IOLoop
 from threading import Thread
 
-LOGGER = logging.getLogger("framework")
-
 
 ## This class represents the Application Framework based on a webservice.
 #
@@ -89,6 +87,7 @@ class WSAppFramework(object):
             method(ticket, *args, **kwargs)
         except Exception:
             message = "order %r failed in exception" % method
+            LOGGER = logging.getLogger('main.framework')
             LOGGER.exception(message)
             ticket.status = ticket.ERROR
             ticket.message = message

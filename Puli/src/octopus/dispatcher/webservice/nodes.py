@@ -17,7 +17,7 @@ import tornado
 from tornado.web import HTTPError
 
 
-logger = logging.getLogger("dispatcher.webservice.NodeController")
+logger = logging.getLogger("main.dispatcher.webservice.NodeController")
 
 from octopus.core.communication import *
 from octopus.core.framework import ResourceNotFoundError, ControllerError, queue

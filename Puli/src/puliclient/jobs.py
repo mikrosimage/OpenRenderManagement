@@ -197,7 +197,6 @@ class FloatParameter(CommandRunnerParameter):
         return "%r (default=%r, mandatory=%r, range=[%r,%r])" % (self.name, self.defaultValue, self.isMandatory, self.minValue, self.maxValue)
 
 
-
 class CommandRunnerMetaclass(type):
 
     def __init__(self, name, bases, attributes):
@@ -212,6 +211,7 @@ class CommandRunnerMetaclass(type):
                 parameters.append(arg)
         self.parameters = parameters
 
+
 class CommandRunner(object):
 
     __metaclass__ = CommandRunnerMetaclass
@@ -219,7 +219,6 @@ class CommandRunner(object):
     log = logging.getLogger('puli.runner')
     scriptTimeOut = None
     parameters = []
-
 
     def execute(self, arguments, updateCompletion, updateMessage, updateStats, updateLicense):
         raise NotImplementedError
@@ -236,15 +235,15 @@ class CommandRunner(object):
         # Checking global argument scriptTimeOut:
         try:
             self.scriptTimeOut = int(arguments['scriptTimeOut'])
-            logger.info("Defining time out limit: scriptTimeout=%d"%self.scriptTimeOut)
+            logger.info("Defining time out limit: scriptTimeout=%d" % self.scriptTimeOut)
         except KeyError, e:
-            logger.info("No scriptTimeout in arguments. Command will never be interrupted.")
+            logger.info("No scriptTimeout in arguments. Command will never be interrupted (msg: %s)" % e)
         except TypeError, e:
-            logger.info("Invalid scriptTimeout value given (integer expected)")
+            logger.info("Invalid scriptTimeout value given (integer expected) (msg: %s)" % e)
 
 
 class DefaultCommandRunner(CommandRunner):
-    
+
     cmd = StringParameter( mandatory = True )
     timeout = IntegerParameter( default=0 , min=0 )
 

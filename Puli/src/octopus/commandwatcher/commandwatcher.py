@@ -589,7 +589,7 @@ if __name__ == "__main__":
         runner = sys.argv[5]
         validationExpression = sys.argv[6]
         rawArguments = sys.argv[7:]
-        
+
         # ARGH !
         # Receiveing arguments as string and loosing type info...
         # Change this to receive a serialized dict and use ast.literal_eval to load it properly
@@ -618,17 +618,6 @@ if __name__ == "__main__":
         sys.exit(1)
 
     closeFileDescriptors()
-
-    # logger = logging.getLogger()
-    # logger.setLevel(logging.INFO)
-
-    # handler = logging.StreamHandler(sys.stderr)
-    
-    # FORMAT = '# [%(levelname)s] %(asctime)s - %(message)s'
-    # DATE_FORMAT = '%b %d %H:%M:%S'
-
-    # handler.setFormatter( logging.Formatter(fmt=FORMAT, datefmt=DATE_FORMAT) )
-    # logger.addHandler(handler)
 
     try:
         CommandWatcher(serverFullName, workerPort, id, runner, validationExpression, argumentsDict)

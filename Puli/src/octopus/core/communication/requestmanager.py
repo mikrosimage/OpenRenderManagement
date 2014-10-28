@@ -39,9 +39,8 @@ class RequestManager(object):
         self.port = port
         self.requestId = 1
 
-
     def request(self, method, path, data=None, headers=None):
-        logger = logging.getLogger()
+        logger = logging.getLogger('main')
 
         if not headers:
             headers = {}
@@ -103,12 +102,6 @@ class RequestManager(object):
         return rdata
 
     def get(self, path, data=None, headers={}):
-        # try:
-        #     if 
-        #     r = request.get(path, params=data)
-        # except:
-
-        #     pass
         return self.request("GET", path, data, headers=headers)
 
     def post(self, path, data, headers={}):

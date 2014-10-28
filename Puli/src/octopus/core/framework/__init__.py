@@ -17,7 +17,7 @@ from octopus.core.tools import Workload
 __all__ = ['WSAppFramework', 'MainLoopApplication']
 __all__ += ['Controller', 'ControllerError', 'ResourceNotFoundErro', 'BaseResource']
 
-logger = logging.getLogger("dispatcher.webservice")
+logger = logging.getLogger('main.dispatcher.webservice')
 
 
 def queue(func):

@@ -18,7 +18,7 @@ from octopus.core.framework import queue
 from octopus.dispatcher.webservice import DispatcherBaseResource
 
 
-logger = logging.getLogger("dispatcher")
+logger = logging.getLogger("main.dispatcher")
 
 
 class RenderNodesResource(DispatcherBaseResource):
@@ -36,7 +36,7 @@ class RenderNodesResource(DispatcherBaseResource):
 
 class RenderNodeResource(DispatcherBaseResource):
     ## Sends the JSON detailed representation of a given render node, url: http://server:8004/rendernodes/<rn:port>
-    # 
+    #
     # @param request the HTTP request object for this request
     # @param computerName the name of the requested render node
     #
@@ -54,7 +54,7 @@ class RenderNodeResource(DispatcherBaseResource):
         """
         A worker send a request to get registered on the server.
         """
-        if singletonconfig.get('CORE','GET_STATS'):
+        if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleCounts['add_rns'] += 1
 
         computerName = computerName.lower()
@@ -155,7 +155,7 @@ class RenderNodeResource(DispatcherBaseResource):
             return Http404("RenderNode not found")
         if renderNode.status in [RN_ASSIGNED, RN_WORKING] :
             renderNode.reset()
-        
+
         for pool in self.getDispatchTree().pools.values():
             pool.removeRenderNode(renderNode)
         renderNode.remove()

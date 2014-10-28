@@ -75,7 +75,7 @@ class Model(object):
                 self.fireChangeEvent(self, name, oldvalue, value)
             except Exception:
                 import logging
-                logging.getLogger("model").exception("error while running event listener")
+                logging.getLogger("main.model").exception("error while running event listener")
 
     def to_json(self):
         self.validate()

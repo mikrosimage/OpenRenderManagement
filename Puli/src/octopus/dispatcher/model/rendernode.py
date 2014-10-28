@@ -24,12 +24,12 @@ from octopus.core import singletonconfig
 
 from . import models
 
-LOGGER = logging.getLogger('dispatcher.webservice')
+LOGGER = logging.getLogger('main.dispatcher.webservice')
 logging.getLogger('requests.packages.urllib3.connectionpool').setLevel(logging.WARNING)
 
-## This class represents the state of a RenderNode.
-#
+
 class RenderNode(models.Model):
+    '''This class represents the state of a RenderNode.'''
 
     # Sys infos
     name = models.StringField()
@@ -61,7 +61,6 @@ class RenderNode(models.Model):
     createDate = models.FloatField()
     registerDate = models.FloatField()
     lastAliveTime = models.FloatField()
-    
 
     def __init__(self, id, name, coresNumber, speed, ip, port, ramSize, caracteristics=None, performance=0.0, puliversion="undefined", createDate=None):
         '''Constructs a new Rendernode.
@@ -79,8 +78,8 @@ class RenderNode(models.Model):
         self.licenseManager = None
         self.freeCoresNumber = int(coresNumber)
         self.usedCoresNumber = {}
-        self.freeRam = int(ramSize) # ramSize-usedRam i.e. the amount of RAM used if several commands running concurrently
-        self.systemFreeRam = int(ramSize) # the RAM available on the system (updated each ping)
+        self.freeRam = int(ramSize)  # ramSize-usedRam i.e. the amount of RAM used if several commands running concurrently
+        self.systemFreeRam = int(ramSize)  # the RAM available on the system (updated each ping)
         self.systemSwapPercentage = 0
         self.usedRam = {}
 
@@ -98,7 +97,7 @@ class RenderNode(models.Model):
         self.caracteristics = caracteristics if caracteristics else {}
         self.currentpoolshare = None
         self.performance = float(performance)
-        self.history = deque( maxlen=singletonconfig.get('CORE','RN_NB_ERRORS_TOLERANCE') )
+        self.history = deque(maxlen=singletonconfig.get('CORE', 'RN_NB_ERRORS_TOLERANCE'))
         self.tasksHistory = deque(maxlen=15)
         self.excluded = False
 
@@ -108,7 +107,7 @@ class RenderNode(models.Model):
             self.createDate = 0
         else:
             self.createDate = createDate
-            
+
         self.registerDate = time.time()
 
         # Flag linked to the worker flag "isPaused". Handles the case when a worker is set paused but a command is still running (finishing)
@@ -237,7 +236,7 @@ class RenderNode(models.Model):
         Status is not changed if no info is brought by the commands.
         """
         # self.status is not RN_PAUSED and time elapsed is enough
-        if time.time() > ( self.lastAliveTime + singletonconfig.conf["COMMUNICATION"]["RN_TIMEOUT"] ):
+        if time.time() > (self.lastAliveTime + singletonconfig.conf["COMMUNICATION"]["RN_TIMEOUT"]):
 
             # set the status of a render node to RN_UNKNOWN after TIMEOUT seconds have elapsed since last update
             # timeout the commands running on this node
@@ -302,7 +301,7 @@ class RenderNode(models.Model):
     # @warning The returned HTTPConnection is not safe to use from multiple threads
     #
     def getHTTPConnection(self):
-        timeout = singletonconfig.get('COMMUNICATION','RENDERNODE_REQUEST_TIMEOUT', 5)
+        timeout = singletonconfig.get('COMMUNICATION', 'RENDERNODE_REQUEST_TIMEOUT', 5)
         return http.HTTPConnection(self.host, self.port, timeout=timeout)
 
     ## An exception class to report a render node http request failure.
@@ -328,15 +327,15 @@ class RenderNode(models.Model):
     def request(self, method, url, body=None, headers={}):
         """
         """
-        
+
         # from octopus.dispatcher import settings
-        LOGGER.debug("Send request to RN: http://%s:%s%s %s (%s)"%(self.host, self.port , url, method, headers))
-        
-        err=None
+        LOGGER.debug("Send request to RN: http://%s:%s%s %s (%s)" % (self.host, self.port, url, method, headers))
+
+        err = None
         conn = self.getHTTPConnection()
 
         # try to process the request at most RENDERNODE_REQUEST_MAX_RETRY_COUNT times.
-        for i in xrange( singletonconfig.get('COMMUNICATION','RENDERNODE_REQUEST_MAX_RETRY_COUNT') ):
+        for i in xrange(singletonconfig.get('COMMUNICATION', 'RENDERNODE_REQUEST_MAX_RETRY_COUNT')):
             try:
                 conn.request(method, url, body, headers)
                 response = conn.getresponse()
@@ -365,9 +364,9 @@ class RenderNode(models.Model):
                     pass
                 LOGGER.exception("rendernode.request failed")
 
-            LOGGER.warning("request failed (%d/%d), reason: %s"%(i+1, singletonconfig.get('COMMUNICATION','RENDERNODE_REQUEST_MAX_RETRY_COUNT'),err) )
+            LOGGER.warning("request failed (%d/%d), reason: %s" % (i + 1, singletonconfig.get('COMMUNICATION', 'RENDERNODE_REQUEST_MAX_RETRY_COUNT'), err))
             # request failed so let's sleep for a while
-            time.sleep( singletonconfig.get('COMMUNICATION','RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE') )
+            time.sleep(singletonconfig.get('COMMUNICATION', 'RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE'))
 
         # request failed too many times so pause the RN and report a failure
         # LOGGER.debug("request failed too many times.")
@@ -381,7 +380,7 @@ class RenderNode(models.Model):
         for i in self.history:
             if i == CMD_ERROR:
                 cpt += 1
-        if cpt == singletonconfig.get('CORE','RN_NB_ERRORS_TOLERANCE'):
+        if cpt == singletonconfig.get('CORE', 'RN_NB_ERRORS_TOLERANCE'):
             LOGGER.warning("RenderNode %s had only errors in its commands history, excluding..." % self.name)
             self.excluded = True
             return False
@@ -427,8 +426,6 @@ class RenderNode(models.Model):
         # RAM requirement: we check task requirement with the amount of free RAM reported at last ping (systemFreeRam)
         #
         if command.task.ramUse != 0:
-            # LOGGER.debug("RAM constraint defined on task %r -> min %d MB, current systemFreeRam is %d MB" % 
-            #                 ( command.task.id, command.task.ramUse, self.systemFreeRam) )
             if self.systemFreeRam < command.task.ramUse:
                 LOGGER.info("Not enough ram on %s for command %d. %d needed, %d avail." % (self.name, command.id, int(command.task.ramUse), self.systemFreeRam))
                 return False

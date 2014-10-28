@@ -4,7 +4,7 @@ from octopus.dispatcher.strategies import FifoStrategy
 import logging
 
 
-logger = logging.getLogger("userview")
+logger = logging.getLogger("main.userview")
 
 RULENAME = 'UserView'
 

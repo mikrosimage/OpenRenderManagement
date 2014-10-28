@@ -26,7 +26,7 @@ def PoolRepresentation(pool):
     return {
         'name': pool.name,
         'renderNodes': [ShortRenderNodeRepresentation(worker) for worker in pool.renderNodes],
-        'poolShares': [PoolShareRepresentation(poolShare) for  poolShare in pool.poolShares.values()],
+        'poolShares': [PoolShareRepresentation(poolShare) for poolShare in pool.poolShares.values()],
     }
 
 TASK_ID = "taskId"

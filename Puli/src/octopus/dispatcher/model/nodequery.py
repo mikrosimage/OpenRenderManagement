@@ -5,13 +5,7 @@
 
 '''
 
-try:
-    import simplejson as json
-except ImportError:
-    import json
-
 import logging
-import time
 import re
 from datetime import datetime
 from tornado.web import HTTPError

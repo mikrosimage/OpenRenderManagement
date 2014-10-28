@@ -65,7 +65,6 @@ class GenericDecomposer(TaskDecomposer):
                     packetStart = start + (i + 1) * packetSize
                     self.addCommand(packetStart, end)
 
-
     def addCommand(self, packetStart, packetEnd):
         cmdArgs = self.task.arguments.copy()
         cmdArgs[START] = packetStart
@@ -76,10 +75,10 @@ class GenericDecomposer(TaskDecomposer):
 
 
 class GenericRunner(CommandRunner):
-    cmd = StringParameter( mandatory = True )
-    timeout = IntegerParameter( default=0 , min=0 )
+    cmd = StringParameter(mandatory=True)
+    timeout = IntegerParameter(default=0, min=0)
 
-    def execute(self, arguments, updateCompletion, updateMessage, updateStats ):
+    def execute(self, arguments, updateCompletion, updateMessage, updateStats):
         # init the helper
         cmd = arguments[CMD]
 

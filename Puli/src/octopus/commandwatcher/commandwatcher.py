@@ -53,8 +53,9 @@ handler = logging.StreamHandler(sys.stderr)
 FORMAT = '[WATCHER][%(levelname)s] %(asctime)s - %(message)s'
 DATE_FORMAT = '%d/%m %H:%M:%S'
 
-handler.setFormatter( logging.Formatter(fmt=FORMAT, datefmt=DATE_FORMAT) )
+handler.setFormatter(logging.Formatter(fmt=FORMAT, datefmt=DATE_FORMAT))
 logger.addHandler(handler)
+
 
 class ThreadInterruption(Exception):
     pass
@@ -64,7 +65,7 @@ runnerlog.setLevel(logging.INFO)
 runnerhandler = logging.StreamHandler(sys.stdout)
 
 FORMAT = '         [%(levelname)s] %(asctime)s - %(message)s'
-runnerhandler.setFormatter( logging.Formatter(fmt=FORMAT, datefmt=DATE_FORMAT) )
+runnerhandler.setFormatter(logging.Formatter(fmt=FORMAT, datefmt=DATE_FORMAT))
 runnerlog.addHandler(runnerhandler)
 
 
@@ -100,16 +101,16 @@ class CmdThreader(Thread):
         try:
             self.stopped = COMMAND_RUNNING
 
-            # 
+            #
             # Inspect method args to see if updateStats or any other callback must be passed as argument
             #
-            constructArgs = [ self.arguments, self.updateCompletion, self.updateMessage ]
-            if 'updateStats' in inspect.getargspec( getattr(self.cmd, self.methodName) ).args:
-                constructArgs.append( self.updateStats )
-            if 'updateLicense' in inspect.getargspec( getattr(self.cmd, self.methodName) ).args:
-                constructArgs.append( self.updateLicense )
+            constructArgs = [self.arguments, self.updateCompletion, self.updateMessage]
+            if 'updateStats' in inspect.getargspec(getattr(self.cmd, self.methodName)).args:
+                constructArgs.append(self.updateStats)
+            if 'updateLicense' in inspect.getargspec(getattr(self.cmd, self.methodName)).args:
+                constructArgs.append(self.updateLicense)
 
-            getattr(self.cmd, self.methodName)( *constructArgs )
+            getattr(self.cmd, self.methodName)(*constructArgs)
 
             self.stopped = COMMAND_ENDED
 
@@ -136,7 +137,7 @@ class CmdThreader(Thread):
         # It only ends when execution end is reached or on an unhandled exception.
         # Therefore we raise a specific exception, unhandled in thread but known in CommandWatcher class
         raise ThreadInterruption()
-        
+
 
 ## This class is used to ensure the good execution of the CmdThreader's process.
 #
@@ -163,8 +164,8 @@ class CommandWatcher(object):
         :type serverFullName: int
         :param id: commandId
         :param runner: module name of the class that will be executed i.e. the 'runner'
-        :param validationExpression: 
-        :param arguments: 
+        :param validationExpression:
+        :param arguments:
         """
 
         self.id = id
@@ -196,15 +197,15 @@ class CommandWatcher(object):
         try:
             runnerClass = loadCommandRunner(runner)
         except JobTypeImportError, e:
-            logger.error("Command runner loading failed: %r" % e )
+            logger.error("Command runner loading failed: %r" % e)
             self.updateCommandStatus(CMD_ERROR)
             sys.exit(1)
         except ImportError, e:
-            logger.exception("Command runner loading failed: %r" % e )
+            logger.exception("Command runner loading failed: %r" % e)
             self.updateCommandStatus(CMD_ERROR)
             sys.exit(1)
         except Exception, e:
-            logger.exception("Unexpected error in loaded runner: %r" % e )
+            logger.exception("Unexpected error in loaded runner: %r" % e)
             self.updateCommandStatus(CMD_ERROR)
             sys.exit(1)
 
@@ -226,8 +227,7 @@ class CommandWatcher(object):
         startDate = time.time()
         try:
             self.job.validate(self.arguments)
-
-        except Exception,e:
+        except Exception, e:
             logger.warning("Caught exception (%r) while starting command %d." % (e, self.id))
             self.finalState = CMD_ERROR
             self.updateCommandStatusAndCompletion(self.finalState, True)
@@ -252,7 +252,6 @@ class CommandWatcher(object):
 
         elapsedTime = time.time() - startDate
         logger.info("Finished command %r (status %r), elapsed time: %s " % (self.id, CMD_STATUS_NAME[self.finalState], timedelta(seconds=int(elapsedTime))))
-
 
     ## Creates a thread for the script corresponding to the provided action name.
     # @param action the name of the action to thread (jobtype script method)
@@ -279,7 +278,6 @@ class CommandWatcher(object):
             result = self.requestManager.put("/commands/%d/" % self.id, dct, headers)
             logger.error('Update command request failed: result=%r' % result)
 
-
         except http.BadStatusLine:
             logger.debug('Updating status has failed with a BadStatusLine error')
 
@@ -305,7 +303,7 @@ class CommandWatcher(object):
         if self.workerPort is "0":
             return
 
-        body = json.dumps({"id": self.id, "status": status, "completion": self.completion, "message": self.message, "stats" : self.stats})
+        body = json.dumps({"id": self.id, "status": status, "completion": self.completion, "message": self.message, "stats": self.stats})
 
         headers = {}
         headers['Content-Length'] = len(body)
@@ -349,15 +347,14 @@ class CommandWatcher(object):
             return
 
         elapsedTimeSinceLastUpdate = time.time() - self.lastUpdateDate
-        
+
         # If no change since last update AND the last update is not too old --> exit without sending update
         if elapsedTimeSinceLastUpdate < self.maxRefreshDataDelay:
-            if not self.messageHasChanged and not self.completionHasChanged and not self.statsHasChanged :
+            if not self.messageHasChanged and not self.completionHasChanged and not self.statsHasChanged:
                 logger.debug('Nothing changed, no need to update')
                 return
         else:
             logger.debug('Maximum refresh delay reached (%rs), force refresh even if nothing has changed' % self.maxRefreshDataDelay)
-
 
         data = {}
         if self.completionHasChanged:
@@ -367,7 +364,7 @@ class CommandWatcher(object):
         if self.statsHasChanged and self.stats is not {}:
             data["stats"] = self.stats
 
-        dct = json.dumps( data )
+        dct = json.dumps(data)
         headers = {}
         headers['Content-Length'] = len(dct)
         try:
@@ -380,7 +377,6 @@ class CommandWatcher(object):
         self.completionHasChanged = False
         self.statsHasChanged = False
         self.lastUpdateDate = time.time()
-
 
     def releaseLicense(self, licenseName):
         """
@@ -399,13 +395,13 @@ class CommandWatcher(object):
             return
 
         try:
-            body = json.dumps({"rns":self.workerFullName})
+            body = json.dumps({"rns": self.workerFullName})
             url = "http://%s/licenses/%s" % (self.serverFullName, licenseName)
 
             logger.info("Releasing license: %s - %s", body, url)
             for i in range(10):
-                r=requests.delete(url, data=body)
-                if r.status_code in [200,202]: 
+                r = requests.delete(url, data=body)
+                if r.status_code in [200, 202]:
                     logger.info("License released successfully, response = %s" % r.text)
                     res = True
                     break
@@ -413,7 +409,7 @@ class CommandWatcher(object):
                     logger.error("Error releasing license, response = %s" % r.text)
                     res = False
 
-                logger.warning("Impossible to release license (attempt %d/10)" % (i+1) )
+                logger.warning("Impossible to release license (attempt %d/10)" % (i + 1))
                 time.sleep(.2)
 
         except HTTPError as e:
@@ -423,10 +419,7 @@ class CommandWatcher(object):
             print "Unknow error:", e
             res = False
 
-
         return res
-
-
 
     ## Threads the post execution of the corresponding runner.
     #
@@ -455,8 +448,8 @@ class CommandWatcher(object):
             if self.finalState in [CMD_ERROR, CMD_CANCELED, CMD_TIMEOUT]:
                 try:
                     self.killCommand()
-                except ThreadInterruption,e:
-                    logger.debug("Thread was interrupted")
+                except ThreadInterruption, e:
+                    logger.debug("Thread was interrupted, error: %s" % e)
                     pass
                 break
 
@@ -473,7 +466,6 @@ class CommandWatcher(object):
             self.finalState = CMD_ERROR
             logger.error("CommandError detected with the following message: %s", self.threadList[EXEC].errorInfo)
             self.runnerErrorInExec = str(self.threadList[EXEC].errorInfo)
-
 
         elif self.threadList[EXEC].stopped == COMMAND_CRASHED:
             logger.error("Job script raised some unexpected exception :")
@@ -524,8 +516,7 @@ class CommandWatcher(object):
             self.stats = pStats
             self.statsHasChanged = True
         else:
-            logger.warning("Impossible to update stats: dictionnary expected but \"%r\" was received" % type(pStats) )
-
+            logger.warning("Impossible to update stats: dictionnary expected but \"%r\" was received" % type(pStats))
 
     def updateLicenseCallback(self, pLicenseInfo):
         """
@@ -536,20 +527,19 @@ class CommandWatcher(object):
         :param licenseInfo: Information about the license and action to perform.
         :type licenseInfo: dict {'action':'release', 'licenseName':'shave'}
         """
-        logger.debug("Updating license: %r" % type(pLicenseInfo) )
+        logger.debug("Updating license: %r" % type(pLicenseInfo))
 
         if type(pLicenseInfo) is not dict:
-            logger.warning("Impossible to update license: dictionnary expected but \"%r\" was received" % type(pLicenseInfo) )
+            logger.warning("Impossible to update license: dictionnary expected but \"%r\" was received" % type(pLicenseInfo))
             return False
 
         if "action" not in pLicenseInfo or "licenseName" not in pLicenseInfo:
-            logger.warning("Impossible to update license: missing action or license name in given dict: \"%r\"" % pLicenseInfo )
+            logger.warning("Impossible to update license: missing action or license name in given dict: \"%r\"" % pLicenseInfo)
             return False
-        
-        if pLicenseInfo["licenseName"].strip()=='':
-            logger.warning("Impossible to update license: license name is empty: \"%r\"" % pLicenseInfo )
+
+        if pLicenseInfo["licenseName"].strip() == '':
+            logger.warning("Impossible to update license: license name is empty: \"%r\"" % pLicenseInfo)
             return False
-        
 
         if pLicenseInfo["action"] == 'reserve':
             # result = self.reserveLicense( pLicenseInfo["licenseName"].strip() )
@@ -557,9 +547,9 @@ class CommandWatcher(object):
             result = False
 
         elif pLicenseInfo["action"] == 'release':
-            result = self.releaseLicense( pLicenseInfo["licenseName"].strip() )
+            result = self.releaseLicense(pLicenseInfo["licenseName"].strip())
         else:
-            logger.warning("Impossible to update license: invalid action specified, got \"%s\", 'reserve' or 'release' expected" % pLicenseInfo["action"] )
+            logger.warning("Impossible to update license: invalid action specified, got \"%s\", 'reserve' or 'release' expected" % pLicenseInfo["action"])
             return False
 
         return result

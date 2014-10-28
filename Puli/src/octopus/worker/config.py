@@ -8,18 +8,18 @@ Module holding param values that might be reloaded without restarting the worker
 The worker handles a "reconfig" request wich ask the worker applicaiton to reload this class
 
 """
-__author__      = "Jérôme Samson"
-__copyright__   = "Copyright 2013, Mikros Image"
+__author__ = "Jerome Samson"
+__copyright__ = "Copyright 2013, Mikros Image"
 
 
 #
 # PROCESS BEHAVIOUR
-# 
+#
 LIST_ALLOWED_PROCESSES_WHEN_PAUSING_WORKER = ['python', 'python2.6', 'bash', 'sshd', 'respawnerd', 'workerd']
 
 #
 # COMUNICATION BEHAVIOUR
-# 
+#
 WORKER_SYSINFO_DELAY = 8                           # interval between 2 heartbeats to the server (usually few seconds)
 WORKER_MAX_SYSINFO_DELAY = 900                     # interval between 2 full update to the server (usually several minutes)
 
@@ -38,4 +38,4 @@ LOG_BACKUPS = 2
 #
 # HACK
 #
-CHECK_EXISTING_PROCESS=False
+CHECK_EXISTING_PROCESS = False

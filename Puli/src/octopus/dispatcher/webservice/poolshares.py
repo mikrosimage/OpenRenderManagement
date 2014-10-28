@@ -20,6 +20,7 @@ __all__ = []
 
 LOGGER = logging.getLogger('main.poolshares')
 
+
 class PoolSharesResource(DispatcherBaseResource):
     #@queue
     def get(self):
@@ -40,13 +41,11 @@ class PoolSharesResource(DispatcherBaseResource):
 
     #@queue
     def post(self):
-        """ 
+        """
         Called when user changes the pool of a specific node (via pulback -> "Set job's pool").
         """
         dct = self.getBodyAsJSON()
-        
-        # LOGGER.debug("POST poolshares with %r", dct)
-        
+
         for key in ('poolName', 'nodeId', 'maxRN'):
             if not key in dct:
                 raise Http400("Missing key %r" % key)

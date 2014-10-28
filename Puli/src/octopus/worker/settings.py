@@ -8,8 +8,8 @@ Module holding core value for the worker process.
 These values might be overriden by user arguments and should not be reloaded.
 Value which could be reloaded during execution (using "reconfig" webservice) should be defined in settings.py.
 """
-__author__      = "Arnaud Chassagne"
-__copyright__   = "Copyright 2010, Mikros Image"
+__author__ = "Arnaud Chassagne"
+__copyright__ = "Copyright 2010, Mikros Image"
 
 
 import socket
@@ -39,7 +39,7 @@ else:
 ## SETTINGS ###########################################################
 ## These settings cannot be reloaded during worker execution because some of the values can be overriden with program user arguments
 ## To change these values, the worker must be restarted
-VERSION = "1.7.3"
+VERSION = "1.7.4"
 
 DEBUG = True
 computername = computername.lower()

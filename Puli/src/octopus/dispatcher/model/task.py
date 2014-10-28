@@ -6,7 +6,7 @@ import logging
 import datetime
 
 
-logger = logging.getLogger('model.task')
+logger = logging.getLogger('main.model.task')
 
 
 class TaskGroup(Model):

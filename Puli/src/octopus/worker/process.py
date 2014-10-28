@@ -2,8 +2,8 @@
 Used by Worker to spawn a new process.
 '''
 
-__author__      = "Olivier Derpierre"
-__copyright__   = "Copyright 2009, Mikros Image"
+__author__ = "Olivier Derpierre"
+__copyright__ = "Copyright 2009, Mikros Image"
 
 import logging
 import os
@@ -11,7 +11,7 @@ import subprocess
 import resource
 from octopus.worker import settings
 
-LOGGER = logging.getLogger("process")
+LOGGER = logging.getLogger("main.process")
 CLOSE_FDS = (os.name != 'nt')
 
 
@@ -25,8 +25,8 @@ def setlimits():
     try:
         if settings.LIMIT_OPEN_FILES < hard:
             resource.setrlimit(resource.RLIMIT_NOFILE, (settings.LIMIT_OPEN_FILES, hard))
-    except Exception,e:
-        LOGGER.error("Setting ressource limit failed: RLIMT_NOFILE [%r,%r] --> [%r,%r]" % (soft, hard, settings.LIMIT_OPEN_FILES, hard) )
+    except Exception, e:
+        LOGGER.error("Setting ressource limit failed: RLIMT_NOFILE [%r,%r] --> [%r,%r]" % (soft, hard, settings.LIMIT_OPEN_FILES, hard))
         raise e
 
 
@@ -40,17 +40,18 @@ def spawnCommandWatcher(pidfile, logfile, args, env):
     for key in env:
         envN[str(key)] = str(env[key])
 
-    LOGGER.info("Starting subprocess, log: %r, args: %r" % (logfile, args) )        
+    LOGGER.info("Starting subprocess, log: %r, args: %r" % (logfile, args))
     try:
         # pid = subprocess.Popen(args, bufsize=-1, stdin=devnull, stdout=logfile,
         #                    stderr=subprocess.STDOUT, close_fds=CLOSE_FDS,
         #                    preexec_fn=setlimits, env=envN).pid
-        process = subprocess.Popen(args, bufsize=-1, stdin=devnull, stdout=logfile,
-                           stderr=logfile, close_fds=CLOSE_FDS,
-                           preexec_fn=setlimits, env=envN)
+        process = subprocess.Popen(
+            args, bufsize=-1, stdin=devnull, stdout=logfile,
+            stderr=logfile, close_fds=CLOSE_FDS,
+            preexec_fn=setlimits, env=envN)
 
-    except Exception,e:
-        LOGGER.error("Impossible to start subprocess: %r" % e)        
+    except Exception, e:
+        LOGGER.error("Impossible to start subprocess: %r" % e)
         raise e
 
     file(pidfile, "w").write(str(process.pid))

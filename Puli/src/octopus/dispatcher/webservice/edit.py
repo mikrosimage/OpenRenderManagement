@@ -45,7 +45,7 @@ from octopus.dispatcher.webservice import DispatcherBaseResource
 
 __all__ = []
 
-logger = logging.getLogger('dispatcher.webservice.editController')
+logger = logging.getLogger('main.dispatcher.webservice.editController')
 
 class EditStatusResource(DispatcherBaseResource, IQueryNode):
     """

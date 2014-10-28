@@ -1,11 +1,10 @@
-####################################################################################################
-# @file webservicedispatcher.py
-# @package octopus.dispatcher.webservice
-# @author Arnaud Chassagne, Jean-Baptiste Spieser, Olivier Derpierre
-# @date 2008/12/01
-# @version 0.1
-#
-####################################################################################################
+'''
+@file webservicedispatcher.py
+@package octopus.dispatcher.webservice
+@author Arnaud Chassagne, Jean-Baptiste Spieser, Olivier Derpierre
+@date 2008/12/01
+@version 0.1
+'''
 try:
     import simplejson as json
 except ImportError:
@@ -22,15 +21,15 @@ from octopus.dispatcher.webservice import commands, rendernodes, graphs, nodes,\
     tasks, poolshares, pools, licenses, \
     query, edit
 
-from octopus.core.communication.http import Http404, Http400, Http500, HttpConflict
 from octopus.core.enums.command import *
 from octopus.dispatcher.webservice import DispatcherBaseResource
 from octopus.core import singletonconfig
 from octopus.dispatcher import settings
 
-## This class defines the webservice associated with the dispatcher.
-#
+
 class WebServiceDispatcher(Application):
+    '''This class defines the webservice associated with the dispatcher.'''
+
     def __init__(self, framework, port):
         super(WebServiceDispatcher, self).__init__([
             (r'/stats/?$', StatsResource, dict(framework=framework)),
@@ -104,7 +103,7 @@ class WebServiceDispatcher(Application):
             (r'^/edit/rn$', edit.RenderNodeEditResource, dict(framework=framework)),
 
             (r'^/query/command$', commands.CommandQueryResource, dict(framework=framework)),
-            
+
             (r'^/reconfig$', ReconfigResource, dict(framework=framework)),
             (r'^/dbg$', DbgResource, dict(framework=framework)),
 
@@ -112,9 +111,9 @@ class WebServiceDispatcher(Application):
             (r"/log/(.*)", tornado.web.StaticFileHandler, {"path": settings.LOGDIR, "default_filename": "dispatcher.log"}),
         ])
 
-
         self.listen(port, "0.0.0.0")
         self.framework = framework
+
 
 class DbgResource(DispatcherBaseResource):
     """
@@ -155,7 +154,7 @@ class StatsResource(DispatcherBaseResource):
 
         #
         # Get info rendernodes
-        #        
+        #
         renderNodeStats = {'totalCores': 0, 'idleCores': 0, 'missingRenderNodes': 0}
         renderNodeByStatus = dict(((status, 0) for status in RN_STATUS_NAMES))
 
@@ -168,21 +167,17 @@ class StatsResource(DispatcherBaseResource):
             renderNodeByStatus[RN_STATUS_NAMES[node.status]] += 1
         renderNodeStats['renderNodesByStatus'] = renderNodeByStatus
 
-
         #
         # Get info on jobs (first level of hierarchy)
         #
-        jobsByStatus = dict( ( (status, 0) for status in NODE_STATUS_NAMES ) )
-        startTimer = time.time()
+        jobsByStatus = dict(((status, 0) for status in NODE_STATUS_NAMES))
         for node in tree.nodes[1].children:
-            jobsByStatus[ NODE_STATUS_NAMES[node.status] ] += 1
+            jobsByStatus[NODE_STATUS_NAMES[node.status]] += 1
         jobsByStatus['TOTAL'] = len(tree.nodes[1].children)
-        elapsed = time.time() - startTimer
-
 
         #
         # Final recap
-        # 
+        #
         stats = {
             'date': time.time(),
             'commands': commandsByStatus,
@@ -272,17 +267,10 @@ class ReconfigResource(DispatcherBaseResource):
             # FIXME on est oblige de changer le loglevel de tous les loggers du projet...
             # Il faudrait pouvoir affecter tous les log d'un seul coup
 
-            logLevel = singletonconfig.get('CORE','LOG_LEVEL')
-            logging.getLogger().setLevel( logLevel )
-            logging.getLogger("cmdwatcher").setLevel( logLevel )
-            logging.getLogger("command").setLevel( logLevel )
-            logging.getLogger("dispatcher").setLevel( logLevel )
-            logging.getLogger("framework").setLevel( logLevel )
-            logging.getLogger("model").setLevel( logLevel )
-            logging.getLogger("poolshares").setLevel( logLevel )
-            logging.getLogger("process").setLevel( logLevel )
-            logging.getLogger("worker").setLevel( logLevel )
-            logging.getLogger("workerws").setLevel( logLevel )
+            logLevel = singletonconfig.get('CORE', 'LOG_LEVEL')
+            logging.getLogger().setLevel(logLevel)
+            logging.getLogger('main').setLevel(logLevel)
+            logging.getLogger("worker").setLevel(logLevel)
 
             # Tous les logger de l'appli
             #
@@ -309,9 +297,8 @@ class ReconfigResource(DispatcherBaseResource):
             # worker.CmdThreader
             # workerws
 
-
         except Exception, e:
-            raise Http500("Error during server reconfig: %r"%e)
+            raise Http500("Error during server reconfig: %r" % e)
 
         self.writeCallback("done")
 
@@ -328,10 +315,8 @@ class SystemResourceJson(DispatcherBaseResource):
             for param in os.environ.keys():
                 envData[param] = os.environ[param]
 
-            data = json.dumps( envData )
+            data = json.dumps(envData)
         except TypeError:
             raise Http500("Impossible to retrieve server environnement.")
 
         self.writeCallback(data)
-
-

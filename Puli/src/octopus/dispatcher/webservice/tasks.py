@@ -6,7 +6,7 @@ try:
 except ImportError:
     import json
 
-logger = logging.getLogger('dispatcher.webservice.TaskController')
+logger = logging.getLogger('main.dispatcher.webservice.TaskController')
 
 from tornado.web import HTTPError
 from octopus.core.framework import ResourceNotFoundError, BaseResource, queue

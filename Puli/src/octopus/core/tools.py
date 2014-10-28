@@ -31,13 +31,13 @@ class Workload(object):
 
 
 def elapsedTimeToString(timer):
-    '''   
+    '''
     :return: String representing the time elapsed since the timer value given in format H:M:S
     '''
-    LOGGER = logging.getLogger('dispatcher')
 
     try:
-      return time.strftime('%H:%M:%S', time.gmtime(time.time()-timer))
-    except Exception,e:
-      LOGGER.error("A problem occured when calculating elapsed time (%r)"%e)
-      return ""
+        return time.strftime('%H:%M:%S', time.gmtime(time.time() - timer))
+    except Exception, e:
+        LOGGER = logging.getLogger('main.dispatcher')
+        LOGGER.error("A problem occured when calculating elapsed time (%r)" % e)
+        return ""

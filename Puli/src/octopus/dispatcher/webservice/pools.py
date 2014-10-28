@@ -13,7 +13,7 @@ from octopus.dispatcher.webservice import DispatcherBaseResource
 
 __all__ = []
 
-logger = logging.getLogger('dispatcher.webservice.PoolController')
+logger = logging.getLogger('main.dispatcher.webservice.PoolController')
 
 
 class PoolsResource(DispatcherBaseResource):

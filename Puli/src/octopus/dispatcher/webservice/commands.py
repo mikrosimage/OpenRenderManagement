@@ -16,7 +16,7 @@ from octopus.dispatcher.model.nodequery import IQueryNode
 import logging
 import time
 
-logger = logging.getLogger('dispatcher.webservice')
+logger = logging.getLogger('main.dispatcher.webservice')
 
 __all__ = ['CommandsResource', 'CommandResource']
 
@@ -69,7 +69,6 @@ class CommandResource(DispatcherBaseResource):
                     elif status == CMD_READY:
                         command.setReadyStatus()
                     elif status == CMD_DONE:
-                        # logging.getLogger().debug("setting to done!")
                         command.setDoneStatus()
                     else:
                         raise Http400("Invalid status. Cannot set of command %d to %r" % (commandId, status))

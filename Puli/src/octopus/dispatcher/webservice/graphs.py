@@ -3,17 +3,15 @@ import logging
 
 from octopus.core.communication import *
 from octopus.core import singletonconfig, singletonstats
-from octopus.core.framework import queue
 from octopus.dispatcher.webservice import DispatcherBaseResource
 
-logger = logging.getLogger("dispatcher.webservice")
+logger = logging.getLogger("main.dispatcher.webservice")
 
 
 class GraphesResource(DispatcherBaseResource):
-    # @queue
     def post(self):
 
-        if singletonconfig.get('CORE','GET_STATS'):
+        if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleCounts['add_graphs'] += 1
 
         try:
@@ -23,11 +21,6 @@ class GraphesResource(DispatcherBaseResource):
             raise Http500("Failed. %s" % str(e))
 
         host, port = self.getServerAddress()
-        # import socket
-        # try:
-        #     host = socket.gethostbyaddr(host)
-        # except socket.herror:
-        #     host = socket.gethostname()
 
         self.set_header('Location', 'http://%s:%s/nodes/%d' % (host, port, nodes[0].id))
         self.set_status(201)

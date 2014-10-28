@@ -1,5 +1,4 @@
 import os
-import os
 from Queue import Queue
 try:
     import simplejson as json

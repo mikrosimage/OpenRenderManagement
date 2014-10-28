@@ -15,16 +15,16 @@ http://localhost:8004/query?attr=id&attr=name&attr=user&constraint_user=jsa&cons
 Les champs sur lesquels peuvent porter les requetes: user,prod,date
 
 On retourne un objet json au format:
-{ 
+{
     'summary':
     {
         'count': int,
-        'totalInDispatcher': int, 
+        'totalInDispatcher': int,
         'requestTime': datetime,
         'requestDate': datetime,
-    } 
+    }
 
-    'items': 
+    'items':
         [
             {
                 attr1: data,
@@ -43,7 +43,7 @@ On retourne un objet json au format:
 
             },
             ...
-        ] 
+        ]
 }
 
 Inspire du comportement d'outil comme condor_q/condor_status
@@ -68,18 +68,19 @@ from octopus.dispatcher.webservice import DispatcherBaseResource
 
 __all__ = []
 
-logger = logging.getLogger('query')
+logger = logging.getLogger('main.query')
+
 
 class QueryResource(DispatcherBaseResource, IQueryNode):
     ADDITIONNAL_SUPPORTED_FIELDS = ['pool', 'userDefinedMaxRn']
-    DEFAULT_FIELDS = ['id','user','name', 'tags:prod', 'tags:shot', \
-                     'status', 'completion', 'dispatchKey', \
-                     'startTime', 'creationTime', 'endTime', 'updateTime', \
-                     'averageTimeByFrame', 'maxTimeByFrame', 'minTimeByFrame', \
-                     'maxRN', 'optimalMaxRN', 'allocatedRN', 'maxAttempt', 'commandCount', 'readyCommandCount', 'doneCommandCount']
+    DEFAULT_FIELDS = ['id', 'user', 'name', 'tags:prod', 'tags:shot',
+                      'status', 'completion', 'dispatchKey',
+                      'startTime', 'creationTime', 'endTime', 'updateTime',
+                      'averageTimeByFrame', 'maxTimeByFrame', 'minTimeByFrame',
+                      'maxRN', 'optimalMaxRN', 'allocatedRN', 'maxAttempt',
+                      'commandCount', 'readyCommandCount', 'doneCommandCount']
 
-
-    def createTaskRepr( self, pNode, pAttributes, pTree=False ):
+    def createTaskRepr(self, pNode, pAttributes, pTree=False):
         """
         Create a json representation for a given node hierarchy and user attributes.
         Recursive call to represent the FolderNode/TaskNode tree

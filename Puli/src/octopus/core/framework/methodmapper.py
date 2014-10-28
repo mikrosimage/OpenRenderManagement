@@ -14,7 +14,7 @@ import logging
 
 from octopus.core.communication.http import Http405, Http500
 
-logger = logging.getLogger("dispatcher.webservice")
+logger = logging.getLogger('main.dispatcher.webservice')
 
 
 ## Helper class for URI to method routing.

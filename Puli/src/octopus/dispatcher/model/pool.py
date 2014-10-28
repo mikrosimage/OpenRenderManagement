@@ -52,7 +52,7 @@ class PoolShare(models.Model):
         # check if we already have a poolShare with this pool and node
         if node in pool.poolShares:
             # reassign to the node if it already exists
-            self.node.poolShares = WeakKeyDictionary()      
+            self.node.poolShares = WeakKeyDictionary()
             self.node.poolShares[self.pool] = self.pool.poolShares[self.node]
 
             # Remove existing ref of the pool assigned
@@ -74,7 +74,7 @@ class PoolShare(models.Model):
             self.userDefinedMaxRN = False
 
     def hasRenderNodesAvailable(self):
-        if self.maxRN > 0 and self.allocatedRN >= self.maxRN:
+        if 0 < self.maxRN and self.maxRN <= self.allocatedRN:
             return False
         return any((rn.isAvailable() for rn in self.pool.renderNodes))
 
@@ -130,11 +130,6 @@ class Pool(models.Model):
             self.removeRenderNode(rendernode)
         for rendernode in renderNodes:
             self.addRenderNode(rendernode)
-
-    ## Returns an iterator for available rendernodes.
-    #
-    def getAvailableRenderNodesIterator(self):
-        return (rendernode for rendernode in self.renderNodes is rendernode.isAvailable())
 
     ## Returns a human readable representation of the pool.
     #

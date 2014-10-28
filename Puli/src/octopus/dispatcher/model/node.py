@@ -8,7 +8,7 @@ from octopus.dispatcher.model import Task
 from . import models
 
 import logging
-LOGGER = logging.getLogger("dispatcher.dispatchtree")
+LOGGER = logging.getLogger("main.dispatcher.dispatchtree")
 
 
 class NoRenderNodeAvailable(BaseException):
@@ -171,7 +171,6 @@ class BaseNode(models.Model):
 
         # Remove optional attributes for __new__ call, not supported, but the attributes are still transmitter via super hierarchy
         obj = super(BaseNode, cls).__new__(cls)
-        # obj = super(BaseNode, cls).__new__(cls, *args, **kwargs)
         obj._parent_value = None
         obj.invalidated = True
         return obj
@@ -298,7 +297,6 @@ class FolderNode(BaseNode):
                 pass
 
     def cmdIterator(self):
-        # print "Dispatching FolderNode %s" % (self.name)
         for child in self.children:
             for command in child.cmdIterator():
                 yield command
@@ -522,7 +520,6 @@ class TaskNode(BaseNode):
             self.commandCount = len(task.commands)
 
     def cmdIterator(self):
-        # LOGGER.debug("Iterator on TaskNode %s" % (self.name))
         for command in self.task.commands:
             yield command
 
@@ -559,6 +556,7 @@ class TaskNode(BaseNode):
     def reserve_rendernode(self, command, ep):
         if ep is None:
             ep = self
+
         for poolshare in [poolShare for poolShare in ep.poolShares.values() if poolShare.hasRenderNodesAvailable()]:
             # first, sort the rendernodes according their performance value
             rnList = sorted(poolshare.pool.renderNodes, key=lambda rn: rn.performance, reverse=True)

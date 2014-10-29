@@ -22,7 +22,7 @@ class Ticket(object):
     _status = OPENED
 
     def __init__(self, id=None, status=OPENED, message='', resultURL=None):
-        if id == None:
+        if id is None:
             id = str(uuid.uuid4())
         else:
             id = str(uuid.UUID(str(id)))

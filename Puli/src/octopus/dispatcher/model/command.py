@@ -96,8 +96,10 @@ class Command(models.Model):
         return "Command(id=%r, status=%s)" % (self.id, CMD_STATUS_NAME[self.status])
 
     def __str__(self):
-        return "Command(id=%r, status=%s, desc=%s, task=%r, completion=%.2f, RN=%s)" % (self.id, CMD_STATUS_NAME[self.status], 
-            self.description, str(self.task), self.completion, self.renderNode)
+        return "Command(id=%r, status=%s, desc=%s, task=%r, completion=%.2f, RN=%s)" % (
+            self.id, CMD_STATUS_NAME[self.status],
+            self.description, str(self.task), self.completion, self.renderNode
+        )
 
     def clearAssignment(self):
         self.renderNode = None
@@ -126,13 +128,12 @@ class Command(models.Model):
 
             except Exception:
                 # if request has failed, it means the rendernode is unreachable
-                LOGGER.error( "Impossible to reach RN %s to cancel command %d." % (self.renderNode, self.id) )
+                LOGGER.error("Impossible to reach RN %s to cancel command %d." % (self.renderNode, self.id))
                 self.status = CMD_CANCELED
 
         elif self.renderNode is not None:
             self.renderNode.clearAssignment(self)
         self.status = CMD_CANCELED
-
 
     def setDoneStatus(self):
         """
@@ -149,10 +150,10 @@ class Command(models.Model):
             try:
                 self.renderNode.clearAssignment(self)
                 (response, data) = self.renderNode.request("POST", "/commands/" + str(self.id) + "/done")
-                LOGGER.debug( "data: %r" % data )
+                LOGGER.debug("data: %r" % data)
             except Exception:
                 # if request has failed, it means the rendernode is unreachable
-                LOGGER.warning("Impossible to cancel command %d on the RN: %s" % (self.id, self.renderNode.name ))
+                LOGGER.warning("Impossible to cancel command %d on the RN: %s" % (self.id, self.renderNode.name))
                 self.status = CMD_CANCELED
 
         elif self.renderNode is not None:
@@ -251,7 +252,7 @@ class CommandDatesUpdater(object):
                 cmd.renderNode.tasksHistory.append(cmd.task.id)
                 cmd.renderNode.history.append(cmd.status)
         if cmd.status is CMD_DONE:
-            # TOFIX: handle CANCEL status and update end time when cancelling a 
+            # TOFIX: handle CANCEL status and update end time when cancelling a
             # job so that it can be properly cleaned
             cmd.endTime = cmd.updateTime
             cmd.computeAvgTimeByFrame()
@@ -261,9 +262,9 @@ class CommandDatesUpdater(object):
         elif cmd.status is CMD_ERROR:
             cmd.attempt += 1
 
-            LOGGER.debug("Mark command %d for auto retry in %ds  (%d/%d)" % (cmd.id, singletonconfig.get('CORE','DELAY_BEFORE_AUTORETRY'), cmd.attempt, cmd.task.maxAttempt))
+            LOGGER.debug("Mark command %d for auto retry in %ds  (%d/%d)" % (cmd.id, singletonconfig.get('CORE', 'DELAY_BEFORE_AUTORETRY'), cmd.attempt, cmd.task.maxAttempt))
             if cmd.attempt < cmd.task.maxAttempt:
-                t = Timer(singletonconfig.get('CORE','DELAY_BEFORE_AUTORETRY'), self.autoretry, [cmd])
+                t = Timer(singletonconfig.get('CORE', 'DELAY_BEFORE_AUTORETRY'), self.autoretry, [cmd])
                 t.start()
 
         elif cmd.status is CMD_ASSIGNED:

@@ -49,4 +49,4 @@ class GraphViewBuilder(object):
                 node.addDependency(depnode,  statuslist)
 
     def __repr__(self):
-        return "GraphViewBuilder( root=%r, dispatchTree=%r )" % (self.root, self.dispatchTree )
+        return "GraphViewBuilder( root=%r, dispatchTree=%r )" % (self.root, self.dispatchTree)

@@ -74,6 +74,7 @@ class NodesResource(DispatcherBaseResource):
         except KeyError:
             raise NodeNotFoundError(nodeId)
 
+
 class NodeResource(NodesResource):
     ##@queue
     def get(self, nodeId):
@@ -105,15 +106,15 @@ class NodeCancelResource(NodesResource):
     '''
 
     def put(self, nodeId):
-        # If user action is CANCEL, we use asynchronous webservice to avoid the timeout that 
+        # If user action is CANCEL, we use asynchronous webservice to avoid the timeout that
         # might occur when sending requests to each render node.
-        
-        node = self._findNode( int(nodeId) )
+
+        node = self._findNode(int(nodeId))
         self.interruptedRnList = []
 
         for cmd in node.cmdIterator():
             if cmd.status == CMD_RUNNING:
-                self.interruptedRnList.append( (cmd.renderNode, cmd.id) )
+                self.interruptedRnList.append((cmd.renderNode, cmd.id))
                 cmd.status = CMD_CANCELED
 
         if len(self.interruptedRnList) > 0:
@@ -125,12 +126,11 @@ class NodeCancelResource(NodesResource):
         self.writeCallback("New status has been taken into account. Change will be effective soon")
         self.finish()
 
-
-    def sendCancelRequests( self ):
+    def sendCancelRequests(self):
         '''
-        Send a specific request to each rendernodes. It uses the 
+        Send a specific request to each rendernodes.
         '''
-        for rn,cmdId in self.interruptedRnList:
+        for rn, cmdId in self.interruptedRnList:
             # For each RN marked as having a running command
             try:
                 rn.request("DELETE", "/commands/" + str(cmdId) + "/")
@@ -142,8 +142,6 @@ class NodeCancelResource(NodesResource):
 
         # Clean rn list after process
         self.interruptedRnList = []
-
-        
 
 
 class NodeStatusResource(NodesResource):
@@ -162,7 +160,7 @@ class NodeStatusResource(NodesResource):
         :param nodeId: id of the node to update
         :return: the ticket for this order.
         '''
-        
+
         data = self.getBodyAsJSON()
 
         try:
@@ -208,7 +206,7 @@ class NodeStatusResource(NodesResource):
             # handles the 'general' setStatus
             #
             else:
-                cascadeUpdate = bool( data.get('cascade', True) )
+                cascadeUpdate = bool(data.get('cascade', True))
                 nodeStatus = int(nodeStatus)
 
                 if node.status in [NODE_ERROR, NODE_CANCELED, NODE_DONE] and nodeStatus == NODE_READY:
@@ -217,7 +215,7 @@ class NodeStatusResource(NodesResource):
                 if nodeStatus not in NODE_STATUS:
                     raise Http400("Invalid status value %r" % nodeStatus)
                 elif nodeStatus == NODE_CANCELED:
-                    # If user action is CANCEL, we use asynchronous webservice to avoid the timeout that 
+                    # If user action is CANCEL, we use asynchronous webservice to avoid the timeout that
                     # might occur when sending requests to each render node.
                     self.gen = node.cmdIterator()
                     tornado.ioloop.IOLoop.instance().add_callback(self.iterOnCommands)
@@ -231,8 +229,7 @@ class NodeStatusResource(NodesResource):
                         self.writeCallback("Status was not changed.")
                         self.finish()
 
-    
-    def iterOnCommands( self ):
+    def iterOnCommands(self):
         """
         Cancel each command in a node hierarchy (command is given by a generator on the node)
         Each command might be blocked by network pb (or machine swapping) but asynchronous mecanism will
@@ -374,7 +371,7 @@ class NodeUserResource(NodesResource):
             raise HTTPError(400, 'Missing entry: "user".')
         else:
             user = data['user']
-    
+
             if user == '':
                 raise HTTPError(400, 'Empty value received: user can not be empty.')
 
@@ -382,7 +379,6 @@ class NodeUserResource(NodesResource):
             node = self._findNode(nodeId)
             node.user = str(user)
             self.dispatcher.dispatchTree.toModifyElements.append(node)
-
 
 
 class NodeProdResource(NodesResource):
@@ -488,8 +484,6 @@ class NodeChildrenResource(NodesResource):
         self.writeCallback(body)
 
 
-
-
 class NodeMaxAttemptResource(NodesResource):
 
     def put(self, nodeId):
@@ -503,7 +497,7 @@ class NodeMaxAttemptResource(NodesResource):
         # Get task object
         try:
             nodeId = int(nodeId)
-            node = self._findNode( nodeId )
+            node = self._findNode(nodeId)
         except NodeNotFoundError:
             raise HTTPError(404, "Node not found: %d" % nodeId)
 
@@ -514,12 +508,12 @@ class NodeMaxAttemptResource(NodesResource):
         except KeyError, e:
             raise HTTPError(400, 'Missing entry: "maxAttempt".')
         except (TypeError, ValueError), e:
-            raise HTTPError(400, 'Invalid type for "maxAttempt" (integer expected): %r' % data['maxAttempt'])
+            raise HTTPError(400, 'Invalid type for "maxAttempt", integer expected but %r received (error: %s)' % (data['maxAttempt'], e))
 
         # Update selected node and associated task
         if isinstance(node, TaskNode) or isinstance(node, FolderNode):
-            result = node.setMaxAttempt( maxAttempt )
-            if result == False:
+            result = node.setMaxAttempt(maxAttempt)
+            if result is False:
                 raise HTTPError(404, "Impossible to set 'maxAttempt' on node %d" % nodeId)
         else:
             raise HTTPError(404, "Invalid element selected: %r" % type(node))

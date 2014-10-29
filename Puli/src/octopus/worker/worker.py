@@ -78,7 +78,7 @@ class Worker(MainLoopApplication):
 
         def __str__(self):
             startTime = datetime.datetime.fromtimestamp(int(self.startTime)).strftime("%Y-%m-%d_%H:%M:%S")
-            returncode = self.processObj.process.returncode if self.processObj.process != None else "Invalid process"
+            returncode = self.processObj.process.returncode if self.processObj.process is not None else "Invalid process"
             return str("CommandWatcher: pid=%r, commandId=%r, returncode=%r, startTime=%s" % (self.processId, self.commandId, returncode, startTime))
 
     @property

@@ -11,14 +11,14 @@ edit?update_status=1&constraint_user=jsa&constraint_user=render
 edit?update_status=0&constraint_id=1&constraint_id=2&constraint_id=3
 
 On retourne un objet json au format:
-{ 
+{
     'summary':
     {
         'count': int,
-        'totalInDispatcher': int, 
+        'totalInDispatcher': int,
         'requestTime': datetime,
         'requestDate': datetime,
-    } 
+    }
 }
 
 Inspire du comportement d'outil comme condor_q/condor_status
@@ -47,9 +47,10 @@ __all__ = []
 
 logger = logging.getLogger('main.dispatcher.webservice.editController')
 
+
 class EditStatusResource(DispatcherBaseResource, IQueryNode):
     """
-    Handle user request to change the status on a set of nodes. Status value will be change according to transition constraints 
+    Handle user request to change the status on a set of nodes. Status value will be change according to transition constraints
     in setStatusForNode() class member.
     """
 
@@ -59,8 +60,7 @@ class EditStatusResource(DispatcherBaseResource, IQueryNode):
         except KeyError:
             raise KeyError
 
-
-    def setStatusForNode( self, pStatus, pNode ):
+    def setStatusForNode(self, pStatus, pNode):
         """
         Changes the status for a particular node. Properly reset completion when restarting a node.
         Returns the node id IF the node was actually edited, None otherwise
@@ -71,15 +71,13 @@ class EditStatusResource(DispatcherBaseResource, IQueryNode):
             return None
 
         if pStatus in [NODE_ERROR, NODE_CANCELED, NODE_DONE] and pStatus == NODE_READY:
-            logger.info("Reset completion for node %d" % pNode.id )
+            logger.info("Reset completion for node %d" % pNode.id)
             pNode.resetCompletion()
         else:
-            logger.info("Set new status %d" % pStatus )
+            logger.info("Set new status %d" % pStatus)
             pNode.setStatus(pStatus)
 
         return pNode.id
-
-
 
     def put(self):
         """
@@ -107,33 +105,29 @@ class EditStatusResource(DispatcherBaseResource, IQueryNode):
         #     if args['update_option'][0] == "restart" :
         #         restartNode = True
 
-        nodes = self.filterNodes( args, nodes )
+        nodes = self.filterNodes(args, nodes)
 
         for currNode in nodes:
             # logger.info("Changing status for job : %d -- %s" % ( currNode.id, currNode.name ) )
             try:
-                if self.setStatusForNode( newStatus, currNode ) is not None:
-                    editedJobs.append( currNode.id )
+                if self.setStatusForNode(newStatus, currNode) is not None:
+                    editedJobs.append(currNode.id)
             except:
                 raise Http500('Error changing status.')
 
-
-        content = { 
-                    'summary': 
-                        { 
-                        'editedCount':len(editedJobs),
-                        'filteredCount':len(nodes),
-                        'totalInDispatcher':totalNodes, 
-                        'requestTime':time.time() - start_time,
-                        'requestDate':time.ctime()
-                        }, 
-                    'editedJobs':editedJobs 
-                    }
+        content = {
+            'summary': {
+                'editedCount': len(editedJobs),
+                'filteredCount': len(nodes),
+                'totalInDispatcher': totalNodes,
+                'requestTime': time.time() - start_time,
+                'requestDate': time.ctime()
+            },
+            'editedJobs': editedJobs
+        }
 
         # Create response and callback
-        self.writeCallback( json.dumps(content) )
-
-
+        self.writeCallback(json.dumps(content))
 
 
 class PauseResource(DispatcherBaseResource, IQueryNode):
@@ -159,33 +153,28 @@ class PauseResource(DispatcherBaseResource, IQueryNode):
 
         args = self.request.arguments
 
-
-        nodes = self.filterNodes( args, nodes )
+        nodes = self.filterNodes(args, nodes)
         for currNode in nodes:
             try:
-                if hasattr(currNode, 'paused') and currNode.paused == False:
-                    currNode.setPaused( True)
-                    editedJobs.append( currNode.id )
+                if hasattr(currNode, 'paused') and currNode.paused is False:
+                    currNode.setPaused(True)
+                    editedJobs.append(currNode.id)
             except:
                 raise Http400('Error when pausing job.')
 
-
-        content = { 
-                    'summary': 
-                        { 
-                        'editedCount':len(editedJobs),
-                        'filteredCount':len(nodes),
-                        'totalInDispatcher':totalNodes, 
-                        'requestTime':time.time() - start_time,
-                        'requestDate':time.ctime()
-                        }, 
-                    'editedJobs':editedJobs 
-                    }
+        content = {
+            'summary': {
+                'editedCount': len(editedJobs),
+                'filteredCount': len(nodes),
+                'totalInDispatcher': totalNodes,
+                'requestTime': time.time() - start_time,
+                'requestDate': time.ctime()
+            },
+            'editedJobs': editedJobs
+        }
 
         # Create response and callback
-        self.writeCallback( json.dumps(content) )
-
-
+        self.writeCallback(json.dumps(content))
 
 
 class ResumeResource(DispatcherBaseResource, IQueryNode):
@@ -211,35 +200,33 @@ class ResumeResource(DispatcherBaseResource, IQueryNode):
 
         args = self.request.arguments
 
-        nodes = self.filterNodes( args, nodes )
+        nodes = self.filterNodes(args, nodes)
         for currNode in nodes:
             try:
                 # if hasattr(currNode, 'resume') and currNode.paused == True:
-                currNode.setPaused( False )
-                editedJobs.append( currNode.id )
+                currNode.setPaused(False)
+                editedJobs.append(currNode.id)
             except:
                 raise Http400('Error when resuming job.')
 
-
-        content = { 
-                    'summary': 
-                        { 
-                        'editedCount':len(editedJobs),
-                        'filteredCount':len(nodes),
-                        'totalInDispatcher':totalNodes, 
-                        'requestTime':time.time() - start_time,
-                        'requestDate':time.ctime()
-                        }, 
-                    'editedJobs':editedJobs 
-                    }
+        content = {
+            'summary': {
+                'editedCount': len(editedJobs),
+                'filteredCount': len(nodes),
+                'totalInDispatcher': totalNodes,
+                'requestTime': time.time() - start_time,
+                'requestDate': time.ctime()
+            },
+            'editedJobs': editedJobs
+        }
 
         # Create response and callback
-        self.writeCallback( json.dumps(content) )
+        self.writeCallback(json.dumps(content))
 
 
 class EditMaxRnResource(DispatcherBaseResource, IQueryNode):
     """
-    Edit multiple jobs with a query for filtering. 
+    Edit multiple jobs with a query for filtering.
     Value edited is maxRN field which indicates a max number of rendernodes to assign to a specific job.
     maxRN is an integer > -1
 
@@ -270,7 +257,7 @@ class EditMaxRnResource(DispatcherBaseResource, IQueryNode):
         #
         # Filtering nodes
         #
-        nodes = self.filterNodes( self.request.arguments, nodes )
+        nodes = self.filterNodes(self.request.arguments, nodes)
 
         #
         # Perform action
@@ -278,25 +265,24 @@ class EditMaxRnResource(DispatcherBaseResource, IQueryNode):
         for currNode in nodes:
             try:
                 currNode.maxRN = newMaxRn
-                editedJobs.append( currNode.id )
+                editedJobs.append(currNode.id)
             except:
                 raise Http500('Error changing status of job: %d.', currNode.id)
 
         #
         # Prepare response and return
         #
-        content = { 
-                    'summary': 
-                        { 
-                        'editedCount':len(editedJobs),
-                        'filteredCount':len(nodes),
-                        'totalInDispatcher':totalNodes, 
-                        'requestTime':time.time() - start_time,
-                        'requestDate':time.ctime()
-                        }, 
-                    'editedJobs':editedJobs 
-                    }
-        self.writeCallback( json.dumps(content) )
+        content = {
+            'summary':  {
+                'editedCount': len(editedJobs),
+                'filteredCount': len(nodes),
+                'totalInDispatcher': totalNodes,
+                'requestTime': time.time() - start_time,
+                'requestDate': time.ctime()
+            },
+            'editedJobs': editedJobs
+        }
+        self.writeCallback(json.dumps(content))
 
 
 
@@ -329,33 +315,30 @@ class EditPrioResource(DispatcherBaseResource, IQueryNode):
         #
         # Filtering nodes
         #
-        nodes = self.filterNodes( self.request.arguments, nodes )
+        nodes = self.filterNodes(self.request.arguments, nodes)
 
         for currNode in nodes:
             try:
                 currNode.dispatchKey = newPrio
-                editedJobs.append( currNode.id )
+                editedJobs.append(currNode.id)
             except:
                 raise Http500('Error changing status of job: %d.', currNode.id)
 
         #
         # Prepare response and return
         #
-        content = { 
-                    'summary': 
-                        { 
-                        'editedCount':len(editedJobs),
-                        'filteredCount':len(nodes),
-                        'totalInDispatcher':totalNodes, 
-                        'requestTime':time.time() - start_time,
-                        'requestDate':time.ctime()
-                        }, 
-                    'editedJobs':editedJobs 
-                    }
+        content = {
+            'summary': {
+                'editedCount': len(editedJobs),
+                'filteredCount': len(nodes),
+                'totalInDispatcher': totalNodes,
+                'requestTime': time.time() - start_time,
+                'requestDate': time.ctime()
+            },
+            'editedJobs': editedJobs
+        }
 
-        self.writeCallback( json.dumps(content) )
-        
-
+        self.writeCallback(json.dumps(content))
 
 
 class RenderNodeEditResource(DispatcherBaseResource, IQueryNode):

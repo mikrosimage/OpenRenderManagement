@@ -7,6 +7,7 @@ import subprocess
 
 from puliclient.jobs import CommandRunner, StringParameter
 
+
 class CommandLineRunner(CommandRunner):
 
     args = StringParameter()

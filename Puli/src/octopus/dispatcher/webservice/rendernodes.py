@@ -97,8 +97,8 @@ class RenderNodeResource(DispatcherBaseResource):
             caracteristics = dct['caracteristics']
             name, port = computerName.split(":", 1)
 
-            puliversion = dct.get('puliversion',"unknown")
-            createDate = dct.get('createDate',time.time())
+            puliversion = dct.get('puliversion', "unknown")
+            createDate = dct.get('createDate', time.time())
 
             renderNode = RenderNode(None, computerName, cores, speed, name, port, ram, caracteristics, puliversion=puliversion, createDate=createDate)
 
@@ -153,7 +153,7 @@ class RenderNodeResource(DispatcherBaseResource):
             renderNode = self.getDispatchTree().renderNodes[computerName]
         except KeyError:
             return Http404("RenderNode not found")
-        if renderNode.status in [RN_ASSIGNED, RN_WORKING] :
+        if renderNode.status in [RN_ASSIGNED, RN_WORKING]:
             renderNode.reset()
 
         for pool in self.getDispatchTree().pools.values():
@@ -169,7 +169,7 @@ class RenderNodeCommandsResource(DispatcherBaseResource):
         Returns "200 OK" on success, or "404 Bad Request" if the provided json data is not valid.
         '''
 
-        if singletonconfig.get('CORE','GET_STATS'):
+        if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleCounts['update_commands'] += 1
 
         computerName = computerName.lower()
@@ -182,29 +182,12 @@ class RenderNodeCommandsResource(DispatcherBaseResource):
 
         try:
             self.framework.application.updateCommandApply(updateDict)
-        except (KeyError,IndexError) as e:
+        except (KeyError, IndexError) as e:
             raise Http404(str(e))
         except Exception, e:
             raise Http500("Exception during command update")
 
         self.writeCallback("Command updated")
-
-    # def sanitizeUpdateDict(self, dct):
-    #     res = {}
-    #     values = (('id', lambda val: isinstance(val, int)),
-    #               ('status', lambda val: isinstance(val, int)),
-    #               ('message', lambda val: isinstance(val, basestring)),
-    #               ('completion', lambda val: isinstance(val, int) or isinstance(val, float)),
-    #               ('validatorMessage', lambda val: isinstance(val, basestring)),
-    #               ('errorInfos', lambda val: isinstance(val, dict)),
-    #               )
-    #     for name, valuetype in values:
-    #         if name in dct:
-    #             value = dct[name]
-    #             if not valuetype(value):
-    #                 raise TypeError(name, value)
-    #             res[name] = value
-    #     return res
 
     #@queue
     def delete(self, computerName, commandId):
@@ -247,7 +230,7 @@ class RenderNodeSysInfosResource(DispatcherBaseResource):
         dct = self.getBodyAsJSON()
         renderNode = rns[computerName]
         if "puliversion" in dct:
-            renderNode.puliversion = dct.get('puliversion',"unknown")
+            renderNode.puliversion = dct.get('puliversion', "unknown")
         if "caracteristics" in dct:
             renderNode.caracteristics = eval(str(dct["caracteristics"]))
         if "cores" in dct:
@@ -273,7 +256,7 @@ class RenderNodeSysInfosResource(DispatcherBaseResource):
             #     logger.warning("The status reported by %s = %r is different from the status on dispatcher %r" % (renderNode.name, RN_STATUS_NAMES[dct["status"]],RN_STATUS_NAMES[renderNode.status]))
 
         if "isPaused" in dct and "status" in dct:
-            logger.debug("reported for %r: remoteStatus=%r remoteIsPaused=%r" % (renderNode.name, RN_STATUS_NAMES[dct["status"]], dct['isPaused']) )
+            logger.debug("reported for %r: remoteStatus=%r remoteIsPaused=%r" % (renderNode.name, RN_STATUS_NAMES[dct["status"]], dct['isPaused']))
 
         renderNode.lastAliveTime = time.time()
         renderNode.isRegistered = True

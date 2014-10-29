@@ -48,9 +48,9 @@ def main():
     elif len(input_args_blocks) == 2:
         if input_args_blocks[0][0].startswith("-"):
             puliexec_args = input_args_blocks[0]
-            cmd_args      = input_args_blocks[1]
+            cmd_args = input_args_blocks[1]
         else:
-            cmd_args      = input_args_blocks[0]
+            cmd_args = input_args_blocks[0]
             puliexec_args = input_args_blocks[1]
     elif len(input_args_blocks) == 3:
         puliexec_args = input_args_blocks[0] + input_args_blocks[2]
@@ -59,12 +59,7 @@ def main():
         print "Unrecognized syntaxe."
         exit(-1)
 
-    # print "puliexec_args:", puliexec_args
-    # print "cmd_args:", cmd_args
-
-
     ## Handle puli arguments ##
-
     usage = """
 usage: %prog [options] -- yourcommand [cmd_options]
 
@@ -176,9 +171,7 @@ Don't forget to specify a pool name otherwise your job will be submitted but wil
         print "No command to run."
         exit(-1)
 
-
     ## Submit Graph ##
-
     import subprocess
     commandline = subprocess.list2cmdline(cmd_args)
 
@@ -186,11 +179,11 @@ Don't forget to specify a pool name otherwise your job will be submitted but wil
     runner = "puliclient.contrib.commandlinerunner.CommandLineRunner"
 
     tags = {
-      "type": options.jobType,
-      "prod": options.prod,
-      'paused': 'false',
-      'nbFrames': options.nbFrames,
-      'imageFolder': options.outFolder,
+        "type": options.jobType,
+        "prod": options.prod,
+        'paused': 'false',
+        'nbFrames': options.nbFrames,
+        'imageFolder': options.outFolder,
     }
 
     time_delay = None
@@ -199,11 +192,11 @@ Don't forget to specify a pool name otherwise your job will be submitted but wil
         import datetime
 
         hours_minutes = re.match("^(?:(\d*)h)?(?:(\d*)m?)?$", options.time_delay).groups()
-        if hours_minutes == None:
+        if hours_minutes is None:
             print "Invalid delay value."
             exit(-1)
         # convert str to int and None to 0
-        hours_minutes = [int(i) if i != None else 0 for i in hours_minutes]
+        hours_minutes = [int(i) if i is not None else 0 for i in hours_minutes]
         future = datetime.datetime.utcnow() + datetime.timedelta(hours=hours_minutes[0], minutes=hours_minutes[1])
         # convert back to timestamp value
         import calendar

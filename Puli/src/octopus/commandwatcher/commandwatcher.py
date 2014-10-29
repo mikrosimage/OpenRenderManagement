@@ -580,19 +580,9 @@ if __name__ == "__main__":
         validationExpression = sys.argv[6]
         rawArguments = sys.argv[7:]
 
-        # ARGH !
-        # Receiveing arguments as string and loosing type info...
-        # Change this to receive a serialized dict and use ast.literal_eval to load it properly
+        # Properly deserialize command arguments
         argumentsDict = {}
-        for argument in rawArguments:
-            arglist = argument.split("=")
-            key = arglist[0]
-            value = '='.join(arglist[1:])
-            argumentsDict[key] = value
-
-        # import ast
-        # argumentsDict = {}
-        # argumentsDict = ast.literal_eval(rawArguments[0])
+        argumentsDict = json.loads(rawArguments[0])
 
     except Exception, e:
         # print "Usage : commandwatcher.py /path/to/the/log/file workerPort id runnerscript argument1=value1,argument2=value2...",

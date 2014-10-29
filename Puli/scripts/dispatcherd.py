@@ -27,7 +27,6 @@ singletonconfig.load(settings.CONFDIR + "/config.ini")
 #
 # Init the rest of dispatcher app
 #
-# from octopus.dispatcher import make_dispatcher
 from octopus.core.framework import WSAppFramework
 from octopus.dispatcher.webservice.webservicedispatcher import WebServiceDispatcher
 from octopus.dispatcher.dispatcher import Dispatcher
@@ -141,7 +140,6 @@ def make_dispatcher():
 
 
 def main():
-    # import pudb;pu.db
     options = process_args()
     setup_logging(options)
 
@@ -170,14 +168,41 @@ def main():
     logging.getLogger('main').warning("creating dispatcher main application")
     dispatcherApplication = make_dispatcher()
 
+    # Define a periodic callback to process DB/COMPLETION/ASSIGNMENT updates
     periodic = tornado.ioloop.PeriodicCallback(dispatcherApplication.loop, singletonconfig.get('CORE', 'MASTER_UPDATE_INTERVAL'))
     periodic.start()
     try:
         logging.getLogger('main').warning("starting tornado main loop")
         tornado.ioloop.IOLoop.instance().start()
     except (KeyboardInterrupt, SystemExit):
-        # TODO UPDATE DB HERE TO AVOID LOOSING CMD UPDATES ?...
+        logging.getLogger('main').warning("-----------------------------------------------")
         logging.getLogger('main').warning("Exit event caught: closing dispatcher...")
+
+        try:
+            dispatcherApplication.application.dispatchTree.updateCompletionAndStatus()
+            logging.getLogger('main').warning("[OK] update completion and status")
+        except Exception:
+            logging.getLogger('main').warning("[HS] update completion and status")
+
+        try:
+            dispatcherApplication.application.updateRenderNodes()
+            logging.getLogger('main').warning("[OK] update render nodes")
+        except Exception:
+            logging.getLogger('main').warning("[HS] update render nodes")
+
+        try:
+            dispatcherApplication.application.dispatchTree.validateDependencies()
+            logging.getLogger('main').warning("[OK] validate dependencies")
+        except Exception:
+            logging.getLogger('main').warning("[HS] validate dependencies")
+        try:
+            dispatcherApplication.application.updateDB()
+            logging.getLogger('main').warning("[OK] update DB")
+        except Exception:
+            logging.getLogger('main').warning("[HS] update DB")
+
+        logging.getLogger('main').warning("Bye.")
+
 
 if __name__ == '__main__':
     main()

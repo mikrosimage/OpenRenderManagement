@@ -5,29 +5,23 @@
 
 '''
 
-try:
-    import simplejson as json
-except ImportError:
-    import json
-
 import logging
-import time
 import re
 from datetime import datetime
 from tornado.web import HTTPError
 
 __all__ = []
 
-logger = logging.getLogger('dispatcher.webservice')
+logger = logging.getLogger('main.dispatcher.webservice')
 
 
 class QueryError(Exception):
     pass
 
+
 class IQueryNode:
 
-
-    def filterNodes( self, pFilterArgs, pNodes ):
+    def filterNodes(self, pFilterArgs, pNodes):
         """
         Returns a reduced list of nodes according to the given filter arguments (pFilterArgs)
         Filtering works on direct attributes of every nodes: status, user, name, creationtime
@@ -35,7 +29,7 @@ class IQueryNode:
 
         For a single attribute, if several values are given, the resulting list represents the union of every value for this attribute
         However each seperate attribute will "restrict" the result list i.e. it means we operate the intersection between attributes.
-        
+
         For instance, regarding the following filter:
           - constraint_user=['jsa','render']
           - constraint_status=['1','2']
@@ -47,102 +41,90 @@ class IQueryNode:
         if 'constraint_id' in pFilterArgs:
             filteredIds = [int(id) for id in pFilterArgs['constraint_id']]
             pNodes = [child for child in pNodes if child.id in filteredIds]
-            logger.info( "-- Filtering on id list %s, nb remaining nodes: %d", pFilterArgs['constraint_id'], len(pNodes) )
+            logger.info("-- Filtering on id list %s, nb remaining nodes: %d", pFilterArgs['constraint_id'], len(pNodes))
 
         if 'constraint_status' in pFilterArgs:
             statusList = [int(status) for status in pFilterArgs['constraint_status']]
             pNodes = [child for child in pNodes if child.status in statusList]
-            logger.info( "-- Filtering on status %s, nb remaining nodes: %d", pFilterArgs['constraint_status'], len(pNodes) )
+            logger.info("-- Filtering on status %s, nb remaining nodes: %d", pFilterArgs['constraint_status'], len(pNodes))
 
         if 'constraint_user' in pFilterArgs:
             pNodes = [child for child in pNodes if child.user in pFilterArgs['constraint_user']]
-            logger.info( "-- Filtering on user %s, nb remaining nodes: %d", pFilterArgs['constraint_user'], len(pNodes) )
+            logger.info("-- Filtering on user %s, nb remaining nodes: %d", pFilterArgs['constraint_user'], len(pNodes))
 
         if 'constraint_prod' in pFilterArgs:
             filteredNodes = []
             for child in pNodes:
-             	if child.tags.get('prod') in pFilterArgs['constraint_prod']:
-             		filteredNodes += [child]
+                if child.tags.get('prod') in pFilterArgs['constraint_prod']:
+                    filteredNodes += [child]
             pNodes = filteredNodes
-            logger.info( "-- Filtering on prod %s, nb remaining nodes: %d", pFilterArgs['constraint_prod'], len(pNodes) )
+            logger.info("-- Filtering on prod %s, nb remaining nodes: %d", pFilterArgs['constraint_prod'], len(pNodes))
 
         # WARNING: regexp matching constraint can take some time
         # TO IMPROVE
         if 'constraint_name' in pFilterArgs:
-            nameRegex = '|'.join( pFilterArgs['constraint_name'] )
-            pNodes = [child for child in pNodes if re.match( nameRegex, child.name ) ]
-            logger.info( "-- Filtering on name %s, nb remaining nodes: %d", pFilterArgs['constraint_name'], len(pNodes) )
+            nameRegex = '|'.join(pFilterArgs['constraint_name'])
+            pNodes = [child for child in pNodes if re.match(nameRegex, child.name)]
+            logger.info("-- Filtering on name %s, nb remaining nodes: %d", pFilterArgs['constraint_name'], len(pNodes))
 
         if 'constraint_creationtime' in pFilterArgs:
             if len(pFilterArgs['constraint_creationtime']) > 1:
-                logger.info( "More than one date specified, first occurence is used: %s" % str(pFilterArgs['constraint_creationtime'][0]) )
+                logger.info("More than one date specified, first occurence is used: %s" % str(pFilterArgs['constraint_creationtime'][0]))
             try:
-                filterTimestamp = datetime.strptime( pFilterArgs['constraint_creationtime'][0], "%Y-%m-%d %H:%M:%S" ).strftime('%s')
+                filterTimestamp = datetime.strptime(pFilterArgs['constraint_creationtime'][0], "%Y-%m-%d %H:%M:%S").strftime('%s')
                 pNodes = [child for child in pNodes if child.creationTime >= int(filterTimestamp)]
 
-                logger.info( "-- Filtering on date %s (e.g. timestamp=%d), nb remaining nodes: %d", pFilterArgs['constraint_creationtime'][0], 
-                    int(filterTimestamp), len(pNodes) )
+                logger.info("-- Filtering on date %s (e.g. timestamp=%d), nb remaining nodes: %d", pFilterArgs['constraint_creationtime'][0], int(filterTimestamp), len(pNodes))
 
             except ValueError:
-                logger.warning('Error: invalid date format, the format definition is "YYYY-mm-dd HH:MM:SS"' )
+                logger.warning('Error: invalid date format, the format definition is "YYYY-mm-dd HH:MM:SS"')
                 raise HTTPError(400, 'Invalid date format')
             except Exception:
                 logger.warning('Error parsing date constraint')
                 raise HTTPError(400, 'Error when parsing date constraint')
-
 
         if 'constraint_starttime' in pFilterArgs:
             if len(pFilterArgs['constraint_starttime']) > 1:
-                logger.info( "More than one date specified, first occurence is used: %s" % str(pFilterArgs['constraint_starttime'][0]) )
+                logger.info("More than one date specified, first occurence is used: %s" % str(pFilterArgs['constraint_starttime'][0]))
             try:
-                filterTimestamp = datetime.strptime( pFilterArgs['constraint_starttime'][0], "%Y-%m-%d %H:%M:%S" ).strftime('%s')
+                filterTimestamp = datetime.strptime(pFilterArgs['constraint_starttime'][0], "%Y-%m-%d %H:%M:%S").strftime('%s')
                 pNodes = [child for child in pNodes if child.startTime >= int(filterTimestamp)]
 
-                logger.info( "-- Filtering on date %s (e.g. timestamp=%d), nb remaining nodes: %d", pFilterArgs['constraint_starttime'][0], 
-                    int(filterTimestamp), len(pNodes) )
+                logger.info("-- Filtering on date %s (e.g. timestamp=%d), nb remaining nodes: %d", pFilterArgs['constraint_starttime'][0], int(filterTimestamp), len(pNodes))
 
             except ValueError:
-                logger.warning('Error: invalid date format, the format definition is "YYYY-mm-dd HH:MM:SS"' )
+                logger.warning('Error: invalid date format, the format definition is "YYYY-mm-dd HH:MM:SS"')
                 raise HTTPError(400, 'Invalid date format')
             except Exception:
                 logger.warning('Error parsing date constraint')
                 raise HTTPError(400, 'Error when parsing date constraint')
-
 
         if 'constraint_endtime' in pFilterArgs:
             if len(pFilterArgs['constraint_endtime']) > 1:
-                logger.info( "More than one date specified, first occurence is used: %s" % str(pFilterArgs['constraint_endtime'][0]) )
+                logger.info("More than one date specified, first occurence is used: %s" % str(pFilterArgs['constraint_endtime'][0]))
             try:
-                filterTimestamp = datetime.strptime( pFilterArgs['constraint_endtime'][0], "%Y-%m-%d %H:%M:%S" ).strftime('%s')
+                filterTimestamp = datetime.strptime(pFilterArgs['constraint_endtime'][0], "%Y-%m-%d %H:%M:%S").strftime('%s')
                 pNodes = [child for child in pNodes if child.endTime >= int(filterTimestamp)]
 
-                logger.info( "-- Filtering on date %s (e.g. timestamp=%d), nb remaining nodes: %d", pFilterArgs['constraint_endtime'][0], 
-                    int(filterTimestamp), len(pNodes) )
+                logger.info("-- Filtering on date %s (e.g. timestamp=%d), nb remaining nodes: %d", pFilterArgs['constraint_endtime'][0], int(filterTimestamp), len(pNodes))
 
             except ValueError:
-                logger.warning('Error: invalid date format, the format definition is "YYYY-mm-dd HH:MM:SS"' )
+                logger.warning('Error: invalid date format, the format definition is "YYYY-mm-dd HH:MM:SS"')
                 raise HTTPError(400, 'Invalid date format')
             except Exception:
                 logger.warning('Error parsing date constraint')
                 raise HTTPError(400, 'Error when parsing date constraint')
 
-
         return pNodes
-        pass
 
-
-
-
-
-
-    def filterRenderNodes( self, pFilterArgs, pNodes ):
+    def filterRenderNodes(self, pFilterArgs, pNodes):
         """
         Returns a reduced list of rn according to the given filter arguments (pFilterArgs)
         Filtering works on direct attributes of every items: status, name, host, port
 
         For a single attribute, if several values are given, the resulting list represents the union of every value for this attribute
         However each seperate attribute will "restrict" the result list i.e. it means we operate the intersection between attributes.
-        
+
         For instance, regarding the following filter:
           - constraint_host=['vfxpc64','rndlin100']
           - constraint_status=['1','2']
@@ -159,7 +141,7 @@ class IQueryNode:
         if 'constraint_status' in pFilterArgs:
             statusList = [int(status) for status in pFilterArgs['constraint_status']]
             pNodes = [child for child in pNodes if child.status in statusList]
-            logger.info( "-- Filtering on status %s, nb remaining render nodes: %d", pFilterArgs['constraint_status'], len(pNodes) )
+            logger.info("-- Filtering on status %s, nb remaining render nodes: %d", pFilterArgs['constraint_status'], len(pNodes))
 
         # if 'constraint_user' in pFilterArgs:
         #     pNodes = [child for child in pNodes if child.user in pFilterArgs['constraint_user']]
@@ -168,24 +150,22 @@ class IQueryNode:
         # WARNING: regexp matching constraint can take some time
         # TO IMPROVE
         if 'constraint_name' in pFilterArgs:
-            nameRegex = '|'.join( pFilterArgs['constraint_name'] )
-            pNodes = [child for child in pNodes if re.match( nameRegex, child.name ) ]
-            logger.info( "-- Filtering on name %s, nb remaining render nodes: %d", pFilterArgs['constraint_name'], len(pNodes) )
-
+            nameRegex = '|'.join(pFilterArgs['constraint_name'])
+            pNodes = [child for child in pNodes if re.match(nameRegex, child.name)]
+            logger.info("-- Filtering on name %s, nb remaining render nodes: %d", pFilterArgs['constraint_name'], len(pNodes))
 
         if 'constraint_speed' in pFilterArgs:
             cpuspeedFilters = pFilterArgs['constraint_speed']
             for cpuspeed in cpuspeedFilters:
                 if cpuspeed[0] == '+':
                     cpuspeed = float(cpuspeed[1:])
-                    pNodes = [child for child in pNodes if cpuspeed < child.speed ]
+                    pNodes = [child for child in pNodes if cpuspeed < child.speed]
                 elif cpuspeed[0] == '-':
                     cpuspeed = float(cpuspeed[1:])
-                    pNodes = [child for child in pNodes if child.speed < cpuspeed ]
+                    pNodes = [child for child in pNodes if child.speed < cpuspeed]
                 else:
-                    pNodes = [child for child in pNodes if child.speed == float(cpuspeed) ]
-            logger.info( "-- Filtering on cpu speed %s, nb remaining render nodes: %d", pFilterArgs['constraint_speed'], len(pNodes) )
-
+                    pNodes = [child for child in pNodes if child.speed == float(cpuspeed)]
+            logger.info("-- Filtering on cpu speed %s, nb remaining render nodes: %d", pFilterArgs['constraint_speed'], len(pNodes))
 
         if 'constraint_ramsize' in pFilterArgs:
             ramFilters = pFilterArgs['constraint_ramsize']
@@ -193,14 +173,13 @@ class IQueryNode:
             for ram in ramFilters:
                 if ram[0] == '+':
                     ram = int(ram[1:])
-                    pNodes = [child for child in pNodes if ram < child.ramSize ]
+                    pNodes = [child for child in pNodes if ram < child.ramSize]
                 elif ram[0] == '-':
                     ram = int(ram[1:])
-                    pNodes = [child for child in pNodes if child.ramSize < ram ]
+                    pNodes = [child for child in pNodes if child.ramSize < ram]
                 else:
-                    pNodes = [child for child in pNodes if child.ramSize == int(ram) ]
-            logger.info( "-- Filtering on ramsize %s, nb remaining render nodes: %d", pFilterArgs['constraint_ramsize'], len(pNodes) )
-
+                    pNodes = [child for child in pNodes if child.ramSize == int(ram)]
+            logger.info("-- Filtering on ramsize %s, nb remaining render nodes: %d", pFilterArgs['constraint_ramsize'], len(pNodes))
 
         if 'constraint_coresnumber' in pFilterArgs:
             coreFilters = pFilterArgs['constraint_coresnumber']
@@ -208,37 +187,17 @@ class IQueryNode:
             for core in coreFilters:
                 if core[0] == '+':
                     core = int(core[1:])
-                    pNodes = [child for child in pNodes if core < child.coresNumber ]
+                    pNodes = [child for child in pNodes if core < child.coresNumber]
                 elif core[0] == '-':
                     core = int(core[1:])
-                    pNodes = [child for child in pNodes if child.coresNumber < core ]
+                    pNodes = [child for child in pNodes if child.coresNumber < core]
                 else:
-                    pNodes = [child for child in pNodes if child.coresNumber == int(core) ]
-            logger.info( "-- Filtering on coresNumber %s, nb remaining render nodes: %d", pFilterArgs['constraint_coresnumber'], len(pNodes) )
-
-
-        # Auncun interet de filtrer sur ce timer, il est remis a jours a chaque update du worker
-        # il faudrait avoir un time de l'enregistrement du worker
-        #
-        # if 'constraint_lastalivetime' in pFilterArgs:
-        #     if len(pFilterArgs['constraint_lastalivetime']) > 1:
-        #         logger.info( "More than one date specified, first occurence is used: %s" % str(pFilterArgs['constraint_lastalivetime'][0]) )
-        #     try:
-        #         filterTimestamp = datetime.strptime( pFilterArgs['constraint_lastalivetime'][0], "%Y-%m-%d %H:%M:%S" ).strftime('%s')
-        #         pNodes = [child for child in pNodes if child.lastAliveTime >= int(filterTimestamp)]
-        #         logger.info( "-- Filtering on date %s (e.g. timestamp=%d), nb remaining nodes: %d", pFilterArgs['constraint_lastalivetime'][0], 
-        #             int(filterTimestamp), len(pNodes) )
-        #     except ValueError:
-        #         logger.warning('Error: invalid date format, the format definition is "YYYY-mm-dd HH:MM:SS"' )
-        #         raise HTTPError(400, 'Invalid date format')
-        #     except Exception:
-        #         logger.warning('Error parsing date constraint')
-        #         raise HTTPError(400, 'Error when parsing date constraint')
+                    pNodes = [child for child in pNodes if child.coresNumber == int(core)]
+            logger.info("-- Filtering on coresNumber %s, nb remaining render nodes: %d", pFilterArgs['constraint_coresnumber'], len(pNodes))
 
         return pNodes
 
-
-    def compareTS( self, operator, date1, date2 ):
+    def compareTS(self, operator, date1, date2):
         """
         Use a string operator (<,>) to return a value between to timestamps
         :operator: a single charater '<' or '>'
@@ -246,7 +205,6 @@ class IQueryNode:
         :date2: second date to compare
         :return: a boolean indicating the result of "date1 OPERATOR date2"
         """
-        # logger.warning("Comparison: %d %s %d" % (date1, operator, date2))
         if operator == '<':
             return True if date1 < date2 else False
         elif operator == '>':
@@ -254,8 +212,7 @@ class IQueryNode:
         else:
             raise QueryError('Invalid operator')
 
-
-    def filterCommands( self, pFilterArgs, pItems ):
+    def filterCommands(self, pFilterArgs, pItems):
         """
         Parse several given constraint to reduce the number of items in list.
         The resulting items will be sent back as a request response.
@@ -277,16 +234,16 @@ class IQueryNode:
         if 'constraint_starttime' in pFilterArgs:
             filterStartTime = True
             if len(pFilterArgs['constraint_starttime']) > 1:
-                logger.info( "More than one date specified, first occurence is used: %s" % str(pFilterArgs['constraint_starttime'][0]) )
+                logger.info("More than one date specified, first occurence is used: %s" % str(pFilterArgs['constraint_starttime'][0]))
             try:
-                if pFilterArgs['constraint_starttime'][0][0] in ['>','<']:
+                if pFilterArgs['constraint_starttime'][0][0] in ['>', '<']:
                     operator, dateValue = pFilterArgs['constraint_starttime'][0][:1], pFilterArgs['constraint_starttime'][0][1:]
                 else:
                     operator, dateValue = ('>', pFilterArgs['constraint_starttime'][0])
 
-                filterTimestamp = int(datetime.strptime( dateValue, "%Y-%m-%d %H:%M:%S" ).strftime('%s'))
-            except (ValueError,QueryError),e:
-                logger.warning('Error: invalid date format, the format definition is "YYYY-mm-dd HH:MM:SS", optionnal operator can be added as first character "<" or ">"' )
+                filterTimestamp = int(datetime.strptime(dateValue, "%Y-%m-%d %H:%M:%S").strftime('%s'))
+            except (ValueError, QueryError):
+                logger.warning('Error: invalid date format, the format definition is "YYYY-mm-dd HH:MM:SS", optionnal operator can be added as first character "<" or ">"')
                 raise HTTPError(400, 'Invalid date format or invalid operator')
             except Exception:
                 logger.warning('Error parsing date constraint')
@@ -300,7 +257,7 @@ class IQueryNode:
             if filterStatus and item.status not in statusList:
                 continue
 
-            if filterStartTime and not self.compareTS( operator, item.startTime, filterTimestamp):
+            if filterStartTime and not self.compareTS(operator, item.startTime, filterTimestamp):
                 continue
 
             yield item

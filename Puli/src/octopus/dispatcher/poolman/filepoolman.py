@@ -10,7 +10,7 @@ import os
 from octopus.dispatcher.poolman import IPoolManager, PoolDescription, ComputerDescription, ComputerNotFoundError, PoolNotFoundError
 from octopus.dispatcher import settings
 
-LOGGER = logging.getLogger("dispatcher")
+LOGGER = logging.getLogger("main.dispatcher")
 WORKER_DEFINITION_PATTERN = re.compile(r'(?P<hostname>[a-zA-Z0-9-.]+) (?P<port>\d+) (?P<cpucount>\d+) (?P<cpucorecount>\d+) (?P<cpufreq>\d+(?:\.\d+)*) (?P<ramsize>\d+) (?P<properties>.*)$')
 WORKER_CAPABILITY_PATTERN = re.compile(r'(?P<name>\w+)="(?P<value>\w+)"(?:,|$)')
 POOL_WORKER_DEFINITION_PATTERN = re.compile(r'(?P<hostname>[\w.-]+) +(?P<port>\d+)$')

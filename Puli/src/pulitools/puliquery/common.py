@@ -8,51 +8,53 @@
 The custom table is a generic definition
 
 """
-__author__      = "Jerome Samson"
-__copyright__   = "Copyright 2013, Mikros Image"
+__author__ = "Jerome Samson"
+__copyright__ = "Copyright 2013, Mikros Image"
 
 
 from settings import Settings
 from optparse import IndentedHelpFormatter
-from datetime import datetime,timedelta
+from datetime import datetime, timedelta
 
-import urllib, sys, types
+import urllib
+import sys
+import types
 
-VERBOSE=Settings.verbose
+VERBOSE = Settings.verbose
 
 
 class CustomTable:
     """
-    | Utility class to display a table with field data. 
+    | Utility class to display a table with field data.
     | Use in pul_query/pul_rn tools
     | CustomTable and descendant are a generic way to display information returned by a query.
     | Usual query result is of the form::
     |   {
-    |       "item": 
+    |       "item":
     |       [
     |           {
-    |               "field1": val1, 
-    |               "field2": val2, 
+    |               "field1": val1,
+    |               "field2": val2,
     |               ...
     |           },
     |           ...
     |       ]
-    |   
+    |
     |       "summary":
     |       {
-    |           "count": xx, 
-    |           "totalInDispatcher": xx, 
-    |           "requestTime": xx, 
+    |           "count": xx,
+    |           "totalInDispatcher": xx,
+    |           "requestTime": xx,
     |           "requestDate": xx
     |       }
     |   }
-    | 
+    |
     | Any class inheriting CustomTable can define a list of column, each column handling the representation of a field and its header.
     | From outside the class, a user can then delcare a table representation and call the main functions:
     |  :displayHeader: to print header on stdout
     |  :displayRow: to print each individual row on stdout
     |  :displayFooter: to print the footer (i.e. summary info)
-    | 
+    |
     | The representation class will allow several attribute for each column:
     |  :field: a data field (from query result) or a formula (any CustomTable formula method)
     |  :label: a text used for table header
@@ -61,7 +63,7 @@ class CustomTable:
     |  :labelFormat: idem for label info
     |  :truncate: Optionnal attribute, the max length that should be displayed (to avoid messing with columns alignment)
     |  :transform: Optionnal attribute, the name of a static method of the parent CustomTable class. It will preprocess the value before displaying it at a string (example: date format, status short name)
-    | 
+    |
     | The mecanism to calcultate a data or transform a data, is based on python's ability to store function addresses.
     | Formulas and Transforms are defined as CustomTable static method.
     |   - A formula will be defined in the "field" of the column, it is a tuple : the first item is the formula function, the remaining items are the parameters
@@ -76,19 +78,19 @@ class CustomTable:
     #
 
     @staticmethod
-    def formulaDiff( pValue1, pValue2 ):
+    def formulaDiff(pValue1, pValue2):
         if pValue1 is None or pValue2 is None:
             return 0
         return float(pValue1) - float(pValue2)
 
     @staticmethod
-    def formulaRuntime( pEndTime, pStartTime ):
+    def formulaRuntime(pEndTime, pStartTime):
         result = "-"
         if pStartTime is not None:
             if pEndTime is not None:
-                result = datetime.fromtimestamp( pEndTime ) - datetime.fromtimestamp( pStartTime )
+                result = datetime.fromtimestamp(pEndTime) - datetime.fromtimestamp(pStartTime)
             else:
-                result = datetime.now() - datetime.fromtimestamp( pStartTime )
+                result = datetime.now() - datetime.fromtimestamp(pStartTime)
             result = str(timedelta(seconds=round(result.seconds)))
         return result
 
@@ -781,7 +783,7 @@ class ConstraintFactory:
     | Can parse arguments and options received as command line and create a proper http query string, i.e.:
     | With command line args and options: "<tools> --constraint user=jsa 152 156 188"
     | We create a useful query: "&constraint_user=jsa&constraint_id=152&constraint_id=156&constraint_id=188"
-    | 
+    |
     | Returns None if a constraint or update is not valid.
     """
 
@@ -792,7 +794,7 @@ class ConstraintFactory:
         | "constraint_user=jsa&constraint_id=152"
         | With command line args and options: "--constraint user=jsa -c id=152 -c id=156 -c id=188"
         | We create a useful query: "&constraint_user=jsa&constraint_id=152&constraint_id=156&constraint_id=188"
-        
+
         :param pUserArguments: A list of strings representing user arguments
         :param pUserOptions: A dic of strings representing user options
         :return: A string query or none if a constraint or update is not valid.
@@ -821,7 +823,7 @@ class ConstraintFactory:
                 if len(constraint) < 2:
                     print "Error: constraint is not valid, it must have the following format: -C field=value"
                     return None
-                    
+
                 constField = str(constraint[0]).lower()
                 constVal = str(constraint[1])
 
@@ -831,7 +833,7 @@ class ConstraintFactory:
                 if constField in ['name']:
                     constVal = '^'+constVal.replace('*', '.*')+'$'
 
-                query += "&constraint_%s=%s" % (constField , urllib.quote(constVal))
+                query += "&constraint_%s=%s" % (constField, urllib.quote(constVal))
 
 
 
@@ -861,13 +863,12 @@ class ConstraintFactory:
 
                 field = str(updateExpression[0])
                 value = str(updateExpression[1])
-                query += "&update_%s=%s" % (field , urllib.quote(value))
+                query += "&update_%s=%s" % (field, urllib.quote(value))
 
         return query
 
 
-
-class PlainHelpFormatter(IndentedHelpFormatter): 
+class PlainHelpFormatter(IndentedHelpFormatter):
     '''
     Subclass of OptParse format handler, will allow to have a raw text formatting in usage and desc fields.
     '''
@@ -876,4 +877,3 @@ class PlainHelpFormatter(IndentedHelpFormatter):
             return description + "\n"
         else:
             return ""
-            

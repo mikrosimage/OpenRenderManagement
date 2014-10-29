@@ -16,7 +16,7 @@ import re
 from octopus.core.communication.http import Http404
 from methodmapper import MethodMapper
 
-logger = logging.getLogger("framework.webservice")
+logger = logging.getLogger('main.framework.webservice')
 
 
 ## This class puts in correlation a regular expression and a callback method.

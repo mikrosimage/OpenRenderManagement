@@ -23,16 +23,17 @@ class Controller(framework.Controller):
 from octopus.core import singletonconfig, singletonstats
 from octopus.core.framework import BaseResource
 
+
 class DispatcherBaseResource(BaseResource):
     """
     Simply override prepare to have a specific handler for the dispatcher (stats are not allowed for the worker)
     """
-    
-    def prepare( self ):
+
+    def prepare(self):
         """
         For each request, update stats if needed
         """
-        if singletonconfig.get('CORE','GET_STATS'):
+        if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleCounts['incoming_requests'] += 1
 
             if self.request.method == 'GET':

@@ -13,7 +13,7 @@ from octopus.dispatcher.webservice import DispatcherBaseResource
 
 __all__ = []
 
-logger = logging.getLogger('dispatcher.webservice.PoolController')
+logger = logging.getLogger('main.dispatcher.webservice.PoolController')
 
 
 class PoolsResource(DispatcherBaseResource):
@@ -44,14 +44,6 @@ class PoolResource(DispatcherBaseResource):
             tmpPool = Pool(None, poolName)
             self.getDispatchTree().pools[poolName] = tmpPool
 
-            # JSA not necessary and old code causes an error
-            # we just return the pool repr
-            
-            # if self.request.headers['Host'] is not None:
-            #     host = self.request.headers['Host']
-            # else:
-            #     host = "%s:%d" % self.getServerAddress()
-            # self.set_header('Location', 'http://%s/pools/%s/' % (host, poolName))
             self.writeCallback(json.dumps(tmpPool.to_json()))
 
     #@queue

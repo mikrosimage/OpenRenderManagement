@@ -11,9 +11,7 @@ from octopus.dispatcher.strategies import FifoStrategy, loadStrategyClass
 from octopus.core.enums.command import *
 from octopus.dispatcher.rules import RuleError
 
-
-
-logger = logging.getLogger("dispatcher.dispatchtree")
+logger = logging.getLogger('main.dispatcher.dispatchtree')
 
 
 def splitpath(path):
@@ -43,6 +41,7 @@ class ObjectListener(object):
 class TimeoutException(Exception):
     pass
 
+
 class DispatchTree(object):
 
     def _display_(self):
@@ -52,80 +51,73 @@ class DispatchTree(object):
         startTimer = time.time()
         timeout = 2.0
 
-        result="<html><head><style>table,th,td { margin: 5px; border-collapse:collapse; border:1px solid black; }</style></head><body font-family='verdana'>"
+        result = "<html><head><style>table,th,td { margin: 5px; border-collapse:collapse; border:1px solid black; }</style></head><body font-family='verdana'>"
 
-        result +="<h3>Pools: %r</h3><table>" % len(self.pools)
-        for i,curr in enumerate(self.pools):
+        result += "<h3>Pools: %r</h3><table>" % len(self.pools)
+        for i, curr in enumerate(self.pools):
             result += "<tr><td>%r</td><td>%s</td></tr>" % (i, self.pools[curr])
 
             if (time.time()-startTimer) > timeout:
                 raise TimeoutException("TimeoutException occured: the dispatchTree might be too large to dump")
-        result+="</table>"
+        result += "</table>"
 
-        result +="<h3>Rendernodes: %r</h3><table>" % len(self.renderNodes)
-        for i,curr in enumerate(self.renderNodes):
+        result += "<h3>Rendernodes: %r</h3><table>" % len(self.renderNodes)
+        for i, curr in enumerate(self.renderNodes):
             result += "<tr><td>%r</td><td>%r</td></tr>" % (i, self.renderNodes[curr])
 
             if (time.time()-startTimer) > timeout:
                 raise TimeoutException("TimeoutException occured: the dispatchTree might be too large to dump")
-        result+="</table>"
+        result += "</table>"
 
-        result +="<h3>PoolShares: (attribution de parc pour une tache fille du root, on attribue pas de poolshare aux autres)</h3><table>"
-        for i,curr in enumerate(self.poolShares):
+        result += "<h3>PoolShares: (attribution de parc pour une tache fille du root, on attribue pas de poolshare aux autres)</h3><table>"
+        for i, curr in enumerate(self.poolShares):
             result += "<tr><td>%r</td><td>%s</td></tr>" % (i, self.poolShares[curr])
 
             if (time.time()-startTimer) > timeout:
                 raise TimeoutException("TimeoutException occured: the dispatchTree might be too large to dump")
-        result+="</table>"
+        result += "</table>"
 
-
-        result +="<h3>Main level nodes (proxy info only):</h3><table>"
-        result +="<tr><th>id</th><th>name</th><th>readyCommandCount</th><th>commandCount</th><th>completion</th><th>poolshares</th></tr>"
-        for i,curr in enumerate(self.nodes[1].children):
+        result += "<h3>Main level nodes (proxy info only):</h3><table>"
+        result += "<tr><th>id</th><th>name</th><th>readyCommandCount</th><th>commandCount</th><th>completion</th><th>poolshares</th></tr>"
+        for i, curr in enumerate(self.nodes[1].children):
             result += "<tr><td>%r</td><td>%s</td><td>%d</td><td>%d</td><td>%.2f</td><td>%s</td></tr>" % (i, curr.name, curr.readyCommandCount, curr.commandCount, curr.completion, curr.poolShares.values())
 
             if (time.time()-startTimer) > timeout:
                 raise TimeoutException("TimeoutException occured: the dispatchTree might be too large to dump")
-        result+="</table>"
+        result += "</table>"
 
-
-        result +="<h3>All nodes:</h3><table>"
-        for i,curr in enumerate(self.nodes):
+        result += "<h3>All nodes:</h3><table>"
+        for i, curr in enumerate(self.nodes):
             result += "<tr><td>%d</td><td>%s</td><td>%r</td></tr>" % (i, curr, self.nodes[curr].name)
 
             if (time.time()-startTimer) > timeout:
                 raise TimeoutException("TimeoutException occured: the dispatchTree might be too large to dump")
-        result+="</table>"
+        result += "</table>"
 
-
-        result +="<h3>Tasks:</h3><table>"
-        for i,curr in enumerate(self.tasks):
-            result += "<tr><td>%r</td><td>%s</td></tr>" % (i, repr(self.tasks[curr]) )
+        result += "<h3>Tasks:</h3><table>"
+        for i, curr in enumerate(self.tasks):
+            result += "<tr><td>%r</td><td>%s</td></tr>" % (i, repr(self.tasks[curr]))
             if (time.time()-startTimer) > timeout:
                 raise TimeoutException("TimeoutException occured: the dispatchTree might be too large to dump")
-        result+="</table>"
+        result += "</table>"
 
-
-        result +="<h3>Commands:</h3><table>"
-        for i,curr in enumerate(self.commands):
-            result += "<tr><td>%r</td><td>%s</td></tr>" % (i, self.commands[curr] )
+        result += "<h3>Commands:</h3><table>"
+        for i, curr in enumerate(self.commands):
+            result += "<tr><td>%r</td><td>%s</td></tr>" % (i, self.commands[curr])
             if (time.time()-startTimer) > timeout:
                 raise TimeoutException("TimeoutException occured: the dispatchTree might be too large to dump")
-        result+="</table>"
+        result += "</table>"
 
-
-        result +="<h3>Rules:</h3><table>"
-        for i,curr in enumerate(self.rules):
-            result += "<tr><td>%r</td><td>%s</td></tr>" % (i, curr )
+        result += "<h3>Rules:</h3><table>"
+        for i, curr in enumerate(self.rules):
+            result += "<tr><td>%r</td><td>%s</td></tr>" % (i, curr)
             if (time.time()-startTimer) > timeout:
                 raise TimeoutException("TimeoutException occured: the dispatchTree might be too large to dump")
-        result+="</table>"
+        result += "</table>"
 
-
-        result +="</body></html>"
-        logger.info("DispatchTree printed in %.6f s" % (time.time()-startTimer) )
+        result += "</body></html>"
+        logger.info("DispatchTree printed in %.6f s" % (time.time()-startTimer))
         return result
-
 
     def __init__(self):
         # core data
@@ -203,8 +195,6 @@ class DispatchTree(object):
     def updateCompletionAndStatus(self):
         self.root.updateCompletionAndStatus()
 
-
-
     def validateDependencies(self):
         nodes = set()
         for dependency in self.modifiedNodes:
@@ -213,7 +203,7 @@ class DispatchTree(object):
         del self.modifiedNodes[:]
         for node in nodes:
             # logger.debug("Dependencies on %r = %r"% (node.name, node.checkDependenciesSatisfaction() ) )
-            if not hasattr(node,"task") or node.task is None:
+            if not hasattr(node, "task") or node.task is None:
                 continue
             if isinstance(node, TaskNode):
                 if node.checkDependenciesSatisfaction():
@@ -239,7 +229,6 @@ class DispatchTree(object):
             #         for cmd in node.getAllCommands():
             #             if cmd.status == CMD_READY:
             #                 cmd.status = CMD_BLOCKED
-
 
     def registerNewGraph(self, graph):
         user = graph['user']
@@ -340,13 +329,12 @@ class DispatchTree(object):
         res = 0
         if isinstance(node, FolderNode):
             for child in node.children:
-                res += self.populateCommandCounts( child )
+                res += self.populateCommandCounts(child)
         elif isinstance(node, TaskNode):
             res = len(node.task.commands)
 
         node.commandCount = res
         return res
-
 
     def _createTaskGroupFromJSON(self, taskGroupDefinition, user):
         # name, parent, arguments, environment, priority, dispatchKey, strategy
@@ -453,7 +441,7 @@ class DispatchTree(object):
                     del poolShare.pool.poolShares[poolShare.node]
                     del self.poolShares[poolShare.id]
                     self.toArchiveElements.append(poolShare)
-            
+
             if element.additionnalPoolShares:
                 for poolShare in element.additionnalPoolShares.values():
                     del poolShare.pool.poolShares[poolShare.node]
@@ -494,7 +482,7 @@ class DispatchTree(object):
     def onTaskCreation(self, task):
         # logger.info("  -- on task creation: %s" % task)
 
-        if task.id == None:
+        if task.id is None:
             self.taskMaxId += 1
             task.id = self.taskMaxId
             self.toCreateElements.append(task)
@@ -521,13 +509,13 @@ class DispatchTree(object):
 
     def onNodeCreation(self, node):
         # logger.info("  -- on node creation: %s" % node)
-        if node.id == None:
+        if node.id is None:
             self.nodeMaxId += 1
             node.id = self.nodeMaxId
             self.toCreateElements.append(node)
         else:
             self.nodeMaxId = max(self.nodeMaxId, node.id)
-        if node.parent == None:
+        if node.parent is None:
             node.parent = self.root
 
     def onNodeDestruction(self, node):
@@ -545,7 +533,7 @@ class DispatchTree(object):
     ### methods called after interaction with a RenderNode
 
     def onRenderNodeCreation(self, renderNode):
-        if renderNode.id == None:
+        if renderNode.id is None:
             self.renderNodeMaxId += 1
             renderNode.id = self.renderNodeMaxId
             self.toCreateElements.append(renderNode)
@@ -557,7 +545,7 @@ class DispatchTree(object):
         try:
             del self.renderNodes[rendernode.name]
             self.toArchiveElements.append(rendernode)
-        except KeyError, e:
+        except KeyError:
             # TOFIX: use of class method vs obj method in changeListener might generate a duplicate call
             logger.warning("RN %s seems to have been deleted already." % rendernode.name)
 
@@ -568,7 +556,7 @@ class DispatchTree(object):
     ### methods called after interaction with a Pool
 
     def onPoolCreation(self, pool):
-        if pool.id == None:
+        if pool.id is None:
             self.poolMaxId += 1
             pool.id = self.poolMaxId
             self.toCreateElements.append(pool)

@@ -15,16 +15,16 @@ http://localhost:8004/query?attr=id&attr=name&attr=user&constraint_user=jsa&cons
 Les champs sur lesquels peuvent porter les requetes: user,prod,date
 
 On retourne un objet json au format:
-{ 
+{
     'summary':
     {
         'count': int,
-        'totalInDispatcher': int, 
+        'totalInDispatcher': int,
         'requestTime': datetime,
         'requestDate': datetime,
-    } 
+    }
 
-    'items': 
+    'items':
         [
             {
                 attr1: data,
@@ -43,7 +43,7 @@ On retourne un objet json au format:
 
             },
             ...
-        ] 
+        ]
 }
 
 Inspire du comportement d'outil comme condor_q/condor_status
@@ -68,18 +68,19 @@ from octopus.dispatcher.webservice import DispatcherBaseResource
 
 __all__ = []
 
-logger = logging.getLogger('query')
+logger = logging.getLogger('main.query')
+
 
 class QueryResource(DispatcherBaseResource, IQueryNode):
     ADDITIONNAL_SUPPORTED_FIELDS = ['pool', 'userDefinedMaxRn']
-    DEFAULT_FIELDS = ['id','user','name', 'tags:prod', 'tags:shot', \
-                     'status', 'completion', 'dispatchKey', \
-                     'startTime', 'creationTime', 'endTime', 'updateTime', \
-                     'averageTimeByFrame', 'maxTimeByFrame', 'minTimeByFrame', \
-                     'maxRN', 'optimalMaxRN', 'allocatedRN', 'maxAttempt', 'commandCount', 'readyCommandCount', 'doneCommandCount']
+    DEFAULT_FIELDS = ['id', 'user', 'name', 'tags:prod', 'tags:shot',
+                      'status', 'completion', 'dispatchKey',
+                      'startTime', 'creationTime', 'endTime', 'updateTime',
+                      'averageTimeByFrame', 'maxTimeByFrame', 'minTimeByFrame',
+                      'maxRN', 'optimalMaxRN', 'allocatedRN', 'maxAttempt',
+                      'commandCount', 'readyCommandCount', 'doneCommandCount']
 
-
-    def createTaskRepr( self, pNode, pAttributes, pTree=False ):
+    def createTaskRepr(self, pNode, pAttributes, pTree=False):
         """
         Create a json representation for a given node hierarchy and user attributes.
         Recursive call to represent the FolderNode/TaskNode tree
@@ -97,7 +98,7 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
                 if currArg.startswith("tags:"):
                     # Attribute name references a "tags" item
                     currArg = unicode(currArg[5:])
-                    value = unicode(pNode.tags.get(currArg,''))
+                    value = unicode(pNode.tags.get(currArg, ''))
                     currTask[currArg] = value
                 elif currArg == "pool":
                     # Attribute 'pool' is a specific item
@@ -111,16 +112,16 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
                 #
                 else:
                     # Attribute is a standard attribute of a Node
-                    currTask[currArg] =  getattr(pNode, currArg, 'undefined')
+                    currTask[currArg] = getattr(pNode, currArg, 'undefined')
 
-            except AttributeError, e:
-                currTask[currArg] =  'undefined'
+            except AttributeError:
+                currTask[currArg] = 'undefined'
                 logger.warning("Impossible to get attribute '%s' on object %r" % (currArg, pNode))
 
         if pTree and hasattr(pNode, 'children'):
             childTasks = []
             for child in pNode.children:
-                childTasks.append( self.createTaskRepr( child, pAttributes, pTree ) )
+                childTasks.append(self.createTaskRepr(child, pAttributes, pTree))
 
             currTask['items'] = childTasks
         return currTask
@@ -137,7 +138,7 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
         if 'tree' in args:
             tree = bool(args['tree'])
         else:
-            tree=False
+            tree = False
 
         try:
             start_time = time.time()
@@ -151,20 +152,22 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
             # --- Check if result list (without filtering) is already empty
             #
             if len(nodes) == 0:
-                content = { 'summary': { \
-                                'count':0, \
-                                'totalInDispatcher':0, \
-                                'requestTime':time.time() - start_time, \
-                                'requestDate':time.ctime() }, \
-                            'items':resultData }
-            
-                self.writeCallback( json.dumps(content) )
-                return
+                content = {
+                    'summary': {
+                        'count': 0,
+                        'totalInDispatcher': 0,
+                        'requestTime': time.time() - start_time,
+                        'requestDate': time.ctime()
+                    },
+                    'items': resultData
+                }
 
+                self.writeCallback(json.dumps(content))
+                return
 
             #
             # --- Check if display attributes are valid
-            #     We handle 2 types of attributes: 
+            #     We handle 2 types of attributes:
             #       - simple node attributes
             #       - "tags" node attributes (no verification, it is not mandatory)
             #
@@ -182,47 +185,40 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
                 # Using default result attributes
                 args['attr'] = QueryResource.DEFAULT_FIELDS
 
-
             #
             # --- filtering
             #
-            filteredNodes = self.filterNodes( args, nodes )
-
+            filteredNodes = self.filterNodes(args, nodes)
 
             #
             # --- Prepare the result json object
             #
             for currNode in filteredNodes:
                 currTask = self.createTaskRepr(currNode, args['attr'], tree)
-                resultData.append( currTask )
+                resultData.append(currTask)
 
-            content = { 
-                        'summary': 
-                            { 
-                            'count':len(filteredNodes), 
-                            'totalInDispatcher':totalNodes, 
-                            'requestTime':time.time() - start_time,
-                            'requestDate':time.ctime()
-                            }, 
-                        'items':resultData 
-                        }
+            content = {
+                'summary': {
+                    'count': len(filteredNodes),
+                    'totalInDispatcher': totalNodes,
+                    'requestTime': time.time() - start_time,
+                    'requestDate': time.ctime()
+                },
+                'items': resultData
+            }
 
             # Create response and callback
-            self.writeCallback( json.dumps(content) )
-
+            self.writeCallback(json.dumps(content))
 
         except KeyError:
             raise Http404('Error unknown key')
-        
+
         except HTTPError, e:
             raise e
 
         except Exception, e:
             logger.warning('Impossible to retrieve result for query: %s', self.request.uri)
-            raise HTTPError( 500, "Internal error")
-
-
-
+            raise HTTPError(500, "Internal error")
 
 
 class RenderNodeQueryResource(DispatcherBaseResource, IQueryNode):
@@ -260,13 +256,10 @@ class RenderNodeQueryResource(DispatcherBaseResource, IQueryNode):
     freeRam: 3959
     """
 
-
     ADDITIONNAL_SUPPORTED_FIELDS = ['caracteristics:mikdistrib', 'caracteristics:distribname', 'caracteristics:openglversion']
-    DEFAULT_FIELDS = ['id', 'name', 'host', 'port', 'ramSize', 'coresNumber', 'speed', 'status', 'lastAliveTime', 'createDate', 'registerDate', 'puliversion', 'pools', 'systemFreeRam', 'systemSwapPercentage' ]
+    DEFAULT_FIELDS = ['id', 'name', 'host', 'port', 'ramSize', 'coresNumber', 'speed', 'status', 'lastAliveTime', 'createDate', 'registerDate', 'puliversion', 'pools', 'systemFreeRam', 'systemSwapPercentage']
 
-
-
-    def createRepr( self, pRenderNode, pAttributes ):
+    def createRepr(self, pRenderNode, pAttributes):
         """
         Create a json representation for a given node.
         param: rendernode to represent
@@ -281,16 +274,16 @@ class RenderNodeQueryResource(DispatcherBaseResource, IQueryNode):
             if currArg.startswith("caracteristics:"):
                 # Attribute name references a "tags" item
                 caract = unicode(currArg[15:])
-                value = unicode(pRenderNode.caracteristics.get(caract,''))
+                value = unicode(pRenderNode.caracteristics.get(caract, ''))
                 result[caract] = value
             elif currArg == "pools":
                 # Attribute name is a specific item
-                result[currArg] = [ pool.name for pool in pRenderNode.pools ]
+                result[currArg] = [pool.name for pool in pRenderNode.pools]
                 # result[currArg] = ",".join( str(pRenderNode.pools))
 
             else:
                 # Attribute is a standard attribute of a Node
-                result[currArg] =  getattr(pRenderNode, currArg, 'undefined')
+                result[currArg] = getattr(pRenderNode, currArg, 'undefined')
 
         return result
 
@@ -314,51 +307,48 @@ class RenderNodeQueryResource(DispatcherBaseResource, IQueryNode):
 
             #
             # --- Check if display attributes are valid
-            #     We handle 2 types of attributes: 
+            #     We handle 2 types of attributes:
             #       - simple node attributes
             #       - "tags" node attributes (no verification, it is not mandatory)
             #
             if 'attr' in args:
                 for currAttribute in args['attr']:
-                    if not hasattr(rn[0],currAttribute):
-                        if currAttribute not in RenderNodeQueryResource.ADDITIONNAL_SUPPORTED_FIELDS :
-                            logger.warning('Error retrieving data, invalid attribute requested : %s', currAttribute )
-                            raise HTTPError( 500, "Invalid attribute requested:"+str(currAttribute) )
+                    if not hasattr(rn[0], currAttribute):
+                        if currAttribute not in RenderNodeQueryResource.ADDITIONNAL_SUPPORTED_FIELDS:
+                            logger.warning('Error retrieving data, invalid attribute requested : %s', currAttribute)
+                            raise HTTPError(500, "Invalid attribute requested:" + str(currAttribute))
             else:
                 # Using default result attributes
                 args['attr'] = RenderNodeQueryResource.DEFAULT_FIELDS
 
-
             #
             # --- filtering
             #
-            filteredRN = self.filterRenderNodes( args, rn )
-
+            filteredRN = self.filterRenderNodes(args, rn)
 
             #
             # --- Prepare the result json object
             #
             for currNode in filteredRN:
-                currItem = self.createRepr( currNode, args['attr'] )
-                resultData.append( currItem )
+                currItem = self.createRepr(currNode, args['attr'])
+                resultData.append(currItem)
 
-            content = { 
-                        'summary': 
-                            { 
-                            'count':len(filteredRN), 
-                            'totalInDispatcher':totalNodes, 
-                            'requestTime':time.time() - start_time,
-                            'requestDate':time.ctime()
-                            }, 
-                        'items':resultData 
-                        }
+            content = {
+                'summary': {
+                    'count': len(filteredRN),
+                    'totalInDispatcher': totalNodes,
+                    'requestTime': time.time() - start_time,
+                    'requestDate': time.ctime()
+                },
+                'items': resultData
+            }
 
             #
             # --- Create response and callback
             #
-            self.writeCallback( json.dumps(content) )
+            self.writeCallback(json.dumps(content))
 
-        except Exception, e:
+        except Exception:
             logger.warning('Impossible to retrieve query result for rendernodes: %s', self.request.uri)
-            raise HTTPError( 500, "Internal error")
+            raise HTTPError(500, "Internal error")
         pass

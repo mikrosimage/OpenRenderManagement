@@ -6,8 +6,8 @@ Module holding core value for the dispatcher process.
 These values might be overriden by user arguments and should not be reloaded.
 Value which could be reloaded during execution (using "reconfig" webservice) should be defined in "settings.py".
 """
-__author__      = "Arnaud Chassagne"
-__copyright__   = "Copyright 2010, Mikros Image"
+__author__ = "Arnaud Chassagne"
+__copyright__ = "Copyright 2010, Mikros Image"
 
 
 import os
@@ -27,13 +27,13 @@ def loadSettingsFile(filename):
     g = {}
     l = {}
     execfile(filename, g, l)
-    settings = ((name, value) for name, value in l.items() if name.isupper() and  name in globals())
+    settings = ((name, value) for name, value in l.items() if name.isupper() and name in globals())
     globals().update(settings)
 
 
 ## SETTINGS ###########################################################
 
-VERSION = "1.7.3"
+VERSION = "1.7.4"
 
 DEBUG = False
 
@@ -52,14 +52,14 @@ CONFDIR = "__CONFDIR_PLACEHOLDER__"
 #
 # SERVICE CONTROL PID FILE
 #
-PIDFILE = "/var/run/puli/dispatcher.pid"  
+PIDFILE = "/var/run/puli/dispatcher.pid"
 
 
 #
 # PERSISTENCE MECANISM
 #
 POOLS_BACKEND_TYPE = "db"
-#POOLS_BACKEND_TYPE = "file"
+# POOLS_BACKEND_TYPE = "file"
 #POOLS_BACKEND_TYPE = "ws"
 
 FILE_BACKEND_RN_PATH = os.path.join(CONFDIR, "workers.lst")

@@ -36,10 +36,6 @@ from octopus.dispatcher.poolman.wspoolman import WebServicePoolManager
 from octopus.dispatcher.licenses.licensemanager import LicenseManager
 
 
-LOGGER = logging.getLogger('dispatcher')
-
-
-
 class Dispatcher(MainLoopApplication):
     '''The Dispatcher class is the core of the dispatcher application.
     It computes the assignments of commands to workers according to a
@@ -52,12 +48,14 @@ class Dispatcher(MainLoopApplication):
 
     def __new__(cls, framework):
         if cls.instance is None:
-            # Disable passing framework to super__new__ call. It is automatically avaible via super class hierarchy
+            # Disable passing framework to super__new__ call.
+            # It is automatically avaible via super class hierarchy
             # This removes a deprecation warning when launching dispatcher
             cls.instance = super(Dispatcher, cls).__new__(cls)
         return cls.instance
 
     def __init__(self, framework):
+        LOGGER = logging.getLogger('main.dispatcher')
         if self.init:
             return
         self.init = True
@@ -69,7 +67,8 @@ class Dispatcher(MainLoopApplication):
 
         #
         # Class holding custom infos on the dispatcher.
-        # This data can be periodically flushed in a specific log file for later use
+        # This data can be periodically flushed in a specific log file for
+        # later use
         #
         self.cycle = 1
         self.dispatchTree = DispatchTree()
@@ -77,7 +76,6 @@ class Dispatcher(MainLoopApplication):
         self.enablePuliDB = settings.DB_ENABLE
         self.cleanDB = settings.DB_CLEAN_DATA
 
-        
         self.pulidb = None
         if self.enablePuliDB:
             self.pulidb = PuliDB(self.cleanDB, self.licenseManager)
@@ -87,29 +85,29 @@ class Dispatcher(MainLoopApplication):
 
         if self.enablePuliDB and not self.cleanDB:
             LOGGER.warning("--- Reloading database (9 steps) ---")
-            prevTimer=time.time()
+            prevTimer = time.time()
             self.pulidb.restoreStateFromDb(self.dispatchTree, rnsAlreadyInitialized)
 
-            LOGGER.warning("%d jobs reloaded from database"%len(self.dispatchTree.tasks))
-            LOGGER.warning("Total time elapsed %s"% elapsedTimeToString(prevTimer) )
+            LOGGER.warning("%d jobs reloaded from database" % len(self.dispatchTree.tasks))
+            LOGGER.warning("Total time elapsed %s" % elapsedTimeToString(prevTimer))
             LOGGER.warning("")
 
         LOGGER.warning("--- Checking dispatcher state (3 steps) ---")
-        startTimer=time.time()
+        startTimer = time.time()
         LOGGER.warning("1/3 Update completion and status")
         self.dispatchTree.updateCompletionAndStatus()
-        LOGGER.warning("    Elapsed time %s"% elapsedTimeToString(startTimer) )
+        LOGGER.warning("    Elapsed time %s" % elapsedTimeToString(startTimer))
 
-        prevTimer=time.time()
+        prevTimer = time.time()
         LOGGER.warning("2/3 Update rendernodes")
         self.updateRenderNodes()
-        LOGGER.warning("    Elapsed time %s"% elapsedTimeToString(prevTimer) )
+        LOGGER.warning("    Elapsed time %s" % elapsedTimeToString(prevTimer))
 
-        prevTimer=time.time()
+        prevTimer = time.time()
         LOGGER.warning("3/3 Validate dependencies")
         self.dispatchTree.validateDependencies()
-        LOGGER.warning("    Elapsed time %s"% elapsedTimeToString(prevTimer) )
-        LOGGER.warning("Total time elapsed %s"% elapsedTimeToString(startTimer) )
+        LOGGER.warning("    Elapsed time %s" % elapsedTimeToString(prevTimer))
+        LOGGER.warning("Total time elapsed %s" % elapsedTimeToString(startTimer))
         LOGGER.warning("")
 
         if self.enablePuliDB and not self.cleanDB:
@@ -118,14 +116,14 @@ class Dispatcher(MainLoopApplication):
         # If no 'default' pool exists, create default pool
         # When creating a pool with id=None, it is automatically appended in "toCreateElement" list in dispatcher and in the dispatcher's "pools" attribute
         if 'default' not in self.dispatchTree.pools:
-            LOGGER.warning("Default pool was not loaded from DB, create a new default pool")
             pool = Pool(None, name='default')
+            LOGGER.warning("Default pool was not loaded from DB, create a new default pool: %s" % pool)
         self.defaultPool = self.dispatchTree.pools['default']
 
         LOGGER.warning("--- Loading dispatch rules ---")
-        startTimer=time.time()
+        startTimer = time.time()
         self.loadRules()
-        LOGGER.warning("Total time elapsed %s"% elapsedTimeToString(startTimer) )
+        LOGGER.warning("Total time elapsed %s" % elapsedTimeToString(startTimer))
         LOGGER.warning("")
 
         # it should be better to have a maxsize
@@ -193,10 +191,9 @@ class Dispatcher(MainLoopApplication):
         from .rules.graphview import GraphViewBuilder
         graphs = self.dispatchTree.findNodeByPath("/graphs", None)
         if graphs is None:
-            LOGGER.fatal("No '/graphs' node, impossible to load rule for /graphs.")
+            logging.getLogger('main.dispatcher').fatal("No '/graphs' node, impossible to load rule for /graphs.")
             self.stop()
         self.dispatchTree.rules.append(GraphViewBuilder(self.dispatchTree, graphs))
-
 
     def prepare(self):
         pass
@@ -224,125 +221,123 @@ class Dispatcher(MainLoopApplication):
         |   - compute new assignments and send them to the proper rendernodes
         |   - release all finished jobs/rns
         '''
-        
-        # JSA DEBUG: timer pour profiler les etapes       
-
+        log = logging.getLogger('assign')
         loopStartTime = time.time()
         prevTimer = loopStartTime
 
-        if singletonconfig.get('CORE','GET_STATS'):
+        if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleDate = loopStartTime
 
-        LOGGER.info("")
-        LOGGER.info("-----------------------------------------------------")
-        LOGGER.info(" Start dispatcher process cycle.")
-        LOGGER.info("-----------------------------------------------------")
+        log.info("-----------------------------------------------------")
+        log.info(" Start dispatcher process cycle.")
 
-
-        # JSA: Check if requests are finished (necessaire ?)
         try:
             self.threadPool.poll()
         except NoResultsPending:
             pass
         else:
-            LOGGER.info("finished some network requests")
+            log.info("finished some network requests")
 
         self.cycle += 1
 
         # Update of allocation is done when parsing the tree for completion and status update (done partially for invalidated node only i.e. when needed)
         self.dispatchTree.updateCompletionAndStatus()
-        if singletonconfig.get('CORE','GET_STATS'):
+        if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleTimers['update_tree'] = time.time() - prevTimer
-        LOGGER.info("%8.2f ms --> update completion status" % ( (time.time() - prevTimer)*1000 ) )
+        log.info("%8.2f ms --> update completion status" % ((time.time() - prevTimer) * 1000))
         prevTimer = time.time()
 
         # Update render nodes
         self.updateRenderNodes()
-        if singletonconfig.get('CORE','GET_STATS'):
+        if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleTimers['update_rn'] = time.time() - prevTimer
-        LOGGER.info("%8.2f ms --> update render node" % ( (time.time() - prevTimer)*1000 ) )
+        # log.info("%8.2f ms --> update render node" % ((time.time() - prevTimer) * 1000))
         prevTimer = time.time()
 
         # Validate dependencies
         self.dispatchTree.validateDependencies()
-        if singletonconfig.get('CORE','GET_STATS'):
+        if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleTimers['update_dependencies'] = time.time() - prevTimer
-        LOGGER.info("%8.2f ms --> validate dependencies" % ( (time.time() - prevTimer)*1000 ) )
+        # log.info("%8.2f ms --> validate dependencies" % ((time.time() - prevTimer) * 1000))
         prevTimer = time.time()
-
 
         # update db
         self.updateDB()
-        if singletonconfig.get('CORE','GET_STATS'):
+        if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleTimers['update_db'] = time.time() - prevTimer
-        LOGGER.info("%8.2f ms --> update DB" % ( (time.time() - prevTimer)*1000 ) )
+        log.info("%8.2f ms --> update DB" % ((time.time() - prevTimer) * 1000))
         prevTimer = time.time()
 
         # compute and send command assignments to rendernodes
         assignments = self.computeAssignments()
-        if singletonconfig.get('CORE','GET_STATS'):
+        if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleTimers['compute_assignment'] = time.time() - prevTimer
-        LOGGER.info("%8.2f ms --> compute assignments." % ( (time.time() - prevTimer)*1000)  )
+        log.info("%8.2f ms --> compute assignments." % ((time.time() - prevTimer) * 1000))
         prevTimer = time.time()
 
         self.sendAssignments(assignments)
-        if singletonconfig.get('CORE','GET_STATS'):
+        if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleTimers['send_assignment'] = time.time() - prevTimer
             singletonstats.theStats.cycleCounts['num_assignments'] = len(assignments)
-        LOGGER.info("%8.2f ms --> send %r assignments." % ( (time.time() - prevTimer)*1000, len(assignments) )  )
+        # log.info("%8.2f ms --> send %r assignments." % ((time.time() - prevTimer) * 1000, len(assignments)))
         prevTimer = time.time()
 
         # call the release finishing status on all rendernodes
         for renderNode in self.dispatchTree.renderNodes.values():
             renderNode.releaseFinishingStatus()
-        if singletonconfig.get('CORE','GET_STATS'):
+        if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleTimers['release_finishing'] = time.time() - prevTimer
-        LOGGER.info("%8.2f ms --> releaseFinishingStatus" % ( (time.time() - prevTimer)*1000 ) )
+        # log.info("%8.2f ms --> releaseFinishingStatus" % ((time.time() - prevTimer) * 1000))
         prevTimer = time.time()
 
         loopDuration = (time.time() - loopStartTime)*1000
-        LOGGER.info( "%8.2f ms --> cycle ended. " % loopDuration )
-        LOGGER.info("-----------------------------------------------------")
+        log.info("%8.2f ms --> cycle ended. " % loopDuration)
 
         # TODO: process average and sums of datas in stats, if flush time, send it to disk
-        if singletonconfig.get('CORE','GET_STATS'):
+        if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleTimers['time_elapsed'] = time.time() - loopStartTime
             singletonstats.theStats.aggregate()
-
-
 
     def updateDB(self):
         if settings.DB_ENABLE:
             self.pulidb.createElements(self.dispatchTree.toCreateElements)
             self.pulidb.updateElements(self.dispatchTree.toModifyElements)
             self.pulidb.archiveElements(self.dispatchTree.toArchiveElements)
-            # LOGGER.info("                UpdateDB: create=%d update=%d delete=%d" % (len(self.dispatchTree.toCreateElements), len(self.dispatchTree.toModifyElements), len(self.dispatchTree.toArchiveElements)) )
+            # logging.getLogger('main.dispatcher').info("                UpdateDB: create=%d update=%d delete=%d" % (len(self.dispatchTree.toCreateElements), len(self.dispatchTree.toModifyElements), len(self.dispatchTree.toArchiveElements)) )
         self.dispatchTree.resetDbElements()
 
     def computeAssignments(self):
         '''Computes and returns a list of (rendernode, command) assignments.'''
+
         from .model.node import NoRenderNodeAvailable, NoLicenseAvailableForTask
+        log = logging.getLogger('assign')
+
+        log.info("    ---")
         # if no rendernodes available, return
         if not any(rn.isAvailable() for rn in self.dispatchTree.renderNodes.values()):
+            log.info("    No rendernodes available on farm")
+            log.info("    ---")
             return []
 
+        displayInfo = {"pools": []}
         assignments = []
 
         # first create a set of entrypoints that are not done nor cancelled nor blocked nor paused and that have at least one command ready
-        # FIXME: hack to avoid getting the 'graphs' poolShare node in entryPoints, need to avoid it more nicely...
         # entryPoints = set([poolShare.node for poolShare in self.dispatchTree.poolShares.values() if poolShare.node.status not in [NODE_BLOCKED, NODE_DONE, NODE_CANCELED, NODE_PAUSED] and poolShare.node.readyCommandCount > 0 and poolShare.node.name != 'graphs'])
         entryPoints = set([poolShare.node for poolShare in self.dispatchTree.poolShares.values() if poolShare.node.status not in [NODE_BLOCKED, NODE_DONE, NODE_CANCELED, NODE_PAUSED] and poolShare.node.name != 'graphs'])
+        log.info("    Assignment: considering %d jobs" % len(entryPoints))
 
         # don't proceed to the calculation if no rns availables in the requested pools
         rnsBool = False
         for pool, nodesiterator in groupby(entryPoints, lambda x: x.poolShares.values()[0].pool):
+            displayInfo["pools"].append(pool.name)
             rnsAvailables = set([rn for rn in pool.renderNodes if rn.status not in [RN_UNKNOWN, RN_PAUSED, RN_WORKING]])
             if len(rnsAvailables):
                 rnsBool = True
-
         if not rnsBool:
+            log.info("    No RN available for concerned pools: %s" % displayInfo['pools'])
+            log.info("    ---")
             return []
-
 
         # Log time updating max rn
         prevTimer = time.time()
@@ -351,26 +346,33 @@ class Dispatcher(MainLoopApplication):
         entryPoints = sorted(entryPoints, key=lambda node: node.poolShares.values()[0].pool)
 
         # update the value of the maxrn for the poolshares (parallel dispatching)
+        displayInfo["pools"] = {}
         for pool, nodesiterator in groupby(entryPoints, lambda x: x.poolShares.values()[0].pool):
-
             # we are treating every active node of the pool
+
             nodesList = [node for node in nodesiterator]
 
             # the new maxRN value is calculated based on the number of active jobs of the pool, and the number of online rendernodes of the pool
             rnsNotOffline = set([rn for rn in pool.renderNodes if rn.status not in [RN_UNKNOWN, RN_PAUSED]])
             rnsSize = len(rnsNotOffline)
-            # LOGGER.debug("@   - nb rns awake:%r" % (rnsSize) )
+            # log.debug("   - nb rns awake:%r" % (rnsSize))
+
+            # displayInfo = {"pools": {pool.name: {'nodes': [node.name for node in nodesList], 'numAvailableRN': rnsSize}}}
+            displayInfo["pools"][pool.name] = {'nodes': [node.name for node in nodesList], 'numAvailableRN': rnsSize}
 
             # if we have a userdefined maxRN for some nodes, remove them from the list and substracts their maxRN from the pool's size
             l = nodesList[:]  # duplicate the list to be safe when removing elements
+            displayInfo["pools"][pool.name]['nodeUserMaxRN'] = []
             for node in l:
-                # LOGGER.debug("@   - checking userDefMaxRN: %s -> %r maxRN=%d" % (node.name, node.poolShares.values()[0].userDefinedMaxRN, node.poolShares.values()[0].maxRN ) )
+                # log.debug("   - checking userDefMaxRN: %s -> %r maxRN=%d" % (node.name, node.poolShares.values()[0].userDefinedMaxRN, node.poolShares.values()[0].maxRN))
                 if node.poolShares.values()[0].userDefinedMaxRN and node.poolShares.values()[0].maxRN not in [-1, 0]:
-                    # LOGGER.debug("@     removing: %s -> maxRN=%d" % (node.name, node.poolShares.values()[0].maxRN ) )
+                    displayInfo["pools"][pool.name]['nodeUserMaxRN'].append((node.name, node.poolShares.values()[0].maxRN))
+
+                    # log.debug("     removing: %s -> maxRN=%d" % (node.name, node.poolShares.values()[0].maxRN))
                     nodesList.remove(node)
                     rnsSize -= node.poolShares.values()[0].maxRN
 
-            # LOGGER.debug("@   - nb rns awake after maxRN:%d" % (rnsSize) )
+            # log.debug("- nb rns awake after maxRN:%d" % (rnsSize))
 
             if len(nodesList) == 0:
                 continue
@@ -393,35 +395,39 @@ class Dispatcher(MainLoopApplication):
 
             # then sort by dispatchKey (priority)
             nodesList = sorted(nodesList, key=lambda x: x.dispatchKey, reverse=True)
-            
+
             for dk, nodeIterator in groupby(nodesList, lambda x: x.dispatchKey):
 
                 nodes = [node for node in nodeIterator]
-                dkPos = dkPositiveList[ dkList.index(dk) ]
+                dkPos = dkPositiveList[dkList.index(dk)]
 
-                if dkSum > 0:                  
-                    updatedmaxRN = int( round( rnsSize * (dkPos / float(dkSum) )))
+                if dkSum > 0:
+                    updatedmaxRN = int(round(rnsSize * (dkPos / float(dkSum))))
                 else:
-                    updatedmaxRN = int(round( rnsSize / float(nbJobs) ))
+                    updatedmaxRN = int(round(rnsSize / float(nbJobs)))
 
                 for node in nodes:
                     node.optimalMaxRN = updatedmaxRN
-                    if updatedmaxRN > node.commandCount:
-                        # Limit maxRN when no more ready commands
-                        node.poolShares.values()[0].maxRN = node.commandCount
-                        nbRNAssigned += node.commandCount
-                    else:
+
+                    if updatedmaxRN <= node.readyCommandCount:
+                        # If enough commands ready (i.e enough commands also)
                         node.poolShares.values()[0].maxRN = updatedmaxRN
                         nbRNAssigned += updatedmaxRN
+                    else:
+                        # Limit maxRN when no more ready commands
+                        updatedMaxRN = min(updatedmaxRN, node.readyCommandCount + node.poolShares.values()[0].allocatedRN)
+                        node.poolShares.values()[0].maxRN = updatedMaxRN
+                        nbRNAssigned += updatedMaxRN
 
             # Add remaining RNs to most important jobs BUT avoiding to increment maxRN if no more commands to assign
             unassignedRN = rnsSize - nbRNAssigned
+            # log.debug("===== remaining RNs --> %d " % (unassignedRN))
             numNodesFull = 0
-            while 0 < unassignedRN and numNodesFull<len(nodesList):
+            while 0 < unassignedRN and numNodesFull < len(nodesList):
                 numNodesFull = 0
                 for node in nodesList:
                     if 0 < unassignedRN:
-                        if updatedmaxRN < node.commandCount:
+                        if updatedmaxRN < node.readyCommandCount:
                             node.poolShares.values()[0].maxRN += 1
                             unassignedRN -= 1
                         else:
@@ -429,16 +435,16 @@ class Dispatcher(MainLoopApplication):
                     else:
                         break
 
-        if singletonconfig.get('CORE','GET_STATS'):
-            singletonstats.theStats.assignmentTimers['update_max_rn'] = time.time() - prevTimer
-        LOGGER.info( "%8.2f ms --> .... updating max RN values", (time.time() - prevTimer)*1000 )
+        # log.info(displayInfo)
 
+        if singletonconfig.get('CORE', 'GET_STATS'):
+            singletonstats.theStats.assignmentTimers['update_max_rn'] = time.time() - prevTimer
+        # log.info("%8.2f ms --> updating max RN values", (time.time() - prevTimer) * 1000)
 
         # Log time dispatching RNs
         prevTimer = time.time()
-        # Filter nodes to remove those with node ready command
-        entryPoints = filter(lambda node: node.readyCommandCount>0, entryPoints)
-        LOGGER.info( "%8.2f ms --> .... filter nodes with commands ready", (time.time() - prevTimer)*1000 )
+        # Filter nodes to keep those with node ready commands only
+        entryPoints = filter(lambda node: node.readyCommandCount > 0, entryPoints)
 
         # now, we are treating every nodes
         # sort by id (fifo)
@@ -447,45 +453,27 @@ class Dispatcher(MainLoopApplication):
         entryPoints = sorted(entryPoints, key=lambda node: node.dispatchKey, reverse=True)
 
         # Exit loop here if no nodes need new assignment
-        if len(entryPoints)==0:
+        if len(entryPoints) == 0:
+            log.info("    No commands ready in considered nodes")
+            log.info("    ---")
             return []
 
         # Put nodes with a userDefinedMaxRN first
-        userDefEntryPoints = ifilter( lambda node: node.poolShares.values()[0].userDefinedMaxRN, entryPoints )
-        standardEntryPoints = ifilter( lambda node: not node.poolShares.values()[0].userDefinedMaxRN, entryPoints )
-        scoredEntryPoints = chain( userDefEntryPoints, standardEntryPoints)
+        userDefEntryPoints = ifilter(lambda node: node.poolShares.values()[0].userDefinedMaxRN, entryPoints)
+        standardEntryPoints = ifilter(lambda node: not node.poolShares.values()[0].userDefinedMaxRN, entryPoints)
+        scoredEntryPoints = chain(userDefEntryPoints, standardEntryPoints)
 
         # Log time dispatching RNs
         prevTimer = time.time()
 
-        # # 
-        # # HACK update license info for katana with rlmutils
-        # # This helps having the real number of used licenses before finishing assignment
-        # # This is done because katana rlm management sometime reserves 2 token (cf BUGLIST v1.4)
-        # try:
-        #     import subprocess
-        #     strRlmKatanaUsed=''
-        #     strRlmKatanaUsed = subprocess.Popen(["/s/apps/lin/farm/tools/rlm_katana_used.sh"], stdout=subprocess.PIPE).communicate()[0]
-
-        #     katanaUsed = int(strRlmKatanaUsed)
-        #     LOGGER.debug("HACK update katana license: used = %d (+buffer in config:%d)" % (katanaUsed,singletonconfig.get('HACK','KATANA_BUFFER')))
-
-        #     # Sets used license number
-        #     try:
-        #         self.licenseManager.licenses["katana"].used = katanaUsed + singletonconfig.get('HACK','KATANA_BUFFER')
-        #     except KeyError:
-        #         LOGGER.warning("License katana not found... Impossible to set 'used' value: %d" % katanaUsed)
-        # except Exception, e:
-        #     LOGGER.warning("Error getting number of katana license used via rlmutil (e: %r, rlmoutput=%r)" % (e,strRlmKatanaUsed))
-        # # ENDHACK
-        # #
-
-        # Iterate over each entryPoint to get an assignment
+        # # Iterate over each entryPoint to get an assignment
         for entryPoint in scoredEntryPoints:
             if any([poolShare.hasRenderNodesAvailable() for poolShare in entryPoint.poolShares.values()]):
                 try:
-
+                    tmp = []
                     for (rn, com) in entryPoint.dispatchIterator(lambda: self.queue.qsize() > 0):
+                        # log.info("  - found assignment: %s - %s" % (rn.name, com.description))
+                        tmp.append(rn.name)
                         assignments.append((rn, com))
                         # increment the allocatedRN for the poolshare
                         poolShare.allocatedRN += 1
@@ -495,16 +483,18 @@ class Dispatcher(MainLoopApplication):
                 except NoRenderNodeAvailable:
                     pass
                 except NoLicenseAvailableForTask:
-                    LOGGER.info("Missing license for node \"%s\" (other commands can start anyway)." % entryPoint.name)
+                    log.info("Missing license for node \"%s\" (other commands can start anyway)." % entryPoint.name)
                     pass
+
+                log.info("    - Assign %3d RN from pool '%s' --> %s" % (len(tmp), poolShare.pool.name, entryPoint.name))
 
         assignmentDict = collections.defaultdict(list)
         for (rn, com) in assignments:
             assignmentDict[rn].append(com)
 
-        if singletonconfig.get('CORE','GET_STATS'):
+        if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.assignmentTimers['dispatch_command'] = time.time() - prevTimer
-        LOGGER.info( "%8.2f ms --> .... dispatching commands", (time.time() - prevTimer)*1000  )
+        # log.info("%8.2f ms --> .... dispatching commands", (time.time() - prevTimer) * 1000)
 
         #
         # Check replacements
@@ -512,12 +502,11 @@ class Dispatcher(MainLoopApplication):
         # - faire une passe pour les jobs n'ayant pas leur part de gateau
         #     - identifier dans leur pool les jobs killable
         #     - pour chaque ressource, si match : on jette le job en cours ET on desactive son attribut killable
-
-
         #
         # Backfill
         #
         # TODO refaire une passe pour les jobs ayant un attribut "killable" et au moins une pool additionnelle
+        log.info("    ---")
 
         return assignmentDict.items()
 
@@ -566,12 +555,12 @@ class Dispatcher(MainLoopApplication):
                 try:
                     resp, data = rendernode.request("POST", "/commands/", body, headers)
                     if not resp.status == 202:
-                        LOGGER.error("Assignment request failed: command %d on worker %s", command.id, rendernode.name)
+                        logging.getLogger('main.dispatcher').error("Assignment request failed: command %d on worker %s", command.id, rendernode.name)
                         failures.append((rendernode, command))
                     else:
-                        LOGGER.info("Sent assignment of command %d to worker %s", command.id, rendernode.name)
+                        logging.getLogger('main.dispatcher').info("Sent assignment of command %d to worker %s", command.id, rendernode.name)
                 except rendernode.RequestFailed, e:
-                    LOGGER.error("Assignment of command %d to worker %s failed: %r", command.id, rendernode.name, e)
+                    logging.getLogger('main.dispatcher').error("Assignment of command %d to worker %s failed: %r", command.id, rendernode.name, e)
                     failures.append((rendernode, command))
             return failures
 
@@ -585,18 +574,16 @@ class Dispatcher(MainLoopApplication):
             rendernode.clearAssignment(command)
             command.clearAssignment()
 
-            LOGGER.info(" - assignment cleared: command[%r] on rn[%r]" % (command.id, rendernode.name) )
-
+            logging.getLogger('main.dispatcher').info(" - assignment cleared: command[%r] on rn[%r]" % (command.id, rendernode.name))
 
     def handleNewGraphRequestApply(self, graph):
         '''Handles a graph submission request and closes the given ticket
         according to the result of the process.
         '''
         prevTimer = time.time()
-
         nodes = self.dispatchTree.registerNewGraph(graph)
 
-        LOGGER.info("%.2f ms --> graph registered" % ( (time.time() - prevTimer)*1000 ) )
+        logging.getLogger('main.dispatcher').info("%.2f ms --> graph registered" % ((time.time() - prevTimer) * 1000))
         prevTimer = time.time()
 
         # handles the case of post job with paused status
@@ -607,10 +594,10 @@ class Dispatcher(MainLoopApplication):
             except KeyError:
                 continue
 
-        LOGGER.info("%.2f ms --> jobs set in pause if needed" % ( (time.time() - prevTimer)*1000 ) )
+        logging.getLogger('main.dispatcher').info("%.2f ms --> jobs set in pause if needed" % ((time.time() - prevTimer) * 1000))
         prevTimer = time.time()
 
-        LOGGER.info('Added graph "%s" to the model.' % graph['name'])
+        logging.getLogger('main.dispatcher').info('Added graph "%s" to the model.' % graph['name'])
         return nodes
 
     def updateCommandApply(self, dct):
@@ -618,6 +605,7 @@ class Dispatcher(MainLoopApplication):
         Called from a RN with a json desc of a command (ie rendernode info, command info etc).
         Raise an execption to tell caller to send a HTTP404 response to RN, if not error a HTTP200 will be send instead
         '''
+        log = logging.getLogger('main.dispatcher')
         commandId = dct['id']
         renderNodeName = dct['renderNodeName']
 
@@ -634,7 +622,7 @@ class Dispatcher(MainLoopApplication):
             # rn = command.renderNode
             # rn.clearAssignment(command)
             # rn.request("DELETE", "/commands/" + str(commandId) + "/")
-            LOGGER.warning("The emitting RN %s is different from the RN assigned to the command in pulimodel: %s." % ( renderNodeName, command.renderNode.name ) )
+            log.warning("The emitting RN %s is different from the RN assigned to the command in pulimodel: %s." % (renderNodeName, command.renderNode.name))
             raise KeyError("Command %d is running on a different rendernode (%s) than the one in puli's model (%s)." % (commandId, renderNodeName, command.renderNode.name))
 
         rn = command.renderNode
@@ -647,10 +635,10 @@ class Dispatcher(MainLoopApplication):
                 rn.commands[commandId] = command
                 # we should re-reserve the lic
                 rn.reserveLicense(command, self.licenseManager)
-                LOGGER.warning("re-assigning command %d on %s. (TIMEOUT?)" % (commandId, rn.name))
+                log.warning("re-assigning command %d on %s. (TIMEOUT?)" % (commandId, rn.name))
             else:
                 # The command has been cancelled on the dispatcher but update from RN only arrives now
-                LOGGER.warning("Status update for %d (%d) from %s but command is currently assigned." % (commandId, int(dct['status']), renderNodeName ))
+                log.warning("Status update for %d (%d) from %s but command is currently assigned." % (commandId, int(dct['status']), renderNodeName))
                 pass
 
         if "status" in dct:
@@ -670,10 +658,7 @@ class Dispatcher(MainLoopApplication):
         # Stats info received and not none. Means we need to update it on the command.
         # If stats received is none, no change on the worker, we do not update the command.
         if "stats" in dct and dct["stats"] is not None:
-            # LOGGER.debug("Updating stats on server: %r" % dct["stats"] )
             command.stats = dct["stats"]
-
-
 
     def queueWorkload(self, workload):
         self.queue.put(workload)

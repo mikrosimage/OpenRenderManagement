@@ -35,7 +35,7 @@ class LicenseResource(DispatcherBaseResource):
         try:
             maxLic = data['maxlic']
         except KeyError:
-            raise Http404( "Missing entry : 'maxlic'")
+            raise Http404("Missing entry : 'maxlic'")
         else:
             self.dispatcher.licenseManager.setMaxLicensesNumber(licenseName, maxLic)
             self.writeCallback("OK")
@@ -46,14 +46,14 @@ class LicenseResource(DispatcherBaseResource):
         try:
             rns = data['rns']
         except KeyError:
-            raise Http404( "Missing entry : 'rns'")
+            raise Http404("Missing entry : 'rns'")
         else:
             rnsList = rns.split(",")
             for rnName in rnsList:
                 if rnName in self.dispatcher.dispatchTree.renderNodes:
                     rn = self.dispatcher.dispatchTree.renderNodes[rnName]
                 else:
-                    raise Http500("Internal Server Error: Render node %s is not registered."%(rnName))
+                    raise Http500("Internal Server Error: Render node %s is not registered." % rnName)
 
                 self.dispatcher.licenseManager.releaseLicenseForRenderNode(licenseName, rn)
             self.writeCallback("OK")

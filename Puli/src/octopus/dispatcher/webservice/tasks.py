@@ -6,7 +6,7 @@ try:
 except ImportError:
     import json
 
-logger = logging.getLogger('dispatcher.webservice.TaskController')
+logger = logging.getLogger('main.dispatcher.webservice.TaskController')
 
 from tornado.web import HTTPError
 from octopus.core.framework import ResourceNotFoundError, BaseResource, queue
@@ -49,12 +49,12 @@ class DeleteTasksResource(DispatcherBaseResource):
             raise HTTPError(400, 'Missing entry: "taskids".')
         else:
             taskidsList = taskids.split(",")
-            resultList=[]
+            resultList = []
 
             for i, taskId in enumerate(taskidsList):
                 try:
                     taskId = int(taskId)
-                except ValueError,e:
+                except ValueError:
                     logger.warning("A task id to delete is not a correct integer %r (from list: %r)." % (taskId, taskidsList))
                     continue
 
@@ -71,7 +71,7 @@ class DeleteTasksResource(DispatcherBaseResource):
 
                 resultList.append(taskId)
                 task.archive()
-                
+
             self.writeCallback("%d tasks archived successfully" % len(resultList))
 
 

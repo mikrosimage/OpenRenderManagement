@@ -172,24 +172,21 @@ if __name__ == "__main__":
         print "Command arguments: %s" % args
         print "Query: %s"+_request
 
-    # fileHandler = logging.handlers.RotatingFileHandler( _logPath, 
+    # fileHandler = logging.handlers.RotatingFileHandler( _logPath,
     #                                                     maxBytes=20000000,
-    #                                                     backupCount=1, 
+    #                                                     backupCount=1,
     #                                                     encoding="UTF-8")
 
-    fileHandler = logging.FileHandler( _logPath, encoding="UTF-8")
+    fileHandler = logging.FileHandler(_logPath, encoding="UTF-8")
+    fileHandler.setFormatter(logging.Formatter('%(message)s'))
 
-
-    fileHandler.setFormatter( logging.Formatter('%(message)s') )
-    
     statsLogger = logging.getLogger('stats')
-    statsLogger.addHandler( fileHandler )
-    statsLogger.setLevel( singletonconfig.get('CORE','LOG_LEVEL') )
-
+    statsLogger.addHandler(fileHandler)
+    statsLogger.setLevel(singletonconfig.get('CORE', 'LOG_LEVEL'))
 
     http_client = HTTPClient()
     try:
-        response = http_client.fetch( _request )
+        response = http_client.fetch(_request)
 
         if response.error:
             print "Error:   %s" % response.error
@@ -200,15 +197,10 @@ if __name__ == "__main__":
             else:
                 data = json.loads(response.body)
 
-                aggregatedData = formatData( data )
-                statsLogger.warning( json.dumps(aggregatedData) )
-                # for key, val in aggregate.items():
-                #     print " -- %s" % key
-                #     for key2, val2 in val.items():
-                #         print "    - %s = %s" % (key2, val2)
+                aggregatedData = formatData(data)
+                statsLogger.warning(json.dumps(aggregatedData))
 
     except HTTPError, e:
         print "Error:", e
-   
-    del(http_client)
 
+    del(http_client)

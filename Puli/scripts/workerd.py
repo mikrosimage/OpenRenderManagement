@@ -17,6 +17,7 @@ import resource
 from octopus.worker import make_worker, settings
 from octopus.worker import config
 
+
 def daemonize(username=""):
     # set the limit of open files for ddd
     soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
@@ -25,11 +26,11 @@ def daemonize(username=""):
 
         try:
             resource.setrlimit(resource.RLIMIT_NOFILE, (settings.LIMIT_OPEN_FILES, hard))
-        except Exception,e:
-            logging.getLogger('worker').error("Setting ressource limit failed: RLIMT_NOFILE [%r,%r] --> [%r,%r] (%r)" % (soft, hard, settings.LIMIT_OPEN_FILES, hard, e) )
+        except Exception, e:
+            logging.getLogger('worker').error("Setting ressource limit failed: RLIMT_NOFILE [%r,%r] --> [%r,%r] (%r)" % (soft, hard, settings.LIMIT_OPEN_FILES, hard, e))
             raise e
     else:
-        logging.getLogger('worker').info("Current RLIMIT_NOFILE is smaller than settings -> do not change: [soft=%r, hard=%r]" % (soft,hard) )
+        logging.getLogger('worker').info("Current RLIMIT_NOFILE is smaller than settings -> do not change: [soft=%r, hard=%r]" % (soft, hard))
 
     #
     if os.fork() != 0:
@@ -104,7 +105,6 @@ def setup_logging(options):
     logFileName = "worker%d.log" % settings.PORT
     logFile = os.path.join(settings.LOGDIR, logFileName)
 
-
     fileHandler = logging.handlers.RotatingFileHandler(logFile, 'w', config.LOG_SIZE, config.LOG_BACKUPS, "UTF-8")
     fileHandler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)6s - %(message)s"))
     logger = logging.getLogger()
@@ -125,16 +125,16 @@ def main():
     options = process_args()
     setup_logging(options)
 
-    logging.getLogger('daemon').info( "" )
-    logging.getLogger('daemon').info( "-----------------------------------------------" )
-    logging.getLogger('daemon').info( "Starting worker on %s:%d.", settings.ADDRESS, settings.PORT)
-    logging.getLogger('daemon').info( "-----------------------------------------------" )
-    logging.getLogger('daemon').info( " version = %s" % settings.VERSION )
-    logging.getLogger('daemon').info( " command = %s" % " ".join(sys.argv) )
-    logging.getLogger('daemon').info( "  daemon = %r" % options.DAEMONIZE )
-    logging.getLogger('daemon').info( " console = %r" % options.CONSOLE )
-    logging.getLogger('daemon').info( "  server = %s:%s" % (settings.DISPATCHER_ADDRESS, settings.DISPATCHER_PORT) )
-    
+    logging.getLogger('daemon').info("")
+    logging.getLogger('daemon').info("-----------------------------------------------")
+    logging.getLogger('daemon').info("Starting worker on %s:%d.", settings.ADDRESS, settings.PORT)
+    logging.getLogger('daemon').info("-----------------------------------------------")
+    logging.getLogger('daemon').info(" version = %s" % settings.VERSION)
+    logging.getLogger('daemon').info(" command = %s" % " ".join(sys.argv))
+    logging.getLogger('daemon').info("  daemon = %r" % options.DAEMONIZE)
+    logging.getLogger('daemon').info(" console = %r" % options.CONSOLE)
+    logging.getLogger('daemon').info("  server = %s:%s" % (settings.DISPATCHER_ADDRESS, settings.DISPATCHER_PORT))
+
     workerApplication = make_worker()
     if options.DAEMONIZE:
         daemonize(settings.RUN_AS)

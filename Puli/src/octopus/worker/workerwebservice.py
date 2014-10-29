@@ -1,5 +1,4 @@
 import os
-import os
 from Queue import Queue
 try:
     import simplejson as json
@@ -57,15 +56,13 @@ class WorkerWebService(Application):
         self.port = port
 
 
-
-
 class BaseResource(RequestHandler):
     def initialize(self, framework):
         self.framework = framework
         self.rnId = None
 
     def setRnId(self, request):
-        if self.rnId == None and "rnId" in request.headers:
+        if self.rnId is None and "rnId" in request.headers:
             self.rnId = request.headers['rnId']
 
     def getBodyAsJSON(self):
@@ -100,7 +97,7 @@ class PauseResource(BaseResource):
                     f.write(content)
                 f.close()
                 os.chmod(killfile, 0666)
-        except Exception,e:
+        except Exception, e:
             LOGGER.error("Error when pausing RN (%r)" % e)
             self.set_status(500)
         else:
@@ -149,20 +146,19 @@ class CommandsResource(BaseResource):
 
         try:
             # self.framework.addOrder(self.framework.application.addCommandApply, **dct)
-            ret = self.framework.application.addCommandApply( None,
-                    dct['commandId'],
-                    dct['runner'],
-                    dct['arguments'],
-                    dct['validationExpression'],
-                    dct['taskName'],
-                    dct['relativePathToLogDir'],
-                    dct['environment']
-                )
+            ret = self.framework.application.addCommandApply(None,
+                                                             dct['commandId'],
+                                                             dct['runner'],
+                                                             dct['arguments'],
+                                                             dct['validationExpression'],
+                                                             dct['taskName'],
+                                                             dct['relativePathToLogDir'],
+                                                             dct['environment'])
         except WorkerInternalException, e:
-            LOGGER.error("Impossible to add command %r, the RN status is 'paused' (%r)" % (dct['commandId'],e) )
+            LOGGER.error("Impossible to add command %r, the RN status is 'paused' (%r)" % (dct['commandId'], e))
             self.set_status(500)
         except Exception, e:
-            LOGGER.error("Impossible to add command %r (%r)" % (dct['commandId'],e) )
+            LOGGER.error("Impossible to add command %r (%r)" % (dct['commandId'], e))
             self.set_status(500)
         else:
             self.set_status(202)
@@ -178,11 +174,11 @@ class CommandDoneResource(BaseResource):
         """
 
         dct = {
-                'commandId': int(id),
-                'endStatus':5,
-                'endCompletion':100,
-                'endMessage':"Done."
-            }
+            'commandId': int(id),
+            'endStatus': 5,
+            'endCompletion': 100,
+            'endMessage': "Done."
+        }
 
         # endCompletion=0, endStatus=COMMAND.CMD_CANCELED, endMessage="killed")
 
@@ -211,9 +207,9 @@ class CommandResource(BaseResource):
         rawArgs = self.getBodyAsJSON()
 
         if 'status' in rawArgs \
-            or 'completion' in rawArgs \
-            or 'message' in rawArgs \
-            or 'stats' in rawArgs:
+                or 'completion' in rawArgs \
+                or 'message' in rawArgs \
+                or 'stats' in rawArgs:
             args = {
                 'commandId': int(id),
                 'status': rawArgs.get('status', None),
@@ -235,7 +231,6 @@ class CommandResource(BaseResource):
         # Success
         self.set_status(202)
 
-
     def delete(self, id):
         """
         | Called when cancelling a running command.
@@ -247,8 +242,8 @@ class CommandResource(BaseResource):
 
         #TODO check error and set error response
         dct = {
-                'commandId': int(id)
-            }
+            'commandId': int(id)
+        }
 
         self.framework.addOrder(self.framework.application.stopCommandApply, **dct)
         self.set_status(202)
@@ -297,5 +292,3 @@ class WorkerReconfig(BaseResource):
     def post(self):
         #TODO check error and set error response
         self.framework.application.reloadConfig()
-
-

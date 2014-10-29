@@ -1,7 +1,6 @@
 import tornado
 import logging
 import httplib
-from tornado.web import RequestHandler
 try:
     import simplejson as json
 except ImportError:
@@ -17,7 +16,7 @@ from octopus.core.tools import Workload
 __all__ = ['WSAppFramework', 'MainLoopApplication']
 __all__ += ['Controller', 'ControllerError', 'ResourceNotFoundErro', 'BaseResource']
 
-logger = logging.getLogger("dispatcher.webservice")
+logger = logging.getLogger('main.dispatcher.webservice')
 
 
 def queue(func):
@@ -73,7 +72,7 @@ class BaseResource(tornado.web.RequestHandler):
         return "%(code)d: %(message)s" % {
             "code": status_code,
             "message": message,
-            }
+        }
 
     @property
     def dispatcher(self):

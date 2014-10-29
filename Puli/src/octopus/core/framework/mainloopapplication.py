@@ -11,7 +11,7 @@
 ####################################################################################################
 
 import logging
-LOGGER = logging.getLogger("framework.application")
+LOGGER = logging.getLogger("main.framework.application")
 
 
 ## This class defines the main loop application (for example : the dispatcher).

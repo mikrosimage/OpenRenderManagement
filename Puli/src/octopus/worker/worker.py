@@ -39,18 +39,21 @@ KILOBYTES = 0
 MEGABYTES = 1
 GIGABYTES = 2
 
+
 class WorkerInternalException(Exception):
     """
     Custom exception to handle internal failure during worker's execution.
     """
     def __init__(self, value):
         self.parameter = value
+
     def __str__(self):
         return repr(self.parameter)
 
+
 class Worker(MainLoopApplication):
     """
-    Worker application based on the main framework. 
+    Worker application based on the main framework.
     It is an independant remote daemon communicating with the dispatcher via WS and in charge of handling job execution with the help
     of CommandWatcher subprocess.
     """
@@ -69,14 +72,14 @@ class Worker(MainLoopApplication):
 
         def __repr__(self):
             return str(
-                "CommandWatcher(id=%r, processId=%r, startTime=%r, processObj=%r, timeOut=%r, commandId=%r, command=%r, modified=%r, finished=%r)" % 
-                    (self.id, self.processId, self.startTime, self.processObj, self.timeOut, self.commandId, self.command, self.modified, self.finished )
-                )
+                "CommandWatcher(id=%r, processId=%r, startTime=%r, processObj=%r, timeOut=%r, commandId=%r, command=%r, modified=%r, finished=%r)" %
+                (self.id, self.processId, self.startTime, self.processObj, self.timeOut, self.commandId, self.command, self.modified, self.finished)
+            )
 
         def __str__(self):
             startTime = datetime.datetime.fromtimestamp(int(self.startTime)).strftime("%Y-%m-%d_%H:%M:%S")
-            returncode = self.processObj.process.returncode if self.processObj.process != None else "Invalid process"
-            return str("CommandWatcher: pid=%r, commandId=%r, returncode=%r, startTime=%s" %(self.processId, self.commandId, returncode, startTime) )
+            returncode = self.processObj.process.returncode if self.processObj.process is not None else "Invalid process"
+            return str("CommandWatcher: pid=%r, commandId=%r, returncode=%r, startTime=%s" % (self.processId, self.commandId, returncode, startTime))
 
     @property
     def modifiedCommandWatchers(self):
@@ -163,9 +166,7 @@ class Worker(MainLoopApplication):
                 pass
         return int(memTotal) / 1024
 
-
-
-    def getFreeMem(self, pUnit=MEGABYTES ):
+    def getFreeMem(self, pUnit=MEGABYTES):
         """
         | Starts a shell process to retrieve amount of free memory on the worker's system.
         | The amount of memory is transmitted in MEGABYTES, but can be specified to another unit
@@ -176,11 +177,11 @@ class Worker(MainLoopApplication):
         :return: An integer representing the amount of FREE memory on the system
         :raise: OSError if subprocess fails. Returns "-1" if no correct value can be retrieved.
         """
-        
+
         try:
             freeMemStr = subprocess.Popen(["awk",
-                                            "/MemFree|Buffers|^Cached/ {free+=$2} END {print  free}",
-                                            "/proc/meminfo"], stdout=PIPE).communicate()[0]
+                                           "/MemFree|Buffers|^Cached/ {free+=$2} END {print  free}",
+                                           "/proc/meminfo"], stdout=PIPE).communicate()[0]
         except OSError, e:
             LOGGER.warning("Error when retrievieng free memory: %r", e)
 
@@ -190,9 +191,9 @@ class Worker(MainLoopApplication):
         freeMem = int(freeMemStr)
 
         if pUnit is MEGABYTES:
-            freeMem = int( freeMem/1024 )
+            freeMem = int(freeMem / 1024)
         elif pUnit is GIGABYTES:
-            freeMem = int( freeMem/(1024*1024) )
+            freeMem = int(freeMem / (1024 * 1024))
 
         return freeMem
 
@@ -200,12 +201,11 @@ class Worker(MainLoopApplication):
         """
         | Uses psutil module to retrieve usage swap percentage. The value is transmitted as a float in range [0-1]
         :return: A float indicating the amount of swap currently used on the system
-        :raise: 
         """
-        swapUsage=0.0
+        swapUsage = 0.0
         try:
             try:
-                swapUsage=psutil.swap_memory().percent
+                swapUsage = psutil.swap_memory().percent
             except psutil.Error:
                 LOGGER.warning("An error occured when retrieving swap percentage.")
         except NameError, e:
@@ -214,7 +214,6 @@ class Worker(MainLoopApplication):
             LOGGER.warning("An unexpected error occured: %r" % e)
 
         return swapUsage
-
 
     def getCpuInfo(self):
         if os.path.isfile('/proc/cpuinfo'):
@@ -275,17 +274,17 @@ class Worker(MainLoopApplication):
             infos['ram'] = self.getTotalMemory()
             infos['systemFreeRam'] = self.getFreeMem()
             infos['systemSwapPercentage'] = self.getSwapUsage()
-            infos["puliversion"]=settings.VERSION
-            infos["createDate"]=self.createDate
+            infos["puliversion"] = settings.VERSION
+            infos["createDate"] = self.createDate
 
             self.updateSys = False
             # system info values:
             infos['caracteristics'] = {"os": platform.system().lower(),
-                                        "softs": [],
-                                        "cpuname": self.cpuName,
-                                        "distribname": self.distrib,
-                                        "mikdistrib": self.mikdistrib,
-                                        "openglversion": self.openglversion}
+                                       "softs": [],
+                                       "cpuname": self.cpuName,
+                                       "distribname": self.distrib,
+                                       "mikdistrib": self.mikdistrib,
+                                       "openglversion": self.openglversion}
         infos['name'] = self.computerName
         infos['port'] = self.port
         infos['status'] = self.status
@@ -329,8 +328,8 @@ class Worker(MainLoopApplication):
         infos = self.fetchSysInfos()
 
         # Add specific info when registering (initially it was the same info at register and periodic utpdate
-        infos["createDate"]=self.createDate
-        infos["puliversion"]=settings.VERSION
+        infos["createDate"] = self.createDate
+        infos["puliversion"] = settings.VERSION
 
         dct = json.dumps(infos)
         # FIXME if a command is currently running on this worker, notify the dispatcher
@@ -359,7 +358,7 @@ class Worker(MainLoopApplication):
                     LOGGER.info("Boot process... worker registered")
                     break
             # try to register to dispatcher every 10 seconds
-            time.sleep( config.WORKER_REGISTER_DELAY_AFTER_FAILURE )
+            time.sleep(config.WORKER_REGISTER_DELAY_AFTER_FAILURE)
 
         # once the worker is registered, ensure the RN status is correct according to the killfile presence
         if os.path.isfile(settings.KILLFILE):
@@ -395,9 +394,9 @@ class Worker(MainLoopApplication):
         :param commandWatcher: the commandWatcher object we will send an update about
         """
 
-        maxRetry = max(1,config.WORKER_REQUEST_MAX_RETRY_COUNT)
+        maxRetry = max(1, config.WORKER_REQUEST_MAX_RETRY_COUNT)
         delayRetry = config.WORKER_REQUEST_DELAY_AFTER_REQUEST_FAILURE
-        i=0
+        i = 0
 
         while i < maxRetry:
             url = "/rendernodes/%s/commands/%d/" % (self.computerName, commandWatcher.commandId)
@@ -430,8 +429,8 @@ class Worker(MainLoopApplication):
                 self.httpconn.close()
 
             LOGGER.warning('Update of command %d failed (attempt %d of %d)', commandWatcher.commandId, i, maxRetry)
-            LOGGER.warning('Next retry will occur in %.2f s' % delayRetry )
-            time.sleep( delayRetry )
+            LOGGER.warning('Next retry will occur in %.2f s' % delayRetry)
+            time.sleep(delayRetry)
             i += 1
             delayRetry *= 1.5
 
@@ -440,7 +439,6 @@ class Worker(MainLoopApplication):
         # if i == maxRetry:
         #     LOGGER.exception('Update of command %d failed repeatedly, removing watcher.', commandWatcher.commandId )
         #     self.removeCommandWatcher(commandWatcher)
-
 
     def pauseWorker(self, paused, killproc):
         """
@@ -492,7 +490,8 @@ class Worker(MainLoopApplication):
         processToKill = []
         for processItem in renderProcessList:
             items = processItem.split(' ')
-            if len(items) == 2 and items[1] not in config.LIST_ALLOWED_PROCESSES_WHEN_PAUSING_WORKER : #['python', 'bash', 'sshd', 'respawner.py']:
+            if len(items) == 2 and items[1] not in config.LIST_ALLOWED_PROCESSES_WHEN_PAUSING_WORKER:
+                #['python', 'bash', 'sshd', 'respawner.py']
                 processToKill.append(items[0])
                 LOGGER.info("Found ghost process %s %s" % (items[0], items[1]))
         if len(processToKill) != 0:
@@ -563,7 +562,6 @@ class Worker(MainLoopApplication):
             LOGGER.warning("Exiting worker")
             self.framework.stop()
 
-
         #
         # Waits for any child process, non-blocking (this is necessary to clean up finished process properly)
         #
@@ -575,7 +573,7 @@ class Worker(MainLoopApplication):
                 # Check if pid is still in command watchers
                 # In this case, clean the cmdwatcher and put cmd in error
                 for commandWatcher in self.commandWatchers.values():
-                    if pid==commandWatcher.processId:
+                    if pid == commandWatcher.processId:
 
                         if commandWatcher.command.status == COMMAND.CMD_RUNNING:
                             LOGGER.warning("Command was considered RUNNING: set to ERROR")
@@ -584,8 +582,7 @@ class Worker(MainLoopApplication):
                             LOGGER.warning("Keep current status: %r", commandWatcher.command.status)
                             newStatus = commandWatcher.command.status
 
-
-                        LOGGER.warning( "CommandWatcher killed but still referenced: %s", commandWatcher )
+                        LOGGER.warning("CommandWatcher killed but still referenced: %s", commandWatcher)
                         commandWatcher.finished = True
 
                         self.updateCompletionAndStatus(commandWatcher.commandId, commandWatcher.command.completion, newStatus, "Command termination not properly tracked.")
@@ -636,15 +633,12 @@ class Worker(MainLoopApplication):
             self.sendSysInfosMessage()
             self.lastSysInfosMessageTime = now
 
-
         self.httpconn.close()
 
         # let's be CPU friendly
         time.sleep(0.05)
         # except:
         #     LOGGER.error("A problem occured : " + repr(sys.exc_info()))
-
-
 
     def sendSysInfosMessage(self):
         """
@@ -662,7 +656,7 @@ class Worker(MainLoopApplication):
             # If necessary (i.e. specified by user via WS)
             infos = self.fetchSysInfos()
             self.updateSys = False
-            
+
         infos['status'] = self.status
         infos['systemFreeRam'] = self.getFreeMem()
         infos['systemSwapPercentage'] = self.getSwapUsage()
@@ -685,7 +679,6 @@ class Worker(MainLoopApplication):
             LOGGER.exception('Sending sys infos has failed with a BadStatusLine error')
 
         LOGGER.debug('Sys infos transmitted to the server: %r' % dct)
-
 
     def connect(self):
         return httplib.HTTPConnection(settings.DISPATCHER_ADDRESS, settings.DISPATCHER_PORT)
@@ -727,7 +720,7 @@ class Worker(MainLoopApplication):
                     commandWatcher.finished = True
 
             # Add a stats dict that will allow runner to send back useful data on the server.
-            # Data can be large, need to avoid to send it every command update. 
+            # Data can be large, need to avoid to send it every command update.
             # The stats value is None when no update need to be updated on the server.
             commandWatcher.command.stats = stats
 
@@ -743,7 +736,6 @@ class Worker(MainLoopApplication):
                 raise e
         else:
             raise WorkerInternalException("Worker flag 'isPaused' is on.")
-
 
     ##
     #
@@ -815,7 +807,6 @@ class Worker(MainLoopApplication):
                 if err != errno.EEXIST:
                     raise
 
-
         #JSA Fix :  add several info in env to be used by the runner
         command.environment["PULI_COMMAND_ID"] = command.id
         command.environment["PULI_TASK_NAME"] = command.taskName
@@ -827,14 +818,14 @@ class Worker(MainLoopApplication):
             "-u",
             scriptFile,
             commandWatcherLogFile,
-            str( settings.DISPATCHER_ADDRESS+":"+str(settings.DISPATCHER_PORT) ),
+            str(settings.DISPATCHER_ADDRESS + ":" + str(settings.DISPATCHER_PORT)),
             str(workerPort),
             str(command.id),
             command.runner,
             command.validationExpression,
         ]
 
-        # ARGH ! 
+        # ARGH !
         # loosing type of arguments by serializing as string
         # better be using ast.literal_eval to serialize and reload arguments
         args.extend(('%s=%s' % (str(name), str(value)) for (name, value) in command.arguments.items()))
@@ -845,7 +836,6 @@ class Worker(MainLoopApplication):
         # #
         # if getattr(config, 'CHECK_EXISTING_PROCESS', False):
         #     self.logExistingProcess(command)
-
 
         try:
             # Starts a new process (via CommandWatcher script) with current command info and environment.
@@ -865,14 +855,13 @@ class Worker(MainLoopApplication):
             LOGGER.error("Error spawning command watcher %r", e)
             raise e
 
-
     def logExistingProcess(self, command):
         """
         Debug purpose: for sepcific katana licence pb, we check before every child process of the worker
         In addition, a check is done to get all existing "commandwatcher.py" processes
         """
         LOGGER.info("Check existing renders.")
-        existingProcInfo=[]
+        existingProcInfo = []
 
         #
         # Create a list of child processes
@@ -883,32 +872,32 @@ class Worker(MainLoopApplication):
 
             for proc in childProcs:
                 try:
-                    pinfo = proc.as_dict(attrs=['pid', 'name', 'username', 'status', 'cmdline','create_time'])                  
+                    pinfo = proc.as_dict(attrs=['pid', 'name', 'username', 'status', 'cmdline', 'create_time'])
                 except psutil.NoSuchProcess:
                     pass
                 else:
                     existingProcInfo.append(pinfo.copy())
-                    LOGGER.info("Existing child processes: %d %.10s %s %s %.20s" % (pinfo["pid"], pinfo["name"], pinfo["status"], datetime.datetime.fromtimestamp(pinfo["create_time"]).strftime("%Y-%m-%d %H:%M:%S"), pinfo["cmdline"]) )
-        except NameError,e:
-            LOGGER.debug("Impossible to use pstuil on this host: %r"%e)
+                    LOGGER.info("Existing child processes: %d %.10s %s %s %.20s" % (pinfo["pid"], pinfo["name"], pinfo["status"], datetime.datetime.fromtimestamp(pinfo["create_time"]).strftime("%Y-%m-%d %H:%M:%S"), pinfo["cmdline"]))
+        except NameError, e:
+            LOGGER.debug("Impossible to use pstuil on this host: %r" % e)
             return
 
         #
         # Write short recap on shared path if needed
         #
         if len(existingProcInfo) > 0:
-            logfile="/s/prods/ddd/_sandbox/jsa/monitor_processes/%s-%s" % (self.computerName[:-5], self.computerName[-4:])
-            LOGGER.info("Logging %d existing proc info to %s"%(len(existingProcInfo), logfile))
-            with open(logfile,'a') as f:
-                f.write("%s - cmdId=%d - task=%s\n"%(datetime.datetime.now(), command.id, command.taskName))
+            logfile = "/s/prods/ddd/_sandbox/jsa/monitor_processes/%s-%s" % (self.computerName[:-5], self.computerName[-4:])
+            LOGGER.info("Logging %d existing proc info to %s" % (len(existingProcInfo), logfile))
+            with open(logfile, 'a') as f:
+                f.write("%s - cmdId=%d - task=%s\n" % (datetime.datetime.now(), command.id, command.taskName))
 
                 for proc in existingProcInfo:
-                    line = "%d %.10s %s %s %s" % (proc["pid"], 
-                                                    proc["name"], 
-                                                    proc["status"], 
-                                                    datetime.datetime.fromtimestamp(proc["create_time"]).strftime("%m/%d %H:%M:%S"), 
-                                                    proc["cmdline"])
-                    f.write("    %s\n"%line)
+                    line = "%d %.10s %s %s %s" % (proc["pid"],
+                                                  proc["name"],
+                                                  proc["status"],
+                                                  datetime.datetime.fromtimestamp(proc["create_time"]).strftime("%m/%d %H:%M:%S"),
+                                                  proc["cmdline"])
+                    f.write("    %s\n" % line)
 
     def reloadConfig(self):
         reload(config)

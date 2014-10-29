@@ -24,8 +24,10 @@ import env.templates.nukeVar as nukeVar
 NUKE_VERSION = "nuke"
 ENV_MAYA_LOCATION = "MAYA_LOCATION"
 
+
 class TimeoutError ( Exception ):
     ''' Raised when helper execution is too long. '''
+
 
 class PuliActionHelper(object):
     MikrosEnv = mikrosEnv.MikrosEnv()
@@ -85,25 +87,27 @@ class PuliActionHelper(object):
     def getEnv(self, am_version="", maya_version="", shave_version="", crowd_version="", yeti_version="latest", home="", job="", jobdrive="", applis="", use_shave=0, nuke_rep=""):
         if nuke_rep == "":
             if use_shave:
-                env = mayaVar.shaveCreateEnvDict(am_version=am_version,
-                                    maya_version=maya_version,
-                                    shave_version=shave_version,
-                                    crowd_version=crowd_version,
-                                    yeti_version=yeti_version,
-                                    home=home,
-                                    job=job,
-                                    jobdrive=jobdrive,
-                                    applis=applis)
+                env = mayaVar.shaveCreateEnvDict(
+                    am_version=am_version,
+                    maya_version=maya_version,
+                    shave_version=shave_version,
+                    crowd_version=crowd_version,
+                    yeti_version=yeti_version,
+                    home=home,
+                    job=job,
+                    jobdrive=jobdrive,
+                    applis=applis)
             else:
-                env = mayaVar.createEnvDict(am_version=am_version,
-                                    maya_version=maya_version,
-                                    shave_version=shave_version,
-                                    crowd_version=crowd_version,
-                                    yeti_version=yeti_version,
-                                    home=home,
-                                    job=job,
-                                    jobdrive=jobdrive,
-                                    applis=applis)
+                env = mayaVar.createEnvDict(
+                    am_version=am_version,
+                    maya_version=maya_version,
+                    shave_version=shave_version,
+                    crowd_version=crowd_version,
+                    yeti_version=yeti_version,
+                    home=home,
+                    job=job,
+                    jobdrive=jobdrive,
+                    applis=applis)
 
             # this is necessary for the python-bin of maya to work properly
             if platform.system() == "Linux":
@@ -116,11 +120,12 @@ class PuliActionHelper(object):
             except KeyError:
                 pass
         else:
-            env = nukeVar.createEnvDict(nuke_rep=nuke_rep,
-                                    home=home,
-                                    job=job,
-                                    jobdrive=jobdrive,
-                                    applis=applis)
+            env = nukeVar.createEnvDict(
+                nuke_rep=nuke_rep,
+                home=home,
+                job=job,
+                jobdrive=jobdrive,
+                applis=applis)
 
         # regularize the env
         for envVar in sorted(env):

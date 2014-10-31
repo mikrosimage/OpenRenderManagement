@@ -16,6 +16,7 @@ END = "end"
 STEP = "step"
 PACKET_SIZE = "packetSize"
 CMD = "cmd"
+FRAMES_LIST = "framesList"
 
 
 class GenericDecomposer(TaskDecomposer):
@@ -24,6 +25,8 @@ class GenericDecomposer(TaskDecomposer):
         self.task.runner = "puliclient.contrib.generic.GenericRunner"
 
         packetSize = int(task.arguments[PACKET_SIZE])
+        if FRAMES_LIST not in task.arguments:
+            framesList=""
         if len(framesList) != 0:
             frames = framesList.split(",")
             for frame in frames:

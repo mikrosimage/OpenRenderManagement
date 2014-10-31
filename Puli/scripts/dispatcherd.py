@@ -14,6 +14,8 @@ import sys
 import atexit
 import signal
 import tornado
+import subprocess
+
 
 #
 # Init singleton object holding reloadable config values
@@ -166,42 +168,30 @@ def main():
             logging.getLogger('main').error("Unexpected error occured when redirecting stdout/stderr to logfile")
 
     logging.getLogger('main').warning("creating dispatcher main application")
-    dispatcherApplication = make_dispatcher()
+    server = make_dispatcher()
 
     # Define a periodic callback to process DB/COMPLETION/ASSIGNMENT updates
-    periodic = tornado.ioloop.PeriodicCallback(dispatcherApplication.loop, singletonconfig.get('CORE', 'MASTER_UPDATE_INTERVAL'))
+    periodic = tornado.ioloop.PeriodicCallback(server.loop, singletonconfig.get('CORE', 'MASTER_UPDATE_INTERVAL'))
     periodic.start()
     try:
         logging.getLogger('main').warning("starting tornado main loop")
         tornado.ioloop.IOLoop.instance().start()
     except (KeyboardInterrupt, SystemExit):
-        logging.getLogger('main').warning("-----------------------------------------------")
-        logging.getLogger('main').warning("Exit event caught: closing dispatcher...")
+        server.application.shutdown()
+
+    # If restart flag is set (via /restart webservice)
+    if server.application.restartService:
+        logging.getLogger('main').warning("Restarting service...")
 
         try:
-            dispatcherApplication.application.dispatchTree.updateCompletionAndStatus()
-            logging.getLogger('main').warning("[OK] update completion and status")
-        except Exception:
-            logging.getLogger('main').warning("[HS] update completion and status")
+            # Restart server using a specific command
+            subprocess.check_call(settings.RESTART_COMMAND.split())
+        except subprocess.CalledProcessError, e:
+            logging.getLogger('main').warning("Impossible to restart systemd unit (error: %s)" % e)
+        except AttributeError, e:
+            logging.getLogger('main').warning("Dispatcher settings do not define: RESTART_COMMAND")
 
-        try:
-            dispatcherApplication.application.updateRenderNodes()
-            logging.getLogger('main').warning("[OK] update render nodes")
-        except Exception:
-            logging.getLogger('main').warning("[HS] update render nodes")
-
-        try:
-            dispatcherApplication.application.dispatchTree.validateDependencies()
-            logging.getLogger('main').warning("[OK] validate dependencies")
-        except Exception:
-            logging.getLogger('main').warning("[HS] validate dependencies")
-        try:
-            dispatcherApplication.application.updateDB()
-            logging.getLogger('main').warning("[OK] update DB")
-        except Exception:
-            logging.getLogger('main').warning("[HS] update DB")
-
-        logging.getLogger('main').warning("Bye.")
+    logging.getLogger('main').warning("Bye.")
 
 
 if __name__ == '__main__':

@@ -57,6 +57,11 @@ DISPATCHER_PORT = 8004
 DISPATCHER_ADDRESS = "puliserver"
 
 #
+# Command to launch to restart the service
+#
+RESTART_COMMAND = "sudo systemctl restart puliworker.service"
+
+#
 # Definition des fichiers de surveillance
 #
 PIDFILE = "/var/run/puli/worker.pid"  # service control pid file

@@ -523,7 +523,7 @@ class Worker(MainLoopApplication):
                 if len(data) != 0:
                     try:
                         data = int(data)
-                    except ValueError, e:
+                    except ValueError:
                         LOGGER.warning("Invalid content in killfile, pausing worker anyway")
 
                 LOGGER.warning("Killfile detected, pausing worker")
@@ -556,7 +556,7 @@ class Worker(MainLoopApplication):
                 try:
                     os.remove(settings.KILLFILE)
                     LOGGER.warning("Killfile \"%s\" removed" % settings.KILLFILE)
-                except Exception, e:
+                except Exception:
                     LOGGER.warning("Error, impossible to remove the kill file: \"%s\"" % settings.KILLFILE)
 
             LOGGER.warning("Exiting worker")

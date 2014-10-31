@@ -18,8 +18,10 @@ ExecStartPre=/bin/chown -R render /var/run/puli/
 #
 # Main
 #
-ExecStart=/usr/bin/python2.6 /s/apps/lin/puli/scripts/dispatcherd.py -p ${PORT} -d
+ExecStart=/usr/bin/python2.6 /opt/puli/scripts/dispatcherd.py -p ${PORT} -d
 PIDFile=/var/run/puli/dispatcher.pid
+Restart=always
+RestartSec=30
 
 [Install]
 WantedBy=multi-user.target

@@ -83,7 +83,7 @@ Don't forget to specify a pool name otherwise your job will be submitted but wil
     parser.add_option(
         "", "--pool",
         dest="pool",
-        default="",
+        default="default",
         help="Pool name. [default: '%default']")
 
     parser.add_option(

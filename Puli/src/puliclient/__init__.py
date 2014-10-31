@@ -10,13 +10,10 @@ __author__ = "Olivier Derpierre "
 __date__ = "Jan 11, 2010"
 __version__ = (0, 3, 0)
 
-import sys
-import os
-import subprocess
 import time
 import copy
 
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta
 
 import httplib
 try:
@@ -88,11 +85,14 @@ class HierarchicalDict(dict):
 class DependencyCycleError(Error):
     '''Raised when a dependency is detected among the dependency graph.'''
 
+
 class GraphSubmissionError(Error):
     '''Raised on a job submission error.'''
 
+
 class GraphExecError(Error):
     '''Raised on a job execution error.'''
+
 
 class GraphExecInterrupt(Exception):
     '''Raised on a job execution interrupt.'''
@@ -837,10 +837,7 @@ class Graph(object):
         :raise: GraphExecInterrupt when a keyboard interrupt is raised by the user
         """
         print ""
-        from octopus.commandwatcher import commandwatcher
-
         commandId = pCommand["execid"]
-        taskId = pCommand["taskid"]
         runner = pCommand["runner"]
         validationExpression = pCommand["validationExpression"]
 
@@ -857,6 +854,7 @@ class Graph(object):
         # - a runner class
         # - an optionnal validation expression
 
+        # from octopus.commandwatcher import commandwatcher
         # scriptFile = commandwatcher.__file__
         # pythonExecutable = sys.executable
         # args = [
@@ -889,7 +887,6 @@ class Graph(object):
         # except KeyboardInterrupt:
         #     sys.exit(0)
         # print ""
-
 
         #
         # DIRECT CALL: create CommandWatcher object

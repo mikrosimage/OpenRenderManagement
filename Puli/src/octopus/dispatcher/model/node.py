@@ -207,9 +207,10 @@ class BaseNode(models.Model):
         #     self.allocatedRN += currPoolShare.allocatedRN
 
         # Correct way, iterate over active poolshare and additionnal poolshares only
+        self.allocatedRN = 0
         for currPoolShare in self.poolShares.values():
             self.maxRN = currPoolShare.maxRN
-            self.allocatedRN = currPoolShare.allocatedRN
+            self.allocatedRN += currPoolShare.allocatedRN
 
         for ps in self.additionnalPoolShares.values():
             self.allocatedRN += ps.allocatedRN

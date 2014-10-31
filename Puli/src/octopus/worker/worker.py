@@ -523,7 +523,7 @@ class Worker(MainLoopApplication):
                 if len(data) != 0:
                     try:
                         data = int(data)
-                    except ValueError, e:
+                    except ValueError:
                         LOGGER.warning("Invalid content in killfile, pausing worker anyway")
 
                 LOGGER.warning("Killfile detected, pausing worker")
@@ -556,7 +556,7 @@ class Worker(MainLoopApplication):
                 try:
                     os.remove(settings.KILLFILE)
                     LOGGER.warning("Killfile \"%s\" removed" % settings.KILLFILE)
-                except Exception, e:
+                except Exception:
                     LOGGER.warning("Error, impossible to remove the kill file: \"%s\"" % settings.KILLFILE)
 
             LOGGER.warning("Exiting worker")
@@ -825,17 +825,8 @@ class Worker(MainLoopApplication):
             command.validationExpression,
         ]
 
-        # ARGH !
-        # loosing type of arguments by serializing as string
-        # better be using ast.literal_eval to serialize and reload arguments
-        args.extend(('%s=%s' % (str(name), str(value)) for (name, value) in command.arguments.items()))
-        # args.append( str(command.arguments) )
-
-        # #
-        # # Check remaining child processes
-        # #
-        # if getattr(config, 'CHECK_EXISTING_PROCESS', False):
-        #     self.logExistingProcess(command)
+        # Properly serializing arguments using json
+        args.append(json.dumps(command.arguments))
 
         try:
             # Starts a new process (via CommandWatcher script) with current command info and environment.
@@ -854,50 +845,6 @@ class Worker(MainLoopApplication):
         except Exception, e:
             LOGGER.error("Error spawning command watcher %r", e)
             raise e
-
-    def logExistingProcess(self, command):
-        """
-        Debug purpose: for sepcific katana licence pb, we check before every child process of the worker
-        In addition, a check is done to get all existing "commandwatcher.py" processes
-        """
-        LOGGER.info("Check existing renders.")
-        existingProcInfo = []
-
-        #
-        # Create a list of child processes
-        #
-        try:
-            p = psutil.Process()
-            childProcs = p.children(recursive=True)
-
-            for proc in childProcs:
-                try:
-                    pinfo = proc.as_dict(attrs=['pid', 'name', 'username', 'status', 'cmdline', 'create_time'])
-                except psutil.NoSuchProcess:
-                    pass
-                else:
-                    existingProcInfo.append(pinfo.copy())
-                    LOGGER.info("Existing child processes: %d %.10s %s %s %.20s" % (pinfo["pid"], pinfo["name"], pinfo["status"], datetime.datetime.fromtimestamp(pinfo["create_time"]).strftime("%Y-%m-%d %H:%M:%S"), pinfo["cmdline"]))
-        except NameError, e:
-            LOGGER.debug("Impossible to use pstuil on this host: %r" % e)
-            return
-
-        #
-        # Write short recap on shared path if needed
-        #
-        if len(existingProcInfo) > 0:
-            logfile = "/s/prods/ddd/_sandbox/jsa/monitor_processes/%s-%s" % (self.computerName[:-5], self.computerName[-4:])
-            LOGGER.info("Logging %d existing proc info to %s" % (len(existingProcInfo), logfile))
-            with open(logfile, 'a') as f:
-                f.write("%s - cmdId=%d - task=%s\n" % (datetime.datetime.now(), command.id, command.taskName))
-
-                for proc in existingProcInfo:
-                    line = "%d %.10s %s %s %s" % (proc["pid"],
-                                                  proc["name"],
-                                                  proc["status"],
-                                                  datetime.datetime.fromtimestamp(proc["create_time"]).strftime("%m/%d %H:%M:%S"),
-                                                  proc["cmdline"])
-                    f.write("    %s\n" % line)
 
     def reloadConfig(self):
         reload(config)

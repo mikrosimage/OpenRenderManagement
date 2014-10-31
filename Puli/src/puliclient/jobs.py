@@ -4,7 +4,6 @@ Created on Jan 11, 2010
 @author: Olivier Derpierre
 '''
 
-import os
 import sys
 import traceback
 import logging

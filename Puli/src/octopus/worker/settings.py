@@ -39,7 +39,7 @@ else:
 ## SETTINGS ###########################################################
 ## These settings cannot be reloaded during worker execution because some of the values can be overriden with program user arguments
 ## To change these values, the worker must be restarted
-VERSION = "1.7.4"
+VERSION = "1.7.5"
 
 DEBUG = True
 computername = computername.lower()
@@ -55,6 +55,11 @@ ADDRESS = computername
 #
 DISPATCHER_PORT = 8004
 DISPATCHER_ADDRESS = "puliserver"
+
+#
+# Command to launch to restart the service
+#
+RESTART_COMMAND = "sudo systemctl restart puliworker.service"
 
 #
 # Definition des fichiers de surveillance

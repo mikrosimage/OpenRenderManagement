@@ -33,7 +33,7 @@ def loadSettingsFile(filename):
 
 ## SETTINGS ###########################################################
 
-VERSION = "1.7.4"
+VERSION = "1.7.5"
 
 DEBUG = False
 
@@ -48,6 +48,10 @@ RUN_AS = None
 LOGDIR = "__LOGDIR_PLACEHOLDER__"
 CONFDIR = "__CONFDIR_PLACEHOLDER__"
 
+#
+# COMMAND LAUNCHED DURING SHUTDOWN TO RESTART SERVER
+#
+RESTART_COMMAND = "sudo systemctl restart puliserver.service"
 
 #
 # SERVICE CONTROL PID FILE

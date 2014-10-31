@@ -75,6 +75,7 @@ class Dispatcher(MainLoopApplication):
         self.licenseManager = LicenseManager()
         self.enablePuliDB = settings.DB_ENABLE
         self.cleanDB = settings.DB_CLEAN_DATA
+        self.restartService = False
 
         self.pulidb = None
         if self.enablePuliDB:
@@ -187,6 +188,36 @@ class Dispatcher(MainLoopApplication):
 
         return True
 
+    def shutdown(self):
+        '''
+        Clean procedure before shutting done puli server.
+        '''
+        logging.getLogger('main').warning("-----------------------------------------------")
+        logging.getLogger('main').warning("Exit event caught: closing dispatcher...")
+
+        try:
+            self.dispatchTree.updateCompletionAndStatus()
+            logging.getLogger('main').warning("[OK] update completion and status")
+        except Exception:
+            logging.getLogger('main').warning("[HS] update completion and status")
+
+        try:
+            self.updateRenderNodes()
+            logging.getLogger('main').warning("[OK] update render nodes")
+        except Exception:
+            logging.getLogger('main').warning("[HS] update render nodes")
+
+        try:
+            self.dispatchTree.validateDependencies()
+            logging.getLogger('main').warning("[OK] validate dependencies")
+        except Exception:
+            logging.getLogger('main').warning("[HS] validate dependencies")
+        try:
+            self.updateDB()
+            logging.getLogger('main').warning("[OK] update DB")
+        except Exception:
+            logging.getLogger('main').warning("[HS] update DB")
+
     def loadRules(self):
         from .rules.graphview import GraphViewBuilder
         graphs = self.dispatchTree.findNodeByPath("/graphs", None)
@@ -221,7 +252,7 @@ class Dispatcher(MainLoopApplication):
         |   - compute new assignments and send them to the proper rendernodes
         |   - release all finished jobs/rns
         '''
-        log = logging.getLogger('assign')
+        log = logging.getLogger('main')
         loopStartTime = time.time()
         prevTimer = loopStartTime
 
@@ -237,6 +268,7 @@ class Dispatcher(MainLoopApplication):
             pass
         else:
             log.info("finished some network requests")
+            pass
 
         self.cycle += 1
 
@@ -251,14 +283,14 @@ class Dispatcher(MainLoopApplication):
         self.updateRenderNodes()
         if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleTimers['update_rn'] = time.time() - prevTimer
-        # log.info("%8.2f ms --> update render node" % ((time.time() - prevTimer) * 1000))
+        log.info("%8.2f ms --> update render node" % ((time.time() - prevTimer) * 1000))
         prevTimer = time.time()
 
         # Validate dependencies
         self.dispatchTree.validateDependencies()
         if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleTimers['update_dependencies'] = time.time() - prevTimer
-        # log.info("%8.2f ms --> validate dependencies" % ((time.time() - prevTimer) * 1000))
+        log.info("%8.2f ms --> validate dependencies" % ((time.time() - prevTimer) * 1000))
         prevTimer = time.time()
 
         # update db
@@ -279,7 +311,7 @@ class Dispatcher(MainLoopApplication):
         if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleTimers['send_assignment'] = time.time() - prevTimer
             singletonstats.theStats.cycleCounts['num_assignments'] = len(assignments)
-        # log.info("%8.2f ms --> send %r assignments." % ((time.time() - prevTimer) * 1000, len(assignments)))
+        log.info("%8.2f ms --> send %r assignments." % ((time.time() - prevTimer) * 1000, len(assignments)))
         prevTimer = time.time()
 
         # call the release finishing status on all rendernodes
@@ -287,13 +319,15 @@ class Dispatcher(MainLoopApplication):
             renderNode.releaseFinishingStatus()
         if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleTimers['release_finishing'] = time.time() - prevTimer
-        # log.info("%8.2f ms --> releaseFinishingStatus" % ((time.time() - prevTimer) * 1000))
+        log.info("%8.2f ms --> releaseFinishingStatus" % ((time.time() - prevTimer) * 1000))
         prevTimer = time.time()
 
         loopDuration = (time.time() - loopStartTime)*1000
         log.info("%8.2f ms --> cycle ended. " % loopDuration)
 
-        # TODO: process average and sums of datas in stats, if flush time, send it to disk
+        #
+        # Send stat data to disk
+        #
         if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleTimers['time_elapsed'] = time.time() - loopStartTime
             singletonstats.theStats.aggregate()
@@ -312,11 +346,11 @@ class Dispatcher(MainLoopApplication):
         from .model.node import NoRenderNodeAvailable, NoLicenseAvailableForTask
         log = logging.getLogger('assign')
 
-        log.info("    ---")
+        log.info("-----------------------------------------------------")
         # if no rendernodes available, return
         if not any(rn.isAvailable() for rn in self.dispatchTree.renderNodes.values()):
             log.info("    No rendernodes available on farm")
-            log.info("    ---")
+            # log.info("    ---")
             return []
 
         displayInfo = {"pools": []}
@@ -336,7 +370,7 @@ class Dispatcher(MainLoopApplication):
                 rnsBool = True
         if not rnsBool:
             log.info("    No RN available for concerned pools: %s" % displayInfo['pools'])
-            log.info("    ---")
+            # log.info("    ---")
             return []
 
         # Log time updating max rn
@@ -455,7 +489,7 @@ class Dispatcher(MainLoopApplication):
         # Exit loop here if no nodes need new assignment
         if len(entryPoints) == 0:
             log.info("    No commands ready in considered nodes")
-            log.info("    ---")
+            # log.info("    ---")
             return []
 
         # Put nodes with a userDefinedMaxRN first
@@ -506,7 +540,6 @@ class Dispatcher(MainLoopApplication):
         # Backfill
         #
         # TODO refaire une passe pour les jobs ayant un attribut "killable" et au moins une pool additionnelle
-        log.info("    ---")
 
         return assignmentDict.items()
 

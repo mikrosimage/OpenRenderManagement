@@ -23,7 +23,7 @@ ExecStart=/usr/bin/python /s/apps/lin/puli/scripts/workerd.py -p ${PORT} -s ${HO
 LimitNOFILE=32000
 PIDFile=/var/run/puli/worker.pid
 Restart=always
-RestartSec=1
+RestartSec=10
 
 [Install]
 WantedBy=multi-user.target

@@ -17,6 +17,7 @@ import time
 import tornado
 from tornado.web import Application
 
+from octopus.core.communication.http import Http500
 from octopus.dispatcher.webservice import commands, rendernodes, graphs, nodes,\
     tasks, poolshares, pools, licenses, \
     query, edit
@@ -105,7 +106,8 @@ class WebServiceDispatcher(Application):
             (r'^/query/command$', commands.CommandQueryResource, dict(framework=framework)),
 
             (r'^/reconfig$', ReconfigResource, dict(framework=framework)),
-            (r'^/dbg$', DbgResource, dict(framework=framework)),
+            (r'^/restart$', RestartResource, dict(framework=framework)),
+            (r'^/shutdown$', ShutdownResource, dict(framework=framework)),
 
             # Standard WS to retrieve log file from server
             (r"/log/(.*)", tornado.web.StaticFileHandler, {"path": settings.LOGDIR, "default_filename": "dispatcher.log"}),
@@ -113,24 +115,6 @@ class WebServiceDispatcher(Application):
 
         self.listen(port, "0.0.0.0")
         self.framework = framework
-
-
-class DbgResource(DispatcherBaseResource):
-    """
-    Very basic debug WS, it returns a simple HTML representation of the currently hold dispatchTree
-    TODO: return a json string instead
-    """
-    def get(self):
-        # DBG JSA: display dispatchtree
-        from octopus.dispatcher.model.dispatchtree import TimeoutException
-
-        try:
-            res = self.getDispatchTree()._display_()
-        except TimeoutException, e:
-            res = str(e)
-
-        self.writeCallback(str(res))
-        pass
 
 
 class StatsResource(DispatcherBaseResource):
@@ -261,46 +245,50 @@ class SystemResource(DispatcherBaseResource):
 
 class ReconfigResource(DispatcherBaseResource):
     def post(self):
+        '''
+        Reload the main config file (using singletonconfig) and reload
+        every main loggers.
+        '''
         try:
             singletonconfig.reload()
-
-            # FIXME on est oblige de changer le loglevel de tous les loggers du projet...
-            # Il faudrait pouvoir affecter tous les log d'un seul coup
-
             logLevel = singletonconfig.get('CORE', 'LOG_LEVEL')
             logging.getLogger().setLevel(logLevel)
             logging.getLogger('main').setLevel(logLevel)
             logging.getLogger("worker").setLevel(logLevel)
-
-            # Tous les logger de l'appli
-            #
-            # root
-            # cmdwatcher
-            # command
-            # dispatcher
-            # dispatcher.dispatchtree
-            # dispatcher.webservice
-            # dispatcher.webservice.editController
-            # dispatcher.webservice.NodeController
-            # dispatcher.webservice.PoolController
-            # dispatcher.webservice.queryController
-            # dispatcher.webservice.TaskController
-            # framework
-            # framework.application
-            # framework.webservice
-            # model
-            # model.task
-            # poolshares
-            # process
-            # userview
-            # worker
-            # worker.CmdThreader
-            # workerws
-
         except Exception, e:
             raise Http500("Error during server reconfig: %r" % e)
 
         self.writeCallback("done")
+
+
+class ShutdownResource(DispatcherBaseResource):
+    def post(self):
+        '''
+        '''
+        try:
+            result = {'return_code': True}
+            self.write(json.dumps(result))
+            tornado.ioloop.IOLoop.instance().add_callback(self.framework.application.shutdown)
+            tornado.ioloop.IOLoop.instance().add_callback(tornado.ioloop.IOLoop.instance().stop)
+
+        except Exception, e:
+            raise Http500("Error during server restart: %s" % e)
+
+
+class RestartResource(DispatcherBaseResource):
+    def post(self):
+        '''
+        '''
+        try:
+            self.framework.application.restartService = True
+
+            result = {'return_code': True}
+            self.write(json.dumps(result))
+            tornado.ioloop.IOLoop.instance().add_callback(self.framework.application.shutdown)
+            tornado.ioloop.IOLoop.instance().add_callback(tornado.ioloop.IOLoop.instance().stop)
+
+        except Exception, e:
+            raise Http500("Error during server restart: %s" % e)
 
 
 class SystemResourceJson(DispatcherBaseResource):

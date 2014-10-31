@@ -27,7 +27,6 @@ def process_args():
 if __name__ == '__main__':
     (options, args) = process_args()
 
-    import pudb;pu.db
     tags = {"prod": "test", "shot": "test", "nbFrames": options.num}
 
     # command = "sleep `shuf -i %d-%d -n 1; mkdir /tmp/render/toto/titi`" % (options.min, options.max)

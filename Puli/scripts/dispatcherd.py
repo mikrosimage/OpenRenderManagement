@@ -14,6 +14,8 @@ import sys
 import atexit
 import signal
 import tornado
+import subprocess
+
 
 #
 # Init singleton object holding reloadable config values
@@ -27,7 +29,6 @@ singletonconfig.load(settings.CONFDIR + "/config.ini")
 #
 # Init the rest of dispatcher app
 #
-# from octopus.dispatcher import make_dispatcher
 from octopus.core.framework import WSAppFramework
 from octopus.dispatcher.webservice.webservicedispatcher import WebServiceDispatcher
 from octopus.dispatcher.dispatcher import Dispatcher
@@ -141,7 +142,6 @@ def make_dispatcher():
 
 
 def main():
-    # import pudb;pu.db
     options = process_args()
     setup_logging(options)
 
@@ -168,16 +168,31 @@ def main():
             logging.getLogger('main').error("Unexpected error occured when redirecting stdout/stderr to logfile")
 
     logging.getLogger('main').warning("creating dispatcher main application")
-    dispatcherApplication = make_dispatcher()
+    server = make_dispatcher()
 
-    periodic = tornado.ioloop.PeriodicCallback(dispatcherApplication.loop, singletonconfig.get('CORE', 'MASTER_UPDATE_INTERVAL'))
+    # Define a periodic callback to process DB/COMPLETION/ASSIGNMENT updates
+    periodic = tornado.ioloop.PeriodicCallback(server.loop, singletonconfig.get('CORE', 'MASTER_UPDATE_INTERVAL'))
     periodic.start()
     try:
         logging.getLogger('main').warning("starting tornado main loop")
         tornado.ioloop.IOLoop.instance().start()
     except (KeyboardInterrupt, SystemExit):
-        # TODO UPDATE DB HERE TO AVOID LOOSING CMD UPDATES ?...
-        logging.getLogger('main').warning("Exit event caught: closing dispatcher...")
+        server.application.shutdown()
+
+    # If restart flag is set (via /restart webservice)
+    if server.application.restartService:
+        logging.getLogger('main').warning("Restarting service...")
+
+        try:
+            # Restart server using a specific command
+            subprocess.check_call(settings.RESTART_COMMAND.split())
+        except subprocess.CalledProcessError, e:
+            logging.getLogger('main').warning("Impossible to restart systemd unit (error: %s)" % e)
+        except AttributeError, e:
+            logging.getLogger('main').warning("Dispatcher settings do not define: RESTART_COMMAND")
+
+    logging.getLogger('main').warning("Bye.")
+
 
 if __name__ == '__main__':
     main()

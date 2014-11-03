@@ -184,9 +184,11 @@ class Job(object, IJson):
         self.maxTimeByFrame = 0
 
         self.dependencies = []
-        #priority = models.IntegerField()
-        #poolShares = PoolShareDictField()
-        #additionnalPoolShares = AdditionnalPoolShareDictField()
+
+        # Internal infos
+        self.task = None
+        self.poolShares = []
+        self.additionnalPoolShares = []
         #updateTime = models.FloatField(allow_null=True)
 
     def __repr__(self):
@@ -379,8 +381,25 @@ class RenderNode(object, IJson):
         '''
         return self._sendPauseCommand({'content': "-2"})
 
+    def getLog(self):
+        '''
+        Return a string containing the worker log.
+        '''
+        raise NotImplementedError
 
-class JobHandler(object):
+    def tailLog(self, length=100):
+        '''
+        Return a string containing the tail of the worker log.
+
+        :param length: int indicating the number of lines to retrieve
+        '''
+        raise NotImplementedError
+
+    def setPerformanceIndex(self):
+        raise NotImplementedError
+
+
+class QueueHandler(object):
     '''
     '''
 

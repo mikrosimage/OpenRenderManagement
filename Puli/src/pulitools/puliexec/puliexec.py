@@ -16,48 +16,36 @@ def get_user_name():
     return getpass.getuser()
 
 
-def split_list(values, key):
-    result = [[]]
-    for value in values:
-        if value == key:
-            if result[-1]:
-                result.append([])
-            continue
-        result[-1].append(value)
-    return result
+def split_first_key(values, key):
+    try:
+        index = values.index(key)
+        return (values[:index], values[index+1:])
+    except ValueError:
+        return (values, None)
 
 
 def main():
 
     ## Handle input arguments ##
     input_args = sys.argv[1:]
-    input_args_blocks = split_list(input_args, '--')
+    input_a, input_b = split_first_key(input_args, '--')
 
-    # print "input_args_blocks:", input_args_blocks
+    # print "input A:", input_a
+    # print "input B:", input_b
 
     cmd_args = []
     puliexec_args = []
 
-    if len(input_args_blocks) == 1:
-        for arg in input_args_blocks[0]:
+    if not input_b:
+        for arg in input_a:
             if not cmd_args and arg.startswith("-"):
                 puliexec_args.append(arg)
             else:
                 cmd_args.append(arg)
         # cmd_args = input_args_blocks[0]
-    elif len(input_args_blocks) == 2:
-        if input_args_blocks[0][0].startswith("-"):
-            puliexec_args = input_args_blocks[0]
-            cmd_args = input_args_blocks[1]
-        else:
-            cmd_args = input_args_blocks[0]
-            puliexec_args = input_args_blocks[1]
-    elif len(input_args_blocks) == 3:
-        puliexec_args = input_args_blocks[0] + input_args_blocks[2]
-        cmd_args = input_args_blocks[1]
     else:
-        print "Unrecognized syntaxe."
-        exit(-1)
+        puliexec_args = input_a
+        cmd_args = input_b
 
     ## Handle puli arguments ##
     usage = """
@@ -165,7 +153,8 @@ Don't forget to specify a pool name otherwise your job will be submitted but wil
 
     (options, args) = parser.parse_args(puliexec_args)
 
-    # print( "options:", options )
+    # print( "options:", str(options) )
+    # print( "args:", str(args) )
 
     if not cmd_args:
         print "No command to run."

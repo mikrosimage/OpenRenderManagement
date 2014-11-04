@@ -15,6 +15,7 @@ __version__ = (0, 3, 0)
 # import subprocess
 import time
 import copy
+import os
 
 from datetime import datetime, timedelta
 
@@ -570,6 +571,49 @@ class Graph(object):
             raise GraphError("Graph root is a task, new task can only be added \
                 to task groups")
         return self.root.addNewTaskGroup(*args, **kwargs)
+
+    # def wrapCallable(func):
+    #     print "in wrapCallable"
+    #     return func
+
+    # @wrapCallable
+    def addNewCallableTask(self, name, tags, targetCall, params):
+        """
+        """
+
+        #
+        # Check callable given
+        #
+        import inspect
+
+        if not (inspect.ismethod(targetCall) or inspect.isfunction(targetCall)):
+            raise GraphError("Callable must be a function or method.")
+
+        if inspect.isfunction(targetCall):
+            callableArgs = {
+                'execType': 'function',
+                'addToPythonPath': os.path.dirname(inspect.getfile(targetCall)),
+                # 'PYTHONPATH': site.addsitedir('/s/prods/mikros_test/jsa/exec'),
+                'moduleName': targetCall.__module__,
+                'funcName': targetCall.__name__,
+                'params': json.dumps(params)
+            }
+
+        if inspect.ismethod(targetCall):
+
+            callableArgs = {
+                'execType': 'method',
+                'addToPythonPath': os.path.dirname(inspect.getfile(targetCall)),
+                'moduleName': targetCall.__module__,
+                'className': inspect.getmro(targetCall.im_class)[0].__name__,
+                'methodName': targetCall.__name__,
+                'params': json.dumps(params)
+            }
+
+        self.addNewTask(name, callableArgs, tags=tags, runner="puliclient.jobs.CallableRunner")
+
+        # args = {'callable': callable, 'params': params}
+        # self.addNewTask(name, callableArgs, tags=tags, runner="puliclient.jobs.CallableRunner")
 
     def addEdges(self, pEdgeList):
         """

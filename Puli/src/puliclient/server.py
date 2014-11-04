@@ -103,7 +103,7 @@ def request(host, port, url, method="get", *args, **kwargs):
         raise RequestTimeoutError
 
     except requests.exceptions.ConnectionError, e:
-        logging.error("Network problem occured: %s" % e)
+        logging.error("Network problem occured: %s" % e.args[0].reason)
         raise RequestError
 
     except requests.exceptions.RequestException, e:

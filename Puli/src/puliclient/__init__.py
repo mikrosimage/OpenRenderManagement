@@ -577,8 +577,14 @@ class Graph(object):
     # from functools import partial
     # self.callOnfarm = partial(addNewCallableTaskRAW, self, "", {}, targetCall, params)
 
-    def addNewCallableTaskRAW(self, name, tags, targetCall, params):
+    def addNewCallableTaskRAW(self, targetCall, params, name="", **kwargs):
         """
+        | Wraps around TaskGroup  method to add a new Task. It accepts any callable
+        | to run on the renderfarm. Additionnal Task arguments can be added as keyword args
+
+        :param targetCall: callable to be serialized and run on the render farm
+        :param params: a dict representing targetCallable arguments
+        :param name: optionnal task name (if not defined, method or function name will be used)
         """
 
         #
@@ -604,13 +610,15 @@ class Graph(object):
         if inspect.isfunction(targetCall):
             callableArgs['execType'] = 'function'
             callableArgs['funcName'] = targetCall.__name__
+            taskName = name if name != "" else callableArgs['funcName']
 
         if inspect.ismethod(targetCall):
             callableArgs['execType'] = 'method'
             callableArgs['className'] = inspect.getmro(targetCall.im_class)[0].__name__
             callableArgs['methodName'] = targetCall.__name__
+            taskName = name if name != "" else callableArgs['className'] + "." + callableArgs['methodName']
 
-        self.addNewTask(name, callableArgs, tags=tags, runner="puliclient.CallableRunner")
+        self.addNewTask(taskName, arguments=callableArgs, runner="puliclient.CallableRunner", **kwargs)
 
     def addEdges(self, pEdgeList):
         """

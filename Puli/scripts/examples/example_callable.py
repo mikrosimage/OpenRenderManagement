@@ -37,20 +37,18 @@ if __name__ == '__main__':
     try:
         graph = Graph(options.jobname, tags=tags)
         graph.addNewCallableTaskRAW(
-            name="custom function",
-            tags={"nbFrames": 5},
             targetCall=myFunction,
             params={"param1": 1, "param2": tags}
         )
 
         graph.addNewCallableTaskRAW(
-            name="custom method",
-            tags={"nbFrames": 5},
             targetCall=MyClass.myMethod,
-            params={"param1": 1, "param2": 2, "param3": 3}
+            params={"param1": 1, "param2": 2, "param3": 3},
+            tags={"nbFrames": 5, "prod": "tutu"},
+            ramUse=32000
         )
 
-        graph.callOnFarm(MyClass.myMethod, "1er_arg", 2, param3="toto")
+        # graph.callOnFarm(MyClass.myMethod, "1er_arg", 2, param3="toto")
 
     except GraphError, e:
         print "oops an error occured during the graph creation: %s" % e

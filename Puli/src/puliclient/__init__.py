@@ -16,8 +16,10 @@ __version__ = (0, 3, 0)
 import time
 import copy
 import os
+import sys
 
 from datetime import datetime, timedelta
+from puliclient.runner import CallableRunner
 
 import httplib
 try:
@@ -53,7 +55,7 @@ __all__ += ['BLOCKED',
 
 
 #
-# -- Submission API
+# Error relative to graph construction and submission
 #
 class Error(Exception):
     '''Raised on any invalid action in the dispatcher API.'''
@@ -65,6 +67,26 @@ class GraphError(Exception):
 
 class ConnectionError(Exception):
     '''Raised on any invalid connectino between edges in the graph.'''
+
+
+class DependencyCycleError(Error):
+    '''Raised when a dependency is detected among the dependency graph.'''
+
+
+class GraphSubmissionError(Error):
+    '''Raised on a job submission error.'''
+
+
+class GraphExecError(Error):
+    '''Raised on a job execution error.'''
+
+
+class GraphExecInterrupt(Exception):
+    '''Raised on a job execution interrupt.'''
+
+
+class TaskAlreadyDecomposedError(Error):
+    '''Raised on task decomposition call on an already decomposed task.'''
 
 
 class HierarchicalDict(dict):
@@ -92,26 +114,6 @@ class HierarchicalDict(dict):
         for ancestor in reversed(ancestors):
             d.update(ancestor)
         return str(d)
-
-
-class DependencyCycleError(Error):
-    '''Raised when a dependency is detected among the dependency graph.'''
-
-
-class GraphSubmissionError(Error):
-    '''Raised on a job submission error.'''
-
-
-class GraphExecError(Error):
-    '''Raised on a job execution error.'''
-
-
-class GraphExecInterrupt(Exception):
-    '''Raised on a job execution interrupt.'''
-
-
-class TaskAlreadyDecomposedError(Error):
-    '''Raised on task decomposition call on an already decomposed task.'''
 
 
 class Command(object):
@@ -572,12 +574,10 @@ class Graph(object):
                 to task groups")
         return self.root.addNewTaskGroup(*args, **kwargs)
 
-    # def wrapCallable(func):
-    #     print "in wrapCallable"
-    #     return func
+    # from functools import partial
+    # self.callOnfarm = partial(addNewCallableTaskRAW, self, "", {}, targetCall, params)
 
-    # @wrapCallable
-    def addNewCallableTask(self, name, tags, targetCall, params):
+    def addNewCallableTaskRAW(self, name, tags, targetCall, params):
         """
         """
 
@@ -589,31 +589,27 @@ class Graph(object):
         if not (inspect.ismethod(targetCall) or inspect.isfunction(targetCall)):
             raise GraphError("Callable must be a function or method.")
 
+        # Common args
+        callableArgs = {}
+        callableArgs['execType'] = 'function'
+        callableArgs['sysPath'] = sys.path
+        callableArgs['moduleName'] = targetCall.__module__
+
+        # Ensure params can be serialized i.e. not object, instance or function
+        try:
+            callableArgs['params'] = json.dumps(params)
+        except TypeError:
+            raise GraphError("Error: invalid parameters (not JSON serializable): %s" % params)
+
+        # Specific args
         if inspect.isfunction(targetCall):
-            callableArgs = {
-                'execType': 'function',
-                'addToPythonPath': os.path.dirname(inspect.getfile(targetCall)),
-                # 'PYTHONPATH': site.addsitedir('/s/prods/mikros_test/jsa/exec'),
-                'moduleName': targetCall.__module__,
-                'funcName': targetCall.__name__,
-                'params': json.dumps(params)
-            }
+            callableArgs['funcName'] = targetCall.__name__
 
         if inspect.ismethod(targetCall):
+            callableArgs['className'] = inspect.getmro(targetCall.im_class)[0].__name__,
+            callableArgs['methodName'] = targetCall.__name__
 
-            callableArgs = {
-                'execType': 'method',
-                'addToPythonPath': os.path.dirname(inspect.getfile(targetCall)),
-                'moduleName': targetCall.__module__,
-                'className': inspect.getmro(targetCall.im_class)[0].__name__,
-                'methodName': targetCall.__name__,
-                'params': json.dumps(params)
-            }
-
-        self.addNewTask(name, callableArgs, tags=tags, runner="puliclient.jobs.CallableRunner")
-
-        # args = {'callable': callable, 'params': params}
-        # self.addNewTask(name, callableArgs, tags=tags, runner="puliclient.jobs.CallableRunner")
+        self.addNewTask(name, callableArgs, tags=tags, runner="puliclient.CallableRunner")
 
     def addEdges(self, pEdgeList):
         """

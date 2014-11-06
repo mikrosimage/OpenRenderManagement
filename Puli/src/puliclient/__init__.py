@@ -591,7 +591,6 @@ class Graph(object):
 
         # Common args
         callableArgs = {}
-        callableArgs['execType'] = 'function'
         callableArgs['sysPath'] = sys.path
         callableArgs['moduleName'] = targetCall.__module__
 
@@ -603,10 +602,12 @@ class Graph(object):
 
         # Specific args
         if inspect.isfunction(targetCall):
+            callableArgs['execType'] = 'function'
             callableArgs['funcName'] = targetCall.__name__
 
         if inspect.ismethod(targetCall):
-            callableArgs['className'] = inspect.getmro(targetCall.im_class)[0].__name__,
+            callableArgs['execType'] = 'method'
+            callableArgs['className'] = inspect.getmro(targetCall.im_class)[0].__name__
             callableArgs['methodName'] = targetCall.__name__
 
         self.addNewTask(name, callableArgs, tags=tags, runner="puliclient.CallableRunner")

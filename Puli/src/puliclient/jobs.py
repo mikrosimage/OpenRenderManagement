@@ -375,7 +375,7 @@ class DefaultTaskDecomposer(TaskDecomposer):
             self.decompose( start=start, end=end, packetSize=packetSize, callback=self, framesList=framesList )
         else:
             # If arguments given but no standard behaviour, simply transmit task arguments to single command
-            self.task.addCommand(task.name+"_1_1", task.arguments)
+            self.task.addCommand(task.name, task.arguments)
 
 
     def addCommand(self, packetStart, packetEnd):

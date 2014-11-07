@@ -29,16 +29,27 @@ class CallableRunner(CommandRunner):
         execType = arguments['execType']
 
         #
-        # Add path to PYTHONPATH
+        # Add locations to site path if needed
         #
         # TODO instead, we should start rez with a script to load the callable
         try:
-            self.log.info("Add site dir: %s" % arguments['sysPath'])
-            for path in arguments['sysPath']:
+            self.log.info("Add %d site dirs" % len(arguments.get('sysPath', 0)))
+            for path in arguments.get('sysPath', None):
                 site.addsitedir(path)
-
         except Exception, e:
             raise JobTypeImportError(e)
+
+        #
+        # Retrieve user_args and user_kwargs
+        #
+        try:
+            user_args = json.loads(arguments.get("user_args", None))
+            user_kwargs = json.loads(arguments.get("user_kwargs", None))
+            self.log.info("args = %s" % user_args)
+            self.log.info("kwargs = %s" % user_kwargs)
+        except Exception, e:
+            print("Problem retrieving args and kwargs: %s)" % e)
+            raise CommandError("Problem retrieving args and kwargs: (%s, %s)" % (user_args, user_kwargs))
 
         #
         # Execute simple function
@@ -75,12 +86,10 @@ class CallableRunner(CommandRunner):
             # Go!
             #
             try:
-                params = json.loads(arguments.get("params", None))
-                self.log.info("params: %s" % params)
-                func(**params)
+                func(*user_args, **user_kwargs)
             except Exception, e:
-                print "Problem when executing: %s (error: %s)" % (func, e)
-                raise CommandError("Problem when executing: %s" % func)
+                print "Problem when executing: %s (msg: %s)" % (func, e)
+                raise CommandError("Problem when executing: %s (msg: %s)" % (func, e))
 
         #
         # Execute instance method
@@ -104,10 +113,9 @@ class CallableRunner(CommandRunner):
             # Go!
             #
             try:
-                params = json.loads(arguments.get("params", None))
-                self.log.info("params: %s" % params)
-
-                getattr(func, methodName)(**params)
+                # params = json.loads(arguments.get("params", None))
+                # self.log.info("params: %s" % params)
+                getattr(func, methodName)(*user_args, **user_kwargs)
             except Exception, e:
                 print "Problem when executing: %s (error: %s)" % (func, e)
                 raise CommandError("Problem when executing: %s" % func)

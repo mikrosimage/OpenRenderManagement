@@ -116,6 +116,43 @@ class HierarchicalDict(dict):
         return str(d)
 
 
+def parseCallable(targetCall, name, user_args, user_kwargs):
+    '''
+    '''
+    #
+    # Check callable given
+    #
+    import inspect
+    if not (inspect.ismethod(targetCall) or inspect.isfunction(targetCall)):
+        raise GraphError("Callable must be a function or method.")
+
+    # Common args
+    callableArgs = {}
+    callableArgs['sysPath'] = sys.path
+    callableArgs['moduleName'] = targetCall.__module__
+
+    # Ensure params can be serialized i.e. not object, instance or function
+    try:
+        callableArgs['user_args'] = json.dumps(user_args)
+        callableArgs['user_kwargs'] = json.dumps(user_kwargs)
+    except TypeError:
+        raise GraphError("Error: invalid parameters (not JSON serializable): %s" % params)
+
+    # Specific args
+    if inspect.isfunction(targetCall):
+        callableArgs['execType'] = 'function'
+        callableArgs['funcName'] = targetCall.__name__
+        taskName = name if name != "" else callableArgs['funcName']
+
+    if inspect.ismethod(targetCall):
+        callableArgs['execType'] = 'method'
+        callableArgs['className'] = inspect.getmro(targetCall.im_class)[0].__name__
+        callableArgs['methodName'] = targetCall.__name__
+        taskName = name if name != "" else callableArgs['className'] + "." + callableArgs['methodName']
+
+    return (taskName, callableArgs)
+
+
 class Command(object):
     """
     | The lowest level of execution of a graph. A command is basically a process
@@ -398,6 +435,20 @@ class TaskGroup(object):
 
         return newTask
 
+    def addNewCallable(self, targetCall, name="", user_args=(), user_kwargs={}, **kwargs):
+        """
+        | Wraps around TaskGroup  method to add a new Task. It accepts any callable
+        | to run on the renderfarm. Additionnal Task arguments can be added as keyword args
+        | It uses the internal "CallableRunner" to reload arguments and execute the callable.
+
+        :param targetCall: callable to be serialized and run on the render farm
+        :param name: optionnal task name (if not defined, method or function name will be used)
+        :param user_args: a list or tuple representing positionnal arguments to use with the callable
+        :param user_kwargs: a dict representing keyword arguments to use with the callable
+        """
+        (taskName, callableArgs) = parseCallable(targetCall, name, user_args, user_kwargs)
+        self.addNewTask(taskName, arguments=callableArgs, runner="puliclient.CallableRunner", **kwargs)
+
     def addNewTaskGroup(self, *args, **kwargs):
         """
         Creates a task group with given args and add it to the TaskGroup.
@@ -574,50 +625,35 @@ class Graph(object):
                 to task groups")
         return self.root.addNewTaskGroup(*args, **kwargs)
 
-    # from functools import partial
-    # self.callOnfarm = partial(addNewCallableTaskRAW, self, "", {}, targetCall, params)
+    # def addNewCallable(self, targetCall, *args, **kwargs):
+    #     '''
+    #     '''
+    #     task_specific_kwargs = {}
+    #     # UNSUPPORTED TASK FIELDS: priority, validator, minNbCores, maxNbCores
+    #     task_specific_kwargs['name'] = kwargs.pop('name', '')
+    #     task_specific_kwargs['dependencies'] = kwargs.pop('dependencies', {})
+    #     task_specific_kwargs['maxRN'] = kwargs.pop('maxRN', 0)
+    #     task_specific_kwargs['dispatchKey'] = kwargs.pop('dispatchKey', 0)
+    #     task_specific_kwargs['environment'] = kwargs.pop('environment', {})
+    #     task_specific_kwargs['ramUse'] = kwargs.pop('ramUse', 0)
+    #     task_specific_kwargs['requirements'] = kwargs.pop('requirements', {})
+    #     task_specific_kwargs['lic'] = kwargs.pop('lic', '')
+    #     task_specific_kwargs['tags'] = kwargs.pop('tags', {})
+    #     task_specific_kwargs['timer'] = kwargs.pop('timer', None)
+    #     task_specific_kwargs['maxAttempt'] = kwargs.pop('maxAttempt', 1)
+    #     self.addNewCallableTaskRAW(targetCall, user_args=args, user_kwargs=kwargs, **task_specific_kwargs)
 
-    def addNewCallableTaskRAW(self, targetCall, params, name="", **kwargs):
+    def addNewCallable(self, targetCall, name="", user_args=(), user_kwargs={}, **kwargs):
         """
         | Wraps around TaskGroup  method to add a new Task. It accepts any callable
         | to run on the renderfarm. Additionnal Task arguments can be added as keyword args
 
         :param targetCall: callable to be serialized and run on the render farm
-        :param params: a dict representing targetCallable arguments
         :param name: optionnal task name (if not defined, method or function name will be used)
+        :param user_args: a list or tuple representing formal arguments to use with the callable
+        :param user_kwargs: a dict representing keyword arguments to use with the callable
         """
-
-        #
-        # Check callable given
-        #
-        import inspect
-
-        if not (inspect.ismethod(targetCall) or inspect.isfunction(targetCall)):
-            raise GraphError("Callable must be a function or method.")
-
-        # Common args
-        callableArgs = {}
-        callableArgs['sysPath'] = sys.path
-        callableArgs['moduleName'] = targetCall.__module__
-
-        # Ensure params can be serialized i.e. not object, instance or function
-        try:
-            callableArgs['params'] = json.dumps(params)
-        except TypeError:
-            raise GraphError("Error: invalid parameters (not JSON serializable): %s" % params)
-
-        # Specific args
-        if inspect.isfunction(targetCall):
-            callableArgs['execType'] = 'function'
-            callableArgs['funcName'] = targetCall.__name__
-            taskName = name if name != "" else callableArgs['funcName']
-
-        if inspect.ismethod(targetCall):
-            callableArgs['execType'] = 'method'
-            callableArgs['className'] = inspect.getmro(targetCall.im_class)[0].__name__
-            callableArgs['methodName'] = targetCall.__name__
-            taskName = name if name != "" else callableArgs['className'] + "." + callableArgs['methodName']
-
+        (taskName, callableArgs) = parseCallable(targetCall, name, user_args, user_kwargs)
         self.addNewTask(taskName, arguments=callableArgs, runner="puliclient.CallableRunner", **kwargs)
 
     def addEdges(self, pEdgeList):

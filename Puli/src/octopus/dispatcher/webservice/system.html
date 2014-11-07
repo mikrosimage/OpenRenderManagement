@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Puliserver system information">
+    <meta name="author" content="Jerome Samson">
+    <link rel="icon" href="../../favicon.ico">
+
+    <title>{{title}}</title>
+
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.0/css/bootstrap-theme.min.css">
+
+    <link href="assets/css/starter-template.css" rel="stylesheet">
+
+  </head>
+
+  <body>
+
+    <div class="container">
+
+      <h1 class="text-center">Welcome on puliserver</h1>
+
+      <table class="table table-hover">
+        <caption>Main system infos</caption>
+        <thead><th>System var</th><th>Value</th></thead>
+        <tr><td>host</td><td>{{sysinfo['host']}}</td></tr>
+        <tr><td>port</td><td>{{sysinfo['port']}}</td></tr>
+        <tr><td>puliversion</td><td>{{sysinfo['version']}}</td></tr>
+        <tr><td>log_dir</td><td>{{sysinfo['log_dir']}}</td></tr>
+        <tr><td>conf_dir</td><td>{{sysinfo['conf_dir']}}</td></tr>
+        <tr><td>host uptime</td><td>{{sysinfo['uptime']}}</td></tr>
+        <tr><td>load average</td><td>{{sysinfo['load_average_1mn']}}, {{sysinfo['load_average_5mn']}}, {{sysinfo['load_average_15mn']}}</td></tr>
+      </table>
+
+      <br/>
+      <br/>
+      <button type="button" class="btn btn-default" onclick="$('#envList').toggle();">show/hide env</button>
+
+      <div id="envList">
+        <table class="table table-hover table-border">
+          <caption>System env</caption>
+          <thead><th>Var</th><th>Value</th></thead>
+          {% for key in env %}
+          <tr><td>{{ escape(key) }}</td><td>{{env[key]}}</td></tr>
+          {% end %}
+        </table>
+      </div>
+
+    </div><!-- /.container -->
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.0/js/bootstrap.min.js"></script>
+
+    <script type="text/javascript">
+      $('#envList').hide();
+    </script>
+  </body>
+</html>

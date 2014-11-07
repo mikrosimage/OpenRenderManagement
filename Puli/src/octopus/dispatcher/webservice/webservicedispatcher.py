@@ -10,9 +10,10 @@ try:
 except ImportError:
     import json
 
-import logging
+import os
 import time
-
+import logging
+from datetime import timedelta
 
 import tornado
 from tornado.web import Application
@@ -88,7 +89,6 @@ class WebServiceDispatcher(Application):
             (r'^/pools/([\w.-]+)/rendernodes/?$', pools.PoolRenderNodesResource, dict(framework=framework)),
 
             (r'^/system/?$', SystemResource, dict(framework=framework)),
-            (r'^/system_json/?$', SystemResourceJson, dict(framework=framework)),
             (r'^/mobile/?$', MobileResource, dict(framework=framework)),
 
             # Several WS to get or edit multiple data in a single request.
@@ -236,11 +236,32 @@ class MobileResource(DispatcherBaseResource):
 
 class SystemResource(DispatcherBaseResource):
     def get(self):
-        import os
-        env = "The dispatcher is currently running with this environment : <br><br>"
-        for param in os.environ.keys():
-            env = env + param + "=" + os.environ[param] + "<br><br>"
-        self.writeCallback(env)
+
+        uptime = 0
+        load = (0, 0, 0)
+        try:
+            with open('/proc/uptime', 'r') as f:
+                uptime_seconds = float(f.readline().split()[0])
+                uptime = timedelta(seconds=uptime_seconds)
+                load = os.getloadavg()
+        except Exception, e:
+            logging.getLogger('main').warning("Impossible to retrieve server uptime or load average: %s" % e)
+
+        sysinfo = {
+            'host': str(os.uname()[1]),
+            'port': settings.PORT,
+            'user': str(os.getlogin()),
+
+            'version': settings.VERSION,
+            'log_dir': settings.LOGDIR,
+            'conf_dir': settings.CONFDIR,
+
+            'uptime': str(uptime),
+            'load_average_1mn': load[0],
+            'load_average_5mn': load[1],
+            'load_average_15mn': load[2]
+        }
+        self.render("system.html", title="Puliserver system info", sysinfo=sysinfo, env=os.environ)
 
 
 class ReconfigResource(DispatcherBaseResource):
@@ -289,22 +310,3 @@ class RestartResource(DispatcherBaseResource):
 
         except Exception, e:
             raise Http500("Error during server restart: %s" % e)
-
-
-class SystemResourceJson(DispatcherBaseResource):
-    def get(self):
-        """
-        Builds the server environment representation.
-        """
-        try:
-            import os
-
-            envData = {}
-            for param in os.environ.keys():
-                envData[param] = os.environ[param]
-
-            data = json.dumps(envData)
-        except TypeError:
-            raise Http500("Impossible to retrieve server environnement.")
-
-        self.writeCallback(data)

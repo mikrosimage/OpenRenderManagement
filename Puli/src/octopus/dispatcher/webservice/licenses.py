@@ -4,8 +4,7 @@ Created on Apr 27, 2012
 @author: Arnaud Chassagne
 '''
 
-from octopus.core.framework import ResourceNotFoundError, queue
-from tornado.httpclient import HTTPError
+from octopus.core.framework import ResourceNotFoundError
 from octopus.dispatcher.webservice import DispatcherBaseResource
 from octopus.core.communication.http import Http404, Http500
 
@@ -53,7 +52,7 @@ class LicenseResource(DispatcherBaseResource):
                 if rnName in self.dispatcher.dispatchTree.renderNodes:
                     rn = self.dispatcher.dispatchTree.renderNodes[rnName]
                 else:
-                    raise Http500("Internal Server Error: Render node %s is not registered." % rnName)
+                    raise Http500("Internal Server Error: Render node %s is not registered." % (rnName))
 
                 self.dispatcher.licenseManager.releaseLicenseForRenderNode(licenseName, rn)
             self.writeCallback("OK")

@@ -4,7 +4,8 @@
 """
 Module holding core value for the dispatcher process.
 These values might be overriden by user arguments and should not be reloaded.
-Value which could be reloaded during execution (using "reconfig" webservice) should be defined in "settings.py".
+Value which could be reloaded during execution (using "reconfig" webservice)
+should be defined in "settings.py".
 """
 __author__ = "Arnaud Chassagne"
 __copyright__ = "Copyright 2010, Mikros Image"

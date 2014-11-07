@@ -1,4 +1,4 @@
-IN PROGRESS - Pipeline Dev guide
+IN PROGRESS - API reference
 *********************************************
 
 Using PULI API
@@ -10,26 +10,34 @@ Several guides have been written on the `project wiki <https://github.com/mikros
 
 Graph
 =============================================
-.. autoclass:: puliclient.Graph
+
+.. autoclass:: puliclient.Graph()
+    :special-members: __init__
     :members:
 
 
 
 Taskgroup
 =============================================
-.. autoclass:: puliclient.TaskGroup
-   :members:
+
+.. autoclass:: puliclient.TaskGroup()
+    :special-members: __init__
+    :members:
 
 
 
 Task
 =============================================
-.. autoclass:: puliclient.Task
+
+.. autoclass:: puliclient.Task()
+    :special-members: __init__
     :members:
 
 
 
 Command
 =============================================
-.. autoclass:: puliclient.Command
+
+.. autoclass:: puliclient.Command()
+    :special-members: __init__
     :members:

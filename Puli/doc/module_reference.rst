@@ -4,20 +4,18 @@ IN PROGRESS - Module reference
 
 Dispatcher 
 =============================================
-
 .. automodule:: octopus.dispatcher.dispatcher
 
-.. autoclass:: Dispatcher()
+.. autoclass:: octopus.dispatcher.dispatcher.Dispatcher()
   :special-members: __init__
   :members:
 
 
 Db 
 =============================================
-
 .. automodule:: octopus.dispatcher.db.pulidb
 
-.. autoclass:: PuliDB()
+.. autoclass:: octopus.dispatcher.db.pulidb.PuliDB()
   :special-members: __init__
   :members:
 
@@ -25,34 +23,33 @@ Db
 
 LicenseManager 
 =============================================
-
 .. automodule:: octopus.dispatcher.licenses.licensemanager
 
-.. autoclass:: LicenseManager()
+.. autoclass:: octopus.dispatcher.licenses.licensemanager.LicenseManager()
   :special-members: __init__
   :members:
 
 
-Worker 
-=============================================
+.. Worker 
+.. =============================================
 
-.. automodule:: octopus.worker.worker
+.. .. automodule:: octopus.worker.worker
 
-.. autoclass:: Worker()
-  :special-members: __init__
-  :members:
+.. .. autoclass:: Worker()
+..   :special-members: __init__
+..   :members:
 
 
-CommandWatcher
-==============
+.. CommandWatcher
+.. ==============
 
-.. automodule:: octopus.commandwatcher.commandwatcher
+.. .. automodule:: octopus.commandwatcher.commandwatcher
 
-.. autoclass::  CmdThreader()	
-   :special-members: __init__
-   :members:
+.. .. autoclass::  CmdThreader()	
+..    :special-members: __init__
+..    :members:
 
-.. autoclass::  CommandWatcher()	
-   :special-members: __init__
-   :members:
+.. .. autoclass::  CommandWatcher()	
+..    :special-members: __init__
+..    :members:
 

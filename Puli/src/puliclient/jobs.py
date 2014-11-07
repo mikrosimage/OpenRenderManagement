@@ -5,12 +5,21 @@ Created on Jan 11, 2010
 '''
 
 import sys
+import site
 import traceback
 import logging
 import subprocess
 
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
-class TimeoutError(Exception):
+
+#
+# Errors specific to command execution
+#
+class TimeoutError (Exception):
     ''' Raised when helper execution is too long. '''
 
 
@@ -366,7 +375,7 @@ class DefaultTaskDecomposer(TaskDecomposer):
             self.decompose(start=start, end=end, packetSize=packetSize, callback=self, framesList=framesList)
         else:
             # If arguments given but no standard behaviour, simply transmit task arguments to single command
-            self.task.addCommand(task.name+"_1_1", task.arguments)
+            self.task.addCommand(task.name, task.arguments)
 
     def addCommand(self, packetStart, packetEnd):
         '''

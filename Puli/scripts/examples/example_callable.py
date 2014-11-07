@@ -2,9 +2,13 @@
 # coding: utf-8
 
 import sys
+import time
 
 from puliclient import Task, Graph, GraphError
 from optparse import OptionParser
+
+from mymodule.submodule.farm import MyClass
+
 
 def process_args():
     usage = "Graph submission example"
@@ -26,29 +30,41 @@ def process_args():
 if __name__ == '__main__':
     (options, args) = process_args()
 
-    tags = {"prod": "test", "shot": "test", "nbFrames": options.num}
+    tags = {"prod": "zaza", "shot": "zuzu", "nbFrames": options.num}
 
     #
     # Create custom graph
     #
-    from mymodule.submodule.farm import MyClass
-    from mymodule.submodule.farm import myFunction
-
     try:
         graph = Graph(options.jobname, tags=tags)
-        graph.addNewCallableTaskRAW(
-            targetCall=myFunction,
-            params={"param1": 1, "param2": tags}
+
+
+        # graph.addNewCallableTaskRAW(
+        #     targetCall=myFunction,
+        #     name="une_fonction",
+        #     user_args=(1, tags)
+        # )
+
+        # command = "sleep `shuf -i 20-30 -n 1`"
+        # args = {"args": command, "start": 1, "end": 10, "packetSize": 1}
+        # runner = "puliclient.contrib.commandlinerunner.CommandLineRunner"
+        # graph.addNewTask(name="Timer", arguments=args, tags=tags, runner=runner, timer=time.time()+600)
+
+        graph.addNewCallable(
+            MyClass.myMethod,
+            "une_methode",
+            user_args=("toto", 2),
+            user_kwargs={"param3": 3},
+            tags=tags,
+            ramUse=4000
         )
 
-        graph.addNewCallableTaskRAW(
-            targetCall=MyClass.myMethod,
-            params={"param1": 1, "param2": 2, "param3": 3},
-            tags={"nbFrames": 5, "prod": "tutu"},
-            ramUse=32000
-        )
+        tg = graph.addNewTaskGroup("group")
 
-        # graph.callOnFarm(MyClass.myMethod, "1er_arg", 2, param3="toto")
+        from mymodule.submodule.farm import myFunction
+        tg.addNewCallable(myFunction, "une_fonction", user_args=[True,"any text"], tags=tags)
+
+        # graph.addCallable(MyClass.myMethod, "1er_arg", 2, param3='test', name="zozo", tags=tags, timer=time.time()+600)
 
     except GraphError, e:
         print "oops an error occured during the graph creation: %s" % e

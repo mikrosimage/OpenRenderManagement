@@ -261,7 +261,7 @@ class SystemResource(DispatcherBaseResource):
             'load_average_5mn': load[1],
             'load_average_15mn': load[2]
         }
-        self.render("system.html", title="Puliserver system info", sysinfo=sysinfo, env=os.environ)
+        self.render("template/system.html", title="Puliserver system info", sysinfo=sysinfo, env=os.environ)
 
 
 class ReconfigResource(DispatcherBaseResource):

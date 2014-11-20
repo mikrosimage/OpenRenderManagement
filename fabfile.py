@@ -12,14 +12,18 @@ from fabric.colors import green, blue
 env.timeout = 5
 env.disable_known_hosts = True
 
-env.source_path = '/s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli'
-env.target_path = '/datas/jsa/puli_runtime'
-env.shared_path = '/datas/jsa/puli_shared'
-env.common_path = '/datas/jsa/puli_runtime/bin'
+env.source_path = ''
+env.target_path = ''
+env.shared_path = ''
+env.common_path = ''
+env.logdir = ''
+env.confdir = ''
+env.local = False
+env.force = False
 
 
 @task()
-def deploy_server(source_path=env.source_path, target_path=env.target_path):
+def deploy_server(source_path=env.source_path, target_path=env.target_path, force=env.force):
     """
     Install dispatcher subsytem on server host
 
@@ -29,14 +33,15 @@ def deploy_server(source_path=env.source_path, target_path=env.target_path):
     Installation layout is the following:
     tartget_path/
         octopus/
+            dispatcherd.py
+            jobcleaner.py
         puliclient/
             __init__.py
            jobs.py
-        scripts/
-            dispatcherd.py
-            jobcleaner.py
+           runner.py
+           server.py
+        pulitools/
     """
-    # with hide('running'):
     print ""
     print(green("Deploy puli server", bold=True))
     print(green(" - source path = %s" % source_path, bold=True))
@@ -47,23 +52,24 @@ def deploy_server(source_path=env.source_path, target_path=env.target_path):
     print(green("   2. install API files", bold=True))
     print(green("   3. install scripts", bold=True))
 
-    result = prompt(green("\nContinue ?", bold=True), default='y')
-    if result != 'y':
-        abort("Interrupted by user.")
+    if not force:
+        result = prompt(green("\nContinue ?", bold=True), default='y')
+        if result != 'y':
+            abort("Interrupted by user.")
 
     run("sudo mkdir -p %s" % target_path)
-    print(blue("Install core apps", bold=True))
-    run("sudo rsync -r %s/src/octopus %s" % (source_path, target_path))
-
-    print(blue("Install API", bold=True))
-    run("sudo mkdir -p %s/puliclient" % target_path)
-    run("sudo rsync -r %s/src/puliclient/__init__.py %s/puliclient" % (source_path, target_path))
-    run("sudo rsync -r %s/src/puliclient/jobs.py %s/puliclient" % (source_path, target_path))
-
-    print(blue("Install startup scripts", bold=True))
-    run("sudo mkdir -p %s/scripts" % target_path)
-    run("sudo rsync -r %s/scripts/dispatcherd.py %s/scripts" % (source_path, target_path))
+    run("sudo rsync -r %s/src/ %s" % (source_path, target_path))
     run("sudo rsync -r %s/scripts/util/jobcleaner.py %s/scripts" % (source_path, target_path))
+
+    # print(blue("Install API", bold=True))
+    # # run("sudo mkdir -p %s/puliclient" % target_path)
+    # run("sudo rsync -r %s/src/puliclient/__init__.py %s/puliclient" % (source_path, target_path))
+    # run("sudo rsync -r %s/src/puliclient/jobs.py %s/puliclient" % (source_path, target_path))
+
+    # print(blue("Install startup scripts", bold=True))
+    # run("sudo mkdir -p %s/scripts" % target_path)
+    # run("sudo rsync -r %s/scripts/dispatcherd.py %s/scripts" % (source_path, target_path))
+    # run("sudo rsync -r %s/scripts/util/jobcleaner.py %s/scripts" % (source_path, target_path))
 
 
 @task()
@@ -97,10 +103,11 @@ def deploy_server_conf(source_path=env.source_path, target_path=env.target_path)
 
 
 @task()
-def deploy_on_shared_storage(source_path=env.source_path, shared_path=env.shared_path):
+def deploy_on_shared_storage(source_path=env.source_path, shared_path=env.shared_path, force=env.force):
     """
     Install full distribution on a shared storage (i.e. dispatcher, worker, API and tools)
     """
+
     print ""
     print(green("Deploy sources, API and tools on network path", bold=True))
     print(green(" - source path = %s" % source_path, bold=True))
@@ -110,44 +117,43 @@ def deploy_on_shared_storage(source_path=env.source_path, shared_path=env.shared
     print(green("   2. install API files", bold=True))
     print(green("   3. install scripts", bold=True))
 
-    result = prompt(green("\nContinue ?", bold=True), default='y')
-    if result != 'y':
-        abort("Interrupted by user.")
+    if not force:
+        result = prompt(green("\nContinue ?", bold=True), default='y')
+        if result != 'y':
+            abort("Interrupted by user.")
 
     local("mkdir -p %s" % shared_path)
-    print(blue("Install core apps", bold=True))
-    local("rsync -r %s/src/octopus %s" % (source_path, shared_path))
-    local("rsync -r %s/src/pulitools %s" % (source_path, shared_path))
+    local("rsync -r %s/src/ %s" % (source_path, shared_path))
 
-    print(blue("Install API", bold=True))
-    local("mkdir -p %s/puliclient" % shared_path)
-    local("rsync -r %s/src/puliclient/__init__.py %s/puliclient" % (source_path, shared_path))
-    local("rsync -r %s/src/puliclient/jobs.py %s/puliclient" % (source_path, shared_path))
+    # print(blue("Install API", bold=True))
+    # local("mkdir -p %s/puliclient" % shared_path)
+    # local("rsync -r %s/src/puliclient/__init__.py %s/puliclient" % (source_path, shared_path))
+    # local("rsync -r %s/src/puliclient/jobs.py %s/puliclient" % (source_path, shared_path))
 
-    print(blue("Install scripts", bold=True))
-    local("mkdir -p %s/scripts" % shared_path)
-    local("rsync -r %s/scripts/dispatcherd.py %s/scripts" % (source_path, shared_path))
-    local("rsync -r %s/scripts/workerd.py %s/scripts" % (source_path, shared_path))
-    local("rsync -r %s/scripts/util/jobcleaner.py %s/scripts" % (source_path, shared_path))
+    # print(blue("Install scripts", bold=True))
+    # local("mkdir -p %s/scripts" % shared_path)
+    # local("rsync -r %s/scripts/dispatcherd.py %s/scripts" % (source_path, shared_path))
+    # local("rsync -r %s/scripts/workerd.py %s/scripts" % (source_path, shared_path))
+    # local("rsync -r %s/scripts/util/jobcleaner.py %s/scripts" % (source_path, shared_path))
 
 
-@task()
-def deploy_tools_on_shared_storage(source_path=env.source_path, shared_path=env.shared_path):
-    """
-    Install tools sources on a shared storage
-    """
-    print ""
-    print(green("Deploy puli tools on network path", bold=True))
-    print(green(" - source path = %s" % source_path, bold=True))
-    print(green(" - shared path = %s" % shared_path, bold=True))
+# @task()
+# def deploy_tools_on_shared_storage(source_path=env.source_path, shared_path=env.shared_path):
+#     """
+#     Install tools sources on a shared storage
+#     """
+#     print ""
+#     print(green("Deploy puli tools on network path", bold=True))
+#     print(green(" - source path = %s" % source_path, bold=True))
+#     print(green(" - shared path = %s" % shared_path, bold=True))
 
-    result = prompt(green("\nContinue ?", bold=True), default='y')
-    if result != 'y':
-        abort("Interrupted by user.")
+#     result = prompt(green("\nContinue ?", bold=True), default='y')
+#     if result != 'y':
+#         abort("Interrupted by user.")
 
-    local("mkdir -p %s" % shared_path)
-    print(blue("Install core apps", bold=True))
-    local("rsync -r %s/src/pulitools %s" % (source_path, shared_path))
+#     local("mkdir -p %s" % shared_path)
+#     print(blue("Install core apps", bold=True))
+#     local("rsync -r %s/src/pulitools %s/src" % (source_path, shared_path))
 
 
 @task()
@@ -234,105 +240,131 @@ __EXEC__ "$@"
         local("chmod +x %s/puliexec" % common_path)
 
 
+@task()
+def update_settings(target_path=env.target_path, log_dir=env.logdir, conf_dir=env.confdir, force=env.force, exec_local=env.local):
+    """
+    Insert path to LOGDIR and CONFDIR in dispatcher settings file.
+    """
+
+    print ""
+    print(green("Update settings on server:", bold=True))
+    print(green(" - LOGDIR = %s" % log_dir, bold=True))
+    print(green(" - CONFDIR = %s" % conf_dir, bold=True))
+    if not force:
+        result = prompt(green("\nContinue ?", bold=True), default='y')
+        if result != 'y':
+            abort("Interrupted by user.")
+
+    settings_file = "%s/octopus/dispatcher/settings.py" % target_path
+
+    if exec_local:
+        local("sed -i \"s:__LOGDIR_PLACEHOLDER__:%s:g\" %s" % (log_dir, settings_file))
+        local("sed -i 's:__CONFDIR_PLACEHOLDER__:%s:g' %s" % (conf_dir, settings_file))
+    else:
+        run("sudo sed -i 's:__LOGDIR_PLACEHOLDER__:%s:g' %s" % (log_dir, settings_file))
+        run("sudo sed -i 's:__CONFDIR_PLACEHOLDER__:%s:g' %s" % (conf_dir, settings_file))
+
+
+
 ########################################################################################
 ########################################################################################
 ########################################################################################
 #
 # Mikros specific deployment tasks
 #
-@task()
-def mik_puliserver(source_path=env.source_path, target_path=env.target_path, shared_path=env.shared_path):
-    """Mikros: install puliserver
+# @task()
+# def mik_puliserver(source_path=env.source_path, target_path=env.target_path, shared_path=env.shared_path):
+#     """Mikros: install puliserver
 
-    Tasks:
-      - server components on a dedicated host
-      - tools on a shared folder
-    """
-    deploy_server(source_path, target_path)
-    deploy_tools_on_shared_storage(source_path, shared_path)
-
-
-@task()
-def mik_puli(source_path=env.source_path, target_path=env.target_path, shared_path=env.shared_path, common_path=env.common_path):
-    """Mikros: install puliserver, worker and tools
-
-    Tasks:
-      - main server components on a dedicated host
-      - sources and tools on a shared folder
-      - launcher scripts in a folder listed in common PATH
-    """
-    deploy_server(source_path, target_path)
-    deploy_on_shared_storage(source_path, shared_path)
-    create_launcher(shared_path, common_path)
+#     Tasks:
+#       - server components on a dedicated host
+#       - tools on a shared folder
+#     """
+#     deploy_server(source_path, target_path)
+#     deploy_tools_on_shared_storage(source_path, shared_path)
 
 
-@task()
-def mik_eval():
-    """Mikros: install eval env
-    """
-    env.source_path = '/s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli'
-    env.target_path = '/opt/puli'
-    env.shared_path = '/s/apps/lin/vfx_test_apps/puli'
-    env.common_path = '/s/apps/lin/vfx_test_apps/puli/bin'
-    env.logdir = '/opt/puli/logs'
-    env.confdir = '/opt/puli/conf'
+# @task()
+# def mik_puli(source_path=env.source_path, target_path=env.target_path, shared_path=env.shared_path, common_path=env.common_path):
+#     """Mikros: install puliserver, worker and tools
 
-    mik_puli(env.source_path, env.target_path, env.shared_path, env.common_path)
-
-    # Change settings on dispatcher to have proper LOGDIR and CONFDIR
-    print ""
-    print(green("Update settings on server:", bold=True))
-    print(green(" - LOGDIR = %s" % env.logdir, bold=True))
-    print(green(" - CONFDIR = %s" % env.confdir, bold=True))
-
-    settings_file = "%s/octopus/dispatcher/settings.py" % env.target_path
-    run("sudo sed -i 's:__LOGDIR_PLACEHOLDER__:%s:g' %s" % (env.logdir, settings_file))
-    run("sudo sed -i 's:__CONFDIR_PLACEHOLDER__:%s:g' %s" % (env.confdir, settings_file))
+#     Tasks:
+#       - main server components on a dedicated host
+#       - sources and tools on a shared folder
+#       - launcher scripts in a folder listed in common PATH
+#     """
+#     deploy_server(source_path, target_path)
+#     deploy_on_shared_storage(source_path, shared_path)
+#     create_launcher(shared_path, common_path)
 
 
-@task()
-def mik_dev():
-    """Mikros: install dev env
-    """
-    env.source_path = '/datas/jsa/OpenRenderManagement/Puli'
-    env.target_path = '/datas/jsa/puli_runtime'
-    env.shared_path = '/datas/jsa/puli_shared'
-    env.common_path = '/datas/jsa/puli_runtime/bin'
-    env.logdir = '/datas/jsa/puli_runtime/logs'
-    env.confdir = '/datas/jsa/puli_runtime/conf'
+# @task()
+# def mik_eval():
+#     """Mikros: install eval env
+#     """
+#     env.source_path = '/s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli'
+#     env.target_path = '/opt/puli'
+#     env.shared_path = '/s/apps/lin/vfx_test_apps/puli'
+#     env.common_path = '/s/apps/lin/vfx_test_apps/puli/bin'
+#     env.logdir = '/opt/puli/logs'
+#     env.confdir = '/opt/puli/conf'
 
-    mik_puli(env.source_path, env.target_path, env.shared_path, env.common_path)
+#     mik_puli(env.source_path, env.target_path, env.shared_path, env.common_path)
 
-    # Change settings on dispatcher to have proper LOGDIR and CONFDIR
-    print ""
-    print(green("Update settings on server:", bold=True))
-    print(green(" - LOGDIR = %s" % env.logdir, bold=True))
-    print(green(" - CONFDIR = %s" % env.confdir, bold=True))
+#     # Change settings on dispatcher to have proper LOGDIR and CONFDIR
+#     print ""
+#     print(green("Update settings on server:", bold=True))
+#     print(green(" - LOGDIR = %s" % env.logdir, bold=True))
+#     print(green(" - CONFDIR = %s" % env.confdir, bold=True))
 
-    settings_file = "%s/octopus/dispatcher/settings.py" % env.target_path
-    run("sudo sed -i 's:__LOGDIR_PLACEHOLDER__:%s:g' %s" % (env.logdir, settings_file))
-    run("sudo sed -i 's:__CONFDIR_PLACEHOLDER__:%s:g' %s" % (env.confdir, settings_file))
+#     settings_file = "%s/octopus/dispatcher/settings.py" % env.target_path
+#     run("sudo sed -i 's:__LOGDIR_PLACEHOLDER__:%s:g' %s" % (env.logdir, settings_file))
+#     run("sudo sed -i 's:__CONFDIR_PLACEHOLDER__:%s:g' %s" % (env.confdir, settings_file))
 
 
-@task()
-def mik_prod():
-    """Mikros: install prod env
-    """
-    env.source_path = '/s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli'
-    env.target_path = '/opt/puli'
-    env.shared_path = '/s/apps/lin/puli'
-    env.common_path = '/s/apps/lin/bin'
-    env.logdir = '/opt/puli/logs'
-    env.confdir = '/opt/puli/conf'
+# @task()
+# def mik_dev():
+#     """Mikros: install dev env
+#     """
+#     env.source_path = '/datas/jsa/OpenRenderManagement/Puli'
+#     env.target_path = '/datas/jsa/puli_runtime'
+#     env.shared_path = '/datas/jsa/puli_shared'
+#     env.common_path = '/datas/jsa/puli_runtime/bin'
+#     env.logdir = '/datas/jsa/puli_runtime/logs'
+#     env.confdir = '/datas/jsa/puli_runtime/conf'
 
-    mik_puli(env.source_path, env.target_path, env.shared_path, env.common_path)
+#     mik_puli(env.source_path, env.target_path, env.shared_path, env.common_path)
 
-    # Change settings on dispatcher to have proper LOGDIR and CONFDIR
-    print ""
-    print(green("Update settings on server:", bold=True))
-    print(green(" - LOGDIR = %s" % env.logdir, bold=True))
-    print(green(" - CONFDIR = %s" % env.confdir, bold=True))
+#     # Change settings on dispatcher to have proper LOGDIR and CONFDIR
+#     print ""
+#     print(green("Update settings on server:", bold=True))
+#     print(green(" - LOGDIR = %s" % env.logdir, bold=True))
+#     print(green(" - CONFDIR = %s" % env.confdir, bold=True))
 
-    settings_file = "%s/octopus/dispatcher/settings.py" % env.target_path
-    run("sudo sed -i 's:__LOGDIR_PLACEHOLDER__:%s:g' %s" % (env.logdir, settings_file))
-    run("sudo sed -i 's:__CONFDIR_PLACEHOLDER__:%s:g' %s" % (env.confdir, settings_file))
+#     settings_file = "%s/octopus/dispatcher/settings.py" % env.target_path
+#     run("sudo sed -i 's:__LOGDIR_PLACEHOLDER__:%s:g' %s" % (env.logdir, settings_file))
+#     run("sudo sed -i 's:__CONFDIR_PLACEHOLDER__:%s:g' %s" % (env.confdir, settings_file))
+
+
+# @task()
+# def mik_prod():
+#     """Mikros: install prod env
+#     """
+#     env.source_path = '/s/apps/lin/vfx_test_apps/OpenRenderManagement/Puli'
+#     env.target_path = '/opt/puli'
+#     env.shared_path = '/s/apps/lin/puli'
+#     env.common_path = '/s/apps/lin/bin'
+#     env.logdir = '/opt/puli/logs'
+#     env.confdir = '/opt/puli/conf'
+
+#     mik_puli(env.source_path, env.target_path, env.shared_path, env.common_path)
+
+#     # Change settings on dispatcher to have proper LOGDIR and CONFDIR
+#     print ""
+#     print(green("Update settings on server:", bold=True))
+#     print(green(" - LOGDIR = %s" % env.logdir, bold=True))
+#     print(green(" - CONFDIR = %s" % env.confdir, bold=True))
+
+#     settings_file = "%s/octopus/dispatcher/settings.py" % env.target_path
+#     run("sudo sed -i 's:__LOGDIR_PLACEHOLDER__:%s:g' %s" % (env.logdir, settings_file))
+#     run("sudo sed -i 's:__CONFDIR_PLACEHOLDER__:%s:g' %s" % (env.confdir, settings_file))

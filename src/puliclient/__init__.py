@@ -833,10 +833,8 @@ class Graph(object):
         ::
 
             1. Prepare the graph representation with GraphDumper
-            2. Parse the representation to extract all commands in a single \
-list in "id" order
-               Several attribute of the task are stored with each command \
-(taksid, end, dependencies...)
+            2. Parse the representation to extract all commands in a single list in "id" order
+               Several attribute of the task are stored with each command (taksid, end, dependencies...)
             3. While there are some "ready" command
               3.1 Parse ready commands
                     Execute command

@@ -3,6 +3,7 @@
 *.pyo
 .installed.cfg
 
+.aliases/
 .codeintel/
 .idea/
 gwt-unitCache/

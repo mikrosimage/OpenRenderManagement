@@ -1,0 +1,6 @@
+#Fchier d'environnement pour le puliworker.service (systemd)
+
+# DISPATCHER SERVER TO CONNECT TO
+HOST="pulitest"
+
+

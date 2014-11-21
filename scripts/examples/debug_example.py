@@ -34,14 +34,12 @@ if __name__ == '__main__':
     # simpleTask = Task(name=options.jobname, arguments=args, tags=tags, runner="puliclient.contrib.commandlinerunner.CommandLineRunner")
 
     args = {
-        "delay_min": options.min,
-        "delay_max": options.max,
-        "error_is_possible": options.err,
         "start": 1,
         "end": options.num,
-        "packetSize": 1
+        "packetSize": 1,
+        "cmd": 'sleep 20s'
     }
-    simpleTask = Task(name=options.jobname, arguments=args, tags=tags, runner="puliclient.contrib.wait.WaitRunner")
+    simpleTask = Task(name=options.jobname, arguments=args, tags=tags)
 
     #
     # Create custom graph

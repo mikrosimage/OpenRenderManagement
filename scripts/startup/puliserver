@@ -1,8 +1,0 @@
-#Fchier d'environnement pour le puliworker.service (systemd)
-
-
-# Dispatcher port
-PORT="8004"
-
-# Dispatcher PID file
-PIDFILE=/var/run/puli/dispatcher.pid

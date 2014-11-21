@@ -9,6 +9,7 @@ requires = ['pythonABI-2', 'tornado-2.2.1', 'requests-2.4.3', 'psutil-2.1.3']
 def commands():
     # You can append directly without the need to check if the variable exist or not, ...
     env.PYTHONPATH.append('{root}/src')
+    # env.PYTHONPATH.append('/s/apps/lin/puli')
 
     env.PATH.append('{root}')
     env.PATH.append('{root}/src/pulitools/puliquery')

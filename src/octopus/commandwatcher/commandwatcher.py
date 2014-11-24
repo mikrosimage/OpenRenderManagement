@@ -584,6 +584,7 @@ if __name__ == "__main__":
         argumentsDict = {}
         argumentsDict = json.loads(rawArguments[0])
 
+        self.log.info("DBG: in cmdwatcher: %s" % argumentsDict)
     except Exception, e:
         # print "Usage : commandwatcher.py /path/to/the/log/file workerPort id runnerscript argument1=value1,argument2=value2...",
         print "Usage : commandwatcher.py /path/to/the/log/file workerPort id runnerscript \"{'argument1':'strvalue1', 'argument2'=intvalue2... }\"",

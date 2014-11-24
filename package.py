@@ -2,7 +2,7 @@ name = 'puli'
 version = '1.7.6'
 
 # If your tool depends on some other package(s)
-requires = ['pythonABI-2', 'tornado-2.2.1', 'requests-2.4.3', 'psutil-2.1.3']
+requires = ['pythonABI-2', 'pulicontrib', 'tornado-2.2.1', 'requests-2.4.3', 'psutil-2.1.3']
 
 
 # If you need to define some environment variables

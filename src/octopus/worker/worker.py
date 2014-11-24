@@ -724,9 +724,10 @@ class Worker(MainLoopApplication):
             # The stats value is None when no update need to be updated on the server.
             commandWatcher.command.stats = stats
 
-    def addCommandApply(self, ticket, commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment):
+    def addCommandApply(self, ticket, commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment, runnerPackages=None, watcherPackages=None):
         if not self.isPaused:
             try:
+                import pudb;pu.db
                 newCommand = Command(commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment=environment)
                 self.commands[commandId] = newCommand
                 self.addCommandWatcher(newCommand)
@@ -813,6 +814,9 @@ class Worker(MainLoopApplication):
         command.environment["PULI_TASK_ID"] = command.relativePathToLogDir
         command.environment["PULI_LOG"] = outputFile
 
+        LOGGER.info("command.runnerPackages = %s" % command.runnerPackages)
+        LOGGER.info("command.watcherPackages = %s" % command.watcherPackages)
+
         args = [
             pythonExecutable,
             "-u",
@@ -827,6 +831,11 @@ class Worker(MainLoopApplication):
 
         # Properly serializing arguments using json
         args.append(json.dumps(command.arguments))
+
+        # LOGGER.info("args json %s", args)
+        #     "/s/apps/packages/bin/run",
+        #     "puli",
+        #     "--",
 
         try:
             # Starts a new process (via CommandWatcher script) with current command info and environment.

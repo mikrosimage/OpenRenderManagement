@@ -270,18 +270,17 @@ class Task(object):
         if runnerPackages:
             self.runnerPackages = runnerPackages
         else:
-            self.runnerPackages = os.environ['REZ_RESOLVE'].split()
+            self.runnerPackages = os.environ.get('REZ_RESOLVE','').split()
 
         if watcherPackages:
             self.watcherPackages = watcherPackages
         else:
-            rezResolve = os.environ['REZ_RESOLVE'].split()
+            rezResolve = os.environ.get('REZ_RESOLVE','').split()
             for package in rezResolve:
-                if package.find('pulicontrib') == 0:
+                if package.startswith('pulicontrib'):
                     self.watcherPackages = [package]
-
-        print "runnerPackages: %s" % self.runnerPackages
-        print "watcherPackages: %s" % self.watcherPackages
+        # print "runnerPackages: %s" % self.runnerPackages
+        # print "watcherPackages: %s" % self.watcherPackages
 
 
 
@@ -317,7 +316,7 @@ class Task(object):
         :param name: a custom name for this command
         :param arguments: dict of arguments for the specific command
         """
-        self.commands.append(Command(name, self, arguments))
+        self.commands.append(Command(name, self, arguments, runnerPackages, watcherPackages))
 
     def dependsOn(self, task, statusList=[DONE]):
         """

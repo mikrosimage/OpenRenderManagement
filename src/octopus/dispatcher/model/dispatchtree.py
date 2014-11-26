@@ -303,8 +303,8 @@ class DispatchTree(object):
         ramUse = taskDefinition['ramUse']
         lic = taskDefinition['lic']
         tags = taskDefinition['tags']
-        runnerPackages = taskDefinition['runnerPackages']
-        watcherPackages = taskDefinition['watcherPackages']
+        runnerPackages = taskDefinition.get('runnerPackages',None)
+        watcherPackages = taskDefinition.get('watcherPackages', None)
         timer = None
         if 'timer' in taskDefinition.keys():
             timer = taskDefinition['timer']

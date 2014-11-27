@@ -44,7 +44,6 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
 
     :return: a CommandWatcherProcess object holding command watcher process handle
     '''
-
     try:
         from rez.resolved_context import ResolvedContext
         from rez.resolver import ResolverStatus
@@ -53,7 +52,7 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
         raise e
 
     try:
-        context = ResolvedContext([watcherPackages])  # TODO get pulicontrib from watcherPacakges
+        context = ResolvedContext(watcherPackages)  # TODO get pulicontrib from watcherPacakges
         success = (context.status == ResolverStatus.solved)
         if not success:
             context.print_info(buf=sys.stderr)

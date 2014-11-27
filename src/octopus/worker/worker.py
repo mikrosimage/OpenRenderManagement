@@ -818,8 +818,8 @@ class Worker(MainLoopApplication):
 
 
         # TOFIX meilleure gestion des cas REZ ou non REZ
-        LOGGER.warning("command.runnerPackages = %s" % command.runnerPackages)
-        LOGGER.warning("command.watcherPackages = %s" % command.watcherPackages)
+        LOGGER.debug("command.runnerPackages = %s" % command.runnerPackages)
+        LOGGER.debug("command.watcherPackages = %s" % command.watcherPackages)
 
         if 'REZ_RESOLVE' in os.environ and command.watcherPackages is not None:
 

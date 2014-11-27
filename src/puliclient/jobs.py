@@ -242,14 +242,17 @@ class CommandRunner(object):
             logger.info("  - %s" % parameter)
             parameter.validate(arguments)
 
-        # Checking global argument scriptTimeOut:
-        try:
-            self.scriptTimeOut = int(arguments['scriptTimeOut'])
-            logger.info("Defining time out limit: scriptTimeout=%d" % self.scriptTimeOut)
-        except KeyError, e:
-            logger.info("No scriptTimeout in arguments. Command will never be interrupted (msg: %s)" % e)
-        except TypeError, e:
-            logger.info("Invalid scriptTimeout value given (integer expected) (msg: %s)" % e)
+        # TOFIX no need for scripttimeOut, impossible to kill a thread manually, timeout handling
+        # should be done outside the command runner or around subprocess call in the runner
+
+        # # Checking global argument scriptTimeOut:
+        # try:
+        #     self.scriptTimeOut = int(arguments['scriptTimeOut'])
+        #     logger.info("Defining time out limit: scriptTimeout=%d" % self.scriptTimeOut)
+        # except KeyError, e:
+        #     logger.info("No scriptTimeout in arguments. Command will never be interrupted (msg: %s)" % e)
+        # except TypeError, e:
+        #     logger.info("Invalid scriptTimeout value given (integer expected) (msg: %s)" % e)
 
 
 class DefaultCommandRunner(CommandRunner):

@@ -572,6 +572,11 @@ class Dispatcher(MainLoopApplication):
                     arguments.update(ancestor.arguments)
                     environment.update(ancestor.environment)
                 arguments.update(command.arguments)
+
+                log = logging.getLogger('assign')
+                log.debug("runnerPackages: %s" % command.runnerPackages)
+                log.debug("watcherPackages: %s" % command.watcherPackages)
+
                 commandDict = {
                     "id": command.id,
                     "runner": str(command.task.runner),
@@ -580,6 +585,8 @@ class Dispatcher(MainLoopApplication):
                     "taskName": command.task.name,
                     "relativePathToLogDir": "%d" % command.task.id,
                     "environment": environment,
+                    "runnerPackages": command.runnerPackages,
+                    "watcherPackages": command.watcherPackages
                 }
                 body = json.dumps(commandDict)
                 headers["Content-Length"] = len(body)

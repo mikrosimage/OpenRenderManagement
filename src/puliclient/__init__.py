@@ -166,10 +166,12 @@ class Command(object):
     | - timeout: a positive integer indicating the max number of second that \
                  the command can run before being interrupted
     """
-    def __init__(self, description, task, arguments={}):
+    def __init__(self, description, task, arguments={}, runnerPackages=None, watcherPackages=None):
         self.description = description
         self.task = task
         self.arguments = copy.copy(arguments)
+        self.runnerPackages = runnerPackages
+        self.watcherPackages = watcherPackages
 
 
 class Task(object):
@@ -194,6 +196,8 @@ class Task(object):
                  arguments,
                  runner='puliclient.jobs.DefaultCommandRunner',
                  decomposer='puliclient.jobs.DefaultTaskDecomposer',
+                 runnerPackages=None,
+                 watcherPackages=None,
                  dependencies={},
                  maxRN=0,
                  priority=0,
@@ -263,6 +267,23 @@ class Task(object):
         self.timer = timer
         self.maxAttempt = maxAttempt
 
+        if runnerPackages:
+            self.runnerPackages = runnerPackages
+        else:
+            self.runnerPackages = os.environ.get('REZ_RESOLVE','').split()
+
+        if watcherPackages:
+            self.watcherPackages = watcherPackages
+        else:
+            rezResolve = os.environ.get('REZ_RESOLVE','').split()
+            for package in rezResolve:
+                if package.startswith('pulicontrib'):
+                    self.watcherPackages = [package]
+        # print "runnerPackages: %s" % self.runnerPackages
+        # print "watcherPackages: %s" % self.watcherPackages
+
+
+
     def updateTags(self, pTags):
         """
         Updates the tag dicitonnary for this element.
@@ -288,14 +309,14 @@ class Task(object):
             self.decomposed = True
         return self
 
-    def addCommand(self, name, arguments):
+    def addCommand(self, name, arguments, runnerPackages=None, watcherPackages=None):
         """
         Manually add a command on the current node.
 
         :param name: a custom name for this command
         :param arguments: dict of arguments for the specific command
         """
-        self.commands.append(Command(name, self, arguments))
+        self.commands.append(Command(name, self, arguments, runnerPackages, watcherPackages))
 
     def dependsOn(self, task, statusList=[DONE]):
         """
@@ -1211,6 +1232,8 @@ class GraphDumper():
             'tags': task.tags,
             'timer': task.timer,
             'maxAttempt': task.maxAttempt,
+            'runnerPackages': task.runnerPackages,
+            'watcherPackages': task.watcherPackages,
         }
 
     def computeTaskGroupRepresentation(self, taskGroup):

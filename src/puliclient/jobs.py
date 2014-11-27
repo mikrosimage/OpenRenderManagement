@@ -333,8 +333,8 @@ class TaskDecomposer(object):
     def __init__(self, task):
         self.task = task
 
-    def addCommand(self, name, args):
-        self.task.addCommand(name, args)
+    def addCommand(self, name, args, runnerPackages=None, watcherPackages=None):
+        self.task.addCommand(name, args, runnerPackages, watcherPackages)
 
 
 class DefaultTaskDecomposer(TaskDecomposer):

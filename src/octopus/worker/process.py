@@ -7,6 +7,7 @@ __copyright__ = "Copyright 2009, Mikros Image"
 
 import logging
 import os
+import sys
 import subprocess
 import resource
 from octopus.worker import settings
@@ -30,6 +31,59 @@ def setlimits():
         raise e
 
 
+
+def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
+    '''
+    | Uses rez module to start a process with a proper rez env.
+
+    :param pidfile: fuull path to the comand pid file (usally /var/run/puli/cw<command_id>.pid)
+    :param logfile: file object to store process log content
+    :param args:
+    :param watcherPackages:
+    :param env:
+
+    :return: a CommandWatcherProcess object holding command watcher process handle
+    '''
+
+    try:
+        from rez.resolved_context import ResolvedContext
+        from rez.resolver import ResolverStatus
+    except ImportError as e:
+        LOGGER.info("Unable to load rez package in a rez managed environment.")
+        raise e
+
+    try:
+        context = ResolvedContext([watcherPackages])  # TODO get pulicontrib from watcherPacakges
+        success = (context.status == ResolverStatus.solved)
+        if not success:
+            context.print_info(buf=sys.stderr)
+            raise
+
+        # normalize environment
+        envN = os.environ.copy()
+        for key in env:
+            envN[str(key)] = str(env[key])
+
+        proc = context.execute_shell(
+            command=args,
+            shell=None,
+            stdin=False,
+            stdout=logfile,
+            stderr=subprocess.STDOUT,
+            block=False,
+            parent_environ=envN
+        )
+
+        LOGGER.info("Starting subprocess, log: %r, args: %r" % (logfile.name, args))
+    except Exception as e:
+        LOGGER.error("Impossible to start process: %s" % e)
+        raise e
+
+    file(pidfile, "w").write(str(proc.pid))
+    return CommandWatcherProcess(proc, pidfile, proc.pid)
+
+
+
 def spawnCommandWatcher(pidfile, logfile, args, env):
     '''
     logfile is a file object
@@ -40,7 +94,7 @@ def spawnCommandWatcher(pidfile, logfile, args, env):
     for key in env:
         envN[str(key)] = str(env[key])
 
-    LOGGER.info("Starting subprocess, log: %r, args: %r" % (logfile, args))
+    LOGGER.info("Starting subprocess, log: %r, args: %r" % (logfile.name, args))
     try:
         # pid = subprocess.Popen(args, bufsize=-1, stdin=devnull, stdout=logfile,
         #                    stderr=subprocess.STDOUT, close_fds=CLOSE_FDS,

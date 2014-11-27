@@ -45,7 +45,19 @@ class Command(models.Model):
     retryCount = models.IntegerField()
     retryRnList = models.ListField()
 
-    def __init__(self, id, description, task, arguments, status=CMD_READY, completion=None, renderNode=None, creationTime=None, startTime=None, updateTime=None, endTime=None, attempt=0, stats={}, message=""):
+    def __init__(
+        self, id, description, task, arguments, status=CMD_READY, completion=None,
+        renderNode=None,
+        creationTime=None,
+        startTime=None,
+        updateTime=None,
+        endTime=None,
+        attempt=0,
+        stats={},
+        message="",
+        runnerPackages=None,
+        watcherPackages=None
+    ):
 
         from octopus.dispatcher.model import Task
         models.Model.__init__(self)
@@ -82,9 +94,12 @@ class Command(models.Model):
             self.startTime = startTime
             self.endTime = endTime
 
+        # Setting REZ packages to use when starting the runner and when starting the command watcher
+        self.runnerPackages = runnerPackages
+        self.watcherPackages = watcherPackages
+
         # Retrieving actuel number of retries and max retries alloawed
         self.attempt = int(attempt)
-
         self.message = str(message)
 
         # compute the average time by frame

@@ -157,7 +157,15 @@ class Task(Model):
     timer = FloatField(allow_null=True)
     maxAttempt = IntegerField()
 
-    def __init__(self, id, name, parent, user, maxRN, priority, dispatchKey, runner, arguments, validationExpression, commands, requirements=[], minNbCores=1, maxNbCores=0, ramUse=0, environment={}, nodes={}, lic="", tags={}, maxAttempt=1, timer=None):
+    def __init__(
+        self,
+        id, name, parent, user, maxRN, priority, dispatchKey,
+        runner, arguments, validationExpression, commands,
+        requirements=[], minNbCores=1, maxNbCores=0, ramUse=0,
+        environment={}, nodes={}, lic="", tags={}, maxAttempt=1, timer=None,
+        runnerPackages=None,
+        watcherPackages=None
+    ):
         assert parent is None or isinstance(parent, TaskGroup)
         Model.__init__(self)
         self.id = int(id) if id else None
@@ -187,6 +195,9 @@ class Task(Model):
         self.updateTime = None
         self.endTime = None
         self.timer = timer
+        self.runnerPackages = runnerPackages
+        self.watcherPackages = watcherPackages
+
 
     def addValidationExpression(self, validationExpression):
         self.validationExpression = "&".join(self.validationExpression,

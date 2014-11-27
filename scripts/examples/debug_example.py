@@ -39,7 +39,7 @@ if __name__ == '__main__':
         "packetSize": 1,
         "cmd": 'sleep 20s'
     }
-    simpleTask = Task(name=options.jobname, arguments=args, tags=tags)
+    simpleTask = Task(name=options.jobname, arguments=args, tags=tags, runner="pulicontrib.mikrunner.MikRunner")
 
     #
     # Create custom graph

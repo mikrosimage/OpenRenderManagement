@@ -487,7 +487,6 @@ class CommandWatcher(object):
         self.threadList[EXEC].stop()
 
     def updateCompletionCallback(self, completion):
-
         if completion != self.completion:
             self.completion = completion
             self.completionHasChanged = True
@@ -583,7 +582,6 @@ if __name__ == "__main__":
         # Properly deserialize command arguments
         argumentsDict = {}
         argumentsDict = json.loads(rawArguments[0])
-
     except Exception, e:
         # print "Usage : commandwatcher.py /path/to/the/log/file workerPort id runnerscript argument1=value1,argument2=value2...",
         print "Usage : commandwatcher.py /path/to/the/log/file workerPort id runnerscript \"{'argument1':'strvalue1', 'argument2'=intvalue2... }\"",

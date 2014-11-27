@@ -1,5 +1,5 @@
 name = 'puli'
-version = '1.7.6'
+version = '1.7.7'
 
 # If your tool depends on some other package(s)
 requires = [
@@ -14,7 +14,7 @@ requires = [
 # If you need to define some environment variables
 def commands():
     # You can append directly without the need to check if the variable exist or not, ...
-    env.PYTHONPATH.prepend('/s/apps/lin/puli')
+    # env.PYTHONPATH.prepend('/s/apps/lin/puli')
     env.PYTHONPATH.append('{root}/src')
 
     env.PATH.append('{root}')

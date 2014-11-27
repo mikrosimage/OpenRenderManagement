@@ -728,7 +728,7 @@ class Worker(MainLoopApplication):
     def addCommandApply(self, ticket, commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment, runnerPackages=None, watcherPackages=None):
         if not self.isPaused:
             try:
-                newCommand = Command(commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment=environment)
+                newCommand = Command(commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment=environment, runnerPackages=runnerPackages, watcherPackages=watcherPackages)
                 self.commands[commandId] = newCommand
                 self.addCommandWatcher(newCommand)
                 LOGGER.info("Added command %d {runner: %s, arguments: %s}", commandId, runner, repr(arguments))
@@ -818,8 +818,8 @@ class Worker(MainLoopApplication):
 
 
         # TOFIX meilleure gestion des cas REZ ou non REZ
-        LOGGER.info("command.runnerPackages = %s" % command.runnerPackages)
-        LOGGER.info("command.watcherPackages = %s" % command.watcherPackages)
+        LOGGER.warning("command.runnerPackages = %s" % command.runnerPackages)
+        LOGGER.warning("command.watcherPackages = %s" % command.watcherPackages)
 
         if 'REZ_RESOLVE' in os.environ and command.watcherPackages is not None:
 

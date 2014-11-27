@@ -238,6 +238,11 @@ class Command(models.Model):
             jsonRepr['renderNode'] = renderNodeName
         else:
             jsonRepr['renderNode'] = None
+
+        # TOFIX store in db and add as classic model field (so will automatically be included in json)
+        jsonRepr['runnerPackages'] = self.runnerPackages
+        jsonRepr['watcherPackages'] = self.watcherPackages
+
         return jsonRepr
 
 

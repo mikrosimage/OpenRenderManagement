@@ -3,7 +3,7 @@ version = '1.7.7'
 
 # If your tool depends on some other package(s)
 requires = [
-    'rez-mikros2.0.0',
+    'rez-current',
     'pythonABI-2',
     'tornado-2.2.1',
     'requests-2.4.3',

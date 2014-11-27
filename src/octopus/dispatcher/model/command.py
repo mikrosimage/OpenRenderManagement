@@ -40,6 +40,8 @@ class Command(models.Model):
     avgTimeByFrame = models.FloatField(allow_null=True)
 
     attempt = models.IntegerField()
+    runnerPackages = models.ListField()
+    watcherPackages = models.ListField()
 
     # DEPRECATED: Fields used at runtime only (not saved in db)
     retryCount = models.IntegerField()
@@ -238,10 +240,6 @@ class Command(models.Model):
             jsonRepr['renderNode'] = renderNodeName
         else:
             jsonRepr['renderNode'] = None
-
-        # TOFIX store in db and add as classic model field (so will automatically be included in json)
-        jsonRepr['runnerPackages'] = self.runnerPackages
-        jsonRepr['watcherPackages'] = self.watcherPackages
 
         return jsonRepr
 

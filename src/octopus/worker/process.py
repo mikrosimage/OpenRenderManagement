@@ -52,6 +52,7 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
         raise e
 
     try:
+        # print('REZ_USED_RESOLVE : {0}'.format(os.environ['REZ_USED_RESOLVE']))
         context = ResolvedContext(watcherPackages)  # TODO get pulicontrib from watcherPacakges
         success = (context.status == ResolverStatus.solved)
         if not success:

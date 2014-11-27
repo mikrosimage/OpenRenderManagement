@@ -818,10 +818,13 @@ class Worker(MainLoopApplication):
 
 
         # TOFIX meilleure gestion des cas REZ ou non REZ
-        LOGGER.debug("command.runnerPackages = %s" % command.runnerPackages)
-        LOGGER.debug("command.watcherPackages = %s" % command.watcherPackages)
+        # LOGGER.error("command.runnerPackages = %s" % command.runnerPackages)
+        # LOGGER.error("command.watcherPackages = %s" % command.watcherPackages)
 
-        if 'REZ_RESOLVE' in os.environ and command.watcherPackages is not None:
+        if 'REZ_USED_RESOLVE' in os.environ:
+            if command.watcherPackages is None:
+                LOGGER.warning("Current command has empty \"watcherPackage\" attribute. \
+                    We might have troubles loading the runner: %s" % command.runner)
 
             args = [
                 "python",

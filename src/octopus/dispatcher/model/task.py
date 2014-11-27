@@ -1,5 +1,5 @@
 from .models import (Model, StringField, ModelField, DictField, IntegerField, FloatField,
-                     ModelListField, ModelDictField)
+                     ModelListField, ModelDictField, ListField)
 from .enums import NODE_BLOCKED, NODE_CANCELED, NODE_DONE, NODE_ERROR, NODE_PAUSED, NODE_READY, NODE_RUNNING
 from collections import defaultdict
 import logging
@@ -156,6 +156,8 @@ class Task(Model):
     lic = StringField()
     timer = FloatField(allow_null=True)
     maxAttempt = IntegerField()
+    runnerPackages = ListField()
+    watcherPackages = ListField()
 
     def __init__(
         self,

@@ -82,12 +82,19 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
     return CommandWatcherProcess(proc, pidfile, proc.pid)
 
 
-
 def spawnCommandWatcher(pidfile, logfile, args, env):
     '''
     logfile is a file object
     '''
     devnull = file(os.devnull, "r")
+
+    # HACK prepend PYTHONPATH with mikros base path for old process
+    # sys.path.insert(0, "/s/apps/lin/puli")
+    # print "DBG pytpath: %r" % os.getenv("PYTHONPATH")
+    # print "DBG syspath: %r" % sys.path
+    # tmp = "/s/apps/lin/puli:%s" % os.getenv("PYTHONPATH")
+    # os.putenv("PYTHONPATH", "/s/apps/lin/puli")
+
     # normalize environment
     envN = os.environ.copy()
     for key in env:

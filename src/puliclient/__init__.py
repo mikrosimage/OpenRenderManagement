@@ -266,16 +266,18 @@ class Task(object):
         self.tags = tags.copy()
         self.timer = timer
         self.maxAttempt = maxAttempt
+        self.runnerPackages = None
+        self.watcherPackages = None
 
         if runnerPackages:
             self.runnerPackages = runnerPackages
         else:
-            self.runnerPackages = os.environ.get('REZ_RESOLVE','').split()
+            self.runnerPackages = os.environ.get('REZ_RESOLVE', '').split()
 
         if watcherPackages:
             self.watcherPackages = watcherPackages
         else:
-            rezResolve = os.environ.get('REZ_RESOLVE','').split()
+            rezResolve = os.environ.get('REZ_RESOLVE', '').split()
             for package in rezResolve:
                 if package.startswith('pulicontrib'):
                     self.watcherPackages = [package]

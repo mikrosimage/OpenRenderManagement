@@ -31,7 +31,6 @@ def setlimits():
         raise e
 
 
-
 def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
     '''
     | Uses rez module to start a process with a proper rez env.
@@ -54,7 +53,7 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
     try:
         if watcherPackages is None:
             LOGGER.warning("No package specified for this command, it might not find the runner for this command.")
-            
+
         context = ResolvedContext(watcherPackages)
         success = (context.status == ResolverStatus.solved)
         if not success:

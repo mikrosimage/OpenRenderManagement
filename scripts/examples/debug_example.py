@@ -29,7 +29,7 @@ if __name__ == '__main__':
 
     tags = {"prod": "test", "shot": "test", "nbFrames": options.num}
 
-    # command = "sleep `shuf -i %d-%d -n 1; mkdir /tmp/render/toto/titi`" % (options.min, options.max)
+    command = "sleep `shuf -i %d-%d -n 1`" % (options.min, options.max)
     # args = {"args": command, "delay": options.min, "start": 1, "end": options.num, "packetSize": 1}
     # simpleTask = Task(name=options.jobname, arguments=args, tags=tags, runner="puliclient.contrib.commandlinerunner.CommandLineRunner")
 
@@ -37,9 +37,10 @@ if __name__ == '__main__':
         "start": 1,
         "end": options.num,
         "packetSize": 1,
-        "cmd": 'sleep 20s'
+        "command": command,
+        "packages": "maya"
     }
-    simpleTask = Task(name=options.jobname, arguments=args, tags=tags, runner="mikrunner.MikRunner")
+    simpleTask = Task(name=options.jobname, arguments=args, tags=tags, runner="rezrunner.RezRunner")
 
     #
     # Create custom graph

@@ -48,12 +48,14 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
         from rez.resolved_context import ResolvedContext
         from rez.resolver import ResolverStatus
     except ImportError as e:
-        LOGGER.info("Unable to load rez package in a rez managed environment.")
+        LOGGER.error("Unable to load rez package in a rez managed environment.")
         raise e
 
     try:
-        # print('REZ_USED_RESOLVE : {0}'.format(os.environ['REZ_USED_RESOLVE']))
-        context = ResolvedContext(watcherPackages)  # TODO get pulicontrib from watcherPacakges
+        if watcherPackages is None:
+            LOGGER.warning("No package specified for this command, it might not find the runner for this command.")
+            
+        context = ResolvedContext(watcherPackages)
         success = (context.status == ResolverStatus.solved)
         if not success:
             context.print_info(buf=sys.stderr)

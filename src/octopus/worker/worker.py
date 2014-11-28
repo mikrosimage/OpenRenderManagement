@@ -786,7 +786,7 @@ class Worker(MainLoopApplication):
         scriptFile = commandwatcher.__file__[:-1] if commandwatcher.__file__.endswith(".pyc") else commandwatcher.__file__
 
         workerPort = self.framework.webService.port
-        pythonExecutable = sys.executable
+
 
         pidFile = os.path.join(self.PID_DIR, "cw%s.pid" % newCommandWatcher.commandId)
 
@@ -822,76 +822,83 @@ class Worker(MainLoopApplication):
         # LOGGER.error("command.watcherPackages = %s" % command.watcherPackages)
 
         if 'REZ_USED_RESOLVE' in os.environ:
-            if command.watcherPackages is None:
-                LOGGER.warning("Current command has empty \"watcherPackage\" attribute. \
-                    We might have troubles loading the runner: %s" % command.runner)
-
-            args = [
-                "python",
-                "-u",
-                scriptFile,
-                commandWatcherLogFile,
-                str(settings.DISPATCHER_ADDRESS + ":" + str(settings.DISPATCHER_PORT)),
-                str(workerPort),
-                str(command.id),
-                command.runner,
-                command.validationExpression,
-            ]
-
-            # Properly serializing arguments using json
-            args.append(json.dumps(command.arguments))
-
-            try:
-                # Starts a new process (via CommandWatcher script) with current command info and environment.
-                # The command environment is derived from the current os.env
-                watcherProcess = spawnRezManagedCommandWatcher(pidFile, logFile, args, command.watcherPackages, command.environment)
-                newCommandWatcher.processObj = watcherProcess
-                newCommandWatcher.startTime = time.time()
-                newCommandWatcher.timeOut = None
-                newCommandWatcher.command = command
-                newCommandWatcher.processId = watcherProcess.pid
-
-                self.commandWatchers[command.id] = newCommandWatcher
-                self.status = rendernode.RN_WORKING
-
-                LOGGER.info("Started command %d", command.id)
-            except Exception, e:
-                LOGGER.error("Error spawning command watcher %r", e)
-                raise e
-
+            pythonExec = "python"
         else:
-            args = [
-                pythonExecutable,
-                "-u",
-                scriptFile,
-                commandWatcherLogFile,
-                str(settings.DISPATCHER_ADDRESS + ":" + str(settings.DISPATCHER_PORT)),
-                str(workerPort),
-                str(command.id),
-                command.runner,
-                command.validationExpression,
-            ]
+            pythonExec = sys.executable
 
-            # Properly serializing arguments using json
-            args.append(json.dumps(command.arguments))
+        args = [
+            pythonExec,
+            "-u",
+            scriptFile,
+            commandWatcherLogFile,
+            str(settings.DISPATCHER_ADDRESS + ":" + str(settings.DISPATCHER_PORT)),
+            str(workerPort),
+            str(command.id),
+            command.runner,
+            command.validationExpression,
+        ]
 
-            try:
-                # Starts a new process (via CommandWatcher script) with current command info and environment.
-                # The command environment is derived from the current os.env
+        # Properly serializing arguments using json
+        args.append(json.dumps(command.arguments))
+
+        try:
+            # Starts a new process (via CommandWatcher script) with current command info and environment.
+            # The command environment is derived from the current os.env
+            if 'REZ_USED_RESOLVE' in os.environ:
+                LOGGER.warning("Current worker managed with rez")
+                watcherProcess = spawnRezManagedCommandWatcher(pidFile, logFile, args, command.watcherPackages, command.environment)
+            else:
+                LOGGER.warning("Current worker is not rez-managed (undefined REZ_USED_RESOLVE in env)")
                 watcherProcess = spawnCommandWatcher(pidFile, logFile, args, command.environment)
-                newCommandWatcher.processObj = watcherProcess
-                newCommandWatcher.startTime = time.time()
-                newCommandWatcher.timeOut = None
-                newCommandWatcher.command = command
-                newCommandWatcher.processId = watcherProcess.pid
 
-                self.commandWatchers[command.id] = newCommandWatcher
-                self.status = rendernode.RN_WORKING
+            newCommandWatcher.processObj = watcherProcess
+            newCommandWatcher.startTime = time.time()
+            newCommandWatcher.timeOut = None
+            newCommandWatcher.command = command
+            newCommandWatcher.processId = watcherProcess.pid
 
-                LOGGER.info("Started command %d", command.id)
-            except Exception, e:
-                LOGGER.error("Error spawning command watcher %r", e)
-                raise e
+            self.commandWatchers[command.id] = newCommandWatcher
+            self.status = rendernode.RN_WORKING
+
+            LOGGER.info("Started command %d", command.id)
+        except Exception, e:
+            LOGGER.error("Error spawning command watcher %r", e)
+            raise e
+
+        # else:
+        #     LOGGER.warning("Current worker is not rez-managed (undefined REZ_USED_RESOLVE in env)")
+        #     args = [
+        #         pythonExecutable,
+        #         "-u",
+        #         scriptFile,
+        #         commandWatcherLogFile,
+        #         str(settings.DISPATCHER_ADDRESS + ":" + str(settings.DISPATCHER_PORT)),
+        #         str(workerPort),
+        #         str(command.id),
+        #         command.runner,
+        #         command.validationExpression,
+        #     ]
+
+        #     # Properly serializing arguments using json
+        #     args.append(json.dumps(command.arguments))
+
+        #     try:
+        #         # Starts a new process (via CommandWatcher script) with current command info and environment.
+        #         # The command environment is derived from the current os.env
+        #         watcherProcess = spawnCommandWatcher(pidFile, logFile, args, command.environment)
+        #         newCommandWatcher.processObj = watcherProcess
+        #         newCommandWatcher.startTime = time.time()
+        #         newCommandWatcher.timeOut = None
+        #         newCommandWatcher.command = command
+        #         newCommandWatcher.processId = watcherProcess.pid
+
+        #         self.commandWatchers[command.id] = newCommandWatcher
+        #         self.status = rendernode.RN_WORKING
+
+        #         LOGGER.info("Started command %d", command.id)
+        #     except Exception, e:
+        #         LOGGER.error("Error spawning command watcher %r", e)
+        #         raise e
 
     def reloadConfig(self):
         reload(config)

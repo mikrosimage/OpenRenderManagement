@@ -1,7 +1,9 @@
 [Unit]
 Description=Puliworker
 After=network.service autofs.service xdm.service graphical.target
-Requires=autofs.service xdm.service
+
+# ERROR, sur devpc18, ilme jette sur xdm.service Requires=autofs.service xdm.service
+Requires=autofs.service
 
 [Service]
 User=render
@@ -23,7 +25,7 @@ PIDFile=/var/run/puli/worker%i.pid
 
 LimitNOFILE=32000
 Restart=always
-RestartSec=10
+RestartSec=5
 
 #
 # Grant X access to render

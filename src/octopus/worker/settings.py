@@ -59,7 +59,7 @@ DISPATCHER_ADDRESS = "puliserver"
 #
 # Command to launch to restart the service
 #
-RESTART_COMMAND = "sudo systemctl restart puliworker.service"
+RESTART_COMMAND = "sudo systemctl restart puliworker@8001.service"
 
 #
 # Definition des fichiers de surveillance

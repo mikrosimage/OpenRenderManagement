@@ -137,9 +137,9 @@ class Worker(MainLoopApplication):
         self.isPaused = False
         self.toberestarted = False
         self.speed = 1.0
-        self.cpuName = ""
-        self.distrib = ""
-        self.mikdistrib = ""
+        self.cpuName = "undefined"
+        self.distrib = "undefined"
+        self.mikdistrib = "undefined"
         self.openglversion = ""
 
     def prepare(self):
@@ -232,6 +232,13 @@ class Worker(MainLoopApplication):
                 pass
 
     def getDistribName(self):
+        '''
+        | Retrieves indicators of mik release and os release.
+        | Handles several cases reflecting the history of Mikros distrib info declaration
+        | This method values to:
+        |   - self.mikdistrib
+        |   - self.distrib
+        '''
         if os.path.isfile('/etc/mik-release'):
             try:
                 f = open('/etc/mik-release', 'r')
@@ -247,6 +254,24 @@ class Worker(MainLoopApplication):
                 f.close()
             except:
                 pass
+        elif os.path.isfile('/etc/mikrelease'):
+            try:
+                f = open('/etc/mikrelease', 'r')
+                for line in f.readlines():
+                    if 'mikrelease' in line:
+                        self.mikdistrib = line.split()[1]
+                    elif 'Fedora' in line:
+                        if '=' in line:
+                            self.distrib = line.split('=')[1].strip()
+                        else:
+                            self.distrib = line
+                        break
+                f.close()
+            except:
+                pass
+        else:
+            self.mikdistrib = "unknown"
+            self.distrib = "unknown"
 
     def getOpenglVersion(self):
         import subprocess

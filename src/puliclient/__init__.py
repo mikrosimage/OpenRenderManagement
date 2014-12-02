@@ -267,24 +267,20 @@ class Task(object):
         self.timer = timer
         self.maxAttempt = maxAttempt
         self.runnerPackages = None
-        self.watcherPackages = None
+        self.watcherPackages = ['pulicontrib']
 
         if runnerPackages:
             self.runnerPackages = runnerPackages
         else:
-            self.runnerPackages = os.environ.get('REZ_RESOLVE', '').split()
+            self.runnerPackages = os.environ.get('REZ_USED_RESOLVE', '').split()
 
         if watcherPackages:
             self.watcherPackages = watcherPackages
         else:
-            rezResolve = os.environ.get('REZ_RESOLVE', '').split()
+            rezResolve = os.environ.get('REZ_USED_RESOLVE', '').split()
             for package in rezResolve:
                 if package.startswith('pulicontrib'):
                     self.watcherPackages = [package]
-        # print "runnerPackages: %s" % self.runnerPackages
-        # print "watcherPackages: %s" % self.watcherPackages
-
-
 
     def updateTags(self, pTags):
         """

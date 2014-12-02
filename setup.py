@@ -9,6 +9,11 @@ setup(
     author_email='opensource@mikrosimage.eu',
     license='MIT',
     packages=['octopus', 'puliclient', 'pulitools'],
+    package_dir={
+        'octopus': 'src/octopus',
+        'puliclient': 'src/puliclient',
+        'pulitools': 'src/pulitools',
+    },
     zip_safe=False,
     install_requires=[
         'tornado',

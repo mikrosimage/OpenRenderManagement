@@ -1,13 +1,17 @@
-#!/usr/bin/python2.6
+#!/usr/bin/python
 # -*- coding: utf8 -*-
 """
 """
 __author__ = "Jerome Samson"
-__copyright__ = "Copyright 2013, Mikros Image"
+__copyright__ = "Copyright 2014, Mikros Image"
 
 import site
+import os
 import sys
 import traceback
+
+import threading
+import subprocess
 
 try:
     import simplejson as json
@@ -16,6 +20,8 @@ except ImportError:
 
 from puliclient.jobs import JobTypeImportError
 from puliclient.jobs import CommandError
+from puliclient.jobs import TimeoutError
+
 from puliclient.jobs import CommandRunner
 from puliclient.jobs import StringParameter
 
@@ -122,3 +128,53 @@ class CallableRunner(CommandRunner):
 
         else:
             raise CommandError("Callable not supported")
+
+
+class RunnerToolkit(object):
+    '''
+    '''
+
+    @classmethod
+    def executeWithTimeout(cls, cmdArgs, env, timeout):
+        process = None
+
+        def target():
+            os.umask(2)
+            process = subprocess.Popen(cmdArgs, env=env)
+            process.communicate()
+
+        thread = threading.Thread(target=target)
+        thread.start()
+        thread.join(timeout)
+        if thread.is_alive():
+            process.terminate()
+            thread.join()
+            raise TimeoutError("Execution has taken more than allowed time (%d)" % timeout)
+
+    def executeWithOutput(cls, cmdArgs, env):
+
+        # TEMPLATE EXECUTION AVEC PARSING DU LOG (source MTOA_DDD)
+        out = subprocess.Popen(cmdArgs, stderr=subprocess.STDOUT, bufsize=0, env=env)
+        rc = None
+        while rc is None:
+            line = out.stdout.readline()
+            if not line:
+                break
+            print line,
+            sys.stdout.flush()
+            # fcp = frameCompletionPattern.search(line)
+            # if fcp:
+            #     framecomp = float(fcp.group(1).strip())
+            #     fc = float(framecomp / 100) / float(totalFrames)
+            #     updateCompletion(comp + fc)
+            rc = out.poll()
+
+        out.communicate()
+        rc = out.poll()
+        print '===================================================='
+        print '  kick command returns with code %d' % rc
+        print '===================================================='
+
+        if rc != 0:
+            print 'command failed...'
+            raise Exception('  Kick command failed...')

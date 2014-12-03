@@ -280,8 +280,8 @@ class CommandDatesUpdater(object):
         elif cmd.status is CMD_ERROR:
             cmd.attempt += 1
 
-            LOGGER.debug("Mark command %d for auto retry in %ds  (%d/%d)" % (cmd.id, singletonconfig.get('CORE', 'DELAY_BEFORE_AUTORETRY'), cmd.attempt, cmd.task.maxAttempt))
             if cmd.attempt < cmd.task.maxAttempt:
+                LOGGER.debug("Mark command %d for auto retry in %ds  (%d/%d)" % (cmd.id, singletonconfig.get('CORE', 'DELAY_BEFORE_AUTORETRY'), cmd.attempt, cmd.task.maxAttempt))
                 t = Timer(singletonconfig.get('CORE', 'DELAY_BEFORE_AUTORETRY'), self.autoretry, [cmd])
                 t.start()
 

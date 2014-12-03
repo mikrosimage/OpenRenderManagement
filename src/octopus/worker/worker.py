@@ -870,7 +870,7 @@ class Worker(MainLoopApplication):
             # Starts a new process (via CommandWatcher script) with current command info and environment.
             # The command environment is derived from the current os.env
             if 'REZ_USED_RESOLVE' in os.environ:
-                LOGGER.warning("Current worker managed with rez")
+                LOGGER.warning("Current worker managed with rez, command watcher packages are: %s" % command.watcherPackages)
                 watcherProcess = spawnRezManagedCommandWatcher(pidFile, logFile, args, command.watcherPackages, command.environment)
             else:
                 LOGGER.warning("Current worker is not rez-managed (undefined REZ_USED_RESOLVE in env)")

@@ -85,15 +85,10 @@ class StringParameter(CommandRunnerParameter):
     '''A command runner parameter class that converts the argument value to a string.'''
 
     def validate(self, arguments):
-
         try:
             super(StringParameter, self).validate(arguments)
-            if arguments[self.name]:
-                # try:
+            if self.name in arguments:
                 arguments[self.name] = str(arguments[self.name])
-                # except Exception, e:
-                #     print "Error when parameter conversion %s: %r" % (self.name, e)
-                #     raise ValidationError("StringParameter cannot be converted to str")
         except Exception, e:
             raise e
 
@@ -235,6 +230,7 @@ class CommandRunner(object):
 
     def validate(self, arguments):
         logger = logging.getLogger('puli.commandwatcher')
+
         if len(self.parameters) > 0:
             logger.info("Validating %d parameter(s):" % len(self.parameters))
 

@@ -131,7 +131,7 @@ class CommandWatcherProcess(object):
         if os.name != 'nt':
             from signal import SIGTERM
             from errno import ESRCH
-
+            # import pudb;pu.db
             # PHASE 1
             try:
                 # do not kill the process, kill the whole process group!

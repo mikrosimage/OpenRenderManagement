@@ -12,6 +12,7 @@ import traceback
 
 import threading
 import subprocess
+import shlex
 
 try:
     import simplejson as json
@@ -133,48 +134,77 @@ class CallableRunner(CommandRunner):
 class RunnerToolkit(object):
     '''
     '''
+    def __init__(self):
+        pass
 
-    @classmethod
-    def executeWithTimeout(cls, cmdArgs, env, timeout):
-        process = None
+    def executeWithTimeout(self, command, timeout):
+        '''
+        Add a timeout callback so that user can have a custom handling of timeout error
+        '''
+        self.process = None
 
         def target():
             os.umask(2)
-            process = subprocess.Popen(cmdArgs, env=env)
-            process.communicate()
+            self.process = subprocess.Popen(command, stderr=subprocess.STDOUT, shell=True)
+            self.process.communicate()
 
         thread = threading.Thread(target=target)
         thread.start()
-        thread.join(timeout)
+        retcode = thread.join(timeout)
+
         if thread.is_alive():
-            process.terminate()
+            self.process.terminate()
             thread.join()
-            raise TimeoutError("Execution has taken more than allowed time (%d)" % timeout)
+            raise TimeoutError("Execution has taken more than allowed time (timeout=%ds)" % timeout)
 
-    def executeWithOutput(cls, cmdArgs, env):
+        return retcode
 
-        # TEMPLATE EXECUTION AVEC PARSING DU LOG (source MTOA_DDD)
-        out = subprocess.Popen(cmdArgs, stderr=subprocess.STDOUT, bufsize=0, env=env)
-        rc = None
-        while rc is None:
-            line = out.stdout.readline()
-            if not line:
-                break
-            print line,
-            sys.stdout.flush()
-            # fcp = frameCompletionPattern.search(line)
-            # if fcp:
-            #     framecomp = float(fcp.group(1).strip())
-            #     fc = float(framecomp / 100) / float(totalFrames)
-            #     updateCompletion(comp + fc)
-            rc = out.poll()
+    def execute(self, command, timeout, outputCallback=None, timeoutCallback=None):
+        '''
+        Add a timeout callback so that user can have a custom handling of timeout error
+        '''
+        self.process = None
+        self.stdout = None
+        self.stderr = None
+        self.callback = outputCallback
 
-        out.communicate()
-        rc = out.poll()
-        print '===================================================='
-        print '  kick command returns with code %d' % rc
-        print '===================================================='
+        def target():
+            os.umask(2)
+            self.process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, bufsize=1)
+            # for line in iter(self.process.stdout.readline, b''):
+            #     self.callback(line)
+            (self.stdout, self.stderr) = self.process.communicate()
 
-        if rc != 0:
-            print 'command failed...'
-            raise Exception('  Kick command failed...')
+        thread = threading.Thread(target=target)
+        thread.start()
+        retcode = thread.join(timeout)
+
+        while thread.is_alive():
+
+            if callable(timeoutCallback):
+                keepGoing = timeoutCallback(self.process)
+                print "timeout event result=%s" % keepGoing
+            if keepGoing is False:
+                print "back in runnertoolkit"
+                # self.process.kill()
+                # thread.join()
+                # raise TimeoutError("Execution has taken more than allowed time (timeout=%ds)" % timeout)
+            else:
+                print "keep going..."
+                retcode = thread.join(timeout)
+
+        return retcode
+
+    def executeWithOutput(self, command, outputCallback=None):
+
+        # if outputCallback not callable --> error
+
+        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, bufsize=1)
+
+        for line in iter(p.stdout.readline, b''):
+            if callable(outputCallback):
+                outputCallback(line)
+
+        (stdout, stderr) = p.communicate()  # close p.stdout, wait for the subprocess to exit
+        # print('after comm stdout=%r)', stdout)
+        # print('           stderr=%r)', stderr)

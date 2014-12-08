@@ -17,6 +17,7 @@ import sys
 
 from datetime import datetime, timedelta
 from puliclient.runner import CallableRunner
+from puliclient.runner import RunnerToolkit
 
 import httplib
 try:

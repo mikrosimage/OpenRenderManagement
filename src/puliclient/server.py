@@ -433,7 +433,7 @@ class QueueHandler(object):
         return job
 
     @classmethod
-    def getJobs(cls, idList):
+    def getJobList(cls, idList):
 
         jobList = []
         for id in idList:

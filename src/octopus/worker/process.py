@@ -54,7 +54,12 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
         if watcherPackages is None:
             LOGGER.warning("No package specified for this command, it might not find the runner for this command.")
 
-        context = ResolvedContext(watcherPackages)
+        if type(watcherPackages) is str:
+            watcherPackagesList = watcherPackages.split()
+        else:
+            watcherPackagesList = watcherPackages
+
+        context = ResolvedContext(watcherPackagesList)
         success = (context.status == ResolverStatus.solved)
         if not success:
             context.print_info(buf=sys.stderr)

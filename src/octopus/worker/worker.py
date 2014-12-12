@@ -837,19 +837,20 @@ class Worker(MainLoopApplication):
 
         # Add several info in env to be used by the runner
         command.environment["PULI_COMMAND_ID"] = command.id
+        command.environment["PULI_RUNNER_PACKAGES"] = command.runnerPackages
         command.environment["PULI_TASK_NAME"] = command.taskName
         command.environment["PULI_TASK_ID"] = command.relativePathToLogDir
         command.environment["PULI_LOG"] = outputFile
 
-
-        # TOFIX meilleure gestion des cas REZ ou non REZ
-        # LOGGER.error("command.runnerPackages = %s" % command.runnerPackages)
-        # LOGGER.error("command.watcherPackages = %s" % command.watcherPackages)
+        # LOGGER.debug("command.runnerPackages = %s" % command.runnerPackages)
+        # LOGGER.debug("command.watcherPackages = %s" % command.watcherPackages)
 
         if 'REZ_USED_RESOLVE' in os.environ:
             pythonExec = "python"
+            runnerPackages = command.runnerPackages
         else:
             pythonExec = sys.executable
+            runnerPackages = ""
 
         args = [
             pythonExec,
@@ -861,11 +862,11 @@ class Worker(MainLoopApplication):
             str(command.id),
             command.runner,
             command.validationExpression,
+            runnerPackages,
         ]
 
         # Properly serializing arguments using json
         args.append(json.dumps(command.arguments))
-
         try:
             # Starts a new process (via CommandWatcher script) with current command info and environment.
             # The command environment is derived from the current os.env

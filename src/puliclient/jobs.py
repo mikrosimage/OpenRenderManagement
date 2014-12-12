@@ -216,7 +216,7 @@ class CommandRunnerMetaclass(type):
                 parameters.append(arg)
         self.parameters = parameters
 
-        logging.getLogger('puli.commandwatcher').info('init CommandRunnerMetaclass')
+        # logging.getLogger('puli.commandwatcher').info('init CommandRunnerMetaclass')
 
 
 class CommandRunner(object):
@@ -226,10 +226,6 @@ class CommandRunner(object):
     log = logging.getLogger('puli.runner')
     scriptTimeOut = None
     parameters = []
-
-    def __init__(self, parentCommandWatcher=None):
-        # logging.getLogger('puli.commandwatcher').info('init CommandRunner')
-        self.parentCommandWatcher = parentCommandWatcher
 
     def execute(self, arguments, updateCompletion, updateMessage, updateStats, updateLicense):
         raise NotImplementedError

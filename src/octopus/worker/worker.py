@@ -809,6 +809,7 @@ class Worker(MainLoopApplication):
         # Fix PB PRECOMPILATION (notamment quand on exec en local, il peut y avoir un mix)
         # scriptFile = commandwatcher.__file__
         scriptFile = commandwatcher.__file__[:-1] if commandwatcher.__file__.endswith(".pyc") else commandwatcher.__file__
+        LOGGER.info("Use commandWatcher script file: %r", scriptFile)
 
         workerPort = self.framework.webService.port
 

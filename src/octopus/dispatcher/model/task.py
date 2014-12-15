@@ -156,8 +156,10 @@ class Task(Model):
     lic = StringField()
     timer = FloatField(allow_null=True)
     maxAttempt = IntegerField()
-    runnerPackages = ListField(allow_null=True)
-    watcherPackages = ListField(allow_null=True)
+    # runnerPackages = ListField(allow_null=True)
+    # watcherPackages = ListField(allow_null=True)
+    runnerPackages = StringField()
+    watcherPackages = StringField()
 
     def __init__(
         self,

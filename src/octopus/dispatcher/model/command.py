@@ -40,8 +40,10 @@ class Command(models.Model):
     avgTimeByFrame = models.FloatField(allow_null=True)
 
     attempt = models.IntegerField()
-    runnerPackages = models.ListField(allow_null=True)
-    watcherPackages = models.ListField(allow_null=True)
+    # runnerPackages = models.ListField(allow_null=True)
+    # watcherPackages = models.ListField(allow_null=True)
+    runnerPackages = models.StringField()
+    watcherPackages = models.StringField()
 
     # DEPRECATED: Fields used at runtime only (not saved in db)
     retryCount = models.IntegerField()

@@ -151,6 +151,14 @@ Don't forget to specify a pool name otherwise your job will be submitted but wil
         action='store_true',
         help="Execute puli job locally instead of using the renderfarm (for test purposes).")
 
+    parser.add_option(
+        "-v",
+        dest="verbose",
+        default=False,
+        action='store_true',
+        help="Richer output")
+
+
     (options, args) = parser.parse_args(puliexec_args)
 
     # print( "options:", str(options) )
@@ -201,6 +209,9 @@ Don't forget to specify a pool name otherwise your job will be submitted but wil
     graph = puliclient.Graph(
         options.name, task,
         user=options.user, poolName=options.pool, maxRN=options.maxRN)
+
+    if options.verbose:
+        print graph
 
     if not options.local:
         if options.pool is "":

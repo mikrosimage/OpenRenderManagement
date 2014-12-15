@@ -156,8 +156,11 @@ class ModelDictField(Field):
 class ListField(Field):
 
     def to_json(self, instance):
-        value = getattr(instance, self.name)
-        return value[:]
+        try:
+            value = getattr(instance, self.name)
+            return value[:]
+        except Exception:
+            return None
 
 
 class StringField(Field):

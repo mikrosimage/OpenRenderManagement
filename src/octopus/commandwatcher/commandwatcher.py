@@ -155,7 +155,7 @@ class CommandWatcher(object):
     # @param runner the runner type name
     # @param arguments the arguments of the command
     #
-    def __init__(self, serverFullName, workerPort, id, runner, validationExpression, arguments):
+    def __init__(self, serverFullName, workerPort, id, runner, runnerPackages, validationExpression, arguments):
         """Creates a new command watcher.
 
         :param serverFullName: Main server address
@@ -175,10 +175,12 @@ class CommandWatcher(object):
         self.serverFullName = serverFullName
         self.arguments = arguments
         self.runner = runner
+        self.runnerPackages = runnerPackages
 
         self.completion = 0.0
         self.message = "loading command script"
         self.stats = {}
+        self.startDate = time.time()
 
         self.completionHasChanged = True
         self.messageHasChanged = True
@@ -214,8 +216,19 @@ class CommandWatcher(object):
         # instanciation of the jobtype script
         try:
             self.job = runnerClass()
-            self.job.associatedWatcher = self
+
+            #
+            # Init several runner members
+            #
+            self.job.startDate = self.startDate  # timestamp of the start date
+            self.job.associatedWatcher = self  # current command watcher
+            self.job.runnerPackages = runnerPackages  # list of packages that might be used by the runner class
+
+            #
+            # Init runner execution
+            #
             self.mainActions()
+
         except Exception:
             self.updateCommandStatus(CMD_ERROR)
             logger.exception("CommandWatcher failed. This is a bug, please report it.")
@@ -224,7 +237,6 @@ class CommandWatcher(object):
     ## The main actions.
     #
     def mainActions(self):
-        startDate = time.time()
         try:
             self.job.validate(self.arguments)
         except Exception, e:
@@ -250,7 +262,7 @@ class CommandWatcher(object):
             self.updateCommandStatusAndCompletion(self.finalState, True)
             return self.finalState
 
-        elapsedTime = time.time() - startDate
+        elapsedTime = time.time() - self.startDate
         logger.info("Finished command %r (status %r), elapsed time: %s " % (self.id, CMD_STATUS_NAME[self.finalState], timedelta(seconds=int(elapsedTime))))
 
     ## Creates a thread for the script corresponding to the provided action name.
@@ -487,7 +499,6 @@ class CommandWatcher(object):
         self.threadList[EXEC].stop()
 
     def updateCompletionCallback(self, completion):
-
         if completion != self.completion:
             self.completion = completion
             self.completionHasChanged = True
@@ -578,12 +589,12 @@ if __name__ == "__main__":
         id = int(sys.argv[4])
         runner = sys.argv[5]
         validationExpression = sys.argv[6]
-        rawArguments = sys.argv[7:]
+        runnerPackages = sys.argv[7]
+        rawArguments = sys.argv[8:]
 
         # Properly deserialize command arguments
         argumentsDict = {}
         argumentsDict = json.loads(rawArguments[0])
-
     except Exception, e:
         # print "Usage : commandwatcher.py /path/to/the/log/file workerPort id runnerscript argument1=value1,argument2=value2...",
         print "Usage : commandwatcher.py /path/to/the/log/file workerPort id runnerscript \"{'argument1':'strvalue1', 'argument2'=intvalue2... }\"",
@@ -600,7 +611,7 @@ if __name__ == "__main__":
     closeFileDescriptors()
 
     try:
-        CommandWatcher(serverFullName, workerPort, id, runner, validationExpression, argumentsDict)
+        CommandWatcher(serverFullName, workerPort, id, runner, runnerPackages, validationExpression, argumentsDict)
     except KeyboardInterrupt, e:
         print("\n")
         logger.warning("Exit event caught: exiting CommandWatcher...\n")

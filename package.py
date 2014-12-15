@@ -1,15 +1,21 @@
 name = 'puli'
-version = '1.7.6'
+version = '1.7.8'
 
 # If your tool depends on some other package(s)
-requires = ['pythonABI-2', 'tornado-2.2.1', 'requests-2.4.3', 'psutil-2.1.3']
+requires = [
+    'rez-current',
+    'pythonABI-2.6',
+    'tornado-2.2.1',
+    'requests-2.4.3',
+    'psutil-2.1.3'
+]
 
 
 # If you need to define some environment variables
 def commands():
     # You can append directly without the need to check if the variable exist or not, ...
+    # env.PYTHONPATH.prepend('/s/apps/lin/puli')
     env.PYTHONPATH.append('{root}/src')
-    # env.PYTHONPATH.append('/s/apps/lin/puli')
 
     env.PATH.append('{root}')
     env.PATH.append('{root}/src/pulitools/puliquery')

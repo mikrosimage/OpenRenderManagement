@@ -40,12 +40,28 @@ class Command(models.Model):
     avgTimeByFrame = models.FloatField(allow_null=True)
 
     attempt = models.IntegerField()
+    # runnerPackages = models.ListField(allow_null=True)
+    # watcherPackages = models.ListField(allow_null=True)
+    runnerPackages = models.StringField()
+    watcherPackages = models.StringField()
 
     # DEPRECATED: Fields used at runtime only (not saved in db)
     retryCount = models.IntegerField()
     retryRnList = models.ListField()
 
-    def __init__(self, id, description, task, arguments, status=CMD_READY, completion=None, renderNode=None, creationTime=None, startTime=None, updateTime=None, endTime=None, attempt=0, stats={}, message=""):
+    def __init__(
+        self, id, description, task, arguments, status=CMD_READY, completion=None,
+        renderNode=None,
+        creationTime=None,
+        startTime=None,
+        updateTime=None,
+        endTime=None,
+        attempt=0,
+        stats={},
+        message="",
+        runnerPackages=None,
+        watcherPackages=None
+    ):
 
         from octopus.dispatcher.model import Task
         models.Model.__init__(self)
@@ -82,9 +98,12 @@ class Command(models.Model):
             self.startTime = startTime
             self.endTime = endTime
 
+        # Setting REZ packages to use when starting the runner and when starting the command watcher
+        self.runnerPackages = runnerPackages
+        self.watcherPackages = watcherPackages
+
         # Retrieving actuel number of retries and max retries alloawed
         self.attempt = int(attempt)
-
         self.message = str(message)
 
         # compute the average time by frame
@@ -223,6 +242,7 @@ class Command(models.Model):
             jsonRepr['renderNode'] = renderNodeName
         else:
             jsonRepr['renderNode'] = None
+
         return jsonRepr
 
 
@@ -262,8 +282,8 @@ class CommandDatesUpdater(object):
         elif cmd.status is CMD_ERROR:
             cmd.attempt += 1
 
-            LOGGER.debug("Mark command %d for auto retry in %ds  (%d/%d)" % (cmd.id, singletonconfig.get('CORE', 'DELAY_BEFORE_AUTORETRY'), cmd.attempt, cmd.task.maxAttempt))
             if cmd.attempt < cmd.task.maxAttempt:
+                LOGGER.debug("Mark command %d for auto retry in %ds  (%d/%d)" % (cmd.id, singletonconfig.get('CORE', 'DELAY_BEFORE_AUTORETRY'), cmd.attempt, cmd.task.maxAttempt))
                 t = Timer(singletonconfig.get('CORE', 'DELAY_BEFORE_AUTORETRY'), self.autoretry, [cmd])
                 t.start()
 

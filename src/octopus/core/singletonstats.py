@@ -27,14 +27,17 @@ from octopus.dispatcher import settings
 # Custom level to avoid flooding the main loggers
 # We use a logger and handler with low level to ensure it always receive message even in log level is change
 # via the config file and reloaded.
-hd = logging.handlers.RotatingFileHandler(os.path.join(settings.LOGDIR, "stats.log"), maxBytes=singletonconfig.get('CORE', 'STATS_SIZE'), backupCount=0)
-hd.setFormatter(logging.Formatter('%(message)s'))
-hd.setLevel(1)
-
 statsLog = logging.getLogger('server_stats')
-statsLog.addHandler(hd)
 statsLog.setLevel(1)
 statsLog.propagate = False
+try:
+    hd = logging.handlers.RotatingFileHandler(os.path.join(settings.LOGDIR, "stats.log"), maxBytes=singletonconfig.get('CORE', 'STATS_SIZE'), backupCount=0)
+    hd.setFormatter(logging.Formatter('%(message)s'))
+    hd.setLevel(1)
+
+    statsLog.addHandler(hd)
+except IOError as err:
+    print "Warning invalid path specified for log."
 
 
 class DispatcherStats():

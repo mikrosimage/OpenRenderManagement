@@ -17,6 +17,7 @@ import sys
 
 from datetime import datetime, timedelta
 from puliclient.runner import CallableRunner
+from puliclient.runner import RunnerToolkit
 
 import httplib
 try:
@@ -166,10 +167,12 @@ class Command(object):
     | - timeout: a positive integer indicating the max number of second that \
                  the command can run before being interrupted
     """
-    def __init__(self, description, task, arguments={}):
+    def __init__(self, description, task, arguments={}, runnerPackages=None, watcherPackages=None):
         self.description = description
         self.task = task
         self.arguments = copy.copy(arguments)
+        self.runnerPackages = runnerPackages
+        self.watcherPackages = watcherPackages
 
 
 class Task(object):
@@ -194,6 +197,8 @@ class Task(object):
                  arguments,
                  runner='puliclient.jobs.DefaultCommandRunner',
                  decomposer='puliclient.jobs.DefaultTaskDecomposer',
+                 runnerPackages=None,
+                 watcherPackages=None,
                  dependencies={},
                  maxRN=0,
                  priority=0,
@@ -218,10 +223,10 @@ class Task(object):
         :param name str: A simple text identifier
         :param arguments dict: a dictionnary of arguments for the command
         :param runner str: class that will be responsible for the job execution
-        :param decomposer: class responsible to create commands relative \
-            to this task
-        :param dependencies: a list of nodes and result status from which the\
-            current task depends on
+        :param decomposer: class responsible to create commands relative to this task
+        :param runnerPackages str: a string representing a list of packages to use when running a command
+        :param watcherPackages str: a string representing a list of packages to use when starting command watcher i.e. used to import the runner class
+        :param dependencies: a list of nodes and result status from which the current task depends on
         :param maxRN int: the maximum number of workers to assign to this task
         :param priority: deprecated
         :param dispatchKey int: indicate the priority for this task
@@ -262,6 +267,24 @@ class Task(object):
         self.tags = tags.copy()
         self.timer = timer
         self.maxAttempt = maxAttempt
+        self.runnerPackages = None
+        self.watcherPackages = 'pulicontrib'
+
+        if runnerPackages:
+            self.runnerPackages = runnerPackages
+        else:
+            self.runnerPackages = os.environ.get('REZ_USED_RESOLVE', '')
+
+        if watcherPackages:
+            self.watcherPackages = watcherPackages
+        else:
+            rezResolve = os.environ.get('REZ_USED_RESOLVE', '')
+            for package in rezResolve:
+                if package.startswith('pulicontrib'):
+                    self.watcherPackages = "%s %s" % (self.watcherPackages, package)
+
+        # print("runner packages: %s" % self.runnerPackages)
+        # print("watcher packages: %s" % self.watcherPackages)
 
     def updateTags(self, pTags):
         """
@@ -288,14 +311,14 @@ class Task(object):
             self.decomposed = True
         return self
 
-    def addCommand(self, name, arguments):
+    def addCommand(self, name, arguments, runnerPackages=None, watcherPackages=None):
         """
         Manually add a command on the current node.
 
         :param name: a custom name for this command
         :param arguments: dict of arguments for the specific command
         """
-        self.commands.append(Command(name, self, arguments))
+        self.commands.append(Command(name, self, arguments, runnerPackages, watcherPackages))
 
     def dependsOn(self, task, statusList=[DONE]):
         """
@@ -1211,6 +1234,8 @@ class GraphDumper():
             'tags': task.tags,
             'timer': task.timer,
             'maxAttempt': task.maxAttempt,
+            'runnerPackages': task.runnerPackages,
+            'watcherPackages': task.watcherPackages,
         }
 
     def computeTaskGroupRepresentation(self, taskGroup):

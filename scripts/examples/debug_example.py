@@ -29,7 +29,11 @@ if __name__ == '__main__':
 
     tags = {"prod": "test", "shot": "test", "nbFrames": options.num}
 
-    # command = "sleep `shuf -i %d-%d -n 1; mkdir /tmp/render/toto/titi`" % (options.min, options.max)
+    # command = "/s/apps/packages/bin/run katana -- katana --batch --katana-file /s/prods/mikros_test/jsa/testSimple.katana -t 1-1 --render-node Render"
+    command = "katana --batch --katana-file /s/prods/mikros_test/jsa/testSimple.katana -t 1-1 --render-node Render"
+    # command = "echo TEST"
+
+    # command = "echo toto;sleep `shuf -i %d-%d -n 1`;echo tata" % (options.min, options.max)
     # args = {"args": command, "delay": options.min, "start": 1, "end": options.num, "packetSize": 1}
     # simpleTask = Task(name=options.jobname, arguments=args, tags=tags, runner="puliclient.contrib.commandlinerunner.CommandLineRunner")
 
@@ -37,9 +41,14 @@ if __name__ == '__main__':
         "start": 1,
         "end": options.num,
         "packetSize": 1,
-        "cmd": 'sleep 20s'
+        "timeout": 5,
+
+        "command": command,
+        "runOptions": "",
+        # "packages": "katana-1.6.3",
+        # "cmd": command,
     }
-    simpleTask = Task(name=options.jobname, arguments=args, tags=tags)
+    simpleTask = Task(name=options.jobname, arguments=args, tags=tags, runner='rezrunner.RezRunner', watcherPackages='pulicontrib-dev')
 
     #
     # Create custom graph

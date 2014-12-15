@@ -21,7 +21,16 @@ from octopus.core.enums.command import CMD_RUNNING
 #
 class Command(object):
 
-    def __init__(self, id, runner, arguments={}, validationExpression="VAL_TRUE", taskName="", relativePathToLogDir="", message="", environment={}):
+    def __init__(
+        self, id, runner, arguments={},
+        validationExpression="VAL_TRUE",
+        taskName="",
+        relativePathToLogDir="",
+        message="",
+        environment={},
+        runnerPackages=None,
+        watcherPackages=None
+    ):
         '''
         :param id: command id
         :param arguments: command arguments as a dict
@@ -44,3 +53,7 @@ class Command(object):
         self.message = message
         self.environment = os.environ.copy()
         self.environment.update(environment)
+
+        # Setting REZ packages to use when starting the runner and when starting the command watcher
+        self.runnerPackages = runnerPackages
+        self.watcherPackages = watcherPackages

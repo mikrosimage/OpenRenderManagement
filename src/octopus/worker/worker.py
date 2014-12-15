@@ -31,6 +31,7 @@ from octopus.worker import config
 
 from octopus.worker.model.command import Command
 from octopus.worker.process import spawnCommandWatcher
+from octopus.worker.process import spawnRezManagedCommandWatcher
 
 LOGGER = logging.getLogger("worker")
 COMPUTER_NAME_TEMPLATE = "%s:%d"
@@ -136,9 +137,9 @@ class Worker(MainLoopApplication):
         self.isPaused = False
         self.toberestarted = False
         self.speed = 1.0
-        self.cpuName = ""
-        self.distrib = ""
-        self.mikdistrib = ""
+        self.cpuName = "undefined"
+        self.distrib = "undefined"
+        self.mikdistrib = "undefined"
         self.openglversion = ""
 
     def prepare(self):
@@ -231,6 +232,13 @@ class Worker(MainLoopApplication):
                 pass
 
     def getDistribName(self):
+        '''
+        | Retrieves indicators of mik release and os release.
+        | Handles several cases reflecting the history of Mikros distrib info declaration
+        | This method values to:
+        |   - self.mikdistrib
+        |   - self.distrib
+        '''
         if os.path.isfile('/etc/mik-release'):
             try:
                 f = open('/etc/mik-release', 'r')
@@ -246,6 +254,24 @@ class Worker(MainLoopApplication):
                 f.close()
             except:
                 pass
+        elif os.path.isfile('/etc/mikrelease'):
+            try:
+                f = open('/etc/mikrelease', 'r')
+                for line in f.readlines():
+                    if 'mikrelease' in line:
+                        self.mikdistrib = line.split()[1]
+                    elif 'Fedora' in line:
+                        if '=' in line:
+                            self.distrib = line.split('=')[1].strip()
+                        else:
+                            self.distrib = line
+                        break
+                f.close()
+            except:
+                pass
+        else:
+            self.mikdistrib = "unknown"
+            self.distrib = "unknown"
 
     def getOpenglVersion(self):
         import subprocess
@@ -724,10 +750,10 @@ class Worker(MainLoopApplication):
             # The stats value is None when no update need to be updated on the server.
             commandWatcher.command.stats = stats
 
-    def addCommandApply(self, ticket, commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment):
+    def addCommandApply(self, ticket, commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment, runnerPackages=None, watcherPackages=None):
         if not self.isPaused:
             try:
-                newCommand = Command(commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment=environment)
+                newCommand = Command(commandId, runner, arguments, validationExpression, taskName, relativePathToLogDir, environment=environment, runnerPackages=runnerPackages, watcherPackages=watcherPackages)
                 self.commands[commandId] = newCommand
                 self.addCommandWatcher(newCommand)
                 LOGGER.info("Added command %d {runner: %s, arguments: %s}", commandId, runner, repr(arguments))
@@ -786,7 +812,7 @@ class Worker(MainLoopApplication):
         LOGGER.info("Use commandWatcher script file: %r", scriptFile)
 
         workerPort = self.framework.webService.port
-        pythonExecutable = sys.executable
+
 
         pidFile = os.path.join(self.PID_DIR, "cw%s.pid" % newCommandWatcher.commandId)
 
@@ -810,14 +836,25 @@ class Worker(MainLoopApplication):
                 if err != errno.EEXIST:
                     raise
 
-        #JSA Fix :  add several info in env to be used by the runner
+        # Add several info in env to be used by the runner
         command.environment["PULI_COMMAND_ID"] = command.id
+        command.environment["PULI_RUNNER_PACKAGES"] = command.runnerPackages
         command.environment["PULI_TASK_NAME"] = command.taskName
         command.environment["PULI_TASK_ID"] = command.relativePathToLogDir
         command.environment["PULI_LOG"] = outputFile
 
+        # LOGGER.debug("command.runnerPackages = %s" % command.runnerPackages)
+        # LOGGER.debug("command.watcherPackages = %s" % command.watcherPackages)
+
+        if 'REZ_USED_RESOLVE' in os.environ:
+            pythonExec = "python"
+            runnerPackages = command.runnerPackages
+        else:
+            pythonExec = sys.executable
+            runnerPackages = ""
+
         args = [
-            pythonExecutable,
+            pythonExec,
             "-u",
             scriptFile,
             commandWatcherLogFile,
@@ -826,15 +863,21 @@ class Worker(MainLoopApplication):
             str(command.id),
             command.runner,
             command.validationExpression,
+            runnerPackages,
         ]
 
         # Properly serializing arguments using json
         args.append(json.dumps(command.arguments))
-
         try:
             # Starts a new process (via CommandWatcher script) with current command info and environment.
             # The command environment is derived from the current os.env
-            watcherProcess = spawnCommandWatcher(pidFile, logFile, args, command.environment)
+            if 'REZ_USED_RESOLVE' in os.environ:
+                LOGGER.warning("Current worker managed with rez, command watcher packages are: %s" % command.watcherPackages)
+                watcherProcess = spawnRezManagedCommandWatcher(pidFile, logFile, args, command.watcherPackages, command.environment)
+            else:
+                LOGGER.warning("Current worker is not rez-managed (undefined REZ_USED_RESOLVE in env)")
+                watcherProcess = spawnCommandWatcher(pidFile, logFile, args, command.environment)
+
             newCommandWatcher.processObj = watcherProcess
             newCommandWatcher.startTime = time.time()
             newCommandWatcher.timeOut = None
@@ -848,6 +891,41 @@ class Worker(MainLoopApplication):
         except Exception, e:
             LOGGER.error("Error spawning command watcher %r", e)
             raise e
+
+        # else:
+        #     LOGGER.warning("Current worker is not rez-managed (undefined REZ_USED_RESOLVE in env)")
+        #     args = [
+        #         pythonExecutable,
+        #         "-u",
+        #         scriptFile,
+        #         commandWatcherLogFile,
+        #         str(settings.DISPATCHER_ADDRESS + ":" + str(settings.DISPATCHER_PORT)),
+        #         str(workerPort),
+        #         str(command.id),
+        #         command.runner,
+        #         command.validationExpression,
+        #     ]
+
+        #     # Properly serializing arguments using json
+        #     args.append(json.dumps(command.arguments))
+
+        #     try:
+        #         # Starts a new process (via CommandWatcher script) with current command info and environment.
+        #         # The command environment is derived from the current os.env
+        #         watcherProcess = spawnCommandWatcher(pidFile, logFile, args, command.environment)
+        #         newCommandWatcher.processObj = watcherProcess
+        #         newCommandWatcher.startTime = time.time()
+        #         newCommandWatcher.timeOut = None
+        #         newCommandWatcher.command = command
+        #         newCommandWatcher.processId = watcherProcess.pid
+
+        #         self.commandWatchers[command.id] = newCommandWatcher
+        #         self.status = rendernode.RN_WORKING
+
+        #         LOGGER.info("Started command %d", command.id)
+        #     except Exception, e:
+        #         LOGGER.error("Error spawning command watcher %r", e)
+        #         raise e
 
     def reloadConfig(self):
         reload(config)

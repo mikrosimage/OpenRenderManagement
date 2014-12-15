@@ -24,7 +24,7 @@ LimitNOFILE=32000
 PIDFile=/var/run/puli/worker%i.pid
 
 Restart=always
-RestartSec=10
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target

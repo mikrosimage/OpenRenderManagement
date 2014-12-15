@@ -170,6 +170,9 @@ class DispatchTree(object):
         tasks = [None for i in xrange(len(taskDefs))]
         for (index, taskDef) in enumerate(taskDefs):
             if taskDef['type'] == 'Task':
+                # logger.debug("taskDef.watcherPackages = %s" % taskDef["watcherPackages"])
+                # logger.debug("taskDef.runnerPackages = %s" % taskDef["runnerPackages"])
+                # import pudb;pu.db
                 task = self._createTaskFromJSON(taskDef, user)
             elif taskDef['type'] == 'TaskGroup':
                 task = self._createTaskGroupFromJSON(taskDef, user)
@@ -300,6 +303,8 @@ class DispatchTree(object):
         ramUse = taskDefinition['ramUse']
         lic = taskDefinition['lic']
         tags = taskDefinition['tags']
+        runnerPackages = taskDefinition.get('runnerPackages', '')
+        watcherPackages = taskDefinition.get('watcherPackages', '')
         timer = None
         if 'timer' in taskDefinition.keys():
             timer = taskDefinition['timer']
@@ -308,12 +313,15 @@ class DispatchTree(object):
 
         task = Task(None, name, None, user, maxRN, priority, dispatchKey, runner,
                     arguments, validationExpression, [], requirements, minNbCores,
-                    maxNbCores, ramUse, environment, lic=lic, tags=tags, timer=timer, maxAttempt=maxAttempt)
+                    maxNbCores, ramUse, environment,
+                    lic=lic, tags=tags, timer=timer, maxAttempt=maxAttempt,
+                    runnerPackages=runnerPackages,
+                    watcherPackages=watcherPackages)
 
         for commandDef in taskDefinition['commands']:
             description = commandDef['description']
             arguments = commandDef['arguments']
-            cmd = Command(None, description, task, arguments)
+            cmd = Command(None, description, task, arguments, runnerPackages=runnerPackages, watcherPackages=watcherPackages)
             task.commands.append(cmd)
             # import sys
             # logger.warning("cmd creation : %s" % str(sys.getrefcount(cmd)))

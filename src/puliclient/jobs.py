@@ -85,15 +85,10 @@ class StringParameter(CommandRunnerParameter):
     '''A command runner parameter class that converts the argument value to a string.'''
 
     def validate(self, arguments):
-
         try:
             super(StringParameter, self).validate(arguments)
-            if arguments[self.name]:
-                # try:
+            if self.name in arguments:
                 arguments[self.name] = str(arguments[self.name])
-                # except Exception, e:
-                #     print "Error when parameter conversion %s: %r" % (self.name, e)
-                #     raise ValidationError("StringParameter cannot be converted to str")
         except Exception, e:
             raise e
 
@@ -221,6 +216,8 @@ class CommandRunnerMetaclass(type):
                 parameters.append(arg)
         self.parameters = parameters
 
+        # logging.getLogger('puli.commandwatcher').info('init CommandRunnerMetaclass')
+
 
 class CommandRunner(object):
 
@@ -235,6 +232,7 @@ class CommandRunner(object):
 
     def validate(self, arguments):
         logger = logging.getLogger('puli.commandwatcher')
+
         if len(self.parameters) > 0:
             logger.info("Validating %d parameter(s):" % len(self.parameters))
 
@@ -242,14 +240,17 @@ class CommandRunner(object):
             logger.info("  - %s" % parameter)
             parameter.validate(arguments)
 
-        # Checking global argument scriptTimeOut:
-        try:
-            self.scriptTimeOut = int(arguments['scriptTimeOut'])
-            logger.info("Defining time out limit: scriptTimeout=%d" % self.scriptTimeOut)
-        except KeyError, e:
-            logger.info("No scriptTimeout in arguments. Command will never be interrupted (msg: %s)" % e)
-        except TypeError, e:
-            logger.info("Invalid scriptTimeout value given (integer expected) (msg: %s)" % e)
+        # TOFIX no need for scripttimeOut, impossible to kill a thread manually, timeout handling
+        # should be done outside the command runner or around subprocess call in the runner
+
+        # # Checking global argument scriptTimeOut:
+        # try:
+        #     self.scriptTimeOut = int(arguments['scriptTimeOut'])
+        #     logger.info("Defining time out limit: scriptTimeout=%d" % self.scriptTimeOut)
+        # except KeyError, e:
+        #     logger.info("No scriptTimeout in arguments. Command will never be interrupted (msg: %s)" % e)
+        # except TypeError, e:
+        #     logger.info("Invalid scriptTimeout value given (integer expected) (msg: %s)" % e)
 
 
 class DefaultCommandRunner(CommandRunner):
@@ -333,8 +334,8 @@ class TaskDecomposer(object):
     def __init__(self, task):
         self.task = task
 
-    def addCommand(self, name, args):
-        self.task.addCommand(name, args)
+    def addCommand(self, name, args, runnerPackages=None, watcherPackages=None):
+        self.task.addCommand(name, args, runnerPackages, watcherPackages)
 
 
 class DefaultTaskDecomposer(TaskDecomposer):

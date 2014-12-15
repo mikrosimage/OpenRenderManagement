@@ -131,6 +131,10 @@ class Tasks(SQLObject):
     archived = BoolCol()
     args = UnicodeCol()
 
+    # REZ env management support
+    runnerPackages = UnicodeCol()
+    watcherPackages = UnicodeCol()
+
     # Adding autoretry capability on task
     maxAttempt = IntCol()
 
@@ -151,6 +155,10 @@ class Commands(SQLObject):
     stats = UnicodeCol()
     archived = BoolCol()
     args = UnicodeCol()
+
+    # REZ env management support
+    runnerPackages = UnicodeCol()
+    watcherPackages = UnicodeCol()
 
     # Adding autoretry capability on command
     attempt = IntCol()
@@ -356,7 +364,9 @@ class PuliDB(object):
                           Tasks.q.validationExpression.fieldName: element.validationExpression,
                           Tasks.q.archived.fieldName: False,
                           Tasks.q.args.fieldName: str(element.arguments),
-                          Tasks.q.maxAttempt.fieldName: element.maxAttempt
+                          Tasks.q.maxAttempt.fieldName: element.maxAttempt,
+                          Tasks.q.runnerPackages.fieldName: json.dumps(element.runnerPackages),
+                          Tasks.q.watcherPackages.fieldName: json.dumps(element.watcherPackages)
                           }
                 conn.query(conn.sqlrepr(Insert(Tasks.q, values=fields)))
                 conn.cache.clear()
@@ -378,7 +388,9 @@ class PuliDB(object):
                           Commands.q.stats.fieldName: str(element.stats),
                           Commands.q.archived.fieldName: False,
                           Commands.q.args.fieldName: str(element.arguments),
-                          Commands.q.attempt.fieldName: str(element.attempt)
+                          Commands.q.attempt.fieldName: str(element.attempt),
+                          Commands.q.runnerPackages.fieldName: json.dumps(element.runnerPackages),
+                          Commands.q.watcherPackages.fieldName: json.dumps(element.watcherPackages)
                           }
                 conn.query(conn.sqlrepr(Insert(Commands.q, values=fields)))
                 conn.cache.clear()
@@ -498,24 +510,24 @@ class PuliDB(object):
 
             # /////////////// Handling of the Task
             elif isinstance(element, Task):
-              # Simply update "tags" field to preserve comments in DB
-              # The model listener will only register this elem when "tags" field is updated
-              if element.id:
-                  conn = Tasks._connection
-                  fields = { Tasks.q.tags.fieldName: json.dumps(element.tags),
-                            Tasks.q.maxAttempt.fieldName: str(element.maxAttempt) }
-                  conn.query(conn.sqlrepr(Update(Tasks.q, values=fields, where=(Tasks.q.id == element.id))))
-                  conn.cache.clear()
+                # Simply update "tags" field to preserve comments in DB
+                # The model listener will only register this elem when "tags" field is updated
+                if element.id:
+                    conn = Tasks._connection
+                    fields = {Tasks.q.tags.fieldName: json.dumps(element.tags),
+                              Tasks.q.maxAttempt.fieldName: str(element.maxAttempt)}
+                    conn.query(conn.sqlrepr(Update(Tasks.q, values=fields, where=(Tasks.q.id == element.id))))
+                    conn.cache.clear()
 
             # /////////////// Handling of the TaskGroup
             elif isinstance(element, TaskGroup):
-              # Simply update "tags" field to preserve comments in DB
-              # The model listener will only register this elem when "tags" field is updated
-              if element.id:
-                  conn = TaskGroups._connection
-                  fields = { TaskGroups.q.tags.fieldName: json.dumps(element.tags) }
-                  conn.query(conn.sqlrepr(Update(TaskGroups.q, values=fields, where=(TaskGroups.q.id == element.id))))
-                  conn.cache.clear()
+                # Simply update "tags" field to preserve comments in DB
+                # The model listener will only register this elem when "tags" field is updated
+                if element.id:
+                    conn = TaskGroups._connection
+                    fields = {TaskGroups.q.tags.fieldName: json.dumps(element.tags)}
+                    conn.query(conn.sqlrepr(Update(TaskGroups.q, values=fields, where=(TaskGroups.q.id == element.id))))
+                    conn.cache.clear()
 
     ## Mark the provided elements as archived.
     # @param elements the elements to archive
@@ -911,7 +923,9 @@ class PuliDB(object):
                   Commands.q.stats,
                   Commands.q.archived,
                   Commands.q.args,
-                  Commands.q.attempt
+                  Commands.q.attempt,
+                  Commands.q.runnerPackages,
+                  Commands.q.watcherPackages
                   ]
         commands = conn.queryAll(conn.sqlrepr(Select(fields, where=(Commands.q.archived == False))))
 
@@ -920,7 +934,7 @@ class PuliDB(object):
         LOGGER.warning("  - creating %d elems"% nbElems)
 
         for num, dbCmd in enumerate(commands):
-            id, description, taskId, status, completion, creationTime, startTime, updateTime, endTime, assignedRNId, message, stats, archived, args, attempt = dbCmd
+            id, description, taskId, status, completion, creationTime, startTime, updateTime, endTime, assignedRNId, message, stats, archived, args, attempt, runnerPackages, watcherPackages = dbCmd
             if args is None:
                 args = "{}"
             if stats is None:
@@ -939,11 +953,13 @@ class PuliDB(object):
                               self.getTimeStampFromDate(endTime),
                               attempt=attempt,
                               stats=eval(stats),
-                              message=message)
+                              message=message,
+                              runnerPackages=json.loads(runnerPackages),
+                              watcherPackages=json.loads(watcherPackages))
             if status in [2, 3, 4] and realCmd.renderNode is None:
-              print "%s -- invalid status for command %d, setting to READY" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)), realCmd.id)
-              realCmd.status = 1
-              status =1
+                print "%s -- invalid status for command %d, setting to READY" % (time.strftime('[%H:%M:%S]', time.gmtime(time.time() - begintime)), realCmd.id)
+                realCmd.status = 1
+                status = 1
 
             assert not(status in [2, 3, 4] and realCmd.renderNode is None)
             cmdTaskIdList[taskId].append(realCmd)
@@ -981,7 +997,10 @@ class PuliDB(object):
                   Tasks.q.validationExpression,
                   Tasks.q.archived,
                   Tasks.q.args,
-                  Tasks.q.maxAttempt]
+                  Tasks.q.maxAttempt,
+                  Tasks.q.runnerPackages,
+                  Tasks.q.watcherPackages
+                  ]
 
         tasks = conn.queryAll(conn.sqlrepr(Select(
                   fields, where=( 
@@ -994,7 +1013,7 @@ class PuliDB(object):
         LOGGER.warning("  - creating %d elems" % nbElems)
 
         for num, dbTask in enumerate(tasks):
-            id, name, parentId, user, priority, dispatchKey, maxRN, runner, environment, requirements, minNbCores, maxNbCores, ramUse, licence, tags, validationExpression, archived, args, maxAttempt = dbTask
+            id, name, parentId, user, priority, dispatchKey, maxRN, runner, environment, requirements, minNbCores, maxNbCores, ramUse, licence, tags, validationExpression, archived, args, maxAttempt, runnerPackages, watcherPackages = dbTask
             taskCmds = []
             if args is None:
                 args = '{}'
@@ -1019,7 +1038,9 @@ class PuliDB(object):
                             {},
                             licence,
                             json.loads(tags),
-                            maxAttempt=maxAttempt)
+                            maxAttempt=maxAttempt,
+                            runnerPackages=json.loads(runnerPackages),
+                            watcherPackages=json.loads(watcherPackages))
             tree.tasks[realTask.id] = realTask
             realTasksList[realTask.id] = realTask
             # set the task on the appropriate commands
@@ -1116,7 +1137,7 @@ class PuliDB(object):
         nbElems = len(tasks)
         LOGGER.warning("  - parsing %d tasks" % nbElems)
         for num, dbTask in enumerate(tasks):
-            id, name, parentId, user, priority, dispatchKey, maxRN, runner, environment, requirements, minNbCores, maxNbCores, ramUse, licence, tags, validationExpression, archived, args, maxAttempt = dbTask
+            id, name, parentId, user, priority, dispatchKey, maxRN, runner, environment, requirements, minNbCores, maxNbCores, ramUse, licence, tags, validationExpression, archived, args, maxAttempt, runnerPackages, watcherPackages = dbTask
             if parentId:
                 #FIXME temp
                 if int(parentId) in realTaskGroupsList.keys():

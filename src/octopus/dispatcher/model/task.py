@@ -1,5 +1,5 @@
 from .models import (Model, StringField, ModelField, DictField, IntegerField, FloatField,
-                     ModelListField, ModelDictField)
+                     ModelListField, ModelDictField, ListField)
 from .enums import NODE_BLOCKED, NODE_CANCELED, NODE_DONE, NODE_ERROR, NODE_PAUSED, NODE_READY, NODE_RUNNING
 from collections import defaultdict
 import logging
@@ -156,8 +156,20 @@ class Task(Model):
     lic = StringField()
     timer = FloatField(allow_null=True)
     maxAttempt = IntegerField()
+    # runnerPackages = ListField(allow_null=True)
+    # watcherPackages = ListField(allow_null=True)
+    runnerPackages = StringField()
+    watcherPackages = StringField()
 
-    def __init__(self, id, name, parent, user, maxRN, priority, dispatchKey, runner, arguments, validationExpression, commands, requirements=[], minNbCores=1, maxNbCores=0, ramUse=0, environment={}, nodes={}, lic="", tags={}, maxAttempt=1, timer=None):
+    def __init__(
+        self,
+        id, name, parent, user, maxRN, priority, dispatchKey,
+        runner, arguments, validationExpression, commands,
+        requirements=[], minNbCores=1, maxNbCores=0, ramUse=0,
+        environment={}, nodes={}, lic="", tags={}, maxAttempt=1, timer=None,
+        runnerPackages=None,
+        watcherPackages=None
+    ):
         assert parent is None or isinstance(parent, TaskGroup)
         Model.__init__(self)
         self.id = int(id) if id else None
@@ -187,6 +199,9 @@ class Task(Model):
         self.updateTime = None
         self.endTime = None
         self.timer = timer
+        self.runnerPackages = runnerPackages
+        self.watcherPackages = watcherPackages
+
 
     def addValidationExpression(self, validationExpression):
         self.validationExpression = "&".join(self.validationExpression,

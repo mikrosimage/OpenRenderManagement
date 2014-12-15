@@ -226,7 +226,7 @@ class RunnerToolkit(object):
         | If a callback is given for output, it will be called each time a line is printed.
 
         :param command str: a string holding any command line
-        :param outputCallback callable: any callable that we be able to parse line and retrive useful info from it (usually in the runner)
+        :param outputCallback callable: any callable that we be able to parse line and retrieve useful info from it (usually in the runner)
 
         :raise CommandError: When any error occurred that should end the command with ERROR status
                              When a subprocess error is raised (OSError or ValueError usually)

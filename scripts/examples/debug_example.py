@@ -29,8 +29,13 @@ if __name__ == '__main__':
 
     tags = {"prod": "test", "shot": "test", "nbFrames": options.num}
 
+    #
+    # Create custom graph
+    #
+    graph = Graph(options.jobname, tags=tags, poolName='default')
+
     # command = "/s/apps/packages/bin/run katana -- katana --batch --katana-file /s/prods/mikros_test/jsa/testSimple.katana -t 1-1 --render-node Render"
-    command = "katana --batch --katana-file /s/prods/mikros_test/jsa/testSimple.katana -t 1-1 --render-node Render"
+    command = 'echo "katana --batch --katana-file /s/prods/mikros_test/jsa/testSimple.katana -t 1-1 --render-node Render"'
     # command = "echo TEST"
 
     # command = "echo toto;sleep `shuf -i %d-%d -n 1`;echo tata" % (options.min, options.max)
@@ -41,19 +46,27 @@ if __name__ == '__main__':
         "start": 1,
         "end": options.num,
         "packetSize": 1,
-        "timeout": 5,
+        "timeout": 30,
 
         "command": command,
-        "runOptions": "",
+        "runOptions": "-vvv",
         # "packages": "katana-1.6.3",
         # "cmd": command,
     }
-    simpleTask = Task(name=options.jobname, arguments=args, tags=tags, runner='rezrunner.RezRunner', watcherPackages='pulicontrib-dev')
+    simpleTask = graph.addNewTask(
+        name=options.jobname,
+        arguments=args,
+        tags=tags,
+        runner='rezrunner.RezRunner',
+        watcherPackages='pulicontrib-dev')
 
-    #
-    # Create custom graph
-    #
-    graph = Graph(options.jobname, simpleTask, tags=tags, poolName='default')
+    makeMovie = graph.addNewTask(
+        name='Make Movie',
+        arguments={'command': 'ffmpeg -h'},
+        tags=tags,
+        runner='rezrunner.RezRunner',
+        runnerPackages='ffmpeg-2.3',
+        watcherPackages='pulicontrib-dev')
 
 #    graph.addNewTask( name="T1", arguments={ "args": command, "start":1, "end":5, "packetSize":1 }, tags={ "prod":"test", "shot":"test", "nbFrames":5}, runner=runner )
 #

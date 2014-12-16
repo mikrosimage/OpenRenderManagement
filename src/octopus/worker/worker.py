@@ -845,13 +845,12 @@ class Worker(MainLoopApplication):
 
         # LOGGER.debug("command.runnerPackages = %s" % command.runnerPackages)
         # LOGGER.debug("command.watcherPackages = %s" % command.watcherPackages)
-
         if 'REZ_USED_RESOLVE' in os.environ:
             pythonExec = "python"
-            runnerPackages = command.runnerPackages
+            runnerPackages = command.runnerPackages if command.runnerPackages != '' else 'undefined'
         else:
             pythonExec = sys.executable
-            runnerPackages = ""
+            runnerPackages = "undefined"
 
         args = [
             pythonExec,

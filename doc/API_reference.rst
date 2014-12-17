@@ -1,4 +1,4 @@
-IN PROGRESS - API reference
+API reference
 *********************************************
 
 Using PULI API

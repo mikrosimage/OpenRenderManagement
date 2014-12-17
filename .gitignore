@@ -21,7 +21,7 @@ lib/
 logs/
 utils/
 external_packages/
-Puli/doc/_build
+doc/_build
 Puli/src/tornado
 Puli/src/numpy
 Puli/src/pygal

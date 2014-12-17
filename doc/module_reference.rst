@@ -1,4 +1,4 @@
-IN PROGRESS - Module reference
+Module reference
 *********************************************
 
 
@@ -30,14 +30,14 @@ LicenseManager
   :members:
 
 
-.. Worker 
-.. =============================================
+Worker 
+=============================================
 
-.. .. automodule:: octopus.worker.worker
+.. automodule:: octopus.worker.worker
 
-.. .. autoclass:: Worker()
-..   :special-members: __init__
-..   :members:
+.. autoclass:: Worker()
+  :special-members: __init__
+  :members:
 
 
 .. CommandWatcher

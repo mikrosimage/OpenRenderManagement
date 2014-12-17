@@ -4,7 +4,7 @@ version = '1.7.8'
 # If your tool depends on some other package(s)
 requires = [
     'rez-current',
-    'pythonABI-2.6',
+    'pythonABI-2',
     'tornado-2.2.1',
     'requests-2.4.3',
     'psutil-2.1.3'

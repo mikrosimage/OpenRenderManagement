@@ -175,7 +175,13 @@ class RunnerToolkit(object):
             Internal thread which starts the subprocess and reads output
             '''
             os.umask(2)
-            self.process = subprocess.Popen(self.cmdArgs, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False, bufsize=1)
+            self.process = subprocess.Popen(
+                self.cmdArgs,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                shell=False,
+                bufsize=1,
+                universal_newlines=True)
 
             for line in iter(self.process.stdout.readline, b''):
                 if callable(outputCallback):

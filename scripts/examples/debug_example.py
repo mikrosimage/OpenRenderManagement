@@ -48,7 +48,7 @@ if __name__ == '__main__':
         # "packages": "katana-1.6.3",
         # "cmd": command,
     }
-    simpleTask = Task(name=options.jobname, arguments=args, tags=tags, runner='rezrunner.RezRunner', watcherPackages='pulicontrib-dev')
+    simpleTask = Task(name=options.jobname, arguments=args, tags=tags, runner='rezrunner.RezRunner')
 
     #
     # Create custom graph

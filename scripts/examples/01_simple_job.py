@@ -1,13 +1,13 @@
 #!/usr/bin/python
 # coding: utf-8
 from puliclient import Graph
-from puliclient import CommandRunner
+from puliclient.jobs import CommandRunner
 
 
 #
 # Defining the class to execute when the command is assigned and started
 # This class is called a runner, it must be accessible to each rendernode.
-# Therefore it is stored by convention in a shared folder based in "puliclient" module
+# Therefore it is stored by convention in a shared folder based in "pulicontrib" package
 #
 class MyRunner(CommandRunner):
     def execute(self, arguments):
@@ -27,19 +27,19 @@ class MyRunner(CommandRunner):
 #
 
 # First we create a graph
-graph = Graph('a simple graph')
+graph = Graph('simple_job')
 
 # To define a Task, we need 3 arguments :
 #   - its name
 #   - a runner is a python class that defines the workflow execution for a given job type.
-#     Here, we will use GenericRunner, which simply executes a command line.
+#     Here, we will use MyRunner which has been declared previously
 #   - an arguments dict
-name = "list job"
-runner = "puliclient.contrib.example.MyRunner"
+name = "wait_10s"
+runner = "example.MyRunner"
 arguments = {"wait": 10}
 
 # Then add a new task to the graph
 graph.addNewTask(name, runner=runner, arguments=arguments)
 
 # Finally submit the graph to the server
-graph.submit("puliserver", 8004)
+graph.submit("pulitest", 8004)

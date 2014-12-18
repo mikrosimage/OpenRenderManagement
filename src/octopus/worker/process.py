@@ -35,7 +35,7 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
     '''
     | Uses rez module to start a process with a proper rez env.
 
-    :param pidfile: fuull path to the comand pid file (usally /var/run/puli/cw<command_id>.pid)
+    :param pidfile: full path to the comand pid file (usally /var/run/puli/cw<command_id>.pid)
     :param logfile: file object to store process log content
     :param args:
     :param watcherPackages:
@@ -44,6 +44,7 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
     :return: a CommandWatcherProcess object holding command watcher process handle
     '''
     try:
+        from rez.resources import clear_cache
         from rez.resolved_context import ResolvedContext
         from rez.resolver import ResolverStatus
     except ImportError as e:
@@ -59,6 +60,7 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
         else:
             watcherPackagesList = watcherPackages
 
+        clear_cache()
         context = ResolvedContext(watcherPackagesList)
         success = (context.status == ResolverStatus.solved)
         if not success:

@@ -44,7 +44,7 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
     :return: a CommandWatcherProcess object holding command watcher process handle
     '''
     try:
-        from rez.resources import clear_cache
+        from rez.resources import clear_caches
         from rez.resolved_context import ResolvedContext
         from rez.resolver import ResolverStatus
     except ImportError as e:
@@ -60,7 +60,7 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
         else:
             watcherPackagesList = watcherPackages
 
-        clear_cache()
+        clear_caches()
         context = ResolvedContext(watcherPackagesList)
         success = (context.status == ResolverStatus.solved)
         if not success:

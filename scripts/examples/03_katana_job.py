@@ -14,7 +14,7 @@ tags = {
     "nbFrames": 1
 }
 
-graph = Graph('simple_katana', tags=tags)
+graph = Graph('katana_on_5_frames', tags=tags)
 
 # To define a Task, we need 4 arguments :
 #   - the job name
@@ -25,14 +25,17 @@ name = "katana_render"
 
 runner = "rezrunner.RezRunner"
 
+# NB: RezRunner will automatically interpret %%MI_START%% or %%MI_END%% and
+# replace it with current command "start/end" values
 arguments = {
-    'command': 'katana --batch --katana-file /s/prods/mikros_test/jsa/testSimple.katana -t %%MI_START%% --render-node Render',
+    'command': 'katana --batch --katana-file /s/prods/mikros_test/jsa/testSimple.katana -t %%MI_START%%-%%MI_END%% --render-node Render',
     'start': 1,
-    'end': 5
+    'end': 5,
+    'packetSize': 2
 }
 
 # Then add a new task to the graph
-graph.addNewTask(name, runner=runner, arguments=arguments)
+graph.addNewTask(name, runner=runner, arguments=arguments, lic='katana')
 
 # Finally submit the graph to the server
 graph.submit("pulitest", 8004)

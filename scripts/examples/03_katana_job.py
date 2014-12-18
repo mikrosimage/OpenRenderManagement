@@ -23,12 +23,13 @@ graph = Graph('katana_on_5_frames', tags=tags)
 
 name = "katana_render"
 
-runner = "rezrunner.RezRunner"
+runner = "katanaRunner.KatanaRunner"
 
 # NB: RezRunner will automatically interpret %%MI_START%% or %%MI_END%% and
 # replace it with current command "start/end" values
 arguments = {
     'command': 'katana --batch --katana-file /s/prods/mikros_test/jsa/testSimple.katana -t %%MI_START%%-%%MI_END%% --render-node Render',
+    'rezOptions': '-vvv',
     'start': 1,
     'end': 5,
     'packetSize': 2

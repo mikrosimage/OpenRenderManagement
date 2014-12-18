@@ -27,7 +27,7 @@ runner = "rezrunner.RezRunner"
 
 arguments = {
     'command': 'ls',
-    'runOptions': '-vv'
+    'rezOptions': '-vv'
 }
 
 # Then add a new task to the graph

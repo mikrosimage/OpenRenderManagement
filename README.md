@@ -9,7 +9,6 @@ OpenRenderManagement is an open-source render management project.
 The Core project is entirely written in python.
 
 
-
 SYSTEM PREREQUISITES
 --------------------
 
@@ -47,9 +46,10 @@ It holds the following subsystems:
    * psutil
 
 
-#### Additionnal tools
+#### Puli tools
 
-Several tools can be installed on a separate computer to operate the system:
+Several tools come along with OpenRenderManagement that have specific requirements.
+They can be installed on a separate computer to operate the system:
    * puliquery: command line request tools
    * puliexec: simplify submission of scripts and command line
    * pulistats: set of script to trace graphs based on server statistics
@@ -112,10 +112,6 @@ DB_CLEAN_DATA = False
 These will tell Puli to init itself with the database that was previously created, and it will enable the persistence of the jobs.
 
 If you want to erase the database in order to have a clean start, reset these parameters to the values in the installation section.
-
-
-RELEASE NOTES
--------------
 
 
 KNOWN ISSUES

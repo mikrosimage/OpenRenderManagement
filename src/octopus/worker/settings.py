@@ -13,7 +13,7 @@ __copyright__ = "Copyright 2010, Mikros Image"
 
 
 import socket
-
+import os
 
 def getLocalAddress():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -39,7 +39,7 @@ else:
 ## SETTINGS ###########################################################
 ## These settings cannot be reloaded during worker execution because some of the values can be overriden with program user arguments
 ## To change these values, the worker must be restarted
-VERSION = "1.7.8"
+VERSION = os.environ.get("REZ_PULI_VERSION", '-')
 
 DEBUG = True
 computername = computername.lower()

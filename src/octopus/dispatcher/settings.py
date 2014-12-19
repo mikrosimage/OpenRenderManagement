@@ -13,7 +13,6 @@ __copyright__ = "Copyright 2010, Mikros Image"
 
 import os
 
-
 def getLocalAddress():
     import socket
     try:
@@ -34,7 +33,7 @@ def loadSettingsFile(filename):
 
 ## SETTINGS ###########################################################
 
-VERSION = "1.7.8"
+VERSION = os.environ.get("REZ_PULI_VERSION", '-')
 
 DEBUG = False
 
@@ -64,7 +63,7 @@ PIDFILE = "/var/run/puli/dispatcher.pid"
 # PERSISTENCE MECANISM
 #
 POOLS_BACKEND_TYPE = "db"
-# POOLS_BACKEND_TYPE = "file"
+#POOLS_BACKEND_TYPE = "file"
 #POOLS_BACKEND_TYPE = "ws"
 
 FILE_BACKEND_RN_PATH = os.path.join(CONFDIR, "workers.lst")

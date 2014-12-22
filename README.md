@@ -142,7 +142,7 @@ Installing the worker is pretty similar to the dispatcher:
 yum install python-tornado python-requests python-psutil
 ```
 
-Lauch:
+Launch:
 ```
 export PYTHONPATH=/opt/puli:$PYTHONPATH
 python /opt/puli/scripts/workerd.py --debug --console --server 192.168.1.2 --serverport 8004

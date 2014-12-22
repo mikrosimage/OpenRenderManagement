@@ -22,24 +22,32 @@ class MyRunner(CommandRunner):
         self.log.info("Process is finished.")
 
 
-#
-# Submission script
-#
+if __name__ == "__main__":
 
-# First we create a graph
-graph = Graph('simple_job')
+    #
+    # Submission script
+    #
+    tags = {
+        "prod": "prod_name",
+        "shot": "shot_code",
+        # Add any valuable info relative to the job here: type, step, version, iteration...
+    }
 
-# To define a Task, we need 3 arguments :
-#   - its name
-#   - a runner is a python class that defines the workflow execution for a given job type.
-#     Here, we will use MyRunner which has been declared previously
-#   - an arguments dict
-name = "wait_10s"
-runner = "example.MyRunner"
-arguments = {"wait": 10}
+    # First we create a graph
+    # Added to the graph is a dict of tags that will be used to clarify the job process
+    graph = Graph('simple job', tags=tags)
 
-# Then add a new task to the graph
-graph.addNewTask(name, runner=runner, arguments=arguments)
+    # To define a Task, we need 3 arguments :
+    #   - its name
+    #   - a runner is a python class that defines the workflow execution for a given job type.
+    #     Here, we will use MyRunner which has been declared previously
+    #   - an arguments dict
+    name = "wait 10s"
+    runner = "example.MyRunner"
+    arguments = {"wait": 10}
 
-# Finally submit the graph to the server
-graph.submit("pulitest", 8004)
+    # Then add a new task to the graph
+    graph.addNewTask(name, runner=runner, arguments=arguments)
+
+    # Finally submit the graph to the server
+    graph.submit("pulitest", 8004)

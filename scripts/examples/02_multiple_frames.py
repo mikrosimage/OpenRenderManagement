@@ -3,29 +3,48 @@
 
 from puliclient import Graph
 
+tags = {
+    "prod": "prod_name",
+    "shot": "shot_code",
+    # Add any valuable info relative to the job here: type, step, version, iteration...
+}
+
 # First we create a graph
-graph = Graph('simple_job')
+# Added to the graph is a dict of tags that will be used to clarify the job process
+graph = Graph('simple_job', tags=tags)
 
-# Then we define a task. A task is basically a group of one or several commands all of the same kind.
-# It means, each command will start the same process but might have different params. For instance you will
-# create a task to execute a single process or to exec several times the same process like when rendering
-# an image sequence.
+# In this example we will create 2 tasks with multiple frames
+# The first task executes one process per command, the second will group several processes by commands
+# We still need to define its name and arguments dict
 
-# In this example we will create a simple task with multiple frames, we still need to define its name and
-# arguments dict
-name = "task_with_multiple_commands"
-
-# This default runner automatically handles the following arguments:
+# The default runner automatically handles the following arguments:
 #   - cmd: a string representing the command to start
 #   - start: start frame number
 #   - end: end frame number
+
+# First task
+name = "multiple commands"
+
 arguments = {
-    "cmd": "sleep %%FRAME%%",
+    "cmd": "sleep %%MI_FRAME%%",
     "start": 1,
     "end": 10,
 }
 
-# Then add a new task to the graph
+graph.addNewTask(name, arguments=arguments)
+
+# Second task
+name = "multiple commands grouped by packet size"
+
+# To handle several processes in a command, we add the following arg:
+#   - packetSize: number of frames to run in the same command
+arguments = {
+    "cmd": "sleep %%MI_FRAME%%",
+    "start": 1,
+    "end": 10,
+    "packetSize": 3
+}
+
 graph.addNewTask(name, arguments=arguments)
 
 # Finally submit the graph to the server

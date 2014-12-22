@@ -3,8 +3,15 @@
 
 from puliclient import Graph
 
+tags = {
+    "prod": "prod_name",
+    "shot": "shot_code",
+    # Add any valuable info relative to the job here: type, step, version, iteration...
+}
+
 # First we create a graph
-graph = Graph('simple_job')
+# Added to the graph is a dict of tags that will be used to clarify the job process
+graph = Graph('simple_job', tags=tags)
 
 # Then we define a task. A task is basically a group of one or several commands all of the same kind.
 # It means, each command will start the same process but might have different params. For instance you will
@@ -15,7 +22,7 @@ graph = Graph('simple_job')
 # Therefore we need to define only 2 attributes:
 #   - its name
 #   - a dict of its arguments
-name = "my_command"
+name = "my command"
 
 # The arguments dict can handle many arguments.
 # When creating a classic command (like a shell command) we internally use a "runner" called "CommandLineRunner".

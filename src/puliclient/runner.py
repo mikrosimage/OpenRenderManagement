@@ -168,7 +168,17 @@ class RunnerToolkit(object):
 
     def execute(self, command, timeout, outputCallback=None, timeoutCallback=None):
         """
-        Add a timeout callback so that user can have a custom handling of timeout error
+        | Starts a new process with given command arguments. It is started in a separate thread to have
+        | the ability to check periodically the time elapsed in the subprocess.
+        | We will try to call the timeoutCallback when necessary if the timeout value is not None and positive.
+        | The timeoutCallback is called each time the process spend timeout seconds running.
+        | The standard input and output are redirected and line buffered, we will try to call the outputCallback
+        | for each line received.
+
+        :param command: A string representing the command line to execute
+        :param timeout: Integer specifying the number of seconds to spend in the subprocess before starting the callback function
+        :param outputCallback: A function called each time a line is written in subprocess stdout or stderr
+        :param timeoutCallback: A function to start each time "timeout" second are spent in the subprocess
         """
         self.cmdArgs = shlex.split(command)
         self.callback = outputCallback

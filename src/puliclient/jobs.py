@@ -284,7 +284,6 @@ class DefaultCommandRunner(CommandRunner):
         | nuke -x -F 13 ma_comp.nk
         | nuke -x -F 14 ma_comp.nk
         | nuke -x -F 15 ma_comp.nk
-
         '''
 
         cmd = arguments.get('cmd')
@@ -311,32 +310,6 @@ class DefaultCommandRunner(CommandRunner):
             updateCompletion(completion)
             self.log.info("Updating completion %f " % completion)
 
-        # # If start and end are defnied in arguments, we need to iterate several times
-        # if 'start' in arguments.keys() \
-        #         and 'end' in arguments.keys():
-        #
-        #     print 'Executing command on a range of frames [%r-%r]' % (arguments['start'], arguments['end'])
-        #     completion = 0.0
-        #     completionIncrement = 1.0 / float((int(arguments['end']) + 1) - int(arguments['start']))
-        #
-        #     for frame in range(int(arguments['start']), int(arguments['end']) + 1):
-        #         print "==== Frame %d ====" % frame
-        #
-        #         currCommand = cmd.replace("%%MI_FRAME%%", str(frame))
-        #         currCommand = currCommand.replace("%%MI_START%%", str(arguments['start']))
-        #         currCommand = currCommand.replace("%%MI_END%%", str(arguments['end']))
-        #
-        #         print "Command: %s" % currCommand
-        #         subprocess.check_call(currCommand, close_fds=True, shell=True)
-        #
-        #         completion += completionIncrement
-        #         updateCompletion(completion)
-        #         print "Updating completion %f " % completion
-        #
-        # # Else it is a single block command, no need to iterate
-        # else:
-        #     print "Command: %s" % cmd
-        #     subprocess.check_call(cmd, close_fds=True, shell=True)
         updateCompletion(1)
 
 
@@ -378,12 +351,16 @@ class DefaultTaskDecomposer(TaskDecomposer):
     FRAMESLIST_LABEL = "framesList"
 
     def __init__(self, task):
+        """
+
+        :type task: object
+        """
         super(DefaultTaskDecomposer, self).__init__(task)
 
         if task.arguments is None:
             # Create an empty command anyway --> probably unecessary
             print "WARNING: No arguments given for the task \"%s\", it is necessary to do this ? (we are creating an empty command anyway..." % task.name
-            self.task.addCommand(task.name+"_1_1", {})
+            self.task.addCommand(task.name + "_1_1", {})
 
         elif all(key in task.arguments for key in (self.START_LABEL, self.END_LABEL)) \
                 or self.FRAMESLIST_LABEL in task.arguments:

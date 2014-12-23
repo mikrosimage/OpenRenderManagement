@@ -27,3 +27,5 @@ Puli/src/numpy
 Puli/src/pygal
 Puli/src/psutil
 Puli/src/puliclient/contrib
+
+src/puliclient/contrib

@@ -242,6 +242,7 @@ class Task(object):
         :param tags dict: user defined values
         :param timer int: a date (as a timestamp) to wait before assigning \
             commands of the current task
+        :param maxAttempt int: the number of execution each command should be executed before being considered ERROR
         """
 
         self.parent = None

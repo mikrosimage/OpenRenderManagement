@@ -1,5 +1,7 @@
-#!/usr/bin/python2.6
+#!/usr/bin/python
 # -*- coding: utf8 -*-
+
+from __future__ import absolute_import
 
 """
 name: settings.py
@@ -11,9 +13,15 @@ Value which could be reloaded during execution (using "reconfig" webservice) sho
 __author__ = "Arnaud Chassagne"
 __copyright__ = "Copyright 2010, Mikros Image"
 
-
 import socket
 import os
+
+try:
+    # When using rez, "package" module is located outside the src folder.
+    # It is only available for import if rez is used to resolve env.
+    from package import version as puliversion
+except ImportError:
+    puliversion = "__PULIVERSION__"
 
 def getLocalAddress():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -39,7 +47,7 @@ else:
 ## SETTINGS ###########################################################
 ## These settings cannot be reloaded during worker execution because some of the values can be overriden with program user arguments
 ## To change these values, the worker must be restarted
-VERSION = os.environ.get("REZ_PULI_VERSION", '-')
+VERSION = os.environ.get("REZ_PULI_VERSION", puliversion)
 
 DEBUG = True
 computername = computername.lower()

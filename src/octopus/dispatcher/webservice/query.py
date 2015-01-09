@@ -1,13 +1,13 @@
 #!/usr/bin/python
 # -*- coding: latin-1 -*-
 
-'''
-Un webservice permettant de pouvoir repondre Ã  des requetes de la sorte:
+"""
+Un webservice permettant de pouvoir repondre à des requetes de la sorte:
 
-Note les requetes http types prÃ©sentent les arguments de la maniÃ¨re suivante:
-field1=value1&field2=value2&field3=value3, Tonado autorise la dÃ©finition de plusieurs valeurs pour un field donnÃ©
+Note les requetes http types présentent les arguments de la manière suivante:
+field1=value1&field2=value2&field3=value3, Tonado autorise la définition de plusieurs valeurs pour un field donné
 
-Le webservice prend en charge les requÃªtes de la forme:
+Le webservice prend en charge les requêtes de la forme:
 http://localhost:8004/query?attr=id
 http://localhost:8004/query?constraint_user=jsa
 http://localhost:8004/query?attr=id&attr=name&attr=user&constraint_user=jsa&constraint_prod=ddd
@@ -47,7 +47,7 @@ On retourne un objet json au format:
 }
 
 Inspire du comportement d'outil comme condor_q/condor_status
-'''
+"""
 
 try:
     import simplejson as json

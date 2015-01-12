@@ -1,10 +1,10 @@
-'''
+"""
 @file webservicedispatcher.py
 @package octopus.dispatcher.webservice
 @author Arnaud Chassagne, Jean-Baptiste Spieser, Olivier Derpierre
 @date 2008/12/01
 @version 0.1
-'''
+"""
 try:
     import simplejson as json
 except ImportError:

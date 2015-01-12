@@ -532,8 +532,7 @@ class Dispatcher(MainLoopApplication):
                 arguments.update(command.arguments)
 
                 log = logging.getLogger('assign')
-                # log.debug("runnerPackages: %s" % command.runnerPackages)
-                # log.debug("watcherPackages: %s" % command.watcherPackages)
+                log.info("Sending command: %d from task %s to %s" % (command.id, command.task.name, rendernode))
 
                 commandDict = {
                     "id": command.id,
@@ -543,8 +542,8 @@ class Dispatcher(MainLoopApplication):
                     "taskName": command.task.name,
                     "relativePathToLogDir": "%d" % command.task.id,
                     "environment": environment,
-                    # "runnerPackages": command.runnerPackages,
-                    # "watcherPackages": command.watcherPackages
+                    "runnerPackages": command.runnerPackages,
+                    "watcherPackages": command.watcherPackages
                 }
                 body = json.dumps(commandDict)
                 headers["Content-Length"] = len(body)

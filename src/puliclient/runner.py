@@ -132,15 +132,22 @@ class CallableRunner(CommandRunner):
 
 
 class RunnerToolkit(object):
-    '''
-    '''
+    """
+    """
     def __init__(self):
+        self.process = None
+        self.stdout = None
+        self.stderr = None
+        self.cmdArgs = None
+        self.callback = None
+        self.keepGoing = True
+
         pass
 
     def executeWithTimeout(self, command, timeout):
-        '''
+        """
         Add a timeout callback so that user can have a custom handling of timeout error
-        '''
+        """
         self.process = None
 
         def target():
@@ -160,22 +167,35 @@ class RunnerToolkit(object):
         return retcode
 
     def execute(self, command, timeout, outputCallback=None, timeoutCallback=None):
-        '''
-        Add a timeout callback so that user can have a custom handling of timeout error
-        '''
-        self.process = None
-        self.stdout = None
-        self.stderr = None
+        """
+        | Starts a new process with given command arguments. It is started in a separate thread to have
+        | the ability to check periodically the time elapsed in the subprocess.
+        | We will try to call the timeoutCallback when necessary if the timeout value is not None and positive.
+        | The timeoutCallback is called each time the process spend timeout seconds running.
+        | The standard input and output are redirected and line buffered, we will try to call the outputCallback
+        | for each line received.
+
+        :param command: A string representing the command line to execute
+        :param timeout: Integer specifying the number of seconds to spend in the subprocess before starting the callback function
+        :param outputCallback: A function called each time a line is written in subprocess stdout or stderr
+        :param timeoutCallback: A function to start each time "timeout" second are spent in the subprocess
+        """
         self.cmdArgs = shlex.split(command)
         self.callback = outputCallback
         self.keepGoing = True
 
         def target():
-            '''
+            """
             Internal thread which starts the subprocess and reads output
-            '''
+            """
             os.umask(2)
-            self.process = subprocess.Popen(self.cmdArgs, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False, bufsize=1)
+            self.process = subprocess.Popen(
+                self.cmdArgs,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                shell=False,
+                bufsize=1,
+                universal_newlines=True)
 
             for line in iter(self.process.stdout.readline, b''):
                 if callable(outputCallback):
@@ -219,18 +239,18 @@ class RunnerToolkit(object):
 
     @classmethod
     def executeWithOutput(cls, command, outputCallback=None):
-        '''
+        """
         | Starts a subprocess with given command string. The subprocess is started without shell
         | for safety reason. stderr is send to stdout and stdout is either send to a callback if given or
         | printed on stdout again.
         | If a callback is given for output, it will be called each time a line is printed.
 
-        :param command str: a string holding any command line
-        :param outputCallback callable: any callable that we be able to parse line and retrieve useful info from it (usually in the runner)
+        :param command: a string holding any command line
+        :param outputCallback: any callable that we be able to parse line and retrieve useful info from it (usually in the runner)
 
         :raise CommandError: When any error occurred that should end the command with ERROR status
                              When a subprocess error is raised (OSError or ValueError usually)
-        '''
+        """
 
         if outputCallback is not None and not callable(outputCallback):
             raise CommandError("Invalid param: outputCallback=%s must be a callable or None" % outputCallback)
@@ -260,7 +280,7 @@ class RunnerToolkit(object):
     @classmethod
     def sendMail(cls, subject, body, toAddress, ccAddress='',
                  fromAddress='puliserver', SMTPhost='aspmx.l.google.com', verbose=False):
-        '''
+        """
         | Simple class method to send an email during a workflow.
         | It uses the smtplib an access the MX host: aspmx.l.google.com
 
@@ -273,7 +293,7 @@ class RunnerToolkit(object):
         :param verbose bool: if set to true, method prints email summary to stdout
 
         :raise Exception: any exception raised when starting connection to SMTP server and sending email
-        '''
+        """
         import smtplib
         from email.mime.text import MIMEText
 

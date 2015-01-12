@@ -99,7 +99,7 @@ class LicenseManager:
                         # if only one reservation fails, the whole reservation fails
                         globalsuccess = False
                 except KeyError:
-                    print "License %s not found" % licName
+                    print("License %r not found" % licName)
                     globalsuccess = False
         # in case of reservation failure, release the already reserved licenses, if any
         if not globalsuccess:

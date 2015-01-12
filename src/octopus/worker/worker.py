@@ -813,7 +813,6 @@ class Worker(MainLoopApplication):
 
         workerPort = self.framework.webService.port
 
-
         pidFile = os.path.join(self.PID_DIR, "cw%s.pid" % newCommandWatcher.commandId)
 
         # create the logdir if it does not exist
@@ -832,6 +831,7 @@ class Worker(MainLoopApplication):
             try:
                 os.makedirs(d, 0777)
             except OSError, e:
+                import errno
                 err = e.args[0]
                 if err != errno.EEXIST:
                     raise
@@ -862,7 +862,7 @@ class Worker(MainLoopApplication):
             str(command.id),
             command.runner,
             command.validationExpression,
-            runnerPackages,
+            runnerPackages
         ]
 
         # Properly serializing arguments using json

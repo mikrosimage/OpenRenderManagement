@@ -1,6 +1,11 @@
 #! /usr/bin/env python
 # coding: utf-8
 
+
+"""
+UNSUPPORTED: Avoid using this script as its behavior might not work as of version 1.7
+"""
+
 import sys
 import getpass
 import os

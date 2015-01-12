@@ -9,11 +9,11 @@ Puli's documentation
 .. toctree::
    :maxdepth: 1
 
-   user_guide
-   admin_guide
    API_reference
-   dev_guide
    module_reference
+..   user_guide
+..   admin_guide
+..   dev_guide
 
 
 

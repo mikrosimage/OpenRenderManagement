@@ -256,6 +256,8 @@ class CommandRunner(object):
 class DefaultCommandRunner(CommandRunner):
 
     cmd = StringParameter(mandatory=True)
+    start = IntegerParameter(default=1)
+    end = IntegerParameter(default=1)
     timeout = IntegerParameter(default=0, min=0)
 
     def execute(self, arguments, updateCompletion, updateMessage, updateStats, updateLicense):
@@ -282,40 +284,32 @@ class DefaultCommandRunner(CommandRunner):
         | nuke -x -F 13 ma_comp.nk
         | nuke -x -F 14 ma_comp.nk
         | nuke -x -F 15 ma_comp.nk
-
         '''
 
-        cmd = arguments['cmd']
-        timeout = arguments['timeout']
+        cmd = arguments.get('cmd')
+        start = arguments.get('start')
+        end = arguments.get('end')
+        timeout = arguments.get('timeout', None)
 
         updateCompletion(0)
 
-        # If start and end are defnied in arguments, we need to iterate several times
-        if 'start' in arguments.keys() \
-                and 'end' in arguments.keys():
+        completion = 0.0
+        completionIncrement = 1.0 / float((int(end) + 1) - int(start))
 
-            print 'Executing command on a range of frames [%r-%r]' % (arguments['start'], arguments['end'])
-            completion = 0.0
-            completionIncrement = 1.0 / float((int(arguments['end']) + 1) - int(arguments['start']))
+        for frame in range(start, end + 1):
+            self.log.info("==== Frame %d ====" % frame)
 
-            for frame in range(int(arguments['start']), int(arguments['end']) + 1):
-                print "==== Frame %d ====" % frame
+            currCommand = cmd.replace("%%MI_FRAME%%", str(frame))
+            currCommand = currCommand.replace("%%MI_START%%", str(start))
+            currCommand = currCommand.replace("%%MI_END%%", str(end))
 
-                currCommand = cmd.replace("%%MI_FRAME%%", str(frame))
-                currCommand = currCommand.replace("%%MI_START%%", str(arguments['start']))
-                currCommand = currCommand.replace("%%MI_END%%", str(arguments['end']))
+            self.log.info("Command: %s" % currCommand)
+            subprocess.check_call(currCommand, close_fds=True, shell=True)
 
-                print "Command: %s" % currCommand
-                subprocess.check_call(currCommand, close_fds=True, shell=True)
+            completion += completionIncrement
+            updateCompletion(completion)
+            self.log.info("Updating completion %f " % completion)
 
-                completion += completionIncrement
-                updateCompletion(completion)
-                print "Updating completion %f " % completion
-
-        # Else it is a single block command, no need to iterate
-        else:
-            print "Command: %s" % cmd
-            subprocess.check_call(cmd, close_fds=True, shell=True)
         updateCompletion(1)
 
 
@@ -357,16 +351,20 @@ class DefaultTaskDecomposer(TaskDecomposer):
     FRAMESLIST_LABEL = "framesList"
 
     def __init__(self, task):
+        """
+
+        :type task: object
+        """
         super(DefaultTaskDecomposer, self).__init__(task)
 
         if task.arguments is None:
             # Create an empty command anyway --> probably unecessary
             print "WARNING: No arguments given for the task \"%s\", it is necessary to do this ? (we are creating an empty command anyway..." % task.name
-            self.task.addCommand(task.name+"_1_1", {})
+            self.task.addCommand(task.name + "_1_1", {})
 
-        elif all(key in task.arguments for key in (self.START_LABEL, self.END_LABEL, self.PACKETSIZE_LABEL)) \
+        elif all(key in task.arguments for key in (self.START_LABEL, self.END_LABEL)) \
                 or self.FRAMESLIST_LABEL in task.arguments:
-            # if stanadrd attributes exist in arguments, use the PuliHelper to decompose accordingly
+            # if standard attributes exist in arguments, use the PuliHelper to decompose accordingly
 
             start = task.arguments.get(self.START_LABEL, 1)
             end = task.arguments.get(self.END_LABEL, 1)
@@ -374,6 +372,7 @@ class DefaultTaskDecomposer(TaskDecomposer):
             framesList = task.arguments.get(self.FRAMESLIST_LABEL, "")
 
             self.decompose(start=start, end=end, packetSize=packetSize, callback=self, framesList=framesList)
+
         else:
             # If arguments given but no standard behaviour, simply transmit task arguments to single command
             self.task.addCommand(task.name, task.arguments)

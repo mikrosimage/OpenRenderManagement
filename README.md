@@ -34,9 +34,10 @@ It holds the following subsystems:
    * python-psutil
 
 
-#### Additionnal tools
+#### Puli tools
 
-Several tools can be installed on a separate computer to operate the system:
+Several tools come along with OpenRenderManagement that have specific requirements.
+They can be installed on a separate computer to operate the system:
    * puliquery: command line request tools
    * puliexec: simplify submission of scripts and command line
    * pulistats: set of script to trace graphs based on server statistics
@@ -154,6 +155,7 @@ None
 
 
 #KNOWN ISSUES
+
 
 The model needs a bit of a refactoring. It has been designed several years ago to address some use-cases that are no longer relevant.
 It can be more simple and straightforward than it is now.

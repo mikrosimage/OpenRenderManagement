@@ -260,7 +260,7 @@ class Dispatcher(MainLoopApplication):
             singletonstats.theStats.cycleDate = loopStartTime
 
         log.info("-----------------------------------------------------")
-        log.info(" Start dispatcher process cycle.")
+        log.info(" Start dispatcher process cycle (old version).")
 
         try:
             self.threadPool.poll()
@@ -343,35 +343,29 @@ class Dispatcher(MainLoopApplication):
     def computeAssignments(self):
         '''Computes and returns a list of (rendernode, command) assignments.'''
 
-        from .model.node import NoRenderNodeAvailable, NoLicenseAvailableForTask
-        log = logging.getLogger('assign')
+        LOGGER = logging.getLogger('main')
 
-        log.info("-----------------------------------------------------")
+        from .model.node import NoRenderNodeAvailable, NoLicenseAvailableForTask
         # if no rendernodes available, return
         if not any(rn.isAvailable() for rn in self.dispatchTree.renderNodes.values()):
-            log.info("    No rendernodes available on farm")
-            # log.info("    ---")
             return []
 
-        displayInfo = {"pools": []}
         assignments = []
 
         # first create a set of entrypoints that are not done nor cancelled nor blocked nor paused and that have at least one command ready
-        # entryPoints = set([poolShare.node for poolShare in self.dispatchTree.poolShares.values() if poolShare.node.status not in [NODE_BLOCKED, NODE_DONE, NODE_CANCELED, NODE_PAUSED] and poolShare.node.readyCommandCount > 0 and poolShare.node.name != 'graphs'])
-        entryPoints = set([poolShare.node for poolShare in self.dispatchTree.poolShares.values() if poolShare.node.status not in [NODE_BLOCKED, NODE_DONE, NODE_CANCELED, NODE_PAUSED] and poolShare.node.name != 'graphs'])
-        log.info("    Assignment: considering %d jobs" % len(entryPoints))
+        # FIXME: hack to avoid getting the 'graphs' poolShare node in entryPoints, need to avoid it more nicely...
+        entryPoints = set([poolShare.node for poolShare in self.dispatchTree.poolShares.values() if poolShare.node.status not in [NODE_BLOCKED, NODE_DONE, NODE_CANCELED, NODE_PAUSED] and poolShare.node.readyCommandCount > 0 and poolShare.node.name != 'graphs'])
 
         # don't proceed to the calculation if no rns availables in the requested pools
         rnsBool = False
         for pool, nodesiterator in groupby(entryPoints, lambda x: x.poolShares.values()[0].pool):
-            displayInfo["pools"].append(pool.name)
             rnsAvailables = set([rn for rn in pool.renderNodes if rn.status not in [RN_UNKNOWN, RN_PAUSED, RN_WORKING]])
             if len(rnsAvailables):
                 rnsBool = True
+
         if not rnsBool:
-            log.info("    No RN available for concerned pools: %s" % displayInfo['pools'])
-            # log.info("    ---")
             return []
+
 
         # Log time updating max rn
         prevTimer = time.time()
@@ -380,33 +374,26 @@ class Dispatcher(MainLoopApplication):
         entryPoints = sorted(entryPoints, key=lambda node: node.poolShares.values()[0].pool)
 
         # update the value of the maxrn for the poolshares (parallel dispatching)
-        displayInfo["pools"] = {}
         for pool, nodesiterator in groupby(entryPoints, lambda x: x.poolShares.values()[0].pool):
-            # we are treating every active node of the pool
 
+            # we are treating every active node of the pool
             nodesList = [node for node in nodesiterator]
 
             # the new maxRN value is calculated based on the number of active jobs of the pool, and the number of online rendernodes of the pool
             rnsNotOffline = set([rn for rn in pool.renderNodes if rn.status not in [RN_UNKNOWN, RN_PAUSED]])
             rnsSize = len(rnsNotOffline)
-            # log.debug("   - nb rns awake:%r" % (rnsSize))
-
-            # displayInfo = {"pools": {pool.name: {'nodes': [node.name for node in nodesList], 'numAvailableRN': rnsSize}}}
-            displayInfo["pools"][pool.name] = {'nodes': [node.name for node in nodesList], 'numAvailableRN': rnsSize}
+            # LOGGER.debug("@   - nb rns awake:%r" % (rnsSize) )
 
             # if we have a userdefined maxRN for some nodes, remove them from the list and substracts their maxRN from the pool's size
             l = nodesList[:]  # duplicate the list to be safe when removing elements
-            displayInfo["pools"][pool.name]['nodeUserMaxRN'] = []
             for node in l:
-                # log.debug("   - checking userDefMaxRN: %s -> %r maxRN=%d" % (node.name, node.poolShares.values()[0].userDefinedMaxRN, node.poolShares.values()[0].maxRN))
+                # LOGGER.debug("@   - checking userDefMaxRN: %s -> %r maxRN=%d" % (node.name, node.poolShares.values()[0].userDefinedMaxRN, node.poolShares.values()[0].maxRN ) )
                 if node.poolShares.values()[0].userDefinedMaxRN and node.poolShares.values()[0].maxRN not in [-1, 0]:
-                    displayInfo["pools"][pool.name]['nodeUserMaxRN'].append((node.name, node.poolShares.values()[0].maxRN))
-
-                    # log.debug("     removing: %s -> maxRN=%d" % (node.name, node.poolShares.values()[0].maxRN))
+                    # LOGGER.debug("@     removing: %s -> maxRN=%d" % (node.name, node.poolShares.values()[0].maxRN ) )
                     nodesList.remove(node)
                     rnsSize -= node.poolShares.values()[0].maxRN
 
-            # log.debug("- nb rns awake after maxRN:%d" % (rnsSize))
+            # LOGGER.debug("@   - nb rns awake after maxRN:%d" % (rnsSize) )
 
             if len(nodesList) == 0:
                 continue
@@ -433,52 +420,30 @@ class Dispatcher(MainLoopApplication):
             for dk, nodeIterator in groupby(nodesList, lambda x: x.dispatchKey):
 
                 nodes = [node for node in nodeIterator]
-                dkPos = dkPositiveList[dkList.index(dk)]
+                dkPos = dkPositiveList[ dkList.index(dk) ]
 
                 if dkSum > 0:
-                    updatedmaxRN = int(round(rnsSize * (dkPos / float(dkSum))))
+                    updatedmaxRN = int( round( rnsSize * (dkPos / float(dkSum) )))
                 else:
-                    updatedmaxRN = int(round(rnsSize / float(nbJobs)))
+                    updatedmaxRN = int(round( rnsSize / float(nbJobs) ))
 
                 for node in nodes:
-                    node.optimalMaxRN = updatedmaxRN
+                    node.poolShares.values()[0].maxRN = updatedmaxRN
+                    nbRNAssigned += updatedmaxRN
 
-                    if updatedmaxRN <= node.readyCommandCount:
-                        # If enough commands ready (i.e enough commands also)
-                        node.poolShares.values()[0].maxRN = updatedmaxRN
-                        nbRNAssigned += updatedmaxRN
-                    else:
-                        # Limit maxRN when no more ready commands
-                        updatedMaxRN = min(updatedmaxRN, node.readyCommandCount + node.poolShares.values()[0].allocatedRN)
-                        node.poolShares.values()[0].maxRN = updatedMaxRN
-                        nbRNAssigned += updatedMaxRN
-
-            # Add remaining RNs to most important jobs BUT avoiding to increment maxRN if no more commands to assign
+            # Add remaining RNs to most important jobs
             unassignedRN = rnsSize - nbRNAssigned
-            # log.debug("===== remaining RNs --> %d " % (unassignedRN))
-            numNodesFull = 0
-            while 0 < unassignedRN and numNodesFull < len(nodesList):
-                numNodesFull = 0
+            while unassignedRN > 0:
                 for node in nodesList:
-                    if 0 < unassignedRN:
-                        if updatedmaxRN < node.readyCommandCount:
-                            node.poolShares.values()[0].maxRN += 1
-                            unassignedRN -= 1
-                        else:
-                            numNodesFull += 1
+                    if unassignedRN > 0:
+                        node.poolShares.values()[0].maxRN += 1
+                        unassignedRN -= 1
                     else:
                         break
 
-        # log.info(displayInfo)
-
-        if singletonconfig.get('CORE', 'GET_STATS'):
+        if singletonconfig.get('CORE','GET_STATS'):
             singletonstats.theStats.assignmentTimers['update_max_rn'] = time.time() - prevTimer
-        # log.info("%8.2f ms --> updating max RN values", (time.time() - prevTimer) * 1000)
-
-        # Log time dispatching RNs
-        prevTimer = time.time()
-        # Filter nodes to keep those with node ready commands only
-        entryPoints = filter(lambda node: node.readyCommandCount > 0, entryPoints)
+        LOGGER.info( "%8.2f ms --> .... updating max RN values", (time.time() - prevTimer)*1000 )
 
         # now, we are treating every nodes
         # sort by id (fifo)
@@ -486,28 +451,20 @@ class Dispatcher(MainLoopApplication):
         # then sort by dispatchKey (priority)
         entryPoints = sorted(entryPoints, key=lambda node: node.dispatchKey, reverse=True)
 
-        # Exit loop here if no nodes need new assignment
-        if len(entryPoints) == 0:
-            log.info("    No commands ready in considered nodes")
-            # log.info("    ---")
-            return []
-
         # Put nodes with a userDefinedMaxRN first
-        userDefEntryPoints = ifilter(lambda node: node.poolShares.values()[0].userDefinedMaxRN, entryPoints)
-        standardEntryPoints = ifilter(lambda node: not node.poolShares.values()[0].userDefinedMaxRN, entryPoints)
-        scoredEntryPoints = chain(userDefEntryPoints, standardEntryPoints)
+        userDefEntryPoints = ifilter( lambda node: node.poolShares.values()[0].userDefinedMaxRN, entryPoints )
+        standardEntryPoints = ifilter( lambda node: not node.poolShares.values()[0].userDefinedMaxRN, entryPoints )
+        scoredEntryPoints = chain( userDefEntryPoints, standardEntryPoints)
 
         # Log time dispatching RNs
         prevTimer = time.time()
 
-        # # Iterate over each entryPoint to get an assignment
+        # Iterate over each entryPoint to get an assignment
         for entryPoint in scoredEntryPoints:
             if any([poolShare.hasRenderNodesAvailable() for poolShare in entryPoint.poolShares.values()]):
                 try:
-                    tmp = []
+
                     for (rn, com) in entryPoint.dispatchIterator(lambda: self.queue.qsize() > 0):
-                        # log.info("  - found assignment: %s - %s" % (rn.name, com.description))
-                        tmp.append(rn.name)
                         assignments.append((rn, com))
                         # increment the allocatedRN for the poolshare
                         poolShare.allocatedRN += 1
@@ -517,18 +474,16 @@ class Dispatcher(MainLoopApplication):
                 except NoRenderNodeAvailable:
                     pass
                 except NoLicenseAvailableForTask:
-                    log.info("Missing license for node \"%s\" (other commands can start anyway)." % entryPoint.name)
+                    LOGGER.info("Missing license for node \"%s\" (other commands can start anyway)." % entryPoint.name)
                     pass
-
-                log.info("    - Assign %3d RN from pool '%s' --> %s" % (len(tmp), poolShare.pool.name, entryPoint.name))
 
         assignmentDict = collections.defaultdict(list)
         for (rn, com) in assignments:
             assignmentDict[rn].append(com)
 
-        if singletonconfig.get('CORE', 'GET_STATS'):
+        if singletonconfig.get('CORE','GET_STATS'):
             singletonstats.theStats.assignmentTimers['dispatch_command'] = time.time() - prevTimer
-        # log.info("%8.2f ms --> .... dispatching commands", (time.time() - prevTimer) * 1000)
+        LOGGER.info( "%8.2f ms --> .... dispatching commands", (time.time() - prevTimer)*1000  )
 
         #
         # Check replacements
@@ -536,12 +491,15 @@ class Dispatcher(MainLoopApplication):
         # - faire une passe pour les jobs n'ayant pas leur part de gateau
         #     - identifier dans leur pool les jobs killable
         #     - pour chaque ressource, si match : on jette le job en cours ET on desactive son attribut killable
+
+
         #
         # Backfill
         #
         # TODO refaire une passe pour les jobs ayant un attribut "killable" et au moins une pool additionnelle
 
         return assignmentDict.items()
+
 
     def updateRenderNodes(self):
         for rendernode in self.dispatchTree.renderNodes.values():
@@ -574,8 +532,8 @@ class Dispatcher(MainLoopApplication):
                 arguments.update(command.arguments)
 
                 log = logging.getLogger('assign')
-                log.debug("runnerPackages: %s" % command.runnerPackages)
-                log.debug("watcherPackages: %s" % command.watcherPackages)
+                # log.debug("runnerPackages: %s" % command.runnerPackages)
+                # log.debug("watcherPackages: %s" % command.watcherPackages)
 
                 commandDict = {
                     "id": command.id,
@@ -585,8 +543,8 @@ class Dispatcher(MainLoopApplication):
                     "taskName": command.task.name,
                     "relativePathToLogDir": "%d" % command.task.id,
                     "environment": environment,
-                    "runnerPackages": command.runnerPackages,
-                    "watcherPackages": command.watcherPackages
+                    # "runnerPackages": command.runnerPackages,
+                    # "watcherPackages": command.watcherPackages
                 }
                 body = json.dumps(commandDict)
                 headers["Content-Length"] = len(body)

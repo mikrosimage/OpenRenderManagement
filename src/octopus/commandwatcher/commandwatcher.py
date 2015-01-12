@@ -224,6 +224,7 @@ class CommandWatcher(object):
             self.job.startDate = self.startDate  # timestamp of the start date
             self.job.associatedWatcher = self  # current command watcher
             self.job.runnerPackages = runnerPackages  # list of packages that might be used by the runner class
+            logger.info(" - runnerPackages: %s" % self.job.runnerPackages)
 
             #
             # Init runner execution

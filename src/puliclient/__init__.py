@@ -242,6 +242,7 @@ class Task(object):
         :param tags dict: user defined values
         :param timer int: a date (as a timestamp) to wait before assigning \
             commands of the current task
+        :param maxAttempt int: the number of execution each command should be executed before being considered ERROR
         """
 
         self.parent = None
@@ -455,7 +456,7 @@ class TaskGroup(object):
 
         return newTask
 
-    def addNewCallable(self, targetCall, name="", user_args=(), user_kwargs={}, **kwargs):
+    def addNewCallable(self, targetCall, name="", runner="puliclient.CallableRunner", user_args=(), user_kwargs={}, **kwargs):
         """
         | Wraps around TaskGroup  method to add a new Task. It accepts any callable
         | to run on the renderfarm. Additionnal Task arguments can be added as keyword args
@@ -467,7 +468,7 @@ class TaskGroup(object):
         :param user_kwargs: a dict representing keyword arguments to use with the callable
         """
         (taskName, callableArgs) = parseCallable(targetCall, name, user_args, user_kwargs)
-        self.addNewTask(taskName, arguments=callableArgs, runner="puliclient.CallableRunner", **kwargs)
+        self.addNewTask(taskName, arguments=callableArgs, runner=runner, **kwargs)
 
     def addNewTaskGroup(self, *args, **kwargs):
         """
@@ -661,9 +662,9 @@ class Graph(object):
     #     task_specific_kwargs['maxAttempt'] = kwargs.pop('maxAttempt', 1)
     #     self.addNewCallableTaskRAW(targetCall, user_args=args, user_kwargs=kwargs, **task_specific_kwargs)
 
-    def addNewCallable(self, targetCall, name="", user_args=(), user_kwargs={}, **kwargs):
+    def addNewCallable(self, targetCall, name="", runner="puliclient.CallableRunner", user_args=(), user_kwargs={}, **kwargs):
         """
-        | Wraps around TaskGroup  method to add a new Task. It accepts any callable
+        | Wraps around graph method to add a new Task. It accepts any callable
         | to run on the renderfarm. Additionnal Task arguments can be added as keyword args
 
         :param targetCall: callable to be serialized and run on the render farm
@@ -672,7 +673,7 @@ class Graph(object):
         :param user_kwargs: a dict representing keyword arguments to use with the callable
         """
         (taskName, callableArgs) = parseCallable(targetCall, name, user_args, user_kwargs)
-        self.addNewTask(taskName, arguments=callableArgs, runner="puliclient.CallableRunner", **kwargs)
+        self.addNewTask(taskName, arguments=callableArgs, runner=runner, **kwargs)
 
     def addEdges(self, pEdgeList):
         """

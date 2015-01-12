@@ -1,8 +1,14 @@
 from setuptools import setup
+try:
+    # When using rez, "package" module is located outside the src folder.
+    # It is only available for import if rez is used to resolve env.
+    from package import version as puliversion
+except ImportError:
+    puliversion = "__PULIVERSION__"
 
 setup(
     name='OpenRenderManagement',
-    version='1.7.7',
+    version=puliversion,
     description="Open source render farm dispatcher",
     long_description="",
     author='acs',

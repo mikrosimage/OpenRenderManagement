@@ -941,6 +941,10 @@ class PuliDB(object):
                 args = "{}"
             if stats is None:
                 stats = "{}"
+            if runnerPackages is None:
+                runnerPackages = ""
+            if watcherPackages is None:
+                watcherPackages = ""
 
             realCmd = Command(id,
                               description,
@@ -1018,6 +1022,11 @@ class PuliDB(object):
             taskCmds = []
             if args is None:
                 args = '{}'
+            if runnerPackages is None:
+                runnerPackages = ""
+            if watcherPackages is None:
+                watcherPackages = ""
+
             # get the commands associated to this task
             taskCmds = cmdTaskIdList[id]
             realTask = Task(id,

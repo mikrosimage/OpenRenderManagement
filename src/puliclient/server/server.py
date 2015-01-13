@@ -93,14 +93,15 @@ def request(host, port, url, method="get", *args, **kwargs):
         raise RequestTimeoutError
 
     except requests.exceptions.ConnectionError, e:
-        logging.error("Network problem occured: %s" % e.args[0].reason)
+        logging.error("Network problem occured: the host you're trying to reach is probably down (%s)" % baseUrl)
+        # logging.error("Network problem occured: %s" % e.args[0].reason)
         raise RequestError
 
     except requests.exceptions.RequestException, e:
         logging.error("Unhandled request exception: %s" % e)
         raise RequestError
 
-    except RequestError, e:
+    except RequestError:
         raise
 
     except Exception, e:

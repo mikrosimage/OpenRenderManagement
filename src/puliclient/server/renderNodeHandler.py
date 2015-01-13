@@ -34,11 +34,27 @@ class RenderNodeHandler(object):
         return rn
 
     @classmethod
+    def getAllRenderNodes(cls, id):
+        """
+        """
+        result = None
+        url = "rendernodes"
+
+        try:
+            rnList = Server.get(url)
+            for rn in rnList:
+                result.append(cls.createRN(rn))
+        except (RequestTimeoutError, RequestError):
+            logging.error("Impossible to retrieve rendernode with query: %s"
+                          % url)
+        return result
+
+    @classmethod
     def getRenderNode(cls, workerName, workerPort=8000):
-        '''
-        '''
+        """
+        """
         rn = None
-        url = "/rendernodes/%s:%s/" % (workerName, workerPort)
+        url = "rendernodes/%s:%s/" % (workerName, workerPort)
 
         try:
             rnDict = Server.get(url)

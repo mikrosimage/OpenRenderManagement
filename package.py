@@ -31,5 +31,5 @@ def commands():
     alias('pulquery', 'python {root}/src/pulitools/puliquery/pul_query "$@"')
     alias('pul_query', 'python {root}/src/pulitools/puliquery/pul_query "$@"')
 
-    alias('workerd', 'python {root}/src/octopus/workerd.py "$@"')
-#    alias('dispatcherd', 'python {root}/src/octopus/dispatcherd.py "$@"')
+    alias('workerd', 'python {root}/src/octopus/workerd.py')
+#    alias('dispatcherd', 'python {root}/src/octopus/dispatcherd.py')

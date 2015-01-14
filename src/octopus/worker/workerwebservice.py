@@ -144,8 +144,6 @@ class CommandsResource(BaseResource):
         dct['commandId'] = int(dct['id'])
         del dct['id']
 
-        LOGGER.info("received data: %s" % dct)
-
         try:
             # self.framework.addOrder(self.framework.application.addCommandApply, **dct)
             ret = self.framework.application.addCommandApply(None,

@@ -9,7 +9,6 @@ Requires=autofs.service
 [Service]
 User=render
 Type=forking
-EnvironmentFile=/etc/sysconfig/puliworker
 Environment=DISPLAY=:0
 
 #

@@ -16,11 +16,12 @@ Environment=DISPLAY=:0
 #
 PermissionsStartOnly=true
 ExecStartPre=/bin/chown -R render /var/run/puli/
+ExecStartPre=/bin/chmod -R 777 /var/log/puli/
 
 #
 # Main
 #
-ExecStart=/s/apps/packages/bin/rez env puli -- workerd -p %i -s pulitest -P /var/run/puli/worker%i.pid -K /tmp/render/killfile%i -d
+ExecStart=/s/apps/packages/bin/rez env puli -- workerd -p %i -s puliserver -P /var/run/puli/worker%i.pid -K /tmp/render/killfile%i -d
 PIDFile=/var/run/puli/worker%i.pid
 
 LimitNOFILE=32000

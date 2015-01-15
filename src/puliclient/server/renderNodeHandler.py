@@ -10,7 +10,7 @@ __copyright__ = "Copyright 2014, Mikros Image"
 import logging
 try:
     import simplejson as json
-except Exception:
+except ImportError:
     import json
 
 from puliclient.server.server import Server
@@ -21,8 +21,8 @@ from puliclient.model.renderNode import RenderNode
 
 
 class RenderNodeHandler(object):
-    '''
-    '''
+    """
+    """
 
     @classmethod
     def createRN(cls, rnDict):

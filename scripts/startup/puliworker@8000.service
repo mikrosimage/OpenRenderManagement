@@ -2,7 +2,7 @@
 Description=Puliworker
 After=network.service autofs.service xdm.service graphical.target
 
-# ERROR, sur devpc18, il me jette sur xdm.service
+# ERROR, sur la fedora, il me jette sur xdm.service
 # Requires=autofs.service xdm.service
 Requires=autofs.service
 
@@ -16,7 +16,6 @@ Environment=DISPLAY=:0
 #
 PermissionsStartOnly=true
 ExecStartPre=/bin/chown -R render /var/run/puli/
-ExecStartPre=/bin/chmod -R 777 /var/log/puli/
 
 #
 # Main
@@ -30,8 +29,8 @@ RestartSec=5
 
 #
 # Grant X access to render
-#
-ExecStartPost=/bin/bash -c "XAUTHORITY=`ps wwaux | grep '/X.*-auth' | sed -e 's/^.*-auth *//' -e 's/ .*$//' | head -n 1` xhost si:localuser:render"
+# ERROR: ne fonctionne pas sur les render apparement
+# ExecStartPost=/bin/bash -c "XAUTHORITY=`ps wwaux | grep '/X.*-auth' | sed -e 's/^.*-auth *//' -e 's/ .*$//' | head -n 1` xhost si:localuser:render"
 
 [Install]
 WantedBy=multi-user.target graphical.target

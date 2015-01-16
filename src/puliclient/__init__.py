@@ -897,6 +897,8 @@ class Graph(object):
                     command["execid"] = commandId
                     command["taskid"] = taskId
                     command["runner"] = node["runner"]
+                    command["runnerPackages"] = node["runnerPackages"]
+                    command["watcherPackages"] = node["watcherPackages"]
                     command["validationExpression"] = node["validationExpression"]
                     command["tags"] = node["tags"]
                     command["environment"] = node["environment"]
@@ -1010,8 +1012,10 @@ class Graph(object):
         commandId = pCommand["execid"]
         # taskId = pCommand["taskid"]
         runner = pCommand["runner"]
+        runnerPackages = pCommand.get("runnerPackages", "undefined")
         validationExpression = pCommand["validationExpression"]
 
+        print(pCommand)
         #
         # SECURE WAY: start a subprocess
         #
@@ -1069,6 +1073,7 @@ class Graph(object):
                                     "0",
                                     commandId,
                                     runner,
+                                    runnerPackages,
                                     validationExpression,
                                     pCommand["arguments"])
             return result.finalState

@@ -37,9 +37,9 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
 
     :param pidfile: full path to the comand pid file (usally /var/run/puli/cw<command_id>.pid)
     :param logfile: file object to store process log content
-    :param args:
-    :param watcherPackages:
-    :param env:
+    :param args: arguments passed to the CommandWatcher script
+    :param watcherPackages: A list of packages that will be resolved when creating Rez context
+    :param env: a dict holding key/value pairs that will be merged into the current env and used in subprocess
 
     :return: a CommandWatcherProcess object holding command watcher process handle
     '''
@@ -92,9 +92,18 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
 
 
 def spawnCommandWatcher(pidfile, logfile, args, env):
-    '''
-    logfile is a file object
-    '''
+    """
+    | Create a subprocess with "CommandWatcher" script. It will receive the commands arguments and everything
+    | needed to execute the command process (logfile, runner name...)
+    | The subprocess received the current environment merged with given env dict.
+
+    :param pidfile: full path to the comand pid file (usally /var/run/puli/cw<command_id>.pid)
+    :param logfile: a file handler to wich log will be redirected
+    :param args: arguments passed to the CommandWatcher script
+    :param env: a dict holding key/value pairs that will be merged into the current env and used in subprocess
+
+    :return: A CommandWatcherProcess class holding relevants infos of the new process
+    """
     devnull = file(os.devnull, "r")
 
     # HACK prepend PYTHONPATH with mikros base path for old process

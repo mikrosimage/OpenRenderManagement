@@ -862,11 +862,10 @@ class Worker(MainLoopApplication):
             str(command.id),
             command.runner,
             command.validationExpression,
-            runnerPackages
+            runnerPackages,
+            json.dumps(command.arguments)
         ]
 
-        # Properly serializing arguments using json
-        args.append(json.dumps(command.arguments))
         try:
             # Starts a new process (via CommandWatcher script) with current command info and environment.
             # The command environment is derived from the current os.env

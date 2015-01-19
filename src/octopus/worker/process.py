@@ -44,7 +44,6 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
     :return: a CommandWatcherProcess object holding command watcher process handle
     '''
 
-    LOGGER.info("Spawning rez managed command: watcherPackages=%s" % (watcherPackages))
     try:
         from rez.resources import clear_caches
         from rez.resolved_context import ResolvedContext

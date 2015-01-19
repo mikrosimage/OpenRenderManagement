@@ -1,5 +1,5 @@
 name = 'puli'
-version = '1.7.10'
+version = '1test'
 
 # If your tool depends on some other package(s)
 requires = [

@@ -216,7 +216,6 @@ class CommandWatcher(object):
         # instanciation of the jobtype script
         try:
             self.job = runnerClass()
-
             #
             # Init several runner members
             #

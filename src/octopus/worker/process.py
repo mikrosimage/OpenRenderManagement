@@ -1,6 +1,6 @@
-'''
+"""
 Used by Worker to spawn a new process.
-'''
+"""
 
 __author__ = "Olivier Derpierre"
 __copyright__ = "Copyright 2009, Mikros Image"
@@ -32,7 +32,7 @@ def setlimits():
 
 
 def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
-    '''
+    """
     | Uses rez module to start a process with a proper rez env.
 
     :param pidfile: full path to the comand pid file (usally /var/run/puli/cw<command_id>.pid)
@@ -42,7 +42,7 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
     :param env:
 
     :return: a CommandWatcherProcess object holding command watcher process handle
-    '''
+    """
     try:
         from rez.resources import clear_caches
         from rez.resolved_context import ResolvedContext
@@ -69,8 +69,7 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
 
         # normalize environment
         envN = os.environ.copy()
-        for key in env:
-            envN[str(key)] = str(env[key])
+        envN.update(env)
 
         proc = context.execute_shell(
             command=args,
@@ -92,22 +91,14 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
 
 
 def spawnCommandWatcher(pidfile, logfile, args, env):
-    '''
+    """
     logfile is a file object
-    '''
+    """
     devnull = file(os.devnull, "r")
-
-    # HACK prepend PYTHONPATH with mikros base path for old process
-    # sys.path.insert(0, "/s/apps/lin/puli")
-    # print "DBG pytpath: %r" % os.getenv("PYTHONPATH")
-    # print "DBG syspath: %r" % sys.path
-    # tmp = "/s/apps/lin/puli:%s" % os.getenv("PYTHONPATH")
-    # os.putenv("PYTHONPATH", "/s/apps/lin/puli")
 
     # normalize environment
     envN = os.environ.copy()
-    for key in env:
-        envN[str(key)] = str(env[key])
+    envN.update(env)
 
     LOGGER.info("Starting subprocess, log: %r, args: %r" % (logfile.name, args))
     try:
@@ -134,7 +125,7 @@ class CommandWatcherProcess(object):
         self.pid = pid
 
     def kill(self):
-        '''Kill the process.'''
+        """Kill the process."""
         if os.name != 'nt':
             from signal import SIGTERM
             from errno import ESRCH

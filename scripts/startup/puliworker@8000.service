@@ -1,9 +1,6 @@
 [Unit]
 Description=Puliworker
-After=network.service autofs.service xdm.service graphical.target
-
-# ERROR, sur la fedora, il me jette sur xdm.service
-# Requires=autofs.service xdm.service
+After=network.service autofs.service
 Requires=autofs.service
 
 [Service]
@@ -25,13 +22,7 @@ PIDFile=/var/run/puli/worker%i.pid
 
 LimitNOFILE=32000
 Restart=always
-RestartSec=5
-
-#
-# Grant X access to render
-# ERROR: ne fonctionne pas sur les render apparement
-# ExecStartPost=/bin/bash -c "XAUTHORITY=`ps wwaux | grep '/X.*-auth' | sed -e 's/^.*-auth *//' -e 's/ .*$//' | head -n 1` xhost si:localuser:render"
+RestartSec=3
 
 [Install]
 WantedBy=multi-user.target graphical.target
-

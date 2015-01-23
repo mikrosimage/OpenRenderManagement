@@ -88,8 +88,6 @@ class WebServiceDispatcher(Application):
             (r'^/pools/([\w.-]+)/?$', pools.PoolResource, dict(framework=framework)),
             (r'^/pools/([\w.-]+)/rendernodes/?$', pools.PoolRenderNodesResource, dict(framework=framework)),
 
-            (r'^/system/?$', SystemResource, dict(framework=framework)),
-            (r'^/mobile/?$', MobileResource, dict(framework=framework)),
 
             # Several WS to get or edit multiple data in a single request.
             # It uses the query mecanism defined in octopus.dispatcher.model.nodequery module
@@ -101,10 +99,16 @@ class WebServiceDispatcher(Application):
             (r'^/resume$', edit.ResumeResource, dict(framework=framework)),
 
             (r'^/query/rn$', query.RenderNodeQueryResource, dict(framework=framework)),
+
             (r'^/edit/rn$', edit.RenderNodeEditResource, dict(framework=framework)),
 
+            (r'^/query2/rn$', query.RenderNodeQuery2Resource, dict(framework=framework)),
+            (r'^/query/job$', query.QueryResource, dict(framework=framework)),
             (r'^/query/command$', commands.CommandQueryResource, dict(framework=framework)),
 
+            # System maintenance WS
+            (r'^/system/?$', SystemResource, dict(framework=framework)),
+            (r'^/mobile/?$', MobileResource, dict(framework=framework)),
             (r'^/reconfig$', ReconfigResource, dict(framework=framework)),
             (r'^/restart$', RestartResource, dict(framework=framework)),
             (r'^/shutdown$', ShutdownResource, dict(framework=framework)),

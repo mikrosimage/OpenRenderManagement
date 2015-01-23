@@ -7,6 +7,7 @@ __author__ = "Jerome Samson"
 __copyright__ = "Copyright 2015, Mikros Image"
 
 import logging
+from datetime import datetime
 
 try:
     import simplejson as json
@@ -24,12 +25,14 @@ class RenderNode(object, JsonModel):
     #
     # Private
     #
-    def __init__(self, name):
+    def __init__(self, rnDict):
 
         # Sys infos
-        self.name = name
+        self.id = 0
+        self.name = ""
         self.coresNumber = 0
         self.ramSize = ""
+        self.speed = 0
 
         # Dynamic sys infos
         self.systemFreeRam = 0
@@ -37,11 +40,11 @@ class RenderNode(object, JsonModel):
 
         # Worker state
         self.puliversion = ""
-        self.commands = {}
+        # self.commands = {}
         self.status = 0
         self.host = ""
         self.port = 0
-        self.pools = []
+        # self.pools = []
         self.caracteristics = {}
         self.performance = 0.0
         self.excluded = False
@@ -51,6 +54,7 @@ class RenderNode(object, JsonModel):
         self.registerDate = 0
         self.lastAliveTime = 0
 
+        self._createFromDict(rnDict)
         # workerHistory (list state changes and user actions)
         # commandHistory
 
@@ -59,6 +63,23 @@ class RenderNode(object, JsonModel):
 
     def __str__(self):
         return "%s" % self.name
+
+    def _createFromDict(self, rnDict):
+        """
+        :param rnDict:
+        :return boolean: Indicating success
+        """
+        for key, val in rnDict.iteritems():
+            if hasattr(self, key):
+                setattr(self, key, val)
+
+            # Specific transformation
+            # self.speed = rnDict.get("createDate")
+
+            # self.createDate = datetime.fromtimestamp(rnDict.get("createDate"))
+            # self.registerDate = datetime.fromtimestamp(rnDict.get("registerDate"))
+            # self.lastAliveTime = datetime.fromtimestamp(rnDict.get("lastAliveTime"))
+        return True
 
     def _refresh(self):
         url = "/rendernodes/%s:%s/" % (self.host, self.port)

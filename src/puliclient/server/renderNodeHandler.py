@@ -34,19 +34,19 @@ class RenderNodeHandler(object):
         return rn
 
     @classmethod
-    def getAllRenderNodes(cls, id):
+    def getAllRenderNodes(cls):
         """
         """
-        result = None
+        result = []
         url = "rendernodes"
 
         try:
-            rnList = Server.get(url)
+            response = Server.get(url)
+            rnList = response.get("rendernodes", None)
             for rn in rnList:
-                result.append(cls.createRN(rn))
+                result.append(RenderNode(rn))
         except (RequestTimeoutError, RequestError):
-            logging.error("Impossible to retrieve rendernode with query: %s"
-                          % url)
+            logging.error("Impossible to retrieve rendernode with query: %s" % url)
         return result
 
     @classmethod
@@ -60,6 +60,39 @@ class RenderNodeHandler(object):
             rnDict = Server.get(url)
             rn = cls.createRN(rnDict)
         except (RequestTimeoutError, RequestError):
-            logging.error("Impossible to retrieve rendernode with query: %s"
-                          % url)
+            logging.error("Impossible to retrieve rendernode with query: %s" % url)
         return rn
+
+    @classmethod
+    def getRenderNodes(cls, queryDict):
+        result = []
+        response = {}
+        url = "query2/rn"
+
+        try:
+            response = Server.post(url, data=json.dumps(queryDict))
+            for rn in response.get('items', []):
+                result.append(RenderNode(rn))
+        except (RequestTimeoutError, RequestError):
+            logging.error("Impossible to retrieve rendernode with query: %s" % url)
+
+        return result, response.get('summary')
+
+    @classmethod
+    def getRenderNodesById(cls, idList):
+        raise NotImplementedError
+    @classmethod
+    def getRenderNodesByPool(cls, poolList):
+        raise NotImplementedError
+    @classmethod
+    def getRenderNodesByStatus(cls, statusList):
+        raise NotImplementedError
+    @classmethod
+    def getRenderNodesByName(cls, nameList):
+        raise NotImplementedError
+    @classmethod
+    def getRenderNodesByHost(cls, hostnameList):
+        raise NotImplementedError
+    @classmethod
+    def getRenderNodesByVersion(cls, versionList):
+        raise NotImplementedError

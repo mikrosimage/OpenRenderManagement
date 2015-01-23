@@ -21,6 +21,39 @@ class QueryError(Exception):
 
 class IQueryNode:
 
+    def matchKeyValue(self):
+        raise NotImplementedError
+
+    def matchDatetime(self):
+        raise NotImplementedError
+
+    def matchString(self):
+        raise NotImplementedError
+
+    def matchName(self, elem):
+        regex = '|'.join(self.currFilter)
+        return re.match(regex, elem.name)
+
+    def matchId(self, elem):
+        return True if elem.id in self.currFilter else False
+
+    def matchFloat(self):
+        raise NotImplementedError
+
+    def matchNodes(self, filters, nodes):
+
+        if 'id' in filters:
+            self.currFilter = [int(id) for id in filters['id']]
+            nodes = filter(self.matchId, nodes)
+            logger.info("-- Filtering on id list %s, nb remaining nodes: %d", self.currFilter, len(nodes))
+
+        if 'name' in filters:
+            self.currFilter = filters['name']
+            nodes = filter(self.matchName, nodes)
+            logger.info("-- Filtering on id list %s, nb remaining nodes: %d", self.currFilter, len(nodes))
+
+        return nodes
+
     def filterNodes(self, pFilterArgs, pNodes):
         """
         Returns a reduced list of nodes according to the given filter arguments (pFilterArgs)

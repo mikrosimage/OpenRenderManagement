@@ -24,21 +24,7 @@ class QueueHandler(object):
     '''
     '''
 
-    @classmethod
-    def createJob(cls, jobDict):
 
-        jobId = jobDict.get("id")
-        if jobId:
-            job = Job(jobId)
-        else:
-            logging.error("Invalid data: Job ID could not be retrieved")
-            raise RequestError
-
-        for key, val in jobDict.iteritems():
-            if hasattr(job, key):
-                setattr(job, key, val)
-
-        return job
 
     @classmethod
     def getJob(cls, id):
@@ -49,9 +35,25 @@ class QueueHandler(object):
             jobDict = Server.get(url)
             job = cls.createJob(jobDict)
         except (RequestTimeoutError, RequestError):
-            logging.error("Impossible to retrieve rendernode with query: %s"
-                          % url)
+            logging.error("Impossible to retrieve rendernode with query: %s" % url)
         return job
+
+    @classmethod
+    def getTest(cls):
+        result = []
+        url = "query/job?id=2"
+
+        try:
+            response = Server.post(url)
+            jobs = response.get("items")
+
+            for job in jobs:
+                # print job
+                result.append(Job(job))
+        except (RequestTimeoutError, RequestError):
+            logging.error("Impossible to retrieve jobs with query: %s" % url)
+
+        return result, response.get("summary")
 
     @classmethod
     def getJobList(cls, idList):

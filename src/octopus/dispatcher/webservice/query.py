@@ -53,17 +53,17 @@ try:
     import simplejson as json
 except ImportError:
     import json
+
 import logging
 import time
-from datetime import datetime
+import types
+import re
 
 from tornado.web import HTTPError
 
-from octopus.dispatcher.model import FolderNode
 from octopus.dispatcher.model.nodequery import IQueryNode
 
 from octopus.core.communication.http import Http404, Http400, Http500, HttpConflict
-from octopus.core.framework import queue
 from octopus.dispatcher.webservice import DispatcherBaseResource
 
 __all__ = []
@@ -221,6 +221,120 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
             raise HTTPError(500, "Internal error")
 
 
+
+    def createJobRepr(self, pNode):
+        """
+        Create a json representation for a given node hierarchy.
+        param: node to explore
+        return: puliclient.model.job object (which is serializable)
+        """
+        from puliclient.model.job import Job
+        from puliclient.model.task import Task
+        from octopus.dispatcher.model import Task as DispatcherTask
+
+        newJob = Job(pNode.to_json())
+        # import pudb;pu.db
+        if hasattr(pNode, 'children'):
+            for node in pNode.children:
+                print self.createJobRepr(node).to_json()
+                newJob.children.append(self.createJobRepr(node))
+
+        if hasattr(pNode, 'task') and isinstance(pNode.task, DispatcherTask):
+            # import pudb;pu.db
+            newJob.task = Task(pNode.task.to_json())
+
+        return newJob
+
+        # currTask = {}
+        # for currArg in pAttributes:
+        #     #
+        #     # Get value of additionnally supported field
+        #     #
+        #     try:
+        #         if currArg.startswith("tags:"):
+        #             # Attribute name references a "tags" item
+        #             currArg = unicode(currArg[5:])
+        #             value = unicode(pNode.tags.get(currArg, ''))
+        #             currTask[currArg] = value
+        #         elif currArg == "pool":
+        #             # Attribute 'pool' is a specific item
+        #             currTask[currArg] = pNode.poolShares.keys()[0].name
+        #         elif currArg == "userDefinedMaxRn":
+        #             # Attribute 'userDefiniedMaxRN' is a specific item
+        #             currTask[currArg] = pNode.poolShares.values()[0].userDefinedMaxRN
+        #
+        #         #
+        #         # Get value of standard field
+        #         #
+        #         else:
+        #             # Attribute is a standard attribute of a Node
+        #             currTask[currArg] = getattr(pNode, currArg, 'undefined')
+        #
+        #     except AttributeError:
+        #         currTask[currArg] = 'undefined'
+        #         logger.warning("Impossible to get attribute '%s' on object %r" % (currArg, pNode))
+        #
+        # if pTree and hasattr(pNode, 'children'):
+        #     childTasks = []
+        #     for child in pNode.children:
+        #         childTasks.append(self.createTaskRepr(child, pAttributes, pTree))
+        #
+        #     currTask['items'] = childTasks
+        # return currTask
+
+    def post(self):
+        """
+        """
+        self.logger = logging.getLogger('main.query')
+
+        args = self.request.arguments
+
+        self.logger.debug('args: %s' % args)
+
+        try:
+            start_time = time.time()
+            resultData = []
+            filteredNodes = []
+
+            nodes = self.getDispatchTree().nodes[1].children
+            totalNodes = len(nodes)
+
+            #
+            # --- filtering
+            #
+            filteredNodes = self.matchNodes(args, nodes)
+
+            #
+            # --- Prepare the result json object
+            #
+            # import pudb;pu.db
+            for currNode in filteredNodes:
+                resultData.append(json.loads(self.createJobRepr(currNode).toJson()))
+                # resultData.append(currNode.to_json())
+
+            content = {
+                'summary': {
+                    'count': len(filteredNodes),
+                    'totalInDispatcher': totalNodes,
+                    'requestTime': time.time() - start_time,
+                    'requestDate': time.ctime()
+                },
+                'items': resultData
+            }
+
+            # Create response and callback
+            self.writeCallback(json.dumps(content))
+
+        except KeyError:
+            raise Http404('Error unknown key')
+
+        except HTTPError, e:
+            raise e
+
+        except Exception, e:
+            raise HTTPError(500, "Impossible to retrieve jobs (%s)" % e.message)
+
+
 class RenderNodeQueryResource(DispatcherBaseResource, IQueryNode):
     """
     id: 3,
@@ -352,3 +466,125 @@ class RenderNodeQueryResource(DispatcherBaseResource, IQueryNode):
             logger.warning('Impossible to retrieve query result for rendernodes: %s', self.request.uri)
             raise HTTPError(500, "Internal error")
         pass
+
+##################################
+##################################
+##################################
+##################################
+##################################
+##################################
+##################################
+##################################
+
+class RenderNodeQuery2Resource(DispatcherBaseResource):
+    """
+    """
+
+    def strMatch(self, field, condition):
+        return True if re.match(condition, field) else False
+
+    def intMatch(self, field, value):
+        raise NotImplementedError
+        pass
+
+    def matchField(self, field, fieldName, condition):
+        self.logger.debug("type: %s" % type(field))
+        currType = type(field)
+
+        if currType == types.StringType:
+            return self.strMatch(field, condition)
+        elif currType == types.IntType:
+            return self.intMatch(field, condition)
+
+        # return True if item.__dict__[field] == condition else False
+        # return True if item.__dict__[field] == value else False
+
+    def matchQuery(self, item):
+        """
+        Parses a given query against the item given.
+        Returns True or False
+        :param item:
+        :return:
+        """
+        self.logger.debug(item)
+        if len(self.queryDict) > 1:
+            self.logger.debug("Invalid query dict")
+            return False
+
+        if ('or' in self.queryDict) or ('and' in self.queryDict):
+            self.logger.debug("or/and")
+            # TODO
+
+        else:
+            self.fieldName = self.queryDict.keys()[0]
+            self.condition = self.queryDict[self.fieldName]
+            self.currObjField = getattr(item, self.fieldName)
+
+            self.logger.debug("Request on single field: %s" % self.fieldName)
+
+            if ('or' in self.condition):
+                self.logger.debug("multivalue expression OR: %s" % self.condition)
+                # TODO
+
+            elif 'and' in self.condition:
+                self.logger.debug("multivalue expression AND: %s" % self.condition)
+                # TODO
+
+            elif 'match' in self.condition:
+                self.logger.debug("value expression: %s = %s" % (self.currObjField, self.condition))
+                res = self.matchField(self.currObjField, self.fieldName, self.condition['match'])
+                self.logger.debug('match = %s' % res)
+                return res
+            else:
+                self.logger.debug("invalid expression: %s" % self.value)
+
+        return False
+
+    def post(self):
+        """
+        Handle user query request.
+          1. init timer and result struct
+          2. check attributes to retrieve
+          3. limit nodes list regarding the given query filters
+          4. for each filtered node: add info in result
+        """
+        self.logger = logging.getLogger('main.query2')
+
+        # Default response
+        resultData = []
+        response = {
+            'summary': {
+                'count': 0,
+                'totalInDispatcher': 0,
+                'requestTime': 0,
+                'requestDate': 0
+            },
+            'items': resultData
+        }
+
+        try:
+            # Get query in body
+            try:
+                self.queryDict = json.loads(self.request.body)
+            except Exception as e:
+                self.logger.error(e)
+
+            # Find corresponding rn
+            matches = filter(self.matchQuery, self.getDispatchTree().renderNodes.values())
+
+            # Prepare json result
+            resultData = [n.to_json() for n in matches]
+
+            lenTotalData = len(self.getDispatchTree().renderNodes)
+
+            # Update default response
+            response['summary']['count'] = len(resultData)
+            response['summary']['totalInDispatcher'] = lenTotalData
+            response['summary']['requestExecutionTime'] = time.time() - self.startTime
+            response['summary']['requestDate'] = time.ctime()
+            response['items'] = resultData
+
+            self.write(response)
+        except Exception as e:
+            self.logger.error(e)
+            raise HTTPError(500, "Impossible to retrieve rendernodes for this request")

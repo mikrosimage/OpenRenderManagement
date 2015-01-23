@@ -1,3 +1,5 @@
+
+import time
 from octopus.core import framework
 from octopus.core.tools import Workload
 
@@ -33,6 +35,7 @@ class DispatcherBaseResource(BaseResource):
         """
         For each request, update stats if needed
         """
+        self.startTime = time.time()
         if singletonconfig.get('CORE', 'GET_STATS'):
             singletonstats.theStats.cycleCounts['incoming_requests'] += 1
 

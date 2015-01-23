@@ -16,5 +16,9 @@ class JsonModel():
     """
     Add serialization capability to any object
     """
+    def decoder(self, input):
+        pass
+
     def toJson(self, indent=0):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=indent)
+        # return json.dumps(self, default=self.decoder,sort_keys=True, indent=indent)

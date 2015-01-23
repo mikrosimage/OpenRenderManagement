@@ -7,7 +7,6 @@ from __future__ import absolute_import
 __author__ = "Jerome Samson"
 __copyright__ = "Copyright 2015, Mikros Image"
 
-import logging
 try:
     import simplejson as json
 except ImportError:
@@ -20,9 +19,9 @@ class Job(object, JsonModel):
     #
     # Private
     #
-    def __init__(self, id):
+    def __init__(self, jobDict):
         # Core infos
-        self.id = id
+        self.id = 0
         self.name = ""
         self.user = ""
         self.status = 0
@@ -52,15 +51,27 @@ class Job(object, JsonModel):
 
         # Internal infos
         self.task = None
+        self.children = []
         self.poolShares = []
         self.additionnalPoolShares = []
         #updateTime = models.FloatField(allow_null=True)
+
+        self._createFromDict(jobDict)
 
     def __repr__(self):
         return "Job(%s)" % self.name
 
     def __str__(self):
         return "Job: %d - %s" % (self.id, self.name)
+
+    def _createFromDict(self, jobDict):
+
+        for key, val in jobDict.iteritems():
+            if hasattr(self, key):
+                setattr(self, key, val)
+
+    def createFromNode(self, node):
+        raise NotImplementedError
 
     def _refresh(self):
         url = "/nodes/%d/" % (self.id)

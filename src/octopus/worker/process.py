@@ -56,7 +56,7 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
         if watcherPackages is None:
             LOGGER.warning("No package specified for this command, it might not find the runner for this command.")
             watcherPackagesList = []
-        elif type(watcherPackages) is str:
+        elif type(watcherPackages) in [str, unicode]:
             watcherPackagesList = watcherPackages.split()
         else:
             watcherPackagesList = watcherPackages

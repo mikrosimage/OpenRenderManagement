@@ -42,7 +42,7 @@ class IQueryNode:
 
     def matchNodes(self, filters, nodes):
 
-        if 'id' in filters:
+        if 'id' in filters and filters.get('id') is not []:
             self.currFilter = [int(id) for id in filters['id']]
             nodes = filter(self.matchId, nodes)
             logger.info("-- Filtering on id list %s, nb remaining nodes: %d", self.currFilter, len(nodes))

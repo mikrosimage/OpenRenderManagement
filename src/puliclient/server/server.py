@@ -52,8 +52,9 @@ def request(host, port, url, method="get", *args, **kwargs):
         elif method == "delete":
             r = requests.delete(url, *args, **kwargs)
         else:
-            logging.error("Unkown HTTP method called: %s" % method)
-            raise RequestError
+            msg = "Unkown HTTP method called: %s" % method
+            logging.error(msg)
+            raise RequestError(msg)
 
         if r.status_code in [requests.codes.ok,
                              requests.codes.created,
@@ -82,31 +83,34 @@ def request(host, port, url, method="get", *args, **kwargs):
             except:
                 msg = ""
 
-            logging.error("Error return code: %s, response message: '%s'" % (
-                r.status_code, msg))
-            raise RequestError(msg)
+            errMsg = "Error return code: %s, response message: '%s'" % (r.status_code, msg)
+            logging.error(errMsg)
+            raise RequestError(errMsg)
         else:
             raise RequestError
 
-    except requests.exceptions.Timeout:
-        logging.error("Timeout: %s" % e)
-        raise RequestTimeoutError
+    except requests.exceptions.Timeout as e:
+        errMsg = "Timeout: %s" % e
+        logging.error(errMsg)
+        raise RequestTimeoutError(errMsg)
 
-    except requests.exceptions.ConnectionError, e:
-        logging.error("Network problem occured: the host you're trying to reach is probably down (%s)" % baseUrl)
-        # logging.error("Network problem occured: %s" % e.args[0].reason)
-        raise RequestError
+    except requests.exceptions.ConnectionError as e:
+        errMsg = "Network problem occured: the host you're trying to reach is probably down (%s)" % baseUrl
+        logging.error(errMsg)
+        raise RequestError(errMsg)
 
-    except requests.exceptions.RequestException, e:
-        logging.error("Unhandled request exception: %s" % e)
-        raise RequestError
+    except requests.exceptions.RequestException as e:
+        errMsg = "Unhandled request exception: %s" % e
+        logging.error(errMsg)
+        raise RequestError(errMsg)
 
-    except RequestError:
-        raise
+    except RequestError as e:
+        raise e
 
-    except Exception, e:
-        logging.error("Unhandled exception: %s" % e)
-        raise
+    except Exception as e:
+        errMsg = "Unhandled exception: %s" % e
+        logging.error(errMsg)
+        raise e
 
 
 class Server(object):

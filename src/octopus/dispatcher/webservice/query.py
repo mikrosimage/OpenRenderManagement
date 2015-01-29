@@ -251,14 +251,12 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
         """
         self.logger = logging.getLogger('main.query')
 
-        args = self.request.arguments
-
-        self.logger.debug('args: %s' % args)
+        filters = self.getBodyAsJSON()
+        self.logger.debug('filters: %s' % filters)
 
         try:
             start_time = time.time()
             resultData = []
-            filteredNodes = []
 
             nodes = self.getDispatchTree().nodes[1].children
             totalNodes = len(nodes)
@@ -266,17 +264,14 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
             #
             # --- filtering
             #
-            filteredNodes = self.matchNodes(args, nodes)
+            filteredNodes = self.matchNodes(filters, nodes)
             self.logger.debug("Nodes have been filtered")
 
             #
             # --- Prepare the result json object
             #
-            # import pudb;pu.db
             for currNode in filteredNodes:
                 tmp = self.createJobRepr(currNode)
-                # print json.dumps(tmp.encode(), indent=4)
-                # resultData.append(json.dumps(tmp.encode()))
                 resultData.append(tmp.encode())
             self.logger.debug("Representation has been created")
 
@@ -290,7 +285,6 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
                 'items': resultData
             }
 
-            print json.dumps(content, indent=4)
             # Create response and callback
             self.writeCallback(json.dumps(content))
             self.logger.debug("Result sent")

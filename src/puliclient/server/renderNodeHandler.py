@@ -45,8 +45,9 @@ class RenderNodeHandler(object):
             rnList = response.get("rendernodes", None)
             for rn in rnList:
                 result.append(RenderNode(rn))
-        except (RequestTimeoutError, RequestError):
+        except (RequestTimeoutError, RequestError) as err:
             logging.error("Impossible to retrieve rendernode with query: %s" % url)
+            raise err
         return result
 
     @classmethod
@@ -59,8 +60,9 @@ class RenderNodeHandler(object):
         try:
             rnDict = Server.get(url)
             rn = RenderNode(rnDict)
-        except (RequestTimeoutError, RequestError):
+        except (RequestTimeoutError, RequestError) as err:
             logging.error("Impossible to retrieve rendernode with query: %s" % url)
+            raise err
         return rn
 
     # @classmethod

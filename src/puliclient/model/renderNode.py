@@ -19,13 +19,14 @@ from puliclient.server.server import Server, RequestError, RequestTimeoutError
 from puliclient.server.server import request
 
 
-class RenderNode(object, JsonModel):
+# class RenderNode(object, JsonModel):
+class RenderNode(object):
     '''
     '''
     #
     # Private
     #
-    def __init__(self, rnDict):
+    def __init__(self, rnDict=None):
 
         # Sys infos
         self.id = 0
@@ -54,7 +55,8 @@ class RenderNode(object, JsonModel):
         self.registerDate = 0
         self.lastAliveTime = 0
 
-        self._createFromDict(rnDict)
+        if rnDict:
+            self._createFromDict(rnDict)
         # workerHistory (list state changes and user actions)
         # commandHistory
 
@@ -89,16 +91,17 @@ class RenderNode(object, JsonModel):
         return True
 
     def _refresh(self):
-        url = "/rendernodes/%s:%s/" % (self.host, self.port)
-
-        try:
-            rnDict = Server.get(url)
-            for key, val in rnDict.iteritems():
-                if hasattr(self, key):
-                    setattr(self, key, val)
-        except (RequestTimeoutError, RequestError):
-            logging.error("Impossible to refresh rendernode with query: \
-                %s" % url)
+        raise NotImplementedError
+        # url = "/rendernodes/%s:%s/" % (self.host, self.port)
+        #
+        # try:
+        #     rnDict = Server.get(url)
+        #     for key, val in rnDict.iteritems():
+        #         if hasattr(self, key):
+        #             setattr(self, key, val)
+        # except (RequestTimeoutError, RequestError):
+        #     logging.error("Impossible to refresh rendernode with query: \
+        #         %s" % url)
 
     def _sendPauseCommand(self, content):
         '''

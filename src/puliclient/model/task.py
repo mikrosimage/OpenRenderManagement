@@ -12,10 +12,9 @@ try:
 except ImportError:
     import json
 
-from puliclient.model.jsonModel import JsonModel
 from puliclient.model.command import Command
 
-class Task(object, JsonModel):
+class Task(object):
 
     def __init__(self, taskDict=None):
 

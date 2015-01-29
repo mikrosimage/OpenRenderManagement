@@ -15,7 +15,8 @@ except ImportError:
 from puliclient.model.jsonModel import JsonModel
 from puliclient.model.renderNode import RenderNode
 
-class Command(object, JsonModel):
+# class Command(object, JsonModel):
+class Command(object):
 
     def __init__(self, cmdDict=None):
 

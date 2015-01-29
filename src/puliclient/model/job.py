@@ -12,11 +12,9 @@ try:
 except ImportError:
     import json
 
-from puliclient.model.jsonModel import JsonModel
 from puliclient.model.task import Task
-from octopus.dispatcher.model import Task as DispatcherTask
 
-class Job(object, JsonModel):
+class Job(object):
     #
     # Private
     #

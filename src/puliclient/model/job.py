@@ -13,13 +13,14 @@ except ImportError:
     import json
 
 from puliclient.model.jsonModel import JsonModel
-
+from puliclient.model.task import Task
+from octopus.dispatcher.model import Task as DispatcherTask
 
 class Job(object, JsonModel):
     #
     # Private
     #
-    def __init__(self, jobDict):
+    def __init__(self, jobDict=None):
         # Core infos
         self.id = 0
         self.name = ""
@@ -56,7 +57,9 @@ class Job(object, JsonModel):
         self.additionnalPoolShares = []
         #updateTime = models.FloatField(allow_null=True)
 
-        self._createFromDict(jobDict)
+        if jobDict:
+            self._createFromDict(jobDict)
+
 
     def __repr__(self):
         return "Job(%s)" % self.name
@@ -64,14 +67,79 @@ class Job(object, JsonModel):
     def __str__(self):
         return "Job: %d - %s" % (self.id, self.name)
 
-    def _createFromDict(self, jobDict):
+    def encode(self):
+        res = {}
+        for field in self.__dict__:
+            if field == 'children':
+                res['children'] = []
+                for child in self.children:
+                    res['children'].append(child.encode())
+            elif field == 'task':
+                if self.task:
+                    res['task'] = self.task.encode()
+            else:
+                res[field] = getattr(self, field)
+        return res
 
+    def decode(self):
+        pass
+
+    def _createFromDict(self, jobDict):
         for key, val in jobDict.iteritems():
-            if hasattr(self, key):
+            if key == 'children':
+                for child in jobDict['children']:
+                    self.children.append(Job(child))
+            elif key == 'task':
+                self.task = Task(jobDict['task'])
+                pass
+            elif hasattr(self, key):
                 setattr(self, key, val)
 
     def createFromNode(self, node):
-        raise NotImplementedError
+        # Core infos
+        self.id = node.id
+        self.name = node.name
+        self.user = node.user
+        self.status = node.status
+        self.creationTime = node.creationTime
+        self.updateTime = node.updateTime
+        self.startTime = node.startTime
+        self.endTime = node.endTime
+
+        # Additionnal infos
+        self.tags = node.tags.copy()
+        self.commandCount = node.commandCount
+        self.doneCommandCount = node.doneCommandCount
+        self.readyCommandCount = node.readyCommandCount
+
+        # Assignment
+        self.dispatchKey = node.dispatchKey
+        self.maxRN = node.maxRN
+        self.timer = node.timer
+
+        # Progress and stats
+        self.completion = node.completion
+        self.averageTimeByFrame = node.averageTimeByFrame
+        self.minTimeByFrame = node.minTimeByFrame
+        self.maxTimeByFrame = node.maxTimeByFrame
+
+        # self.dependencies = node.dependencies.copy()
+
+        # Internal infos
+        self.task = None
+        self.children = []
+        # self.poolShares = []
+        # self.additionnalPoolShares = []
+
+        # if hasattr(node, 'children'):
+        #     for child in node.children:
+        #         tmp = Job()
+        #         self.children.append(tmp.createFromNode(child))
+        #
+        # if hasattr(node, 'task') and isinstance(node.task, DispatcherTask):
+        #     self.task = Task()
+        #     self.task.createFromTaskNode(node.task)
+
 
     def _refresh(self):
         url = "/nodes/%d/" % (self.id)

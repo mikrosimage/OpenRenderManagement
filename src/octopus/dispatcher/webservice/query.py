@@ -232,55 +232,19 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
         from puliclient.model.task import Task
         from octopus.dispatcher.model import Task as DispatcherTask
 
-        newJob = Job(pNode.to_json())
         # import pudb;pu.db
+        newJob = Job()
+        newJob.createFromNode(pNode)
+
         if hasattr(pNode, 'children'):
             for node in pNode.children:
-                print self.createJobRepr(node).to_json()
                 newJob.children.append(self.createJobRepr(node))
 
         if hasattr(pNode, 'task') and isinstance(pNode.task, DispatcherTask):
-            # import pudb;pu.db
-            newJob.task = Task(pNode.task.to_json())
+            newJob.task = Task()
+            newJob.task.createFromTaskNode(pNode.task)
 
         return newJob
-
-        # currTask = {}
-        # for currArg in pAttributes:
-        #     #
-        #     # Get value of additionnally supported field
-        #     #
-        #     try:
-        #         if currArg.startswith("tags:"):
-        #             # Attribute name references a "tags" item
-        #             currArg = unicode(currArg[5:])
-        #             value = unicode(pNode.tags.get(currArg, ''))
-        #             currTask[currArg] = value
-        #         elif currArg == "pool":
-        #             # Attribute 'pool' is a specific item
-        #             currTask[currArg] = pNode.poolShares.keys()[0].name
-        #         elif currArg == "userDefinedMaxRn":
-        #             # Attribute 'userDefiniedMaxRN' is a specific item
-        #             currTask[currArg] = pNode.poolShares.values()[0].userDefinedMaxRN
-        #
-        #         #
-        #         # Get value of standard field
-        #         #
-        #         else:
-        #             # Attribute is a standard attribute of a Node
-        #             currTask[currArg] = getattr(pNode, currArg, 'undefined')
-        #
-        #     except AttributeError:
-        #         currTask[currArg] = 'undefined'
-        #         logger.warning("Impossible to get attribute '%s' on object %r" % (currArg, pNode))
-        #
-        # if pTree and hasattr(pNode, 'children'):
-        #     childTasks = []
-        #     for child in pNode.children:
-        #         childTasks.append(self.createTaskRepr(child, pAttributes, pTree))
-        #
-        #     currTask['items'] = childTasks
-        # return currTask
 
     def post(self):
         """
@@ -298,19 +262,23 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
 
             nodes = self.getDispatchTree().nodes[1].children
             totalNodes = len(nodes)
-
+            self.logger.debug("All nodes retrieved")
             #
             # --- filtering
             #
             filteredNodes = self.matchNodes(args, nodes)
+            self.logger.debug("Nodes have been filtered")
 
             #
             # --- Prepare the result json object
             #
             # import pudb;pu.db
             for currNode in filteredNodes:
-                resultData.append(json.loads(self.createJobRepr(currNode).toJson()))
-                # resultData.append(currNode.to_json())
+                tmp = self.createJobRepr(currNode)
+                # print json.dumps(tmp.encode(), indent=4)
+                # resultData.append(json.dumps(tmp.encode()))
+                resultData.append(tmp.encode())
+            self.logger.debug("Representation has been created")
 
             content = {
                 'summary': {
@@ -322,8 +290,10 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
                 'items': resultData
             }
 
+            print json.dumps(content, indent=4)
             # Create response and callback
             self.writeCallback(json.dumps(content))
+            self.logger.debug("Result sent")
 
         except KeyError:
             raise Http404('Error unknown key')
@@ -332,7 +302,7 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
             raise e
 
         except Exception, e:
-            raise HTTPError(500, "Impossible to retrieve jobs (%s)" % e.message)
+            raise HTTPError(500, "Impossible to retrieve jobs (%s)" % e)
 
 
 class RenderNodeQueryResource(DispatcherBaseResource, IQueryNode):

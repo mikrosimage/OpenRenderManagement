@@ -46,14 +46,18 @@ class QueueHandler(object):
         try:
             response = Server.post(url)
             jobs = response.get("items")
+            summary = response.get("summary")
 
             for job in jobs:
-                # print job
-                result.append(Job(job))
+#                print job
+#                print type(job)
+                tmp = Job(job)
+#                tmp._createFromDict(job)
+                result.append(tmp)
         except (RequestTimeoutError, RequestError):
             logging.error("Impossible to retrieve jobs with query: %s" % url)
 
-        return result, response.get("summary")
+        return result, summary
 
     @classmethod
     def getJobList(cls, idList):

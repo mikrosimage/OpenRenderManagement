@@ -40,7 +40,7 @@ class RenderNode(object, JsonModel):
 
         # Worker state
         self.puliversion = ""
-        # self.commands = {}
+        self.commands = {}
         self.status = 0
         self.host = ""
         self.port = 0
@@ -63,6 +63,13 @@ class RenderNode(object, JsonModel):
 
     def __str__(self):
         return "%s" % self.name
+
+    def encode(self, indent=0):
+        # import pudb; pu.db
+        res = {}
+        for field in self.__dict__:
+            res[field] = getattr(self, field)
+        return res
 
     def _createFromDict(self, rnDict):
         """

@@ -17,7 +17,7 @@ from puliclient.model.command import Command
 
 class Task(object, JsonModel):
 
-    def __init__(self, taskDict):
+    def __init__(self, taskDict=None):
 
         # Core infos
         self.id = 0
@@ -64,18 +64,32 @@ class Task(object, JsonModel):
         self.maxAttempt = 1
         self.paused = False
 
-        self._createFromDict(taskDict)
+        if taskDict:
+            self._createFromDict(taskDict)
 
     def __repr__(self):
-        return "Job(%s)" % self.name
+        return "Task(%s)" % self.name
 
     def __str__(self):
-        return "Job: %d - %s" % (self.id, self.name)
+        return "Task: %d - %s" % (self.id, self.name)
+
+    def encode(self, indent=0):
+        res = {}
+        for field in self.__dict__:
+            if field == 'commands':
+                res['commands'] = []
+                for cmd in self.commands:
+                    res['commands'].append(cmd.encode())
+            else:
+                res[field] = getattr(self, field)
+        return res
 
     def _createFromDict(self, dict):
-
         for key, val in dict.iteritems():
-            if hasattr(self, key):
+            if key == 'commands':
+                for cmd in dict['commands']:
+                    self.commands.append(Command(cmd))
+            elif hasattr(self, key):
                 setattr(self, key, val)
 
     def createFromTaskNode(self, task):
@@ -90,10 +104,10 @@ class Task(object, JsonModel):
         self.updateTime = task.updateTime
         self.tags = task.tags.copy()
 
-        # Hierarchy
+        # # Hierarchy
         for cmd in task.commands:
             newCmd = Command()
-            newCmd.createFromCommand(cmd)
+            newCmd.createFromCommandNode(cmd)
             self.commands.append(newCmd)
 
         # self.dependencies =
@@ -104,13 +118,13 @@ class Task(object, JsonModel):
 
         # Runtime infos
         self.completion = task.completion
-        self.averageTimeByFrame = task.averageTimeByFrame
-        self.minTimeByFrame = task.minTimeByFrame
-        self.maxTimeByFrame = task.maxTimeByFrame
+        # self.averageTimeByFrame = task.averageTimeByFrame
+        # self.minTimeByFrame = task.minTimeByFrame
+        # self.maxTimeByFrame = task.maxTimeByFrame
 
         # Execution infos
         self.runner = task.runner
         self.arguments = task.arguments.copy()
         self.environment = task.environment.copy()
         self.maxAttempt = task.maxAttempt
-        self.paused = task.paused
+        # self.paused = task.paused

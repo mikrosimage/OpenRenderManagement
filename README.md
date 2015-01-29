@@ -116,7 +116,7 @@ DB_URL = "mysql://puliuser:yourpasswd@127.0.0.1/pulidb"
 
 To launch the dispatcher, execute the following command in a shell:
 
-    python /opt/puli/scripts/dispatcherd.py --debug -console
+    python /opt/puli/scripts/dispatcherd.py --debug --console
 
 Upon the first execution, Puli will create the appropriate tables in the database.
 

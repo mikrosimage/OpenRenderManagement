@@ -84,3 +84,25 @@ class QueueHandler(object):
             raise err
 
         return result, summary
+
+    @classmethod
+    def getJobsByName(cls, nameList):
+        result = []
+
+        if nameList == []:
+            raise InvalidParamError("Error: empty nameList given for request")
+
+        url = "query/job"
+        body = {"name": nameList}
+        try:
+            response = Server.post(url, data=json.dumps(body))
+            jobs = response.get("items")
+            summary = response.get("summary")
+
+            for job in jobs:
+                tmp = Job(job)
+                result.append(tmp)
+        except (RequestTimeoutError, RequestError) as err:
+            raise err
+
+        return result, summary

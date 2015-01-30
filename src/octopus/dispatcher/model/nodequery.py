@@ -47,10 +47,10 @@ class IQueryNode:
             nodes = filter(self.matchId, nodes)
             logger.info("-- Filtering on id list %s, nb remaining nodes: %d", self.currFilter, len(nodes))
 
-        if 'name' in filters:
+        if 'name' in filters and filters.get('name') is not []:
             self.currFilter = filters['name']
             nodes = filter(self.matchName, nodes)
-            logger.info("-- Filtering on id list %s, nb remaining nodes: %d", self.currFilter, len(nodes))
+            logger.info("-- Filtering on names list %s, nb remaining nodes: %d", self.currFilter, len(nodes))
 
         return nodes
 

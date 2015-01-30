@@ -260,12 +260,12 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
 
             nodes = self.getDispatchTree().nodes[1].children
             totalNodes = len(nodes)
-            self.logger.debug("All nodes retrieved")
+            # self.logger.debug("All nodes retrieved")
             #
             # --- filtering
             #
             filteredNodes = self.matchNodes(filters, nodes)
-            self.logger.debug("Nodes have been filtered")
+            # self.logger.debug("Nodes have been filtered")
 
             #
             # --- Prepare the result json object
@@ -273,7 +273,7 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
             for currNode in filteredNodes:
                 tmp = self.createJobRepr(currNode)
                 resultData.append(tmp.encode())
-            self.logger.debug("Representation has been created")
+            # self.logger.debug("Representation has been created")
 
             content = {
                 'summary': {
@@ -287,7 +287,7 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
 
             # Create response and callback
             self.writeCallback(json.dumps(content))
-            self.logger.debug("Result sent")
+            # self.logger.debug("Result sent")
 
         except KeyError:
             raise Http404('Error unknown key')

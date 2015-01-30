@@ -1,13 +1,13 @@
 #!/usr/bin/python
 # -*- coding: latin-1 -*-
 
-'''
-Un webservice permettant de pouvoir repondre Ã  des requetes de la sorte:
+"""
+Un webservice permettant de pouvoir repondre à des requetes de la sorte:
 
-Note les requetes http types prÃ©sentent les arguments de la maniÃ¨re suivante:
-field1=value1&field2=value2&field3=value3, Tonado autorise la dÃ©finition de plusieurs valeurs pour un field donnÃ©
+Note les requetes http types présentent les arguments de la manière suivante:
+field1=value1&field2=value2&field3=value3, Tonado autorise la définition de plusieurs valeurs pour un field donné
 
-Le webservice prend en charge les requÃªtes de la forme:
+Le webservice prend en charge les requêtes de la forme:
 http://localhost:8004/query?attr=id
 http://localhost:8004/query?constraint_user=jsa
 http://localhost:8004/query?attr=id&attr=name&attr=user&constraint_user=jsa&constraint_prod=ddd
@@ -47,23 +47,23 @@ On retourne un objet json au format:
 }
 
 Inspire du comportement d'outil comme condor_q/condor_status
-'''
+"""
 
 try:
     import simplejson as json
 except ImportError:
     import json
+
 import logging
 import time
-from datetime import datetime
+import types
+import re
 
 from tornado.web import HTTPError
 
-from octopus.dispatcher.model import FolderNode
 from octopus.dispatcher.model.nodequery import IQueryNode
 
 from octopus.core.communication.http import Http404, Http400, Http500, HttpConflict
-from octopus.core.framework import queue
 from octopus.dispatcher.webservice import DispatcherBaseResource
 
 __all__ = []
@@ -221,6 +221,84 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
             raise HTTPError(500, "Internal error")
 
 
+
+    def createJobRepr(self, pNode):
+        """
+        Create a json representation for a given node hierarchy.
+        param: node to explore
+        return: puliclient.model.job object (which is serializable)
+        """
+        from puliclient.model.job import Job
+        from puliclient.model.task import Task
+        from octopus.dispatcher.model import Task as DispatcherTask
+
+        # import pudb;pu.db
+        newJob = Job()
+        newJob.createFromNode(pNode)
+
+        if hasattr(pNode, 'children'):
+            for node in pNode.children:
+                newJob.children.append(self.createJobRepr(node))
+
+        if hasattr(pNode, 'task') and isinstance(pNode.task, DispatcherTask):
+            newJob.task = Task()
+            newJob.task.createFromTaskNode(pNode.task)
+
+        return newJob
+
+    def post(self):
+        """
+        """
+        self.logger = logging.getLogger('main.query')
+
+        filters = self.getBodyAsJSON()
+        self.logger.debug('filters: %s' % filters)
+
+        try:
+            start_time = time.time()
+            resultData = []
+
+            nodes = self.getDispatchTree().nodes[1].children
+            totalNodes = len(nodes)
+            # self.logger.debug("All nodes retrieved")
+            #
+            # --- filtering
+            #
+            filteredNodes = self.matchNodes(filters, nodes)
+            # self.logger.debug("Nodes have been filtered")
+
+            #
+            # --- Prepare the result json object
+            #
+            for currNode in filteredNodes:
+                tmp = self.createJobRepr(currNode)
+                resultData.append(tmp.encode())
+            # self.logger.debug("Representation has been created")
+
+            content = {
+                'summary': {
+                    'count': len(filteredNodes),
+                    'totalInDispatcher': totalNodes,
+                    'requestTime': time.time() - start_time,
+                    'requestDate': time.ctime()
+                },
+                'items': resultData
+            }
+
+            # Create response and callback
+            self.writeCallback(json.dumps(content))
+            # self.logger.debug("Result sent")
+
+        except KeyError:
+            raise Http404('Error unknown key')
+
+        except HTTPError, e:
+            raise e
+
+        except Exception, e:
+            raise HTTPError(500, "Impossible to retrieve jobs (%s)" % e)
+
+
 class RenderNodeQueryResource(DispatcherBaseResource, IQueryNode):
     """
     id: 3,
@@ -352,3 +430,125 @@ class RenderNodeQueryResource(DispatcherBaseResource, IQueryNode):
             logger.warning('Impossible to retrieve query result for rendernodes: %s', self.request.uri)
             raise HTTPError(500, "Internal error")
         pass
+
+##################################
+##################################
+##################################
+##################################
+##################################
+##################################
+##################################
+##################################
+
+class RenderNodeQuery2Resource(DispatcherBaseResource):
+    """
+    """
+
+    def strMatch(self, field, condition):
+        return True if re.match(condition, field) else False
+
+    def intMatch(self, field, value):
+        raise NotImplementedError
+        pass
+
+    def matchField(self, field, fieldName, condition):
+        self.logger.debug("type: %s" % type(field))
+        currType = type(field)
+
+        if currType == types.StringType:
+            return self.strMatch(field, condition)
+        elif currType == types.IntType:
+            return self.intMatch(field, condition)
+
+        # return True if item.__dict__[field] == condition else False
+        # return True if item.__dict__[field] == value else False
+
+    def matchQuery(self, item):
+        """
+        Parses a given query against the item given.
+        Returns True or False
+        :param item:
+        :return:
+        """
+        self.logger.debug(item)
+        if len(self.queryDict) > 1:
+            self.logger.debug("Invalid query dict")
+            return False
+
+        if ('or' in self.queryDict) or ('and' in self.queryDict):
+            self.logger.debug("or/and")
+            # TODO
+
+        else:
+            self.fieldName = self.queryDict.keys()[0]
+            self.condition = self.queryDict[self.fieldName]
+            self.currObjField = getattr(item, self.fieldName)
+
+            self.logger.debug("Request on single field: %s" % self.fieldName)
+
+            if ('or' in self.condition):
+                self.logger.debug("multivalue expression OR: %s" % self.condition)
+                # TODO
+
+            elif 'and' in self.condition:
+                self.logger.debug("multivalue expression AND: %s" % self.condition)
+                # TODO
+
+            elif 'match' in self.condition:
+                self.logger.debug("value expression: %s = %s" % (self.currObjField, self.condition))
+                res = self.matchField(self.currObjField, self.fieldName, self.condition['match'])
+                self.logger.debug('match = %s' % res)
+                return res
+            else:
+                self.logger.debug("invalid expression: %s" % self.value)
+
+        return False
+
+    def post(self):
+        """
+        Handle user query request.
+          1. init timer and result struct
+          2. check attributes to retrieve
+          3. limit nodes list regarding the given query filters
+          4. for each filtered node: add info in result
+        """
+        self.logger = logging.getLogger('main.query2')
+
+        # Default response
+        resultData = []
+        response = {
+            'summary': {
+                'count': 0,
+                'totalInDispatcher': 0,
+                'requestTime': 0,
+                'requestDate': 0
+            },
+            'items': resultData
+        }
+
+        try:
+            # Get query in body
+            try:
+                self.queryDict = json.loads(self.request.body)
+            except Exception as e:
+                self.logger.error(e)
+
+            # Find corresponding rn
+            matches = filter(self.matchQuery, self.getDispatchTree().renderNodes.values())
+
+            # Prepare json result
+            resultData = [n.to_json() for n in matches]
+
+            lenTotalData = len(self.getDispatchTree().renderNodes)
+
+            # Update default response
+            response['summary']['count'] = len(resultData)
+            response['summary']['totalInDispatcher'] = lenTotalData
+            response['summary']['requestExecutionTime'] = time.time() - self.startTime
+            response['summary']['requestDate'] = time.ctime()
+            response['items'] = resultData
+
+            self.write(response)
+        except Exception as e:
+            self.logger.error(e)
+            raise HTTPError(500, "Impossible to retrieve rendernodes for this request")

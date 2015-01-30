@@ -14,8 +14,6 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.0/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.0/css/bootstrap-theme.min.css">
 
-    <link href="assets/css/starter-template.css" rel="stylesheet">
-
   </head>
 
   <body>
@@ -44,8 +42,8 @@
         <table class="table table-hover table-border">
           <caption>System env</caption>
           <thead><th>Var</th><th>Value</th></thead>
-          {% for key in env %}
-          <tr><td>{{ escape(key) }}</td><td>{{env[key]}}</td></tr>
+          {% for item in env %}
+          <tr><td>{{ escape(item[0]) }}</td><td>{{item[1]}}</td></tr>
           {% end %}
         </table>
       </div>

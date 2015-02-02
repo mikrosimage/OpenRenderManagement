@@ -3,6 +3,19 @@
 from __future__ import absolute_import
 
 """
+Request server to retrieve and interact on job,subjobs and commands.
+Each request method will return a result list and a summary dict.
+Result list holds one or several Job objects.
+
+Use:
+(jobs, summary) = QueueHandler.getAllJobs()
+print "Summary:"
+for job in jobs:
+    print "%s: %s" % (job.id, job.name)
+
+jobs = QueueHandler.getJobsByName(['test*'])
+jobs = QueueHandler.getJobsById([2,4,50])
+
 """
 __author__ = "Jerome Samson"
 __copyright__ = "Copyright 2014, Mikros Image"
@@ -25,29 +38,17 @@ class InvalidParamError(Exception):
 
 
 class QueueHandler(object):
-    '''
-    '''
-
-
-
-    # @classmethod
-    # def getJob(cls, id):
-    #     job = None
-    #     url = "/nodes/%d/" % id
-    #
-    #     try:
-    #         jobDict = Server.get(url)
-    #         job = cls.createJob(jobDict)
-    #     except (RequestTimeoutError, RequestError):
-    #         logging.error("Impossible to retrieve rendernode with query: %s" % url)
-    #     return job
+    """
+    """
 
     @classmethod
-    def getAllJobs(cls):
+    def getAllJobs(cls, recursive=True):
         result = []
 
         url = "query/job"
-        body = {}
+        body = {
+            "recursive": recursive
+        }
         try:
             response = Server.post(url, data=json.dumps(body))
             jobs = response.get("items")
@@ -63,14 +64,17 @@ class QueueHandler(object):
 
 
     @classmethod
-    def getJobsById(cls, idList):
+    def getJobsById(cls, idList, recursive=True):
         result = []
 
         if idList == []:
             raise InvalidParamError("Error: empty idList given for request")
 
         url = "query/job"
-        body = {"id": idList}
+        body = {
+            "id": idList,
+            "recursive": recursive
+        }
         try:
             response = Server.post(url, data=json.dumps(body))
             jobs = response.get("items")
@@ -86,14 +90,17 @@ class QueueHandler(object):
         return result, summary
 
     @classmethod
-    def getJobsByName(cls, nameList):
+    def getJobsByName(cls, nameList, recursive=True):
         result = []
 
         if nameList == []:
             raise InvalidParamError("Error: empty nameList given for request")
 
         url = "query/job"
-        body = {"name": nameList}
+        body = {
+            "name": nameList,
+            "recursive": recursive
+        }
         try:
             response = Server.post(url, data=json.dumps(body))
             jobs = response.get("items")
@@ -106,3 +113,7 @@ class QueueHandler(object):
             raise err
 
         return result, summary
+
+
+if __name__ == '__main__':
+    pass

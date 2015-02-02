@@ -66,6 +66,10 @@ from octopus.dispatcher.model.nodequery import IQueryNode
 from octopus.core.communication.http import Http404, Http400, Http500, HttpConflict
 from octopus.dispatcher.webservice import DispatcherBaseResource
 
+from puliclient.model.job import Job
+from puliclient.model.task import Task
+from octopus.dispatcher.model import Task as DispatcherTask
+
 __all__ = []
 
 logger = logging.getLogger('main.query')
@@ -222,27 +226,27 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
 
 
 
-    def createJobRepr(self, pNode):
+    def createJobRepr(self, pNode, recursive=True):
         """
         Create a json representation for a given node hierarchy.
         param: node to explore
         return: puliclient.model.job object (which is serializable)
         """
-        from puliclient.model.job import Job
-        from puliclient.model.task import Task
-        from octopus.dispatcher.model import Task as DispatcherTask
 
-        # import pudb;pu.db
+
         newJob = Job()
         newJob.createFromNode(pNode)
 
-        if hasattr(pNode, 'children'):
-            for node in pNode.children:
-                newJob.children.append(self.createJobRepr(node))
+        if not recursive:
+            return newJob
+        else:
+            if hasattr(pNode, 'children'):
+                for node in pNode.children:
+                    newJob.children.append(self.createJobRepr(node))
 
-        if hasattr(pNode, 'task') and isinstance(pNode.task, DispatcherTask):
-            newJob.task = Task()
-            newJob.task.createFromTaskNode(pNode.task)
+            if hasattr(pNode, 'task') and isinstance(pNode.task, DispatcherTask):
+                newJob.task = Task()
+                newJob.task.createFromTaskNode(pNode.task)
 
         return newJob
 
@@ -271,7 +275,7 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
             # --- Prepare the result json object
             #
             for currNode in filteredNodes:
-                tmp = self.createJobRepr(currNode)
+                tmp = self.createJobRepr(currNode, filters.get('recursive', True))
                 resultData.append(tmp.encode())
             # self.logger.debug("Representation has been created")
 

@@ -14,12 +14,10 @@ try:
 except ImportError:
     import json
 
-from puliclient.model.jsonModel import JsonModel
 from puliclient.server.server import Server, RequestError, RequestTimeoutError
 from puliclient.server.server import request
 
 
-# class RenderNode(object, JsonModel):
 class RenderNode(object):
     '''
     '''

@@ -149,6 +149,10 @@ class Job(object):
         #             setattr(self, key, val)
         # except (RequestTimeoutError, RequestError):
         #     logging.error("Impossible to refresh job with query: %s" % url)
+        raise NotImplementedError
+
+    def setName(self, name):
+        raise NotImplementedError
 
     def setDispatchKey(self, prio):
         '''
@@ -170,22 +174,8 @@ class Job(object):
         self.dispatchKey = prio
         return True
 
-    def setPool(self, pool):
-        '''
-        | Updates pool name of a particular node
-        | Internal data is updated on succeed to reflect server change
-        :param pool: String representing a pool name
-        :return: A boolean indicating success or failure
-        '''
-        url = "/poolshares/"
-        body = json.dumps({'poolName': pool, 'nodeId': self.id, 'maxRN': -1})
-        # try:
-        #     Server.post(url, data=body)
-        # except (RequestTimeoutError, RequestError):
-        #     logging.error("Impossible to update data with url %s and content: \
-        #         %s" % (url, body))
-        #     return False
-        return True
+    def setMinRam(self, amount):
+        raise NotImplementedError
 
     def setMaxRn(self, maxRn):
         '''
@@ -208,14 +198,58 @@ class Job(object):
         self.maxRN = maxRn
         return True
 
+    def setPool(self, pool):
+        '''
+        | Updates pool name of a particular node
+        | Internal data is updated on succeed to reflect server change
+        :param pool: String representing a pool name
+        :return: A boolean indicating success or failure
+        '''
+        url = "/poolshares/"
+        body = json.dumps({'poolName': pool, 'nodeId': self.id, 'maxRN': -1})
+        # try:
+        #     Server.post(url, data=body)
+        # except (RequestTimeoutError, RequestError):
+        #     logging.error("Impossible to update data with url %s and content: \
+        #         %s" % (url, body))
+        #     return False
+        return True
+
+    def setPool(self, poolName):
+        raise NotImplementedError
+
     def setProd(self, prod):
-        pass
+        raise NotImplementedError
 
     def setShot(self, shot):
-        pass
+        raise NotImplementedError
 
     def setTags(self, tags):
-        pass
+        raise NotImplementedError
+
+    def setTimers(self, timestamp):
+        raise NotImplementedError
+
+    def pause(self):
+        raise NotImplementedError
+
+    def cancel(self):
+        raise NotImplementedError
+
+    def restart(self):
+        raise NotImplementedError
+
+    def remove(self):
+        raise NotImplementedError
+
+    def retryAllErrors(self):
+        raise NotImplementedError
+
+    def killCommands(self):
+        raise NotImplementedError
+
+    def forcePause(self):
+        raise NotImplementedError
 
     def updateTags(self, tags):
         pass

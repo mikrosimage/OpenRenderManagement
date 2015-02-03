@@ -121,6 +121,12 @@ class Server(object):
     __query = ""
 
     @classmethod
+    def setHostConnection(cls, host, port):
+        cls.__port = port
+        cls.__host = host
+        cls.__baseUrl = "http://%s:%d" % (host, port)
+
+    @classmethod
     def getBaseUrl(cls):
         return cls.__baseUrl
 
@@ -143,4 +149,3 @@ class Server(object):
     @classmethod
     def delete(cls, url, *args, **kwargs):
         return cls.request(url, "delete", *args, **kwargs)
-

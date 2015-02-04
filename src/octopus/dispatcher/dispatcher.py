@@ -543,8 +543,8 @@ class Dispatcher(MainLoopApplication):
                     "taskName": command.task.name,
                     "relativePathToLogDir": "%d" % command.task.id,
                     "environment": environment,
-                    # "runnerPackages": command.runnerPackages,
-                    # "watcherPackages": command.watcherPackages
+                    "runnerPackages": command.runnerPackages,
+                    "watcherPackages": command.watcherPackages
                 }
                 body = json.dumps(commandDict)
                 headers["Content-Length"] = len(body)

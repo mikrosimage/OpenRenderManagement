@@ -70,10 +70,9 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
         # normalize environment
         envN = os.environ.copy()
         envN.update(env)
-
         proc = context.execute_shell(
             command=args,
-            shell=None,
+            shell='bash',
             stdin=False,
             stdout=logfile,
             stderr=subprocess.STDOUT,

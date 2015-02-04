@@ -527,6 +527,61 @@ class Worker(MainLoopApplication):
                 except OSError:
                     continue
 
+    def getKillfileInfo(self):
+        """
+        :return: Boolean indicating success
+        """
+        killfileExists = os.path.isfile(settings.KILLFILE)
+        killfileContent = None
+
+        if killfileExists:
+            with open(settings.KILLFILE, 'r') as f:
+                data = f.read()
+            if len(data) != 0:
+                try:
+                    killfileContent = int(data)
+                except ValueError:
+                    LOGGER.warning("Invalid content in killfile.")
+
+        return {
+            'exists': killfileExists,
+            'content': killfileContent
+        }
+
+    def setKillfileInfo(self, content=None):
+        """
+        :return: Boolean indicating success
+        """
+        if content is None:
+            LOGGER.warning('put empty killfile')
+            with open(settings.KILLFILE, 'w') as f:
+                pass
+        elif content in [-1, -2, -3]:
+            with open(settings.KILLFILE, 'w') as f:
+                try:
+                    f.write(str(content))
+                except IOError as e:
+                    LOGGER.warning("Error when storing value in killfile: file=%s value=%s" % (settings.KILLFILE, content))
+                    return False
+        else:
+            LOGGER.warning("Trying to store invalid value in killfile (expected: -1, -2, -3 or None), received: %r" % content)
+            return False
+        return True
+
+    def removeKillfile(self):
+        """
+        :return: Boolean indicating success
+        """
+
+        if os.path.isfile(settings.KILLFILE):
+            try:
+                os.remove(settings.KILLFILE)
+                LOGGER.warning("Killfile \"%s\" removed" % settings.KILLFILE)
+            except Exception as e:
+                LOGGER.warning("Error, impossible to remove the kill file: \"%s\" (%s)" % (settings.KILLFILE, e))
+                return False
+        return True
+    
     def mainLoop(self):
         """
         | Worker main loop:

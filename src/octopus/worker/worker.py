@@ -581,7 +581,7 @@ class Worker(MainLoopApplication):
                 LOGGER.warning("Error, impossible to remove the kill file: \"%s\" (%s)" % (settings.KILLFILE, e))
                 return False
         return True
-    
+
     def mainLoop(self):
         """
         | Worker main loop:
@@ -597,48 +597,65 @@ class Worker(MainLoopApplication):
         #
         # check if the killfile is present
         #
-        if os.path.isfile(settings.KILLFILE):
+        killfileInfo = self.getKillfileInfo()
+
+        if killfileInfo.get('exists'):
             if not self.isPaused:
-                with open(settings.KILLFILE, 'r') as f:
-                    data = f.read()
-                if len(data) != 0:
-                    try:
-                        data = int(data)
-                    except ValueError:
-                        LOGGER.warning("Invalid content in killfile, pausing worker anyway")
+                # If RN is IDLE/RUNNING/ASSIGNED
 
-                LOGGER.warning("Killfile detected, pausing worker")
-
-                # kill cmd watchers, if the flag in the killfile is set to -1
-                killproc = False
-                if data == -1:
-                    LOGGER.warning("Flag -1 detected in killfile, killing render")
-                    killproc = True
+                if killfileInfo.get('content') == -1:
+                    LOGGER.warning("Flag -1 detected in killfile, killing render and pause RN")
                     self.killCommandWatchers()
-                if data == -2:
+                    self.pauseWorker(paused=True, killproc=True)
+                    self.setKillfileInfo(None)
+
+                if killfileInfo.get('content') == -2:
                     LOGGER.warning("Flag -2 detected in killfile, schedule restart")
                     self.toberestarted = True
-                if data == -3:
+                    self.removeKillfile()
+
+                if killfileInfo.get('content') == -3:
                     LOGGER.warning("Flag -3 detected in killfile, killing render and schedule restart")
-                    killproc = True
                     self.toberestarted = True
                     self.killCommandWatchers()
-                self.pauseWorker(True, killproc)
+                    self.pauseWorker(paused=True, killproc=False)
+                    self.removeKillfile()
+                else:
+                    LOGGER.warning("Empty killfile, pausing worker")
+                    self.pauseWorker(paused=True, killproc=False)
+
+            else:
+                # If RN is already paused
+
+                # If killfile has a content (i.e. action is needed), exec action, else nothing to do
+                if killfileInfo.get('content') == -1:
+                    LOGGER.warning("Flag -1 detected in killfile, killing render")
+                    self.killCommandWatchers()
+                    self.pauseWorker(paused=True, killproc=True)
+                    self.setKillfileInfo(None)
+                if killfileInfo.get('content') == -2:
+                    LOGGER.warning("Flag -2 detected in killfile, schedule restart and put empty killfile to keep pause")
+                    self.toberestarted = True
+                    self.setKillfileInfo(None)
+                if killfileInfo.get('content') == -3:
+                    LOGGER.warning("Flag -3 detected in killfile, killing render and schedule restart")
+                    self.toberestarted = True
+                    self.killCommandWatchers()
+                    self.pauseWorker(paused=True, killproc=True)
+                    self.setKillfileInfo(None)
+                # else:
+                #     LOGGER.warning("Empty killfile, let worker in pause")
         else:
-            self.toberestarted = False
+            # self.toberestarted = False
             # if no killfile present and worker is paused, unpause it
             if self.isPaused:
                 self.pauseWorker(False, False)
 
         # if the worker is paused and marked to be restarted, exit program
         # Once the program has ended, the systemd service manager will automatocally restart it.
-        if self.isPaused and self.toberestarted:
-            if os.path.isfile(settings.KILLFILE):
-                try:
-                    os.remove(settings.KILLFILE)
-                    LOGGER.warning("Killfile \"%s\" removed" % settings.KILLFILE)
-                except Exception:
-                    LOGGER.warning("Error, impossible to remove the kill file: \"%s\"" % settings.KILLFILE)
+        # if self.isPaused and self.toberestarted:
+        if self.toberestarted:
+            # self.removeKillfile()
 
             LOGGER.warning("Exiting worker")
             self.framework.stop()

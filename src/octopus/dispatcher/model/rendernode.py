@@ -369,9 +369,8 @@ class RenderNode(models.Model):
             time.sleep(singletonconfig.get('COMMUNICATION', 'RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE'))
 
         # request failed too many times so pause the RN and report a failure
-        # LOGGER.debug("request failed too many times.")
         self.reset(paused=True)
-        self.excluded = True
+        # self.excluded = True
         raise self.RequestFailed()
 
     def canRun(self, command):

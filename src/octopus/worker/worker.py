@@ -964,41 +964,6 @@ class Worker(MainLoopApplication):
             LOGGER.error("Error spawning command watcher %r", e)
             raise e
 
-        # else:
-        #     LOGGER.warning("Current worker is not rez-managed (undefined REZ_USED_RESOLVE in env)")
-        #     args = [
-        #         pythonExecutable,
-        #         "-u",
-        #         scriptFile,
-        #         commandWatcherLogFile,
-        #         str(settings.DISPATCHER_ADDRESS + ":" + str(settings.DISPATCHER_PORT)),
-        #         str(workerPort),
-        #         str(command.id),
-        #         command.runner,
-        #         command.validationExpression,
-        #     ]
-
-        #     # Properly serializing arguments using json
-        #     args.append(json.dumps(command.arguments))
-
-        #     try:
-        #         # Starts a new process (via CommandWatcher script) with current command info and environment.
-        #         # The command environment is derived from the current os.env
-        #         watcherProcess = spawnCommandWatcher(pidFile, logFile, args, command.environment)
-        #         newCommandWatcher.processObj = watcherProcess
-        #         newCommandWatcher.startTime = time.time()
-        #         newCommandWatcher.timeOut = None
-        #         newCommandWatcher.command = command
-        #         newCommandWatcher.processId = watcherProcess.pid
-
-        #         self.commandWatchers[command.id] = newCommandWatcher
-        #         self.status = rendernode.RN_WORKING
-
-        #         LOGGER.info("Started command %d", command.id)
-        #     except Exception, e:
-        #         LOGGER.error("Error spawning command watcher %r", e)
-        #         raise e
-
     def reloadConfig(self):
         reload(config)
         pass

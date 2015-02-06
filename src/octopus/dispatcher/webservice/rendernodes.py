@@ -69,7 +69,7 @@ class RenderNodeResource(DispatcherBaseResource):
             existingRN = self.getDispatchTree().renderNodes[computerName]
 
             if 'commands' not in dct:
-                logger.warning("No commands in current RN, reset command that might be still assigned to this RN")
+                # No commands in current RN, reset command that might be still assigned to this RN
                 existingRN.reset()
             else:
                 for cmdId in dct['commands']:
@@ -314,6 +314,8 @@ class RenderNodeQuarantineResource(DispatcherBaseResource):
             if not quarantine:
                 renderNode.history.clear()
                 renderNode.tasksHistory.clear()
+
+            logging.getLogger("main.dispatcher.webservice").info("Rendernode quarantine state changed: %s -> quarantine=%s" % (computerName, quarantine))
         self.writeCallback("Quarantine attributes set.")
 
 

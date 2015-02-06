@@ -846,7 +846,7 @@ class Worker(MainLoopApplication):
         try:
             commandWatcher = self.commandWatchers[commandId]
         except KeyError:
-            LOGGER.warning("attempt to update completion and status of unregistered  command %d", commandId)
+            LOGGER.warning("attempt to stop an unregistered command %d", commandId)
         else:
             commandWatcher.processObj.kill()
             self.updateCompletionAndStatus(commandId, 0, COMMAND.CMD_CANCELED, "killed")

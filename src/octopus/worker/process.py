@@ -70,10 +70,9 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
         # normalize environment
         envN = os.environ.copy()
         envN.update(env)
-
         proc = context.execute_shell(
             command=args,
-            shell=None,
+            shell='bash',
             stdin=False,
             stdout=logfile,
             stderr=subprocess.STDOUT,
@@ -129,11 +128,11 @@ class CommandWatcherProcess(object):
         if os.name != 'nt':
             from signal import SIGTERM
             from errno import ESRCH
-            # import pudb;pu.db
+
             # PHASE 1
             try:
                 # do not kill the process, kill the whole process group!
-                LOGGER.warning("Trying to kill process group %s" % str(self.pid))
+                LOGGER.warning("Phase 1: Trying to kill process group %s" % str(self.pid))
                 os.killpg(self.pid, SIGTERM)
                 return
             except OSError, e:
@@ -141,17 +140,21 @@ class CommandWatcherProcess(object):
                 # If the process is dead already, let it rest in peace.
                 # Else, we have a problem, so reraise.
                 if e.args[0] != ESRCH:
+                    LOGGER.warning("Phase 1: process error (%s)" % e)
                     raise
 
             # PHASE 2
             try:
                 # the commandwatcher did not have time to setpgid yet, let's just kill the process
                 # FIXME there still is room for a race condition there
+                LOGGER.warning("Phase 2: Just kill the process %s" % str(self.pid))
+
                 os.kill(self.pid, SIGTERM)
             except OSError, e:
                 # If the process is dead already, let it rest in peace.
                 # Else, we have a problem, so reraise.
                 if e.args[0] != ESRCH:
+                    LOGGER.warning("Phase 2: process error (%s)" % e)
                     raise
 
             # PHASE 3
@@ -160,11 +163,13 @@ class CommandWatcherProcess(object):
                 # if we kill the watcher but the watcher had the time to
                 # create processgroup and start another process in between
                 # phases 1 and 2, then attempt to kill the processgroup.
+                LOGGER.warning("Phase 3: Try to fix race condition by killing the process group again %s" % str(self.pid))
                 os.killpg(self.pid, SIGTERM)
             except OSError, e:
                 # If the process is dead already, let it rest in peace.
                 # Else, we have a problem, so reraise.
                 if e.args[0] != ESRCH:
+                    LOGGER.warning("Phase 3: process error (%s)" % e)
                     raise
         else:
             os.popen("taskkill /PID  %d" % self.pid)

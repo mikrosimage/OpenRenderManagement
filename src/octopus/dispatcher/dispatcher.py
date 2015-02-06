@@ -543,8 +543,8 @@ class Dispatcher(MainLoopApplication):
                     "taskName": command.task.name,
                     "relativePathToLogDir": "%d" % command.task.id,
                     "environment": environment,
-                    # "runnerPackages": command.runnerPackages,
-                    # "watcherPackages": command.watcherPackages
+                    "runnerPackages": command.runnerPackages,
+                    "watcherPackages": command.watcherPackages
                 }
                 body = json.dumps(commandDict)
                 headers["Content-Length"] = len(body)
@@ -558,7 +558,7 @@ class Dispatcher(MainLoopApplication):
                     else:
                         logging.getLogger('main.dispatcher').info("Sent assignment of command %d to worker %s", command.id, rendernode.name)
                 except rendernode.RequestFailed, e:
-                    logging.getLogger('main.dispatcher').error("Assignment of command %d to worker %s failed: %r", command.id, rendernode.name, e)
+                    logging.getLogger('main.dispatcher').error("Assignment of command %d to worker %s failed. Worker is likely dead (%r)", command.id, rendernode.name, e)
                     failures.append((rendernode, command))
             return failures
 

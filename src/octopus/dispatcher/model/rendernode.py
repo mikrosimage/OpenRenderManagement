@@ -329,7 +329,7 @@ class RenderNode(models.Model):
         """
 
         # from octopus.dispatcher import settings
-        LOGGER.debug("Send request to RN: http://%s:%s%s %s (%s)" % (self.host, self.port, url, method, headers))
+        # LOGGER.debug("Send request to RN: http://%s:%s%s %s (%s)" % (self.host, self.port, url, method, headers))
 
         err = None
         conn = self.getHTTPConnection()
@@ -348,7 +348,7 @@ class RenderNode(models.Model):
                 return (response, data)
             except http.socket.error, e:
                 err = e
-                LOGGER.debug("socket error %r" % e)
+                # LOGGER.debug("socket error %r" % e)
                 try:
                     conn.close()
                 except:
@@ -357,7 +357,7 @@ class RenderNode(models.Model):
                     raise self.RequestFailed(cause=e)
             except http.HTTPException, e:
                 err = e
-                LOGGER.debug("HTTPException %r" % e)
+                # LOGGER.debug("HTTPException %r" % e)
                 try:
                     conn.close()
                 except:
@@ -368,10 +368,10 @@ class RenderNode(models.Model):
             # request failed so let's sleep for a while
             time.sleep(singletonconfig.get('COMMUNICATION', 'RENDERNODE_REQUEST_DELAY_AFTER_REQUEST_FAILURE'))
 
-        # request failed too many times so pause the RN and report a failure
-        # LOGGER.debug("request failed too many times.")
-        self.reset(paused=True)
+        # request failed too many times so reset the RN (without pausing) and set quarantine
+        self.reset(paused=False)
         self.excluded = True
+        LOGGER.warning("A network call to the node %s can not be completed --> put in quarantine" % (self.name))
         raise self.RequestFailed()
 
     def canRun(self, command):

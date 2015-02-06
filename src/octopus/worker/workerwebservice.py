@@ -154,8 +154,8 @@ class CommandsResource(BaseResource):
                                                              dct['taskName'],
                                                              dct['relativePathToLogDir'],
                                                              dct['environment'],
-                                                             dct['runnerPackages'],
-                                                             dct['watcherPackages'],
+                                                             dct.get('runnerPackages', ''),
+                                                             dct.get('watcherPackages', ''),
                                                              )
         except WorkerInternalException, e:
             LOGGER.error("Impossible to add command %r, the RN status is 'paused' (%r)" % (dct['commandId'], e))

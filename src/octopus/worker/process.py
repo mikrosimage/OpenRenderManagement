@@ -1,6 +1,6 @@
-'''
+"""
 Used by Worker to spawn a new process.
-'''
+"""
 
 __author__ = "Olivier Derpierre"
 __copyright__ = "Copyright 2009, Mikros Image"
@@ -32,7 +32,7 @@ def setlimits():
 
 
 def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
-    '''
+    """
     | Uses rez module to start a process with a proper rez env.
 
     :param pidfile: full path to the comand pid file (usally /var/run/puli/cw<command_id>.pid)
@@ -42,8 +42,7 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
     :param env: a dict holding key/value pairs that will be merged into the current env and used in subprocess
 
     :return: a CommandWatcherProcess object holding command watcher process handle
-    '''
-
+    """
     try:
         from rez.resources import clear_caches
         from rez.resolved_context import ResolvedContext
@@ -70,9 +69,7 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
 
         # normalize environment
         envN = os.environ.copy()
-        for key in env:
-            envN[str(key)] = str(env[key])
-
+        envN.update(env)
         proc = context.execute_shell(
             command=args,
             shell='bash',
@@ -107,17 +104,9 @@ def spawnCommandWatcher(pidfile, logfile, args, env):
     """
     devnull = file(os.devnull, "r")
 
-    # HACK prepend PYTHONPATH with mikros base path for old process
-    # sys.path.insert(0, "/s/apps/lin/puli")
-    # print "DBG pytpath: %r" % os.getenv("PYTHONPATH")
-    # print "DBG syspath: %r" % sys.path
-    # tmp = "/s/apps/lin/puli:%s" % os.getenv("PYTHONPATH")
-    # os.putenv("PYTHONPATH", "/s/apps/lin/puli")
-
     # normalize environment
     envN = os.environ.copy()
-    for key in env:
-        envN[str(key)] = str(env[key])
+    envN.update(env)
 
     LOGGER.info("Starting subprocess, log: %r, args: %r" % (logfile.name, args))
     try:
@@ -144,15 +133,15 @@ class CommandWatcherProcess(object):
         self.pid = pid
 
     def kill(self):
-        '''Kill the process.'''
+        """Kill the process."""
         if os.name != 'nt':
             from signal import SIGTERM
             from errno import ESRCH
-            # import pudb;pu.db
+
             # PHASE 1
             try:
                 # do not kill the process, kill the whole process group!
-                LOGGER.warning("Trying to kill process group %s" % str(self.pid))
+                LOGGER.warning("Phase 1: Trying to kill process group %s" % str(self.pid))
                 os.killpg(self.pid, SIGTERM)
                 return
             except OSError, e:
@@ -160,17 +149,21 @@ class CommandWatcherProcess(object):
                 # If the process is dead already, let it rest in peace.
                 # Else, we have a problem, so reraise.
                 if e.args[0] != ESRCH:
+                    LOGGER.warning("Phase 1: process error (%s)" % e)
                     raise
 
             # PHASE 2
             try:
                 # the commandwatcher did not have time to setpgid yet, let's just kill the process
                 # FIXME there still is room for a race condition there
+                LOGGER.warning("Phase 2: Just kill the process %s" % str(self.pid))
+
                 os.kill(self.pid, SIGTERM)
             except OSError, e:
                 # If the process is dead already, let it rest in peace.
                 # Else, we have a problem, so reraise.
                 if e.args[0] != ESRCH:
+                    LOGGER.warning("Phase 2: process error (%s)" % e)
                     raise
 
             # PHASE 3
@@ -179,11 +172,13 @@ class CommandWatcherProcess(object):
                 # if we kill the watcher but the watcher had the time to
                 # create processgroup and start another process in between
                 # phases 1 and 2, then attempt to kill the processgroup.
+                LOGGER.warning("Phase 3: Try to fix race condition by killing the process group again %s" % str(self.pid))
                 os.killpg(self.pid, SIGTERM)
             except OSError, e:
                 # If the process is dead already, let it rest in peace.
                 # Else, we have a problem, so reraise.
                 if e.args[0] != ESRCH:
+                    LOGGER.warning("Phase 3: process error (%s)" % e)
                     raise
         else:
             os.popen("taskkill /PID  %d" % self.pid)

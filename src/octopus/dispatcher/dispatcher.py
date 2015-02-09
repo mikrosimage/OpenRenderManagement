@@ -557,7 +557,7 @@ class Dispatcher(MainLoopApplication):
                     else:
                         logging.getLogger('main.dispatcher').info("Sent assignment of command %d to worker %s", command.id, rendernode.name)
                 except rendernode.RequestFailed, e:
-                    logging.getLogger('main.dispatcher').error("Assignment of command %d to worker %s failed: %r", command.id, rendernode.name, e)
+                    logging.getLogger('main.dispatcher').error("Assignment of command %d to worker %s failed. Worker is likely dead (%r)", command.id, rendernode.name, e)
                     failures.append((rendernode, command))
             return failures
 

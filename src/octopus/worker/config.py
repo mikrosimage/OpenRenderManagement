@@ -15,7 +15,7 @@ __copyright__ = "Copyright 2013, Mikros Image"
 #
 # PROCESS BEHAVIOUR
 #
-LIST_ALLOWED_PROCESSES_WHEN_PAUSING_WORKER = ['python', 'python2.6', 'bash', 'sshd', 'respawnerd', 'workerd']
+LIST_ALLOWED_PROCESSES_WHEN_PAUSING_WORKER = ['python', 'python2.6', 'python2.7', 'bash', 'sshd', 'respawnerd', 'workerd']
 
 #
 # COMUNICATION BEHAVIOUR

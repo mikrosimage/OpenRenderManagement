@@ -24,6 +24,6 @@ setup(
     install_requires=[
         'tornado',
         'sqlobject',
-        'requests',
+        'requests', 'simplejson',
     ],
 )

@@ -69,7 +69,9 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
 
         # normalize environment
         envN = os.environ.copy()
-        envN.update(env)
+        for key in env:
+            envN[str(key)] = str(env[key])
+
         proc = context.execute_shell(
             command=args,
             shell='bash',
@@ -106,7 +108,9 @@ def spawnCommandWatcher(pidfile, logfile, args, env):
 
     # normalize environment
     envN = os.environ.copy()
-    envN.update(env)
+    for key in env:
+        envN[str(key)] = str(env[key])
+
 
     LOGGER.info("Starting subprocess, log: %r, args: %r" % (logfile.name, args))
     try:

@@ -16,7 +16,6 @@ import logging
 import errno
 import requests
 from collections import deque
-import simplejson as json
 
 from octopus.dispatcher.model.enums import *
 from octopus.dispatcher import settings

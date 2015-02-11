@@ -13,6 +13,9 @@ except ImportError:
     import json
 
 from puliclient.model.task import Task
+from octopus.core.enums.node import NODE_STATUS_NAMES
+from octopus.core.enums.node import NODE_STATUS_SHORT_NAMES
+
 
 class Job(object):
     #
@@ -89,7 +92,6 @@ class Job(object):
                     self.children.append(Job(child))
             elif key == 'task':
                 self.task = Task(jobDict['task'])
-                pass
             elif hasattr(self, key):
                 setattr(self, key, val)
 
@@ -153,6 +155,22 @@ class Job(object):
 
     def setName(self, name):
         raise NotImplementedError
+
+    @property
+    def statusLabel(self):
+        """
+        Property to access the job status label
+        :return: string
+        """
+        return NODE_STATUS_NAMES[self.status]
+
+    @property
+    def statusShortLabel(self):
+        """
+        Property to access the job status short label (a single letter)
+        :return: string
+        """
+        return NODE_STATUS_SHORT_NAMES[self.status]
 
     def setDispatchKey(self, prio):
         '''

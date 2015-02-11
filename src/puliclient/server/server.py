@@ -114,33 +114,35 @@ def request(host, port, url, method="get", *args, **kwargs):
 
 
 class Server(object):
-    __host = "vfxpc64"
+    '''
+    '''
+    __host = "localhost"
     __port = 8004
 
     __baseUrl = "http://%s:%d" % (__host, __port)
     __query = ""
 
-    @classmethod
-    def getBaseUrl(cls):
-        return cls.__baseUrl
+    def __init__(self, host='localhost', port=8004):
+        self.__host = host
+        self.__port = port
+        self.__baseUrl = "http://%s:%d" % (self.__host, self.__port)
+        self.__query = ""
 
-    @classmethod
-    def request(cls, url, method, *args, **kwargs):
-        return request(cls.__host, cls.__port, url, method, *args, **kwargs)
+    def getBaseUrl(self):
+        return self.__baseUrl
 
-    @classmethod
-    def get(cls, url, *args, **kwargs):
-        return cls.request(url, "get", *args, **kwargs)
+    def request(self, url, method, *args, **kwargs):
+        return request(self.__host, self.__port, url, method, *args, **kwargs)
 
-    @classmethod
-    def post(cls, url, *args, **kwargs):
-        return cls.request(url, "post", *args, **kwargs)
+    def get(self, url, *args, **kwargs):
+        return self.request(url, "get", *args, **kwargs)
 
-    @classmethod
-    def put(cls, url, *args, **kwargs):
-        return cls.request(url, "put", *args, **kwargs)
+    def post(self, url, *args, **kwargs):
+        return self.request(url, "post", *args, **kwargs)
 
-    @classmethod
-    def delete(cls, url, *args, **kwargs):
-        return cls.request(url, "delete", *args, **kwargs)
+    def put(self, url, *args, **kwargs):
+        return self.request(url, "put", *args, **kwargs)
+
+    def delete(self, url, *args, **kwargs):
+        return self.request(url, "delete", *args, **kwargs)
 

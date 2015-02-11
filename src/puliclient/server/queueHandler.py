@@ -31,7 +31,7 @@ from puliclient.server.server import RequestError
 from puliclient.server.server import RequestTimeoutError
 
 from puliclient.model.job import Job
-
+from octopus.core.enums.node import NODE_STATUS
 
 class InvalidParamError(Exception):
     """ Raised when api method param is invalid. """
@@ -41,16 +41,18 @@ class QueueHandler(object):
     """
     """
 
-    @classmethod
-    def getAllJobs(cls, recursive=True):
-        result = []
+    def __init__(self, server=None):
+        self.__server = Server() if server is None else server
 
-        url = "query/job"
-        body = {
-            "recursive": recursive
-        }
+    def processRequest(self, body=None, url="query/job"):
+        """
+        :param body:
+        :return:
+        """
+        result = []
         try:
-            response = Server.post(url, data=json.dumps(body))
+            response = self.__server.post(url, data=json.dumps(body))
+
             jobs = response.get("items")
             summary = response.get("summary")
 
@@ -62,11 +64,26 @@ class QueueHandler(object):
 
         return result, summary
 
+    def getAllJobs(self, recursive=True):
+        """
+        Retrieves all jobs on the server
+        :param recursive:
+        :return:
+        """
 
-    @classmethod
-    def getJobsById(cls, idList, recursive=True):
-        result = []
+        body = {
+            "recursive": recursive
+        }
+        return self.processRequest(body)
 
+
+    def getJobsById(self, idList, recursive=True):
+        """
+        Retrieves job list on server given a list of ids.
+        :param idList: job ids
+        :param recursive: retrieve a whole hierarchy or only single level top job(s) (default=True)
+        :return: a tuple with list of jobs and a summary dict
+        """
         if idList == []:
             raise InvalidParamError("Error: empty idList given for request")
 
@@ -75,24 +92,15 @@ class QueueHandler(object):
             "id": idList,
             "recursive": recursive
         }
-        try:
-            response = Server.post(url, data=json.dumps(body))
-            jobs = response.get("items")
-            summary = response.get("summary")
+        return self.processRequest(body)
 
-            for job in jobs:
-                tmp = Job(job)
-                result.append(tmp)
-        except (RequestTimeoutError, RequestError) as err:
-            # logging.error("Impossible to retrieve jobs with query: %s" % url)
-            raise err
-
-        return result, summary
-
-    @classmethod
-    def getJobsByName(cls, nameList, recursive=True):
-        result = []
-
+    def getJobsByName(self, nameList, recursive=True):
+        """
+        Retrieves job list on server given a list of name regular expresssion.
+        :param nameList: job name expresssions
+        :param recursive: retrieve a whole hierarchy or only single level top job(s) (default=True)
+        :return: a tuple with list of jobs and a summary dict
+        """
         if nameList == []:
             raise InvalidParamError("Error: empty nameList given for request")
 
@@ -101,19 +109,44 @@ class QueueHandler(object):
             "name": nameList,
             "recursive": recursive
         }
-        try:
-            response = Server.post(url, data=json.dumps(body))
-            jobs = response.get("items")
-            summary = response.get("summary")
+        return self.processRequest(body)
 
-            for job in jobs:
-                tmp = Job(job)
-                result.append(tmp)
-        except (RequestTimeoutError, RequestError) as err:
-            raise err
+    def getJobsByStatus(self, statusList, recursive=True):
+        """
+        Retrieves job list on server given a list of job statuses.
+        :param statusList: job status (in range [0-6] cf enum NODE_STATUS)
+        :param recursive: retrieve a whole hierarchy or only single level top job(s) (default=True)
+        :return: a tuple with list of jobs and a summary dict
+        """
+        if statusList == []:
+            raise InvalidParamError("Error: empty nameList given for request")
 
-        return result, summary
+        cleanStatus = []
+        for status in statusList:
+            try:
+                cleanStatus.append(NODE_STATUS[int(status)])
+            except IndexError as err:
+                logging.error("Status index out of range: %s" % status)
+                raise err
+            except Exception as err:
+                raise err
+
+        logging.debug("clean statuses = %s" % cleanStatus)
+
+        url = "query/job"
+        body = {
+            "status": statusList,
+            "recursive": recursive
+        }
+        return self.processRequest(body)
 
 
 if __name__ == '__main__':
-    pass
+
+    from octopus.core import enums
+
+    qh = QueueHandler(Server("localhost", 8004))
+    print qh.getAllJobs()
+    print qh.getJobsByStatus([enums.NODE_CANCELED, enums.NODE_RUNNING])
+    print qh.getJobsById(range(1, 100))
+    print qh.getJobsByName(['.*test'], False)

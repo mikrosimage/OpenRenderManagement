@@ -7,20 +7,21 @@ __author__ = "Jerome Samson"
 __copyright__ = "Copyright 2014, Mikros Image"
 
 import logging
+import time
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
+from tornado.web import HTTPError
+
+from octopus.core.communication.http import Http404
 from octopus.core.framework import ResourceNotFoundError
-from octopus.dispatcher.webservice.nodes import NodeNotFoundError
-
 from octopus.dispatcher.webservice import DispatcherBaseResource
-
-from octopus.dispatcher.model import FolderNode
-from octopus.dispatcher.model import TaskNode
-from octopus.dispatcher.model import Command
-
-from octopus.core.data import JobInfo
-from octopus.core.data import TaskInfo
-from octopus.core.data import CommandInfo
-
+from octopus.dispatcher.model.filter.node import IFilterNode
+from octopus.dispatcher.model import Task as DispatcherTask
+from puliclient.model.job import Job
+from puliclient.model.task import Task
 
 class JobNotFoundError(ResourceNotFoundError):
     '''
@@ -30,58 +31,76 @@ class JobNotFoundError(ResourceNotFoundError):
         ResourceNotFoundError.__init__(self, node=node, *args, **kwargs)
 
 
-class JobResource(DispatcherBaseResource):
+class JobQueryResource(DispatcherBaseResource, IFilterNode):
 
-    def _findJob(self, nodeId):
-        node = None
-        # import pudb;pu.db
+    def createJobRepr(self, pNode, recursive=True):
+        """
+        Create a json representation for a given node hierarchy.
+        param: node to explore
+        return: puliclient.model.job object (which is serializable)
+        """
+        newJob = Job()
+        newJob.createFromNode(pNode)
+
+        if not recursive:
+            return newJob
+        else:
+            if hasattr(pNode, 'children'):
+                for node in pNode.children:
+                    newJob.children.append(self.createJobRepr(node))
+
+            if hasattr(pNode, 'task') and isinstance(pNode.task, DispatcherTask):
+                newJob.task = Task()
+                newJob.task.createFromTaskNode(pNode.task)
+
+        return newJob
+
+    def post(self):
+        """
+        """
+        self.logger = logging.getLogger('main.query')
+
+        filters = self.getBodyAsJSON()
+        self.logger.debug('filters: %s' % filters)
+
         try:
-            node = self.getDispatchTree().nodes[int(nodeId)]
+            start_time = time.time()
+            resultData = []
+
+            nodes = self.getDispatchTree().nodes[1].children
+            totalNodes = len(nodes)
+
+            #
+            # --- filtering
+            #
+            filteredNodes = self.matchNodes(filters, nodes)
+            # self.logger.debug("Nodes have been filtered")
+
+            #
+            # --- Prepare the result json object
+            #
+            for currNode in filteredNodes:
+                tmp = self.createJobRepr(currNode, filters.get('recursive', True))
+                resultData.append(tmp.encode())
+
+            content = {
+                'summary': {
+                    'count': len(filteredNodes),
+                    'totalInDispatcher': totalNodes,
+                    'requestTime': time.time() - start_time,
+                    'requestDate': time.ctime()
+                },
+                'items': resultData
+            }
+
+            # Create response and callback
+            self.writeCallback(json.dumps(content))
+
         except KeyError:
-            raise NodeNotFoundError(nodeId)
+            raise Http404('Error unknown key')
 
-        if node.parent.id != 1:
-            raise JobNotFoundError(nodeId)
+        except HTTPError, e:
+            raise e
 
-        return node
-
-    def parseNode(self, node):
-        if isinstance(node, FolderNode):
-            res = JobInfo(node.id)
-            res.loadFrom(node)
-            print "Get folder: %s" % node.name
-            for child in node.children:
-                res.children.append(self.parseNode(child))
-
-        elif isinstance(node, TaskNode):
-            print "Get task: %s" % node.name
-            res = TaskInfo(node.id)
-            res.loadFrom(node)
-
-            for command in node.task.commands:
-                res.commands.append(self.parseNode(command))
-
-        elif isinstance(node, Command):
-            print "Get command: %s" % node.description
-            res = CommandInfo(node.id)
-            res.loadFrom(node)
-
-        return res
-
-    def get(self, jobId):
-
-        # import pudb; pu.db
-
-        log = logging.getLogger('main')
-        log.info("jobid = %s" % jobId)
-
-        args = self.request.arguments
-        log.info("args = %s" % args)
-
-        node = self._findJob(jobId)
-
-        resDict = self.parseNode( node )
-
-        self.write(resDict.to_JSON())
-
-    pass
+        except Exception, e:
+            raise HTTPError(500, "Impossible to retrieve jobs (%s)" % e)

@@ -511,16 +511,22 @@ class Worker(MainLoopApplication):
         self.ensureNoMoreRender()
 
     def ensureNoMoreRender(self):
+        # TODO rather use `ps -u render -f -o pid -o cmd`
+        # This would allow to properly identify workerd.py/commandwatcher.py process instead of everything except python...
+
         # ensure we don't have anymore rendering process
         renderProcessList = os.popen("pgrep -u render -l").read().split('\n')
+        LOGGER.debug("Check \"render\" processes: %r" % renderProcessList)
+        LOGGER.debug("Allowed process names: %s" % config.LIST_ALLOWED_PROCESSES_WHEN_PAUSING_WORKER)
         processToKill = []
         for processItem in renderProcessList:
             items = processItem.split(' ')
             if len(items) == 2 and items[1] not in config.LIST_ALLOWED_PROCESSES_WHEN_PAUSING_WORKER:
-                #['python', 'bash', 'sshd', 'respawner.py']
                 processToKill.append(items[0])
                 LOGGER.info("Found ghost process %s %s" % (items[0], items[1]))
+
         if len(processToKill) != 0:
+            LOGGER.info("Ensuring no more renders, kill processes %r" % processToKill)
             for pid in processToKill:
                 try:
                     os.kill(int(pid), signal.SIGKILL)
@@ -611,6 +617,8 @@ class Worker(MainLoopApplication):
 
                 if killfileInfo.get('content') == -2:
                     LOGGER.warning("Flag -2 detected in killfile, schedule restart")
+                    self.killCommandWatchers()
+                    self.pauseWorker(paused=True, killproc=False)
                     self.toberestarted = True
                     self.removeKillfile()
 
@@ -636,6 +644,8 @@ class Worker(MainLoopApplication):
                 if killfileInfo.get('content') == -2:
                     LOGGER.warning("Flag -2 detected in killfile, schedule restart and put empty killfile to keep pause")
                     self.toberestarted = True
+                    self.killCommandWatchers()
+                    self.pauseWorker(paused=True, killproc=True)
                     self.setKillfileInfo(None)
                 if killfileInfo.get('content') == -3:
                     LOGGER.warning("Flag -3 detected in killfile, killing render and schedule restart")

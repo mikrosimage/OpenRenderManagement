@@ -149,11 +149,11 @@ class CommandWatcherProcess(object):
                 os.killpg(self.pid, SIGTERM)
                 return
             except OSError, e:
-                LOGGER.error("A problem occured")
+                LOGGER.warning("A problem occured: %s" % e)
                 # If the process is dead already, let it rest in peace.
                 # Else, we have a problem, so reraise.
                 if e.args[0] != ESRCH:
-                    LOGGER.warning("Phase 1: process error (%s)" % e)
+                    LOGGER.error("Phase 1: process error (%s)" % e)
                     raise
 
             # PHASE 2
@@ -167,7 +167,7 @@ class CommandWatcherProcess(object):
                 # If the process is dead already, let it rest in peace.
                 # Else, we have a problem, so reraise.
                 if e.args[0] != ESRCH:
-                    LOGGER.warning("Phase 2: process error (%s)" % e)
+                    LOGGER.error("Phase 2: process error (%s)" % e)
                     raise
 
             # PHASE 3
@@ -182,7 +182,7 @@ class CommandWatcherProcess(object):
                 # If the process is dead already, let it rest in peace.
                 # Else, we have a problem, so reraise.
                 if e.args[0] != ESRCH:
-                    LOGGER.warning("Phase 3: process error (%s)" % e)
+                    LOGGER.error("Phase 3: process error (%s)" % e)
                     raise
         else:
             os.popen("taskkill /PID  %d" % self.pid)

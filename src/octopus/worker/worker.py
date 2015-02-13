@@ -820,6 +820,7 @@ class Worker(MainLoopApplication):
             commandWatcher = self.commandWatchers[commandId]
         except KeyError:
             LOGGER.warning("attempt to update completion and status of unregistered  command %d", commandId)
+            # TODO Find a to remove commandwatcher asking to update...
         else:
             commandWatcher.modified = True
             if commandWatcher.command.status == COMMAND.CMD_CANCELED:
@@ -866,6 +867,7 @@ class Worker(MainLoopApplication):
         else:
             commandWatcher.processObj.kill()
             self.updateCompletionAndStatus(commandId, 0, COMMAND.CMD_CANCELED, "killed")
+            self.ensureNoMoreRender()
             LOGGER.info("Stopped command %r", commandId)
 
     def updateCommandApply(self, ticket, commandId, status, completion, message, stats):

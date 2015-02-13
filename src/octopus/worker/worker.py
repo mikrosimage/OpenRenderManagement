@@ -866,6 +866,7 @@ class Worker(MainLoopApplication):
         else:
             commandWatcher.processObj.kill()
             self.updateCompletionAndStatus(commandId, 0, COMMAND.CMD_CANCELED, "killed")
+            self.ensureNoMoreRender()
             LOGGER.info("Stopped command %r", commandId)
 
     def updateCommandApply(self, ticket, commandId, status, completion, message, stats):

@@ -532,8 +532,7 @@ class Dispatcher(MainLoopApplication):
                 arguments.update(command.arguments)
 
                 log = logging.getLogger('assign')
-                # log.debug("runnerPackages: %s" % command.runnerPackages)
-                # log.debug("watcherPackages: %s" % command.watcherPackages)
+                log.info("Sending command: %d from task %s to %s" % (command.id, command.task.name, rendernode))
 
                 commandDict = {
                     "id": command.id,

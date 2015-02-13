@@ -248,8 +248,9 @@ def update_settings(target_path=env.target_path, log_dir=env.logdir, conf_dir=en
 
     print ""
     print(green("Update settings on server:", bold=True))
-    print(green(" - LOGDIR = %s" % log_dir, bold=True))
-    print(green(" - CONFDIR = %s" % conf_dir, bold=True))
+    print(green(" - target_path  = %s" % target_path, bold=True))
+    print(green(" - log_dir = %s" % log_dir, bold=True))
+    print(green(" - conf_dir = %s" % conf_dir, bold=True))
     if not force:
         result = prompt(green("\nContinue ?", bold=True), default='y')
         if result != 'y':

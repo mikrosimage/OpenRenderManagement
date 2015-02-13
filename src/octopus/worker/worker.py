@@ -511,21 +511,33 @@ class Worker(MainLoopApplication):
         self.ensureNoMoreRender()
 
     def ensureNoMoreRender(self):
-        # ensure we don't have anymore rendering process
-        renderProcessList = os.popen("pgrep -u render -l").read().split('\n')
-        processToKill = []
-        for processItem in renderProcessList:
-            items = processItem.split(' ')
-            if len(items) == 2 and items[1] not in config.LIST_ALLOWED_PROCESSES_WHEN_PAUSING_WORKER:
-                #['python', 'bash', 'sshd', 'respawner.py']
-                processToKill.append(items[0])
-                LOGGER.info("Found ghost process %s %s" % (items[0], items[1]))
-        if len(processToKill) != 0:
-            for pid in processToKill:
+        """
+        Force kill of all process attached to the current EUID. this ensures that all command processes have been killed.
+        :return: a boolean indicating success
+        """
+        try:
+            # Ensure we don't have anymore rendering process
+            keepPID = [os.getpid(), os.getpgid(0)]
+            effectiveUID = os.geteuid()
+
+            # Get pids of current user (usually 'render')
+            renderProcessList = subprocess.check_output(["ps", "-u", str(effectiveUID), "-o", "pid", "h"]).split()
+            # LOGGER.debug("Current user PIDs: %r" % renderProcessList)
+
+            # Filter the list to preserve the current process and parent process
+            killPID = [pid for pid in renderProcessList if int(pid) not in keepPID]
+
+            # Send SIGKILL to everyone else
+            for pid in killPID:
                 try:
                     os.kill(int(pid), signal.SIGKILL)
                 except OSError:
+                    LOGGER.warning("Impossible to send SIGKILL to %s, the process has vanished." % pid)
                     continue
+        except Exception as err:
+            LOGGER.error("Error when killing render processes. Some processes of a closed command might still run (%s)" % err)
+            return False
+        return True
 
     def getKillfileInfo(self):
         """
@@ -611,6 +623,8 @@ class Worker(MainLoopApplication):
 
                 if killfileInfo.get('content') == -2:
                     LOGGER.warning("Flag -2 detected in killfile, schedule restart")
+                    self.killCommandWatchers()
+                    self.pauseWorker(paused=True, killproc=False)
                     self.toberestarted = True
                     self.removeKillfile()
 
@@ -636,6 +650,8 @@ class Worker(MainLoopApplication):
                 if killfileInfo.get('content') == -2:
                     LOGGER.warning("Flag -2 detected in killfile, schedule restart and put empty killfile to keep pause")
                     self.toberestarted = True
+                    self.killCommandWatchers()
+                    self.pauseWorker(paused=True, killproc=True)
                     self.setKillfileInfo(None)
                 if killfileInfo.get('content') == -3:
                     LOGGER.warning("Flag -3 detected in killfile, killing render and schedule restart")
@@ -917,7 +933,6 @@ class Worker(MainLoopApplication):
 
         # LOGGER.debug("command.runnerPackages = %s" % command.runnerPackages)
         # LOGGER.debug("command.watcherPackages = %s" % command.watcherPackages)
-
         if 'REZ_USED_RESOLVE' in os.environ:
             pythonExec = "python"
             runnerPackages = command.runnerPackages if command.runnerPackages != '' else 'undefined'
@@ -935,11 +950,10 @@ class Worker(MainLoopApplication):
             str(command.id),
             command.runner,
             command.validationExpression,
-            runnerPackages
+            runnerPackages,
+            json.dumps(command.arguments)
         ]
 
-        # Properly serializing arguments using json
-        args.append(json.dumps(command.arguments))
         try:
             # Starts a new process (via CommandWatcher script) with current command info and environment.
             # The command environment is derived from the current os.env

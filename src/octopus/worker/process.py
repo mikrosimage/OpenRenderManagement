@@ -37,9 +37,9 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
 
     :param pidfile: full path to the comand pid file (usally /var/run/puli/cw<command_id>.pid)
     :param logfile: file object to store process log content
-    :param args:
-    :param watcherPackages:
-    :param env:
+    :param args: arguments passed to the CommandWatcher script
+    :param watcherPackages: A list of packages that will be resolved when creating Rez context
+    :param env: a dict holding key/value pairs that will be merged into the current env and used in subprocess
 
     :return: a CommandWatcherProcess object holding command watcher process handle
     """
@@ -55,7 +55,7 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
         if watcherPackages is None:
             LOGGER.warning("No package specified for this command, it might not find the runner for this command.")
             watcherPackagesList = []
-        elif type(watcherPackages) is str:
+        elif type(watcherPackages) in [str, unicode]:
             watcherPackagesList = watcherPackages.split()
         else:
             watcherPackagesList = watcherPackages
@@ -69,7 +69,9 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
 
         # normalize environment
         envN = os.environ.copy()
-        envN.update(env)
+        for key in env:
+            envN[str(key)] = str(env[key])
+
         proc = context.execute_shell(
             command=args,
             shell='bash',
@@ -91,13 +93,24 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
 
 def spawnCommandWatcher(pidfile, logfile, args, env):
     """
-    logfile is a file object
+    | Create a subprocess with "CommandWatcher" script. It will receive the commands arguments and everything
+    | needed to execute the command process (logfile, runner name...)
+    | The subprocess received the current environment merged with given env dict.
+
+    :param pidfile: full path to the comand pid file (usally /var/run/puli/cw<command_id>.pid)
+    :param logfile: a file handler to wich log will be redirected
+    :param args: arguments passed to the CommandWatcher script
+    :param env: a dict holding key/value pairs that will be merged into the current env and used in subprocess
+
+    :return: A CommandWatcherProcess class holding relevants infos of the new process
     """
     devnull = file(os.devnull, "r")
 
     # normalize environment
     envN = os.environ.copy()
-    envN.update(env)
+    for key in env:
+        envN[str(key)] = str(env[key])
+
 
     LOGGER.info("Starting subprocess, log: %r, args: %r" % (logfile.name, args))
     try:
@@ -136,11 +149,11 @@ class CommandWatcherProcess(object):
                 os.killpg(self.pid, SIGTERM)
                 return
             except OSError, e:
-                LOGGER.error("A problem occured")
+                LOGGER.warning("A problem occured: %s" % e)
                 # If the process is dead already, let it rest in peace.
                 # Else, we have a problem, so reraise.
                 if e.args[0] != ESRCH:
-                    LOGGER.warning("Phase 1: process error (%s)" % e)
+                    LOGGER.error("Phase 1: process error (%s)" % e)
                     raise
 
             # PHASE 2
@@ -154,7 +167,7 @@ class CommandWatcherProcess(object):
                 # If the process is dead already, let it rest in peace.
                 # Else, we have a problem, so reraise.
                 if e.args[0] != ESRCH:
-                    LOGGER.warning("Phase 2: process error (%s)" % e)
+                    LOGGER.error("Phase 2: process error (%s)" % e)
                     raise
 
             # PHASE 3
@@ -169,7 +182,7 @@ class CommandWatcherProcess(object):
                 # If the process is dead already, let it rest in peace.
                 # Else, we have a problem, so reraise.
                 if e.args[0] != ESRCH:
-                    LOGGER.warning("Phase 3: process error (%s)" % e)
+                    LOGGER.error("Phase 3: process error (%s)" % e)
                     raise
         else:
             os.popen("taskkill /PID  %d" % self.pid)

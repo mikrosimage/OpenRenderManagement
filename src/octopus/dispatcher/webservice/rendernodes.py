@@ -65,13 +65,14 @@ class RenderNodeResource(DispatcherBaseResource):
 
         if computerName in self.getDispatchTree().renderNodes:
             # When the registering worker is already listed in RN list
-            logger.warning("RenderNode already registered.")
+            logger.warning("RenderNode already registered: %s" % computerName)
             existingRN = self.getDispatchTree().renderNodes[computerName]
 
             if 'commands' not in dct:
                 # No commands in current RN, reset command that might be still assigned to this RN
                 existingRN.reset()
             else:
+                logger.warning("Reset commands that are assigned to this RN: %r" % dct.get('commands', '-'))
                 for cmdId in dct['commands']:
                     existingRN.commands[cmdId] = self.getDispatchTree().commands[cmdId]
 
@@ -125,7 +126,7 @@ class RenderNodeResource(DispatcherBaseResource):
         try:
             renderNode = self.getDispatchTree().renderNodes[computerName]
         except KeyError:
-            return Http404("RenderNode not found")
+            return Http404("RenderNode %s not found" % computerName)
         dct = self.getBodyAsJSON()
         for key in dct:
             if key == "cores":

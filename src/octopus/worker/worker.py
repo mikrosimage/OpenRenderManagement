@@ -511,27 +511,33 @@ class Worker(MainLoopApplication):
         self.ensureNoMoreRender()
 
     def ensureNoMoreRender(self):
-        # TODO rather use `ps -u render -f -o pid -o cmd`
-        # This would allow to properly identify workerd.py/commandwatcher.py process instead of everything except python...
+        """
+        Force kill of all process attached to the current EUID. this ensures that all command processes have been killed.
+        :return: a boolean indicating success
+        """
+        try:
+            # Ensure we don't have anymore rendering process
+            keepPID = [os.getpid(), os.getpgid(0)]
+            effectiveUID = os.geteuid()
 
-        # ensure we don't have anymore rendering process
-        renderProcessList = os.popen("pgrep -u render -l").read().split('\n')
-        LOGGER.debug("Check \"render\" processes: %r" % renderProcessList)
-        LOGGER.debug("Allowed process names: %s" % config.LIST_ALLOWED_PROCESSES_WHEN_PAUSING_WORKER)
-        processToKill = []
-        for processItem in renderProcessList:
-            items = processItem.split(' ')
-            if len(items) == 2 and items[1] not in config.LIST_ALLOWED_PROCESSES_WHEN_PAUSING_WORKER:
-                processToKill.append(items[0])
-                LOGGER.info("Found ghost process %s %s" % (items[0], items[1]))
+            # Get pids of current user (usually 'render')
+            renderProcessList = subprocess.check_output(["ps", "-u", str(effectiveUID), "-o", "pid", "h"]).split()
+            # LOGGER.debug("Current user PIDs: %r" % renderProcessList)
 
-        if len(processToKill) != 0:
-            LOGGER.info("Ensuring no more renders, kill processes %r" % processToKill)
-            for pid in processToKill:
+            # Filter the list to preserve the current process and parent process
+            killPID = [pid for pid in renderProcessList if int(pid) not in keepPID]
+
+            # Send SIGKILL to everyone else
+            for pid in killPID:
                 try:
                     os.kill(int(pid), signal.SIGKILL)
                 except OSError:
+                    LOGGER.warning("Impossible to send SIGKILL to %s, the process has vanished." % pid)
                     continue
+        except Exception as err:
+            LOGGER.error("Error when killing render processes. Some processes of a closed command might still run (%s)" % err)
+            return False
+        return True
 
     def getKillfileInfo(self):
         """

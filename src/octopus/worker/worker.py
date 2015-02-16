@@ -522,15 +522,16 @@ class Worker(MainLoopApplication):
 
             # Get pids of current user (usually 'render')
             renderProcessList = subprocess.check_output(["ps", "-u", str(effectiveUID), "-o", "pid", "h"]).split()
-            # LOGGER.debug("Current user PIDs: %r" % renderProcessList)
 
             # Filter the list to preserve the current process and parent process
             killPID = [pid for pid in renderProcessList if int(pid) not in keepPID]
+            # LOGGER.debug("PID to kill: %r" % killPID)
 
             # Send SIGKILL to everyone else
             for pid in killPID:
                 try:
                     os.kill(int(pid), signal.SIGKILL)
+                    LOGGER.info("SIGKILL sent to %s" % pid)
                 except OSError:
                     LOGGER.warning("Impossible to send SIGKILL to %s, the process has vanished." % pid)
                     continue

@@ -45,7 +45,6 @@ class Command(object):
         return "Command: %d" % (self.id)
 
     def encode(self, indent=0):
-        # import pudb; pu.db
         res = {}
         for field in self.__dict__:
             if field == 'renderNode':

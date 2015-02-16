@@ -34,7 +34,6 @@ class JobResource(DispatcherBaseResource):
 
     def _findJob(self, nodeId):
         node = None
-        # import pudb;pu.db
         try:
             node = self.getDispatchTree().nodes[int(nodeId)]
         except KeyError:
@@ -69,8 +68,6 @@ class JobResource(DispatcherBaseResource):
         return res
 
     def get(self, jobId):
-
-        # import pudb; pu.db
 
         log = logging.getLogger('main')
         log.info("jobid = %s" % jobId)

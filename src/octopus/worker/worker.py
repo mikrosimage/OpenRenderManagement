@@ -515,10 +515,12 @@ class Worker(MainLoopApplication):
         Force kill of all process attached to the current EUID. this ensures that all command processes have been killed.
         :return: a boolean indicating success
         """
+
         try:
             # Ensure we don't have anymore rendering process
-            keepPID = [os.getpid(), os.getpgid(0)]
+            keepPID = [os.getpid(), os.getppid()]
             effectiveUID = os.geteuid()
+            LOGGER.debug("PID to keep: %r" % keepPID)
 
             # Get pids of current user (usually 'render')
             renderProcessList = subprocess.check_output(["ps", "-u", str(effectiveUID), "-o", "pid", "h"]).split()
@@ -531,9 +533,9 @@ class Worker(MainLoopApplication):
             for pid in killPID:
                 try:
                     os.kill(int(pid), signal.SIGKILL)
-                    LOGGER.info("SIGKILL sent to %s" % pid)
+                    LOGGER.debug("SIGKILL sent to %s" % pid)
                 except OSError:
-                    LOGGER.warning("Impossible to send SIGKILL to %s, the process has vanished." % pid)
+                    LOGGER.debug("Impossible to send SIGKILL to %s, the process has vanished." % pid)
                     continue
         except Exception as err:
             LOGGER.error("Error when killing render processes. Some processes of a closed command might still run (%s)" % err)
@@ -566,7 +568,7 @@ class Worker(MainLoopApplication):
         :return: Boolean indicating success
         """
         if content is None:
-            LOGGER.warning('put empty killfile')
+            LOGGER.warning('Put empty killfile')
             with open(settings.KILLFILE, 'w') as f:
                 pass
         elif content in [-1, -2, -3]:
@@ -625,7 +627,7 @@ class Worker(MainLoopApplication):
                 if killfileInfo.get('content') == -2:
                     LOGGER.warning("Flag -2 detected in killfile, schedule restart")
                     self.killCommandWatchers()
-                    self.pauseWorker(paused=True, killproc=False)
+                    self.pauseWorker(paused=True, killproc=True)
                     self.toberestarted = True
                     self.removeKillfile()
 
@@ -633,7 +635,7 @@ class Worker(MainLoopApplication):
                     LOGGER.warning("Flag -3 detected in killfile, killing render and schedule restart")
                     self.toberestarted = True
                     self.killCommandWatchers()
-                    self.pauseWorker(paused=True, killproc=False)
+                    self.pauseWorker(paused=True, killproc=True)
                     self.removeKillfile()
                 else:
                     LOGGER.warning("Empty killfile, pausing worker")
@@ -863,7 +865,7 @@ class Worker(MainLoopApplication):
         try:
             commandWatcher = self.commandWatchers[commandId]
         except KeyError:
-            LOGGER.warning("attempt to stop an unregistered command %d", commandId)
+            LOGGER.warning("Attempt to stop an unregistered command %d", commandId)
         else:
             commandWatcher.processObj.kill()
             self.updateCompletionAndStatus(commandId, 0, COMMAND.CMD_CANCELED, "killed")

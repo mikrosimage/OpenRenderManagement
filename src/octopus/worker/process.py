@@ -139,29 +139,45 @@ class CommandWatcherProcess(object):
     def kill(self):
         """Kill the process."""
         if os.name != 'nt':
+
+            # WARNING: SEVERAL PROBLEMS HERE
+            # the kill is not properly done, SIGTERM might not be sufficient, killpg is done on pid instead of pgid
+            # this code never works ! It gives the impression to work because there is "ensureNoMoreRender" in worker
+
+            # try:
+            #     LOGGER.warning("Killing process %s (pid=%s)" % (self.process, self.pid))
+            #     self.process.kill()
+            # except Exception as err:
+            #     LOGGER.warning("Error when killing process" % err)
+            #
+            # import time
+            # time.sleep(2.0)
+            # LOGGER.warning("After kill...")
+            # return
+
             from signal import SIGTERM
+            from signal import SIGKILL
             from errno import ESRCH
 
-            # PHASE 1
-            try:
-                # do not kill the process, kill the whole process group!
-                LOGGER.warning("Phase 1: Trying to kill process group %s" % str(self.pid))
-                os.killpg(self.pid, SIGTERM)
-                return
-            except OSError, e:
-                LOGGER.warning("A problem occured: %s" % e)
-                # If the process is dead already, let it rest in peace.
-                # Else, we have a problem, so reraise.
-                if e.args[0] != ESRCH:
-                    LOGGER.error("Phase 1: process error (%s)" % e)
-                    raise
+            # PHASE 1 ===> THIS IS STUPID: kills the whole group including the worker !
+            # try:
+            #     # do not kill the process, kill the whole process group!
+            #     LOGGER.info("Phase 1: Trying to kill process group %s" % str(self.pid))
+            #     os.killpg(os.getpgid(self.pid), SIGTERM)
+            #     return
+            # except OSError, e:
+            #     LOGGER.warning("A problem occured: %s" % e)
+            #     # If the process is dead already, let it rest in peace.
+            #     # Else, we have a problem, so reraise.
+            #     if e.args[0] != ESRCH:
+            #         LOGGER.error("Phase 1: process error (%s)" % e)
+            #         raise
 
             # PHASE 2
             try:
                 # the commandwatcher did not have time to setpgid yet, let's just kill the process
                 # FIXME there still is room for a race condition there
-                LOGGER.warning("Phase 2: Just kill the process %s" % str(self.pid))
-
+                LOGGER.info("Try to nicely terminate the process %s" % str(self.pid))
                 os.kill(self.pid, SIGTERM)
             except OSError, e:
                 # If the process is dead already, let it rest in peace.
@@ -170,19 +186,19 @@ class CommandWatcherProcess(object):
                     LOGGER.error("Phase 2: process error (%s)" % e)
                     raise
 
-            # PHASE 3
-            try:
-                # attempt to fix a race condition:
-                # if we kill the watcher but the watcher had the time to
-                # create processgroup and start another process in between
-                # phases 1 and 2, then attempt to kill the processgroup.
-                LOGGER.warning("Phase 3: Try to fix race condition by killing the process group again %s" % str(self.pid))
-                os.killpg(self.pid, SIGTERM)
-            except OSError, e:
-                # If the process is dead already, let it rest in peace.
-                # Else, we have a problem, so reraise.
-                if e.args[0] != ESRCH:
-                    LOGGER.error("Phase 3: process error (%s)" % e)
-                    raise
+            # PHASE 3 ==> SAME AS PHASE 1
+            # try:
+            #     # attempt to fix a race condition:
+            #     # if we kill the watcher but the watcher had the time to
+            #     # create processgroup and start another process in between
+            #     # phases 1 and 2, then attempt to kill the processgroup.
+            #     LOGGER.info("Phase 3: Try to fix race condition by killing the process group again %s" % str(self.pid))
+            #     os.killpg(self.pid, SIGTERM)
+            # except OSError, e:
+            #     # If the process is dead already, let it rest in peace.
+            #     # Else, we have a problem, so reraise.
+            #     if e.args[0] != ESRCH:
+            #         LOGGER.error("Phase 3: process error (%s)" % e)
+            #         raise
         else:
             os.popen("taskkill /PID  %d" % self.pid)

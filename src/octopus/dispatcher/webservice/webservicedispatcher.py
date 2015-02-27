@@ -105,6 +105,7 @@ class WebServiceDispatcher(Application):
 
             # (r'^/query2/rn$', query.RenderNodeQuery2Resource, dict(framework=framework)),
             (r'^/query/job$', job.JobQueryResource, dict(framework=framework)),
+            (r'^/query/rendernode$', rendernodes.RenderNodeQueryResource, dict(framework=framework)),
             (r'^/query/command$', commands.CommandQueryResource, dict(framework=framework)),
 
             # System maintenance WS

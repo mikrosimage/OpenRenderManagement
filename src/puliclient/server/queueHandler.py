@@ -3,18 +3,21 @@
 from __future__ import absolute_import
 
 """
-Request server to retrieve and interact on job,subjobs and commands.
+Request server to retrieve and interact on job, subjobs and commands.
 Each request method will return a result list and a summary dict.
 Result list holds one or several Job objects.
 
 Use:
-(jobs, summary) = QueueHandler.getAllJobs()
+qh = QueueHandler()
+
+(jobs, summary) = qh.getAllJobs()
 print "Summary:"
 for job in jobs:
     print "%s: %s" % (job.id, job.name)
 
-jobs = QueueHandler.getJobsByName(['test*'])
-jobs = QueueHandler.getJobsById([2,4,50])
+jobs = qh.getJobsByName(['test*'], recursive=False)
+jobs = qh.getJobsById([2,4,50])
+jobs = qh.getJobsByStatus([2, 3])
 
 """
 __author__ = "Jerome Samson"
@@ -68,7 +71,7 @@ class QueueHandler(object):
         """
         Retrieves all jobs on the server
         :param recursive:
-        :return:
+        :return: a tuple with list of jobs and a summary dict
         """
 
         body = {
@@ -76,6 +79,52 @@ class QueueHandler(object):
         }
         return self.processRequest(body)
 
+    def getJobs(
+            self,
+            idList=None,
+            nameList=None,
+            poolList=None,
+            statusList=None,
+            userList=None,
+            tagsDict=None,
+    ):
+        """
+        Retrieves job list on server given several filter
+        :param idList: Job id
+        :param nameList: Job name
+        :param poolList: Job pool name
+        :param statusList: Job statuses see octopus.core.enums.nodes.NODE_STATUS
+        :param userList: Job create user
+        :param tagsDict: a dict of tags key and possible values
+
+        :return: a tuple with list of results and a summary dict
+        :raises InvalidParamError: if filter params are not valid
+        :raises RequestTimeoutError: if the request reaches a timeout
+        :raises RequestError: if the request response code is an error or if any other network error occur
+        """
+        if idList == []:
+            raise InvalidParamError("Error: empty idList given for request")
+        if nameList == []:
+            raise InvalidParamError("Error: empty nameList given for request")
+        if poolList == []:
+            raise InvalidParamError("Error: empty poolList given for request")
+        if statusList == []:
+            raise InvalidParamError("Error: empty statusList given for request")
+        if userList == []:
+            raise InvalidParamError("Error: empty userList given for request")
+        if tagsDict == []:
+            raise InvalidParamError("Error: empty tagsDict given for request")
+
+        body = {}
+
+        if idList is not None: body['id'] = idList
+        if nameList is not None: body['name'] = nameList
+        if poolList is not None: body['pool'] = poolList
+        if statusList is not None: body['status'] = statusList
+        if userList is not None: body['user'] = userList
+        if tagsDict is not None: body['tags'] = tagsDict
+
+        return self.processRequest(body)
 
     def getJobsById(self, idList, recursive=True):
         """
@@ -87,7 +136,6 @@ class QueueHandler(object):
         if idList == []:
             raise InvalidParamError("Error: empty idList given for request")
 
-        url = "query/job"
         body = {
             "id": idList,
             "recursive": recursive
@@ -104,9 +152,40 @@ class QueueHandler(object):
         if nameList == []:
             raise InvalidParamError("Error: empty nameList given for request")
 
-        url = "query/job"
         body = {
             "name": nameList,
+            "recursive": recursive
+        }
+        return self.processRequest(body)
+
+    def getJobsByProd(self, prodList, recursive=True):
+        """
+        Retrieves job list on server given a list of prods.
+        :param prodList: job prod, stored under "prod" key in tags dict
+        :param recursive: retrieve a whole hierarchy or only single level top job(s) (default=True)
+        :return: a tuple with list of jobs and a summary dict
+        """
+        if prodList == []:
+            raise InvalidParamError("Error: empty prodList given for request")
+
+        body = {
+            "tags": {"prod": prodList},
+            "recursive": recursive
+        }
+        return self.processRequest(body)
+
+    def getJobsByPool(self, poolList, recursive=True):
+        """
+        Retrieves job list on server given a list of pool names.
+        :param poolList: pool name list
+        :param recursive: retrieve a whole hierarchy or only single level top job(s) (default=True)
+        :return: a tuple with list of jobs and a summary dict
+        """
+        if poolList == []:
+            raise InvalidParamError("Error: empty poolList given for request")
+
+        body = {
+            "pool": poolList,
             "recursive": recursive
         }
         return self.processRequest(body)
@@ -131,11 +210,41 @@ class QueueHandler(object):
             except Exception as err:
                 raise err
 
-        logging.debug("clean statuses = %s" % cleanStatus)
-
-        url = "query/job"
         body = {
             "status": statusList,
+            "recursive": recursive
+        }
+        return self.processRequest(body)
+
+    def getJobsByTags(self, tagsDict, recursive=True):
+        """
+        Retrieves job list on server given a list of tags, each tag having one or several possible values.
+        Jobs will be selected if any given tag is found.
+        :param tagsDict: a tags dict, each key being the tag name and each value being one or several possible values
+        :param recursive: retrieve a whole hierarchy or only single level top job(s) (default=True)
+        :return: a tuple with list of jobs and a summary dict
+        """
+        if tagsDict == {}:
+            raise InvalidParamError("Error: empty tagsDict given for request")
+
+        body = {
+            "tags": tagsDict,
+            "recursive": recursive
+        }
+        return self.processRequest(body)
+
+    def getJobsByUser(self, userList, recursive=True):
+        """
+        Retrieves job list on server given a list of user.
+        :param userList: job users
+        :param recursive: retrieve a whole hierarchy or only single level top job(s) (default=True)
+        :return: a tuple with list of jobs and a summary dict
+        """
+        if userList == []:
+            raise InvalidParamError("Error: empty userList given for request")
+
+        body = {
+            "user": userList,
             "recursive": recursive
         }
         return self.processRequest(body)
@@ -150,3 +259,22 @@ if __name__ == '__main__':
     print qh.getJobsByStatus([enums.NODE_CANCELED, enums.NODE_RUNNING])
     print qh.getJobsById(range(1, 100))
     print qh.getJobsByName(['.*test'], False)
+    print qh.getJobsByPool(['renderfarm'], False)
+    print qh.getJobsByProd(['prod_name'], False)
+    print qh.getJobsByTags({'nbFrames': [10], 'prod': ['test']}, False)
+    print qh.getJobsByUser(['jsa'], False)
+
+    (results, summary) = qh.getJobs(
+        idList=[28, 32],
+        nameList=['.*test'],
+        poolList=["default", "renderfarm"],
+        statusList=[enums.NODE_DONE],
+        tagsDict={
+            'prod': ['prodA', 'prodB'],
+            'nbFrames': [100],
+        },
+        userList=['user1', 'user2']
+    )
+    if results:
+        for job in results:
+            print "id:%s name:%s user:%s" % (job.id, job.name, job.user)

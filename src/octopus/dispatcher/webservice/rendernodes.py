@@ -9,17 +9,26 @@ import logging
 from tornado.web import HTTPError
 
 from octopus.core.communication import HttpResponse, Http400, Http404, Http403, HttpConflict, Http500
-# from octopus.core.enums.rendernode import RN_PAUSED, RN_IDLE, RN_UNKNOWN, RN_BOOTING, RN_ASSIGNED
 from octopus.core.enums.rendernode import *
 
 from octopus.core import enums, singletonstats, singletonconfig
+from octopus.core.framework import ResourceNotFoundError
+
 from octopus.dispatcher.model import RenderNode
-from octopus.core.framework import queue
+from octopus.dispatcher.model.filter.rendernode import IFilterRenderNode
 from octopus.dispatcher.webservice import DispatcherBaseResource
 
+from puliclient.model.renderNode import RenderNode as RenderNodeModel
 
 logger = logging.getLogger("main.dispatcher")
 
+
+class RenderNodeNotFoundError(ResourceNotFoundError):
+    """
+    Raised when a request is sent for a node that is not a attached to root.
+    """
+    def __init__(self, node, *args, **kwargs):
+        ResourceNotFoundError.__init__(self, node=node, *args, **kwargs)
 
 class RenderNodesResource(DispatcherBaseResource):
     """
@@ -336,3 +345,67 @@ class RenderNodePausedResource(DispatcherBaseResource):
             # FIXME maybe set this to RN_FINISHING ?
             renderNode.status = RN_IDLE
             renderNode.excluded = False
+
+
+
+
+class RenderNodeQueryResource(DispatcherBaseResource, IFilterRenderNode):
+
+    def createRenderNodeRepr(self, pNode):
+        """
+        Create a json representation for a given node.
+        param: render node to explore
+        return: puliclient.model.rendernode object (which is serializable)
+        """
+        newData = RenderNodeModel()
+        newData.createFromNode(pNode)
+        return newData
+
+    def post(self):
+        """
+        """
+        self.logger = logging.getLogger('main.query')
+
+        filters = self.getBodyAsJSON()
+        self.logger.debug('filters: %s' % filters)
+
+        try:
+            start_time = time.time()
+            resultData = []
+
+            renderNodes = self.getDispatchTree().renderNodes.values()
+            totalNodes = len(renderNodes)
+
+            #
+            # --- filtering
+            #
+            filteredNodes = self.match(filters, renderNodes)
+
+            #
+            # --- Prepare the result json object
+            #
+            for currNode in filteredNodes:
+                tmp = self.createRenderNodeRepr(currNode)
+                resultData.append(tmp.encode())
+
+            content = {
+                'summary': {
+                    'count': len(filteredNodes),
+                    'totalInDispatcher': totalNodes,
+                    'requestTime': time.time() - start_time,
+                    'requestDate': time.ctime()
+                },
+                'items': resultData
+            }
+
+            # Create response and callback
+            self.writeCallback(json.dumps(content))
+
+        except KeyError:
+            raise Http404('Error unknown key')
+
+        except HTTPError, e:
+            raise e
+
+        except Exception, e:
+            raise HTTPError(500, "Impossible to retrieve render nodes (%s)" % e)

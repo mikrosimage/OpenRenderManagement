@@ -88,6 +88,34 @@ class RenderNode(object):
             # self.lastAliveTime = datetime.fromtimestamp(rnDict.get("lastAliveTime"))
         return True
 
+    def createFromNode(self, node):
+        # Core infos
+        self.id = node.id
+        self.name = node.name
+        self.coresNumber = node.coresNumber
+        self.ramSize = node.ramSize
+        self.speed = node.speed
+
+        # Dynamic sys infos
+        self.systemFreeRam = node.systemFreeRam
+        self.systemSwapPercentage = node.systemSwapPercentage
+
+        # Worker state
+        self.puliversion = node.puliversion
+        self.commands = node.commands
+        self.status = node.status
+        self.host = node.host
+        self.port = node.port
+        # self.pools = node.pools
+        self.caracteristics = node.caracteristics
+        self.performance = node.performance
+        self.excluded = node.excluded
+
+        # Timers
+        self.createDate = node.createDate
+        self.registerDate = node.registerDate
+        self.lastAliveTime = node.lastAliveTime
+
     def _refresh(self):
         raise NotImplementedError
         # url = "/rendernodes/%s:%s/" % (self.host, self.port)

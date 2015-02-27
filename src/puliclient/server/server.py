@@ -64,7 +64,7 @@ def request(host, port, url, method="get", *args, **kwargs):
             #
             try:
                 result = r.json()
-            except ValueError, e:
+            except ValueError:
                 result = r.text
             return result
 
@@ -114,8 +114,8 @@ def request(host, port, url, method="get", *args, **kwargs):
 
 
 class Server(object):
-    '''
-    '''
+    """
+    """
     __host = "localhost"
     __port = 8004
 

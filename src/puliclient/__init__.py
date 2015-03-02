@@ -849,7 +849,7 @@ class Graph(object):
         else:
             raise GraphSubmissionError((response.status, response.reason))
 
-    def execute(self):
+    def execute(self, detached=False):
         """
         | Prepare a graph representation to execute locally.
         | The following steps will be executed :

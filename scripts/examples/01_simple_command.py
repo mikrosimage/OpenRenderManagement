@@ -35,11 +35,11 @@ name = "my command"
 # Here we only need to define the "cmd" to start a simple shell process
 # (More information on runners and how to specialize them in documentation)
 arguments = {
-    "cmd": "ls -ltr"
+    "cmd": "sleep 15s"
 }
 
 # Then add a new task to the graph
 graph.addNewTask(name, arguments=arguments)
 
 # Finally submit the graph to the server
-graph.submit("vfxpc64", 8004)
+graph.execute()

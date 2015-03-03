@@ -932,27 +932,59 @@ class Graph(object):
                 # Executing node and getting result
                 # Beware: we consider the command result (cmdStatus) and the
                 # corresponding task result (status)
-                try:
-                    result = self.execNode(command)
-                except GraphExecInterrupt:
-                    return CANCELED
+                if detached:
+                    print "Run detached !"
+                    # Create a new thread, it will be in charge of starting a subprocess and reading its output
+                    # The main thread is in charge of watching if the new thread take too long
+                    # and eventually calls the timeoutCallback function
+                    # thread = threading.Thread(target=target)
+                    # thread.start()
 
-                if result in (CMD_ERROR, CMD_TIMEOUT):
-                    command["status"] = ERROR
-                    numERROR += 1
-                elif result is CMD_CANCELED:
-                    command["status"] = CANCELED
-                    numCANCELED += 1
-                elif result is CMD_DONE:
-                    command["status"] = DONE
-                    numDONE += 1
+                    try:
+                        result = self.execNode(command)
+                    except GraphExecInterrupt:
+                        return CANCELED
+
+                    if result in (CMD_ERROR, CMD_TIMEOUT):
+                        command["status"] = ERROR
+                        numERROR += 1
+                    elif result is CMD_CANCELED:
+                        command["status"] = CANCELED
+                        numCANCELED += 1
+                    elif result is CMD_DONE:
+                        command["status"] = DONE
+                        numDONE += 1
+                    else:
+                        print "WARNING a command has ended but it final state is\
+                            invalid: %r" % CMD_STATUS_NAME[self.finalState]
+                        command["status"] = ERROR
+                        numERROR += 1
+
+                    command["cmdStatus"] = result
                 else:
-                    print "WARNING a command has ended but it final state is\
-                        invalid: %r" % CMD_STATUS_NAME[self.finalState]
-                    command["status"] = ERROR
-                    numERROR += 1
+                    print "Run in current process"
+                    try:
+                        result = self.execNode(command)
+                    except GraphExecInterrupt:
+                        return CANCELED
 
-                command["cmdStatus"] = result
+                    if result in (CMD_ERROR, CMD_TIMEOUT):
+                        command["status"] = ERROR
+                        numERROR += 1
+                    elif result is CMD_CANCELED:
+                        command["status"] = CANCELED
+                        numCANCELED += 1
+                    elif result is CMD_DONE:
+                        command["status"] = DONE
+                        numDONE += 1
+                    else:
+                        print "WARNING a command has ended but it final state is\
+                            invalid: %r" % CMD_STATUS_NAME[self.finalState]
+                        command["status"] = ERROR
+                        numERROR += 1
+
+                    command["cmdStatus"] = result
+
 
             # Check dependencies
             nbReadyAfterCheck = 0

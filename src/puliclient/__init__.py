@@ -849,35 +849,14 @@ class Graph(object):
         else:
             raise GraphSubmissionError((response.status, response.reason))
 
-    def execute(self, detached=False):
-        """
-        | Prepare a graph representation to execute locally.
-        | The following steps will be executed :
 
-        ::
-
-            1. Prepare the graph representation with GraphDumper
-            2. Parse the representation to extract all commands in a single list in "id" order
-               Several attribute of the task are stored with each command (taksid, end, dependencies...)
-            3. While there are some "ready" command
-              3.1 Parse ready commands
-                    Execute command
-              3.2 Parse blocked commands
-                    Check dependencies and increment "nbReadyAfterCheck" counter
-              3.3 If nbReadyAfterCheck == 0
-                    BREAK the while loop
-            4. Write summary and return
-
-        :return: the final state of the graph
-        :rtype: int
-        :raise: GraphExecError
-        """
+    def _createExecutionList(self):
 
         # Prepare graph
         repr = self.prepareGraphRepresentation()
 
         # Parse graph to create exec order list
-        executionList = []
+        self.executionList = []
 
         taskId = 1
         commandId = 1
@@ -911,89 +890,58 @@ class Graph(object):
                         command["status"] = READY
                         command["dependencies"] = None
 
-                    executionList.append(command)
+                    self.executionList.append(command)
                     commandId += 1
 
                 taskId += 1
 
+    def _executeNodeList(self):
         print ""
         print("---------------------")
-        print "Executing %d commands locally:" % len(executionList)
+        print "Executing %d commands locally:" % len(self.executionList)
         print("---------------------")
         numDONE, numERROR, numCANCELED = 0, 0, 0
         startDate = time.time()
 
         # Loop while there are no ready commands left
         while True:
-            readyCommands = (command for command in executionList
+            readyCommands = (command for command in self.executionList
                              if command["status"] == READY)
             for command in readyCommands:
 
                 # Executing node and getting result
                 # Beware: we consider the command result (cmdStatus) and the
                 # corresponding task result (status)
-                if detached:
-                    print "Run detached !"
-                    # Create a new thread, it will be in charge of starting a subprocess and reading its output
-                    # The main thread is in charge of watching if the new thread take too long
-                    # and eventually calls the timeoutCallback function
-                    # thread = threading.Thread(target=target)
-                    # thread.start()
+                try:
+                    result = self.execNode(command)
+                except GraphExecInterrupt:
+                    return CANCELED
 
-                    try:
-                        result = self.execNode(command)
-                    except GraphExecInterrupt:
-                        return CANCELED
-
-                    if result in (CMD_ERROR, CMD_TIMEOUT):
-                        command["status"] = ERROR
-                        numERROR += 1
-                    elif result is CMD_CANCELED:
-                        command["status"] = CANCELED
-                        numCANCELED += 1
-                    elif result is CMD_DONE:
-                        command["status"] = DONE
-                        numDONE += 1
-                    else:
-                        print "WARNING a command has ended but it final state is\
-                            invalid: %r" % CMD_STATUS_NAME[self.finalState]
-                        command["status"] = ERROR
-                        numERROR += 1
-
-                    command["cmdStatus"] = result
+                if result in (CMD_ERROR, CMD_TIMEOUT):
+                    command["status"] = ERROR
+                    numERROR += 1
+                elif result is CMD_CANCELED:
+                    command["status"] = CANCELED
+                    numCANCELED += 1
+                elif result is CMD_DONE:
+                    command["status"] = DONE
+                    numDONE += 1
                 else:
-                    print "Run in current process"
-                    try:
-                        result = self.execNode(command)
-                    except GraphExecInterrupt:
-                        return CANCELED
+                    print "WARNING a command has ended but it final state is\
+                        invalid: %r" % CMD_STATUS_NAME[self.finalState]
+                    command["status"] = ERROR
+                    numERROR += 1
 
-                    if result in (CMD_ERROR, CMD_TIMEOUT):
-                        command["status"] = ERROR
-                        numERROR += 1
-                    elif result is CMD_CANCELED:
-                        command["status"] = CANCELED
-                        numCANCELED += 1
-                    elif result is CMD_DONE:
-                        command["status"] = DONE
-                        numDONE += 1
-                    else:
-                        print "WARNING a command has ended but it final state is\
-                            invalid: %r" % CMD_STATUS_NAME[self.finalState]
-                        command["status"] = ERROR
-                        numERROR += 1
-
-                    command["cmdStatus"] = result
-
+                command["cmdStatus"] = result
 
             # Check dependencies
             nbReadyAfterCheck = 0
-            blockedCommands = (command for command in executionList if command["status"] == BLOCKED)
+            blockedCommands = (command for command in self.executionList if command["status"] == BLOCKED)
             for command in blockedCommands:
                 targetId = command["dependencies"][0][0]
                 statuses = command["dependencies"][0][1]
 
-                for node in executionList:
+                for node in self.executionList:
                     if node["taskid"] == targetId and node["status"] in statuses:
                         command["status"] = READY
                         nbReadyAfterCheck += 1
@@ -1024,6 +972,47 @@ class Graph(object):
         if numERROR:
             return ERROR
         return DONE
+
+    def execute(self, detached=False):
+        """
+        | Prepare a graph representation to execute locally.
+        | The following steps will be executed :
+
+        ::
+
+            1. Prepare the graph representation with GraphDumper
+            2. Parse the representation to extract all commands in a single list in "id" order
+               Several attribute of the task are stored with each command (taksid, end, dependencies...)
+            3. While there are some "ready" command
+              3.1 Parse ready commands
+                    Execute command
+              3.2 Parse blocked commands
+                    Check dependencies and increment "nbReadyAfterCheck" counter
+              3.3 If nbReadyAfterCheck == 0
+                    BREAK the while loop
+            4. Write summary and return
+
+        :return: the final state of the graph
+        :rtype: int
+        :raise: GraphExecError
+        """
+        import logging
+
+        if detached:
+
+            from threading import Thread
+            def threaded_function():
+                self._createExecutionList()
+                return self._executeNodeList()
+
+            thread = Thread(target=threaded_function)
+            thread.start()
+
+        else:
+            logging.getLogger().info("")
+            self._createExecutionList()
+            return self._executeNodeList()
+
 
     def execNode(self, pCommand):
         """

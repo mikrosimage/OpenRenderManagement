@@ -68,7 +68,9 @@ def spawnRezManagedCommandWatcher(pidfile, logfile, args, watcherPackages, env):
             raise
 
         # normalize environment
-        envN = os.environ.copy()
+        # JSA do not transmit env (eg PYTHONHOME) to command watcher
+        # envN = os.environ.copy()
+        envN = {}
         for key in env:
             envN[str(key)] = str(env[key])
 

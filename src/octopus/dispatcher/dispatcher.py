@@ -586,7 +586,7 @@ class Dispatcher(MainLoopApplication):
         # handles the case of post job with paused status
         for node in nodes:
             try:
-                if node.tags['paused'] == 'true':
+                if node.tags['paused'] == 'true' or node.tags['paused'] == True:
                     node.setPaused(True)
             except KeyError:
                 continue

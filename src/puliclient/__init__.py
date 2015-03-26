@@ -284,6 +284,10 @@ class Task(object):
                 if package.startswith('pulicontrib'):
                     self.watcherPackages = "%s %s" % (self.watcherPackages, package)
 
+        # TOFIX
+        # HACK JSA: force python 2.7.2 to preserve compatibility with VFX pipe jobs (pb when instancing scripts with local version of python)
+        self.watcherPackages = "%s python-2.7.2" % (self.watcherPackages)
+
         # print("runner packages: %s" % self.runnerPackages)
         # print("watcher packages: %s" % self.watcherPackages)
 
@@ -863,8 +867,9 @@ class Graph(object):
         for node in repr["tasks"]:
 
             if node["type"] == "TaskGroup":
-                # Parse children
-                # print "TG - %s" % node["name"]
+                # Nothing to do here, as we will parse trough all nodes we only need to take TaskNode into account
+                # The only problem might be if dependencies are defined on TaskGroup and are not properly reported on
+                # descendants
                 pass
 
             elif node["type"] == "Task":
@@ -936,7 +941,7 @@ class Graph(object):
 
             # Check dependencies
             nbReadyAfterCheck = 0
-            blockedCommands = (command for command in self.executionList if command["status"] == BLOCKED)
+            blockedCommands = [command for command in self.executionList if command["status"] == BLOCKED]
             for command in blockedCommands:
                 targetId = command["dependencies"][0][0]
                 statuses = command["dependencies"][0][1]
@@ -947,6 +952,9 @@ class Graph(object):
                         nbReadyAfterCheck += 1
 
             if nbReadyAfterCheck == 0:
+                if len(blockedCommands) > 0:
+                    print "Warning: there are still some commands \"BLOCKED\"..."
+
                 endDate = time.time()
                 elapsedTime = endDate - startDate
                 print ""
@@ -1036,7 +1044,7 @@ class Graph(object):
         runnerPackages = pCommand.get("runnerPackages", "undefined")
         validationExpression = pCommand["validationExpression"]
 
-        print(pCommand)
+        # print(pCommand)
         #
         # SECURE WAY: start a subprocess
         #

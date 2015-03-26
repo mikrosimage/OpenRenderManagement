@@ -4,10 +4,10 @@ version = '1.7.12'
 # If your tool depends on some other package(s)
 requires = [
     'rez-current',
-    'pythonABI-2',
-    'tornado-2.2.1',
-    'requests-2.4.3',
-    'psutil-2.1.3'
+    'python-2.7.3',
+    'tornado-dev',
+    'requests-dev',
+    'psutil-dev'
 ]
 
 

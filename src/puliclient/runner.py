@@ -9,6 +9,7 @@ import site
 import os
 import sys
 import traceback
+import pickle
 
 import threading
 import subprocess
@@ -321,3 +322,69 @@ class RunnerToolkit(object):
             print "  cc.......: %r" % ccAddress
             print "  subject..: %r" % subject
             print "  body.....: %r" % body
+
+    @classmethod
+    def runGraphInXterm(cls, graph, keepWindowOpen=True):
+        """
+        Specifically runs a graph locally in a separate xterm windows and subprocess.
+        Several possibilities to render locally:
+          - use graph.execute() in current thread --> PB: blocks the GUI
+          - use graph.execute(detached=True) in a separate thread --> PB: force to quit maya to stop long process
+          - pickle graph to dump and reload it in xterm subprocess --> WARN: potential pb if dump is too long
+        When using first 2 methods, log output is in reversed order making it difficult to debug
+
+        Method details (pickle graph):
+          1. create a data temp file with the pickled graph
+          2. create a script temp with a minimal python code to load the data file and "execute" it
+          3. Start a command line process to open xterm and execute the script file
+             Precisely the command has 3 steps:
+             - open xterm with title "Running" and execution command
+             - change title to "finished" after command execution
+             - eventually starts a new shell in interactive mode to keep xterm opened
+
+        :param graph: a puliclient graph to execute
+        :raise CommandError: When any error occurred that should end the command with ERROR status
+                             When a subprocess error is raised (OSError or ValueError usually)
+        """
+
+        try:
+            from tempfile import NamedTemporaryFile
+
+            graphName = ''
+            with NamedTemporaryFile(mode='w', prefix='localGraph_', delete=False) as graphFile:
+                graphFile.write(pickle.dumps(graph))
+                graphName = graphFile.name
+
+            script = """
+import pickle
+import time
+
+with open("__graphFile__") as file:
+  g = pickle.loads(file.read())
+  g.execute()
+"""
+            script = script.replace("__graphFile__", graphName)
+
+            with NamedTemporaryFile(mode='w', prefix='localScript_', delete=False) as scriptFile:
+                scriptFile.write(script)
+                # args = 'xterm -title "Running" -e "python {script}'.format(script=scriptFile.name)
+
+                if keepWindowOpen:
+                    args = 'xterm -title "Running" -e "python {script}' \
+                           '; echo -ne \'\033]0;Finished\007\'' \
+                           '; sh -i"'.format(script=scriptFile.name)
+                else:
+                    args = 'xterm -title "Running" -e "python {script}"'.format(script=scriptFile.name)
+
+            print "Start local render, please check your terminal for details."
+            process = subprocess.Popen(args, shell=True)
+            print "Process started: {pid}".format(pid=process.pid)
+
+        except ValueError as e:
+            raise CommandError("%s" % e)
+
+        except OSError as e:
+            raise CommandError("Error during process exec: %s" % e)
+
+        except Exception as e:
+            raise e

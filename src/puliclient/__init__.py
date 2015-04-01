@@ -855,15 +855,25 @@ class Graph(object):
 
 
     def _createExecutionList(self):
-
+        """
+        When executing a graph locally this method will transform the graph structure (tree with dependencies) into
+        a flat list of commands. To respect dependencies btw tasks and taskgroups, this flatten process is done in
+        2 steps.
+          - first pass: Create all commands without considering dependencies at all
+          - second pass: Report dependencies from the tree onto the command list
+        """
         # Prepare graph
         repr = self.prepareGraphRepresentation()
 
         # Parse graph to create exec order list
         self.executionList = []
 
+        #
+        # FIRST PASS
+        # Create all commands without considering depêndencies at all
+        #
         taskId = 1
-        commandId = 1
+        commandId = 0
         for node in repr["tasks"]:
 
             if node["type"] == "TaskGroup":
@@ -875,6 +885,7 @@ class Graph(object):
             elif node["type"] == "Task":
                 # print "T - %s" % node["name"]
 
+                node['childCommands'] = []
                 # Parse commands
                 for command in node["commands"]:
                     # print "  C - %r" % command["description"]
@@ -889,16 +900,56 @@ class Graph(object):
 
                     command["status"] = BLOCKED
 
-                    if "dependencies" in node.keys() and 0 < len(node["dependencies"]):
-                        command["dependencies"] = node["dependencies"]
-                    else:
-                        command["status"] = READY
-                        command["dependencies"] = None
-
+                    node['childCommands'].append(commandId)
                     self.executionList.append(command)
                     commandId += 1
 
+                # print "child commands for node: %s --> %r" % (node['name'], node['childCommands'])
                 taskId += 1
+        #
+        # SECOND PASS
+        # Parse the nodes and report dependencies from [node to node] onto [command to command]
+        # using the node['childCommands'] attribute created on the first pass
+        #
+        for node in repr["tasks"]:
+            if node["type"] == "Task":
+
+                if 0 < len(node.get("dependencies")):
+                    for target, statusList in node["dependencies"]:
+                        # print "target: name=%s id=%d - status:%r" % (repr["tasks"][target]['name'], target, statusList)
+
+                        for cmdId in node['childCommands']:
+                            currCmd = self.executionList[cmdId]
+                            currCmd["dependencies"] = []
+
+                            # Go deep in taskgroups to get childCommands for this hierarchy and create actual dep
+                            targetCommandList = self._getAllChildCommands(repr["tasks"][target], repr)
+                            for targetId in targetCommandList:
+                                currCmd["dependencies"].append((targetId, statusList))
+                else:
+                    for cmdId in node['childCommands']:
+                        self.executionList[cmdId]["status"] = READY
+                        self.executionList[cmdId]["dependencies"] = None
+                pass
+            pass
+
+
+
+    def _getAllChildCommands(self, node, graphRepresentation):
+        result = []
+        if node['type'] == "Task":
+            result.extend(node['childCommands'])
+            # print "getting childs for node: %s -> %r" % (node['name'], node['childCommands'])
+
+        elif node['type'] == "TaskGroup":
+            for child in node['tasks']:
+                childCommands = self._getAllChildCommands(graphRepresentation["tasks"][child], graphRepresentation)
+                result.extend(childCommands)
+
+        else:
+            # Invalid node type
+            raise GraphExecError
+        return result
 
     def _executeNodeList(self):
         print ""
@@ -947,7 +998,7 @@ class Graph(object):
                 statuses = command["dependencies"][0][1]
 
                 for node in self.executionList:
-                    if node["taskid"] == targetId and node["status"] in statuses:
+                    if node["execid"] == targetId and node["status"] in statuses:
                         command["status"] = READY
                         nbReadyAfterCheck += 1
 

@@ -870,7 +870,7 @@ class Graph(object):
 
         #
         # FIRST PASS
-        # Create all commands without considering depêndencies at all
+        # Create all commands without considering dependencies at all
         #
         taskId = 1
         commandId = 0

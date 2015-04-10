@@ -1,13 +1,13 @@
 name = 'puli'
-version = '1.7.12'
+version = 'eval'
 
 # If your tool depends on some other package(s)
 requires = [
     'rez-current',
-    'python-2',
+    'python-2.7',
     'tornado-2.2.1',
-    'requests-2.4.3',
-    'psutil-2.1.3'
+    'requests',
+    'psutil'
 ]
 
 

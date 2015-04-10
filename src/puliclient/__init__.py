@@ -284,12 +284,14 @@ class Task(object):
                 if package.startswith('pulicontrib'):
                     self.watcherPackages = "%s %s" % (self.watcherPackages, package)
 
-        # TOFIX
-        # HACK JSA: force python 2.7.2 to preserve compatibility with VFX pipe jobs (pb when instancing scripts with local version of python)
-        self.watcherPackages = "%s python-2.7.2" % (self.watcherPackages)
-
-        # print("runner packages: %s" % self.runnerPackages)
-        # print("watcher packages: %s" % self.watcherPackages)
+        # TODO
+        # HACK: Force python 2.7.2 to preserve compatibility with VFX pipe jobs (pb when instancing scripts with local version of python)
+        # WARNING:
+        #   - This MUST be added in the puliclient shared folder for VFX: /s/apps/lin/puli/puliclient
+        #   - This MUST NOT be added in the shared folder for animation: /s/apps/packages/mikros/puli/<version>/src/puliclient
+        #
+        # self.watcherPackages = "%s python-2.7.2" % (self.watcherPackages)
+        #
 
     def updateTags(self, pTags):
         """

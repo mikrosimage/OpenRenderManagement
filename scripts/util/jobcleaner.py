@@ -123,7 +123,6 @@ if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s - %(levelname)s: %(message)s', level=logging.DEBUG)
     logging.info("---")
 
-    # import pudb;pu.db
     parser = OptionParser("PuliJobCleaner v%s - Commandline to archive jobs on Puli" % VERSION)
     parser.add_option("-d", "--delay_end_time", action="store", dest="delay", help="number of days from today. All jobs ended before the number specified will be archived", default="7")
     parser.add_option("-e", "--delay_start_time", action="store", dest="delay_start_time", help="number of days from today. All jobs started before the number specified will be archived", default="30")

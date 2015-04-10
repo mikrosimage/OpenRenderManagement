@@ -17,7 +17,7 @@ ExecStartPre=/bin/chown -R render /var/run/puli/
 #
 # Main
 #
-ExecStart=/s/apps/packages/bin/rez env puli -- workerd -p %i -s puliserver -P /var/run/puli/worker%i.pid -K /tmp/render/killfile%i -d
+ExecStart=/s/apps/packages/bin/rez env puli -- workerd -p %i -s puliserver -P /var/run/puli/worker%i.pid -K /datas/tmp/render/killfile%i -d
 PIDFile=/var/run/puli/worker%i.pid
 
 LimitNOFILE=32000

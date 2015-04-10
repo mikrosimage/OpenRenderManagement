@@ -1,5 +1,5 @@
 name = 'puli'
-version = 'dev'
+version = '1.7.14'
 
 # If your tool depends on some other package(s)
 requires = [
@@ -32,4 +32,3 @@ def commands():
     alias('pul_query', 'python {root}/src/pulitools/puliquery/pul_query')
 
     alias('workerd', 'python {root}/src/octopus/workerd.py')
-#    alias('dispatcherd', 'python {root}/src/octopus/dispatcherd.py')

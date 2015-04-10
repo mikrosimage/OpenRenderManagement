@@ -22,6 +22,7 @@ from octopus.core.communication.http import Http500
 from octopus.dispatcher.webservice import commands, rendernodes, graphs, nodes,\
     tasks, poolshares, pools, licenses, \
     query, edit
+from octopus.dispatcher.webservice import job
 
 from octopus.core.enums.command import *
 from octopus.dispatcher.webservice import DispatcherBaseResource
@@ -102,8 +103,9 @@ class WebServiceDispatcher(Application):
 
             (r'^/edit/rn$', edit.RenderNodeEditResource, dict(framework=framework)),
 
-            (r'^/query2/rn$', query.RenderNodeQuery2Resource, dict(framework=framework)),
-            (r'^/query/job$', query.QueryResource, dict(framework=framework)),
+            # New API webservices
+            (r'^/query/job$', job.JobQueryResource, dict(framework=framework)),
+            (r'^/query/rendernode$', rendernodes.RenderNodeQueryResource, dict(framework=framework)),
             (r'^/query/command$', commands.CommandQueryResource, dict(framework=framework)),
 
             # System maintenance WS

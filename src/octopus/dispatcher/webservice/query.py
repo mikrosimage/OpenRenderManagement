@@ -1,13 +1,13 @@
 #!/usr/bin/python
-# -*- coding: latin-1 -*-
+# -*- coding: utf-8 -*-
 
 """
-Un webservice permettant de pouvoir repondre à des requetes de la sorte:
+Un webservice permettant de pouvoir repondre a des requetes de la sorte:
 
-Note les requetes http types présentent les arguments de la manière suivante:
-field1=value1&field2=value2&field3=value3, Tonado autorise la définition de plusieurs valeurs pour un field donné
+Note les requetes http types presentent les arguments de la maniere suivante:
+field1=value1&field2=value2&field3=value3, Tonado autorise la definition de plusieurs valeurs pour un field donne
 
-Le webservice prend en charge les requêtes de la forme:
+Le webservice prend en charge les requetes de la forme:
 http://localhost:8004/query?attr=id
 http://localhost:8004/query?constraint_user=jsa
 http://localhost:8004/query?attr=id&attr=name&attr=user&constraint_user=jsa&constraint_prod=ddd
@@ -66,9 +66,6 @@ from octopus.dispatcher.model.nodequery import IQueryNode
 from octopus.core.communication.http import Http404, Http400, Http500, HttpConflict
 from octopus.dispatcher.webservice import DispatcherBaseResource
 
-from puliclient.model.job import Job
-from puliclient.model.task import Task
-from octopus.dispatcher.model import Task as DispatcherTask
 
 __all__ = []
 
@@ -226,81 +223,81 @@ class QueryResource(DispatcherBaseResource, IQueryNode):
 
 
 
-    def createJobRepr(self, pNode, recursive=True):
-        """
-        Create a json representation for a given node hierarchy.
-        param: node to explore
-        return: puliclient.model.job object (which is serializable)
-        """
-
-
-        newJob = Job()
-        newJob.createFromNode(pNode)
-
-        if not recursive:
-            return newJob
-        else:
-            if hasattr(pNode, 'children'):
-                for node in pNode.children:
-                    newJob.children.append(self.createJobRepr(node))
-
-            if hasattr(pNode, 'task') and isinstance(pNode.task, DispatcherTask):
-                newJob.task = Task()
-                newJob.task.createFromTaskNode(pNode.task)
-
-        return newJob
-
-    def post(self):
-        """
-        """
-        self.logger = logging.getLogger('main.query')
-
-        filters = self.getBodyAsJSON()
-        self.logger.debug('filters: %s' % filters)
-
-        try:
-            start_time = time.time()
-            resultData = []
-
-            nodes = self.getDispatchTree().nodes[1].children
-            totalNodes = len(nodes)
-            # self.logger.debug("All nodes retrieved")
-            #
-            # --- filtering
-            #
-            filteredNodes = self.matchNodes(filters, nodes)
-            # self.logger.debug("Nodes have been filtered")
-
-            #
-            # --- Prepare the result json object
-            #
-            for currNode in filteredNodes:
-                tmp = self.createJobRepr(currNode, filters.get('recursive', True))
-                resultData.append(tmp.encode())
-            # self.logger.debug("Representation has been created")
-
-            content = {
-                'summary': {
-                    'count': len(filteredNodes),
-                    'totalInDispatcher': totalNodes,
-                    'requestTime': time.time() - start_time,
-                    'requestDate': time.ctime()
-                },
-                'items': resultData
-            }
-
-            # Create response and callback
-            self.writeCallback(json.dumps(content))
-            # self.logger.debug("Result sent")
-
-        except KeyError:
-            raise Http404('Error unknown key')
-
-        except HTTPError, e:
-            raise e
-
-        except Exception, e:
-            raise HTTPError(500, "Impossible to retrieve jobs (%s)" % e)
+    # def createJobRepr(self, pNode, recursive=True):
+    #     """
+    #     Create a json representation for a given node hierarchy.
+    #     param: node to explore
+    #     return: puliclient.model.job object (which is serializable)
+    #     """
+    #
+    #
+    #     newJob = Job()
+    #     newJob.createFromNode(pNode)
+    #
+    #     if not recursive:
+    #         return newJob
+    #     else:
+    #         if hasattr(pNode, 'children'):
+    #             for node in pNode.children:
+    #                 newJob.children.append(self.createJobRepr(node))
+    #
+    #         if hasattr(pNode, 'task') and isinstance(pNode.task, DispatcherTask):
+    #             newJob.task = Task()
+    #             newJob.task.createFromTaskNode(pNode.task)
+    #
+    #     return newJob
+    #
+    # def post(self):
+    #     """
+    #     """
+    #     self.logger = logging.getLogger('main.query')
+    #
+    #     filters = self.getBodyAsJSON()
+    #     self.logger.debug('filters: %s' % filters)
+    #
+    #     try:
+    #         start_time = time.time()
+    #         resultData = []
+    #
+    #         nodes = self.getDispatchTree().nodes[1].children
+    #         totalNodes = len(nodes)
+    #         # self.logger.debug("All nodes retrieved")
+    #         #
+    #         # --- filtering
+    #         #
+    #         filteredNodes = self.matchNodes(filters, nodes)
+    #         # self.logger.debug("Nodes have been filtered")
+    #
+    #         #
+    #         # --- Prepare the result json object
+    #         #
+    #         for currNode in filteredNodes:
+    #             tmp = self.createJobRepr(currNode, filters.get('recursive', True))
+    #             resultData.append(tmp.encode())
+    #         # self.logger.debug("Representation has been created")
+    #
+    #         content = {
+    #             'summary': {
+    #                 'count': len(filteredNodes),
+    #                 'totalInDispatcher': totalNodes,
+    #                 'requestTime': time.time() - start_time,
+    #                 'requestDate': time.ctime()
+    #             },
+    #             'items': resultData
+    #         }
+    #
+    #         # Create response and callback
+    #         self.writeCallback(json.dumps(content))
+    #         # self.logger.debug("Result sent")
+    #
+    #     except KeyError:
+    #         raise Http404('Error unknown key')
+    #
+    #     except HTTPError, e:
+    #         raise e
+    #
+    #     except Exception, e:
+    #         raise HTTPError(500, "Impossible to retrieve jobs (%s)" % e)
 
 
 class RenderNodeQueryResource(DispatcherBaseResource, IQueryNode):

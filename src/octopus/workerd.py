@@ -141,25 +141,6 @@ def main():
         daemonize(settings.RUN_AS)
 
     workerApplication.mainLoop()
-
-    ####
-    # Does not work properly
-    #
-
-    # After worker webservice and application is stopped, check if a restart is scheduled
-    # if workerApplication.application.toberestarted:
-    #     try:
-    #         # Restart worker using a specific command
-    #         logging.getLogger('worker').warning("Restarting worker with command: %s" % settings.RESTART_COMMAND)
-    #         subprocess.check_call(settings.RESTART_COMMAND.split())
-    #     except subprocess.CalledProcessError, e:
-    #         logging.getLogger('worker').warning("Impossible to restart systemd unit (error: %s)" % e)
-    #     except AttributeError, e:
-    #         logging.getLogger('worker').warning("Worker settings do not define: RESTART_COMMAND")
-
-    #
-    ####
-
     logging.getLogger('worker').warning("Bye")
 
 

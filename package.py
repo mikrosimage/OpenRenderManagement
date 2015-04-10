@@ -1,5 +1,5 @@
 name = 'puli'
-version = 'eval'
+version = 'dev'
 
 # If your tool depends on some other package(s)
 requires = [

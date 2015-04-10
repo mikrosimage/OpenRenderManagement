@@ -69,7 +69,7 @@ DISPATCHER_ADDRESS = "puliserver"
 #
 PIDFILE = "/var/run/puli/worker.pid"  # service control pid file
 
-KILLFILE = "/tmp/render/killfile"        # indicate if the worker needs to be paused, kill and paused or resumed
+KILLFILE = "/datas/tmp/render/killfile%s" % PORT        # indicate if the worker needs to be paused, kill and paused or resumed
 RESTARTFILE = "/tmp/render/restartfile"  # indicate if the worker must be restarted by the respawner
 
 RUN_AS = ""

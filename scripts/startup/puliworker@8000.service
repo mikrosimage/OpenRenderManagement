@@ -22,7 +22,6 @@ PIDFile=/var/run/puli/worker%i.pid
 
 LimitNOFILE=32000
 Restart=always
-RestartSec=3
 
 [Install]
 WantedBy=multi-user.target graphical.target

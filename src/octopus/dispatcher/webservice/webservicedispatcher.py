@@ -103,7 +103,7 @@ class WebServiceDispatcher(Application):
 
             (r'^/edit/rn$', edit.RenderNodeEditResource, dict(framework=framework)),
 
-            # (r'^/query2/rn$', query.RenderNodeQuery2Resource, dict(framework=framework)),
+            # New API webservices
             (r'^/query/job$', job.JobQueryResource, dict(framework=framework)),
             (r'^/query/rendernode$', rendernodes.RenderNodeQueryResource, dict(framework=framework)),
             (r'^/query/command$', commands.CommandQueryResource, dict(framework=framework)),

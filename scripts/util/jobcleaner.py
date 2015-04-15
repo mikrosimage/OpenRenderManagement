@@ -79,9 +79,10 @@ class PuliJobCleaner(object):
             try:
 
                 from tornado.httpclient import HTTPClient
+                from tornado.web import HTTPError
                 http_client = HTTPClient()
                 response = http_client.fetch( "http://%s:%d/tasks/delete" % (DISPATCHER,8004), method="POST", body=body, headers=headers)
-            except HTTPError,e:
+            except HTTPError, e:
                 logging.warning( '"DELETE %s" failed : %s' % (url, e) )
             except socket.error,e:
                 logging.warning( '"DELETE %s" failed : %s' % (url, e) )
@@ -94,22 +95,6 @@ class PuliJobCleaner(object):
                 else:
                     logging.info("Result: %s" % response.body )
                     return True
-
-                # httpconn = httplib.HTTPConnection(DISPATCHER, 8004)
-                # httpconn.request('POST', url, body, headers)
-                # response = httpconn.getresponse()
-                # httpconn.close()
-            # except httplib.HTTPException, e:
-            #     logging.warning( '"DELETE %s" failed : %s' % (url, e) )
-            # except socket.error, e:
-            #     logging.warning( '"DELETE %s" failed : %s' % (url, e) )
-            # else:
-            #     if response.status == 200:
-            #         logging.info("archived %s elements" % len(tasksIds) )
-            #         return True
-            #     else:
-            #         logging.warning("A problem occured : %s" % response.msg)
-            #         raise Exception() # A quoi ca sert ! on perd toutes les infos
         return False
 
     @staticmethod

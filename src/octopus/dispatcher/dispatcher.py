@@ -350,96 +350,90 @@ class Dispatcher(MainLoopApplication):
         if not any(rn.isAvailable() for rn in self.dispatchTree.renderNodes.values()):
             return []
 
-        assignments = []
-
         # first create a set of entrypoints that are not done nor cancelled nor blocked nor paused and that have at least one command ready
         # FIXME: hack to avoid getting the 'graphs' poolShare node in entryPoints, need to avoid it more nicely...
-        entryPoints = set([poolShare.node for poolShare in self.dispatchTree.poolShares.values() if poolShare.node.status not in [NODE_BLOCKED, NODE_DONE, NODE_CANCELED, NODE_PAUSED] and poolShare.node.readyCommandCount > 0 and poolShare.node.name != 'graphs'])
+        entryPoints = set([poolShare.node for poolShare in self.dispatchTree.poolShares.values()
+                                if poolShare.node.status not in (NODE_BLOCKED, NODE_DONE, NODE_CANCELED, NODE_PAUSED) and poolShare.node.readyCommandCount > 0 and poolShare.node.name != 'graphs'])
 
-        # don't proceed to the calculation if no rns availables in the requested pools
-        rnsBool = False
-        for pool, nodesiterator in groupby(entryPoints, lambda x: x.poolShares.values()[0].pool):
-            rnsAvailables = set([rn for rn in pool.renderNodes if rn.status not in [RN_UNKNOWN, RN_PAUSED, RN_WORKING]])
-            if len(rnsAvailables):
-                rnsBool = True
-
-        if not rnsBool:
+        # don't proceed to the calculation if no render nodes available in the requested pools
+        isRenderNodesAvailable = False
+        for pool, jobsIterator in groupby(entryPoints, lambda x: x.mainPoolShare().pool):
+            renderNodesAvailable = set([rn for rn in pool.renderNodes if rn.status not in [RN_UNKNOWN, RN_PAUSED, RN_WORKING]])
+            if len(renderNodesAvailable):
+                isRenderNodesAvailable = True
+                break
+        if not isRenderNodesAvailable:
             return []
-
 
         # Log time updating max rn
         prevTimer = time.time()
 
         # sort by pool for the groupby
-        entryPoints = sorted(entryPoints, key=lambda node: node.poolShares.values()[0].pool)
+        entryPoints = sorted(entryPoints, key=lambda node: node.mainPoolShare().pool)
 
         # update the value of the maxrn for the poolshares (parallel dispatching)
-        for pool, nodesiterator in groupby(entryPoints, lambda x: x.poolShares.values()[0].pool):
+        for pool, jobsIterator in groupby(entryPoints, lambda x: x.mainPoolShare().pool):
 
-            # we are treating every active node of the pool
-            nodesList = [node for node in nodesiterator]
+            # we are treating every active job of the pool
+            jobsList = [job for job in jobsIterator]
 
             # the new maxRN value is calculated based on the number of active jobs of the pool, and the number of online rendernodes of the pool
-            rnsNotOffline = set([rn for rn in pool.renderNodes if rn.status not in [RN_UNKNOWN, RN_PAUSED]])
-            rnsSize = len(rnsNotOffline)
-            # LOGGER.debug("@   - nb rns awake:%r" % (rnsSize) )
+            onlineRenderNodes = set([rn for rn in pool.renderNodes if rn.status not in [RN_UNKNOWN, RN_PAUSED]])
+            nbOnlineRenderNodes = len(onlineRenderNodes)
+            # LOGGER.debug("@   - nb rns awake:%r" % (nbOnlineRenderNodes) )
 
             # if we have a userdefined maxRN for some nodes, remove them from the list and substracts their maxRN from the pool's size
-            l = nodesList[:]  # duplicate the list to be safe when removing elements
-            for node in l:
-                # LOGGER.debug("@   - checking userDefMaxRN: %s -> %r maxRN=%d" % (node.name, node.poolShares.values()[0].userDefinedMaxRN, node.poolShares.values()[0].maxRN ) )
-                if node.poolShares.values()[0].userDefinedMaxRN and node.poolShares.values()[0].maxRN not in [-1, 0]:
-                    # LOGGER.debug("@     removing: %s -> maxRN=%d" % (node.name, node.poolShares.values()[0].maxRN ) )
-                    nodesList.remove(node)
-                    rnsSize -= node.poolShares.values()[0].maxRN
+            l = jobsList[:]  # duplicate the list to be safe when removing elements
+            for job in l:
+                # LOGGER.debug("@   - checking userDefMaxRN: %s -> %r maxRN=%d" % (job.name, job.mainPoolShare().userDefinedMaxRN, job.mainPoolShare().maxRN ) )
+                if job.mainPoolShare().userDefinedMaxRN and job.mainPoolShare().maxRN not in [-1, 0]:
+                    # LOGGER.debug("@     removing: %s -> maxRN=%d" % (job.name, job.mainPoolShare().maxRN ) )
+                    jobsList.remove(job)
+                    nbOnlineRenderNodes -= job.mainPoolShare().maxRN
 
-            # LOGGER.debug("@   - nb rns awake after maxRN:%d" % (rnsSize) )
-
-            if len(nodesList) == 0:
+            # LOGGER.debug("@   - nb rns awake after maxRN:%d" % (nbOnlineRenderNodes) )
+            if len(jobsList) == 0:
                 continue
 
             # Prepare updatedMaxRN with dispatch key proportions
-            dkList = []                 # list of dks (integer only)
-            dkPositiveList = []         # Normalized list of dks (each min value of dk becomes 1, other higher elems of dkList gets proportionnal value)
-            nbJobs = len(nodesList)     # number of jobs in the current pool
+            # list of dks (integer only)
+            dkList = [job.dispatchKey for job in jobsList]
+            nbJobs = len(jobsList)     # number of jobs in the current pool
             nbRNAssigned = 0            # number of render nodes assigned for this pool
 
-            for node in nodesList:
-                dkList.append(node.dispatchKey)
-
             dkMin = min(dkList)
-            dkPositiveList = map(lambda x: x-dkMin+1, dkList)
+            # dkPositiveList: Shift all dks values in order that each min value of dk becomes 1
+            dkPositiveList = map(lambda x: x-dkMin+1, dkList)  # dk values start at 1
             dkSum = sum(dkPositiveList)
 
             # sort by id (fifo)
-            nodesList = sorted(nodesList, key=lambda x: x.id)
+            jobsList = sorted(jobsList, key=lambda x: x.id)
 
             # then sort by dispatchKey (priority)
-            nodesList = sorted(nodesList, key=lambda x: x.dispatchKey, reverse=True)
+            jobsList = sorted(jobsList, key=lambda x: x.dispatchKey, reverse=True)
 
-            for dk, nodeIterator in groupby(nodesList, lambda x: x.dispatchKey):
+            for dk, jobIterator in groupby(jobsList, lambda x: x.dispatchKey):
 
-                nodes = [node for node in nodeIterator]
-                dkPos = dkPositiveList[ dkList.index(dk) ]
+                jobs = [job for job in jobIterator]
+                # dkPositive: Shift all dks values in order that each min value of dk becomes 1
+                dkPositive = dk - dkMin + 1
 
-                if dkSum > 0:
-                    updatedmaxRN = int( round( rnsSize * (dkPos / float(dkSum) )))
-                else:
-                    updatedmaxRN = int(round( rnsSize / float(nbJobs) ))
+                # Proportion of render nodes for
+                updatedmaxRN = int(round(nbOnlineRenderNodes * (dkPositive / float(dkSum))))
 
-                for node in nodes:
-                    node.poolShares.values()[0].maxRN = updatedmaxRN
+                for job in jobs:
+                    job.mainPoolShare().maxRN = updatedmaxRN
                     nbRNAssigned += updatedmaxRN
 
-            # Add remaining RNs to most important jobs
-            unassignedRN = rnsSize - nbRNAssigned
+            # PRA: Here is the main choice!
+            # Add remaining RNs to most important jobs (to fix rounding errors)
+            unassignedRN = nbOnlineRenderNodes - nbRNAssigned
             while unassignedRN > 0:
-                for node in nodesList:
-                    if unassignedRN > 0:
-                        node.poolShares.values()[0].maxRN += 1
-                        unassignedRN -= 1
-                    else:
+                for job in jobsList:
+                    if unassignedRN <= 0:
                         break
+                    job.mainPoolShare().maxRN += 1
+                    unassignedRN -= 1
 
         if singletonconfig.get('CORE','GET_STATS'):
             singletonstats.theStats.assignmentTimers['update_max_rn'] = time.time() - prevTimer
@@ -452,30 +446,26 @@ class Dispatcher(MainLoopApplication):
         entryPoints = sorted(entryPoints, key=lambda node: node.dispatchKey, reverse=True)
 
         # Put nodes with a userDefinedMaxRN first
-        userDefEntryPoints = ifilter( lambda node: node.poolShares.values()[0].userDefinedMaxRN, entryPoints )
-        standardEntryPoints = ifilter( lambda node: not node.poolShares.values()[0].userDefinedMaxRN, entryPoints )
-        scoredEntryPoints = chain( userDefEntryPoints, standardEntryPoints)
+        userDefEntryPoints = ifilter(lambda node: node.mainPoolShare().userDefinedMaxRN, entryPoints)
+        standardEntryPoints = ifilter(lambda node: not node.mainPoolShare().userDefinedMaxRN, entryPoints)
+        scoredEntryPoints = chain(userDefEntryPoints, standardEntryPoints)
 
         # Log time dispatching RNs
         prevTimer = time.time()
 
         # Iterate over each entryPoint to get an assignment
+        assignments = []  # list of (renderNode, Command)
         for entryPoint in scoredEntryPoints:
-            if any([poolShare.hasRenderNodesAvailable() for poolShare in entryPoint.poolShares.values()]):
-                try:
+            # If we have dedicated render nodes for this poolShare
+            if not any([poolShare.hasRenderNodesAvailable() for poolShare in entryPoint.poolShares.values()]):
+                continue
 
-                    for (rn, com) in entryPoint.dispatchIterator(lambda: self.queue.qsize() > 0):
-                        assignments.append((rn, com))
-                        # increment the allocatedRN for the poolshare
-                        poolShare.allocatedRN += 1
-                        # save the active poolshare of the rendernode
-                        rn.currentpoolshare = poolShare
-
-                except NoRenderNodeAvailable:
-                    pass
-                except NoLicenseAvailableForTask:
-                    LOGGER.info("Missing license for node \"%s\" (other commands can start anyway)." % entryPoint.name)
-                    pass
+            for (rn, com) in entryPoint.dispatchIterator(lambda: self.queue.qsize() > 0):
+                assignments.append((rn, com))
+                # increment the allocatedRN for the poolshare
+                entryPoint.mainPoolShare().allocatedRN += 1
+                # save the active poolshare of the rendernode
+                rn.currentpoolshare = entryPoint.mainPoolShare()
 
         assignmentDict = collections.defaultdict(list)
         for (rn, com) in assignments:
@@ -532,7 +522,7 @@ class Dispatcher(MainLoopApplication):
                 arguments.update(command.arguments)
 
                 log = logging.getLogger('assign')
-                log.info("Sending command: %d from task %s to %s" % (command.id, command.task.name, rendernode))
+                LOGGER.info("Sending command: %d from task %s to %s" % (command.id, command.task.name, rendernode))
 
                 commandDict = {
                     "id": command.id,

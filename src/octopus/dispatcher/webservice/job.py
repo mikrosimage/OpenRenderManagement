@@ -67,6 +67,7 @@ class JobQueryResource(DispatcherBaseResource, IFilterNode):
             start_time = time.time()
             resultData = []
 
+            # Root node is node 1.
             nodes = self.getDispatchTree().nodes[1].children
             totalNodes = len(nodes)
 

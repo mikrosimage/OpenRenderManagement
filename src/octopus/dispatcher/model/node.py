@@ -124,6 +124,12 @@ class BaseNode(models.Model):
         self.maxTimeByFrame = 0.0
         self.timer = None
 
+    def mainPoolShare(self):
+        return self.poolShares.values()[0]
+
+    def mainPool(self):
+        return self.poolShares.keys()[0]
+
     def to_json(self):
         base = super(BaseNode, self).to_json()
         base["allocatedRN"] = self.allocatedRN
@@ -315,46 +321,30 @@ class FolderNode(BaseNode):
     # @return yields (node, command) tuples
     #
     def dispatchIterator(self, stopFunc, ep=None):
-
         if ep is None:
             ep = self
 
-        #
-        # Normally, we would loop until no readycommandcount for this entrypoint OR if loop children ended
-        # However we remove the loop children limit, we have to stop iteration when there are still commands
-        # ready but can not be started due to match constraint...
-        # So we count the nb of iteration done, it can't be more than the number of readycommands
-        #
-        interruptDispatch = False
+        if self.readyCommandCount == 0:
+            return
+        self.strategy.update(self, ep)
 
-        for i in range(0, self.readyCommandCount):
-            # On veut iterer tant qu'il y a des commandes ready...
-            # MAIS il faut pouvoir interrompre le parcours si les commandes ready ne peuvent pas etre assignees
-            # (a cause de la RAM ou autre contrainte).
-            if self.readyCommandCount == 0:
+        for child in self.children:
+            try:
+                # PRA: only the TaskNode.dispatchIterator() may raise NoRenderNodeAvailable or NoLicenseAvailableForTask
+                for assignment in child.dispatchIterator(stopFunc, ep):
+                    node, command = assignment
+                    self.strategy.on_assignment(self, child, node)
+                    yield assignment
+            # If no render node available for a command, all the commands of the parent tasks will not find a RN
+            except NoRenderNodeAvailable:
                 return
-            self.strategy.update(self, ep)
-
-            for child in self.children:
-                try:
-                    for assignment in child.dispatchIterator(stopFunc, ep):
-                        node, command = assignment
-                        self.strategy.on_assignment(self, child, node)
-                        yield assignment
-                        if ep == self:
-                            break
-                        return
-                except NoRenderNodeAvailable:
-                    return
-                except NoLicenseAvailableForTask:
-                    interruptDispatch = True
-                    continue
-                else:
-                    if not stopFunc():
-                        continue
-            else:
-                if interruptDispatch:
-                    raise NoLicenseAvailableForTask
+            # Lack of licence is specific to a command, so we continue to iterate through the graph
+            except NoLicenseAvailableForTask:
+                LOGGER.info("Missing license for node \"%s\" (other commands can start anyway)." % self.name)
+                continue
+            # We should stop if stopFunction is reached
+            if stopFunc():
+                return
 
     def updateCompletionAndStatus(self):
         """
@@ -497,17 +487,17 @@ class TaskNode(BaseNode):
             return self.task.tags
         return None
 
-    ##
-    # @param id an integer, unique for this node
-    # @param name a short string describing this folder
-    # @param parent a FolderNode or None if this node is a root node
-    # @param priority an integer priority value
-    # @param dispatchKey a floating-point dispatchKey value
-    # @param maxRN an integer value representing the maximum number of render
-    #              nodes that can be allocated to this tree node.
-    # @param task a Task object
-    #
     def __init__(self, id, name, parent, user, priority, dispatchKey, maxRN, task, creationTime=None, startTime=None, updateTime=None, endTime=None, status=NODE_BLOCKED, paused=False, maxAttempt=1):
+        '''
+        :param id: an integer, unique for this node
+        :param name: a short string describing this folder
+        :param parent: a FolderNode or None if this node is a root node
+        :param priority: an integer priority value
+        :param dispatchKey: a floating-point dispatchKey value
+        :param maxRN: an integer value representing the maximum number of render
+                      nodes that can be allocated to this tree node.
+        :param task: a Task object
+        '''
         BaseNode.__init__(self, id, name, parent, user, priority, dispatchKey, maxRN, creationTime, startTime, updateTime, endTime, status)
         self.task = task
         self.paused = paused
@@ -525,60 +515,72 @@ class TaskNode(BaseNode):
             yield command
 
     def dispatchIterator(self, stopFunc, ep=None):
+        # PRA : we don't use the stop function here ...
 
         if ep is None:
             ep = self
 
+        # Return if no readyCommand or job in pause
         if self.readyCommandCount == 0:
             return
         if self.paused:
             return
+
         # ensure we are treating the commands in the order they arrived
         sorted(self.task.commands, key=lambda x: x.id)
         for command in self.task.commands:
             if command.status != CMD_READY:
                 continue
+            # PRA : search a render node to assign command
             renderNode = self.reserve_rendernode(command, ep)
-            if renderNode:
-                # command.assignment_date = time()
-                # command.status = CMD_ASSIGNED
-                # command.renderNode = renderNode
-                self.readyCommandCount -= 1
-                while ep:
-                    ep.readyCommandCount -= 1
-                    ep = ep.parent
-                yield (renderNode, command)
-            else:
-                # Pas de RN ou les RNS ne matchent pas les contraintes des jobs.
-                # On pourrait lever une exception pour indiquer au folder node que le dispatch doit s'arreter pour ce fils
-                # LOGGER.debug("Reservation failed in task %s for command %d" % self.name, command.id)
+            # PRA : renderNode is None if we did not found a RN that match job contraints
+            if not renderNode:
+                # PRA : Requirements depends on the task (and not the command)
+                # So if we don't find a RN for a command, we would not find one for the command related to the same task
                 return
 
+            # Decrease the number of ready commands through the hierarchy
+            self.readyCommandCount -= 1
+            tmp_ep = ep
+            while tmp_ep:
+                tmp_ep.readyCommandCount -= 1
+                tmp_ep = tmp_ep.parent
+
+            yield (renderNode, command)
+
     def reserve_rendernode(self, command, ep):
+        '''
+        :param command:
+        :returns: renderNode assigned to command
+                  None if no RNs found due to constraints
+        '''
         if ep is None:
             ep = self
 
-        for poolshare in [poolShare for poolShare in ep.poolShares.values() if poolShare.hasRenderNodesAvailable()]:
-            # first, sort the rendernodes according their performance value
-            rnList = sorted(poolshare.pool.renderNodes, key=lambda rn: rn.performance, reverse=True)
-            for rendernode in rnList:
-                if rendernode.isAvailable() and rendernode.canRun(command):
-                    if rendernode.reserveLicense(command, self.dispatcher.licenseManager):
-                        rendernode.addAssignment(command)
-                        return rendernode
-                    else:
-                        raise NoLicenseAvailableForTask
+        # PRA : can we have several poolShares for one job ?
+        # Exception when the pool of a job is changed and some command are still in computation
+        for poolShare in ep.poolShares.values():
+            # We need some RNs dedicated to this job available
+            if not poolShare.hasRenderNodesAvailable():
+                raise NoRenderNodeAvailable
 
-        # Might not be necessary anymore because first loop is based on poolShare's hasRNSavailable method
-        # It was not taking into account the tests before assignment: RN.canRun()
-        if not [poolShare for poolShare in ep.poolShares.values() if poolShare.hasRenderNodesAvailable()]:
-            raise NoRenderNodeAvailable
+            # Sort the RNs according to their performance value
+            rnList = sorted(poolShare.pool.renderNodes, key=lambda rn: rn.performance, reverse=True)
+            for rendernode in rnList:
+                # Check for a suitable RN : ie available and respecting the constraints for this command
+                if rendernode.isAvailable() and rendernode.canRun(command):
+                    # Check licence
+                    if not rendernode.reserveLicense(command, self.dispatcher.licenseManager):
+                        raise NoLicenseAvailableForTask
+                    rendernode.addAssignment(command)
+                    return rendernode
+        # PRA : Can happen if there are available RNs but they don't match the command constraint
         return None
 
     def updateCompletionAndStatus(self):
-        """
+        '''
         Evaluate new value for completion and status of a particular TaskNode
-        """
+        '''
         self.updateAllocation()
 
         if not self.invalidated:

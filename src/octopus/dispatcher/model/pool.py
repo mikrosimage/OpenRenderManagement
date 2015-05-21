@@ -74,8 +74,14 @@ class PoolShare(models.Model):
             self.userDefinedMaxRN = False
 
     def hasRenderNodesAvailable(self):
-        if 0 < self.maxRN and self.maxRN <= self.allocatedRN:
+        # If job has some render nodes authorized
+        # and has not already used all of them.
+        if self.maxRN > 0 and self.allocatedRN >= self.maxRN:
             return False
+        # PRA: is it possible to have no render node available?
+        # As we have computed the authorized RN regarding the available nodes...
+        #
+        # Is there some render nodes available in the pool?
         return any((rn.isAvailable() for rn in self.pool.renderNodes))
 
     def __repr__(self):

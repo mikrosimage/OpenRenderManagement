@@ -7,7 +7,8 @@ requires = [
     'python-2.7',
     'tornado-2.2.1',
     'requests',
-    'psutil'
+    'psutil',
+    'sqlobject',
 ]
 
 
@@ -24,12 +25,15 @@ def commands():
 
     # Create some aliases
     # These aliases will be directly available in the shell.
-    # alias('myTool', '{root}/bin/myTool "$@"')
     alias('puliexec', 'python {root}/src/pulitools/puliexec/puliexec.py')
-    alias('pulrn', 'python {root}/src/pulitools/puliquery/pul_rn')
     alias('pul_rn', 'python {root}/src/pulitools/puliquery/pul_rn')
-    alias('pulquery', 'python {root}/src/pulitools/puliquery/pul_query')
     alias('pul_query', 'python {root}/src/pulitools/puliquery/pul_query')
 
-    alias('workerd', 'python {root}/src/octopus/workerd.py')
-#    alias('dispatcherd', 'python {root}/src/octopus/dispatcherd.py')
+    # Dev tools
+    alias('puli_workerd', 'python {root}/src/octopus/workerd.py')
+    alias('puli_workerd_dev', 'python {root}/src/octopus/workerd.py -s localhost --debug --console -p 9000 -K /tmp/render/kill9000 -P /tmp/worker9000.pid')
+
+    alias('puli_dispatcherd', 'python {root}/src/octopus/dispatcherd.py')
+    alias('puli_dispatcherd_dev', 'python {root}/src/octopus/dispatcherd.py --debug --console -p 8004')
+
+

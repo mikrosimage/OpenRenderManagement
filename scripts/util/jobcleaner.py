@@ -79,9 +79,10 @@ class PuliJobCleaner(object):
             try:
 
                 from tornado.httpclient import HTTPClient
+                from tornado.web import HTTPError
                 http_client = HTTPClient()
                 response = http_client.fetch( "http://%s:%d/tasks/delete" % (DISPATCHER,8004), method="POST", body=body, headers=headers)
-            except HTTPError,e:
+            except HTTPError, e:
                 logging.warning( '"DELETE %s" failed : %s' % (url, e) )
             except socket.error,e:
                 logging.warning( '"DELETE %s" failed : %s' % (url, e) )
@@ -94,22 +95,6 @@ class PuliJobCleaner(object):
                 else:
                     logging.info("Result: %s" % response.body )
                     return True
-
-                # httpconn = httplib.HTTPConnection(DISPATCHER, 8004)
-                # httpconn.request('POST', url, body, headers)
-                # response = httpconn.getresponse()
-                # httpconn.close()
-            # except httplib.HTTPException, e:
-            #     logging.warning( '"DELETE %s" failed : %s' % (url, e) )
-            # except socket.error, e:
-            #     logging.warning( '"DELETE %s" failed : %s' % (url, e) )
-            # else:
-            #     if response.status == 200:
-            #         logging.info("archived %s elements" % len(tasksIds) )
-            #         return True
-            #     else:
-            #         logging.warning("A problem occured : %s" % response.msg)
-            #         raise Exception() # A quoi ca sert ! on perd toutes les infos
         return False
 
     @staticmethod
@@ -123,7 +108,6 @@ if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s - %(levelname)s: %(message)s', level=logging.DEBUG)
     logging.info("---")
 
-    # import pudb;pu.db
     parser = OptionParser("PuliJobCleaner v%s - Commandline to archive jobs on Puli" % VERSION)
     parser.add_option("-d", "--delay_end_time", action="store", dest="delay", help="number of days from today. All jobs ended before the number specified will be archived", default="7")
     parser.add_option("-e", "--delay_start_time", action="store", dest="delay_start_time", help="number of days from today. All jobs started before the number specified will be archived", default="30")

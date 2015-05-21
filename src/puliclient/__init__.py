@@ -284,12 +284,8 @@ class Task(object):
                 if package.startswith('pulicontrib'):
                     self.watcherPackages = "%s %s" % (self.watcherPackages, package)
 
-        # TOFIX
-        # HACK JSA: force python 2.7.2 to preserve compatibility with VFX pipe jobs (pb when instancing scripts with local version of python)
-        self.watcherPackages = "%s python-2.7.2" % (self.watcherPackages)
-
-        print("runner packages: %s" % self.runnerPackages)
-        print("watcher packages: %s" % self.watcherPackages)
+        # print("runner packages: %s" % self.runnerPackages)
+        # print("watcher packages: %s" % self.watcherPackages)
 
     def updateTags(self, pTags):
         """
@@ -816,7 +812,31 @@ class Graph(object):
 
         return repr
 
-    def submit(self, host="puliserver", port=8004):
+    def save(self, filepath):
+        repr = json.dumps(self._toRepresentation())
+        jsonRepr = json.dumps(repr)
+        with open(filepath, 'w') as f:
+            f.write(jsonRepr)
+
+    @staticmethod
+    def loadAndSubmit(filepath, host=None, port=None):
+        with open(filepath, 'r') as f:
+             jsonRepr = f.read()
+        if host is None:
+            host = os.getenv('PULIHOST', 'puliserver')
+        if port is None:
+            port = int(os.getenv('PULIPORT', 8004))
+
+        conn = httplib.HTTPConnection(host, port)
+        conn.request(
+            'POST', '/graphs/', jsonRepr, {'Content-Length': len(jsonRepr)})
+        response = conn.getresponse()
+        if response.status in (200, 201):
+            return response.getheader('Location'), response.read()
+        else:
+            raise GraphSubmissionError((response.status, response.reason))
+
+    def submit(self, host=None, port=None):
         """
         | Prepare a graph representation and send it to the server.
         | - prepare graph
@@ -829,6 +849,10 @@ class Graph(object):
             'Graph created. Created nodes: ...')
         :raise: GraphSubmissionError
         """
+        if host is None:
+            host = os.getenv('PULIHOST', 'puliserver')
+        if port is None:
+            port = int(os.getenv('PULIPORT', 8004))
 
         repr = self.prepareGraphRepresentation()
 
@@ -853,39 +877,48 @@ class Graph(object):
         else:
             raise GraphSubmissionError((response.status, response.reason))
 
+    def execute(self):
+        """
+        | Prepare a graph representation to execute locally.
+        | The following steps will be executed :
 
-    def _createExecutionList(self):
+        ::
+
+            1. Prepare the graph representation with GraphDumper
+            2. Parse the representation to extract all commands in a single list in "id" order
+               Several attribute of the task are stored with each command (taksid, end, dependencies...)
+            3. While there are some "ready" command
+              3.1 Parse ready commands
+                    Execute command
+              3.2 Parse blocked commands
+                    Check dependencies and increment "nbReadyAfterCheck" counter
+              3.3 If nbReadyAfterCheck == 0
+                    BREAK the while loop
+            4. Write summary and return
+
+        :return: the final state of the graph
+        :rtype: int
+        :raise: GraphExecError
         """
-        When executing a graph locally this method will transform the graph structure (tree with dependencies) into
-        a flat list of commands. To respect dependencies btw tasks and taskgroups, this flatten process is done in
-        2 steps.
-          - first pass: Create all commands without considering dependencies at all
-          - second pass: Report dependencies from the tree onto the command list
-        """
+
         # Prepare graph
         repr = self.prepareGraphRepresentation()
 
         # Parse graph to create exec order list
-        self.executionList = []
+        executionList = []
 
-        #
-        # FIRST PASS
-        # Create all commands without considering dependencies at all
-        #
         taskId = 1
-        commandId = 0
+        commandId = 1
         for node in repr["tasks"]:
 
             if node["type"] == "TaskGroup":
-                # Nothing to do here, as we will parse trough all nodes we only need to take TaskNode into account
-                # The only problem might be if dependencies are defined on TaskGroup and are not properly reported on
-                # descendants
+                # Parse children
+                # print "TG - %s" % node["name"]
                 pass
 
             elif node["type"] == "Task":
                 # print "T - %s" % node["name"]
 
-                node['childCommands'] = []
                 # Parse commands
                 for command in node["commands"]:
                     # print "  C - %r" % command["description"]
@@ -900,68 +933,27 @@ class Graph(object):
 
                     command["status"] = BLOCKED
 
-                    node['childCommands'].append(commandId)
-                    self.executionList.append(command)
+                    if "dependencies" in node.keys() and 0 < len(node["dependencies"]):
+                        command["dependencies"] = node["dependencies"]
+                    else:
+                        command["status"] = READY
+                        command["dependencies"] = None
+
+                    executionList.append(command)
                     commandId += 1
 
-                # print "child commands for node: %s --> %r" % (node['name'], node['childCommands'])
                 taskId += 1
-        #
-        # SECOND PASS
-        # Parse the nodes and report dependencies from [node to node] onto [command to command]
-        # using the node['childCommands'] attribute created on the first pass
-        #
-        for node in repr["tasks"]:
-            if node["type"] == "Task":
 
-                if 0 < len(node.get("dependencies")):
-                    for target, statusList in node["dependencies"]:
-                        # print "target: name=%s id=%d - status:%r" % (repr["tasks"][target]['name'], target, statusList)
-
-                        for cmdId in node['childCommands']:
-                            currCmd = self.executionList[cmdId]
-                            currCmd["dependencies"] = []
-
-                            # Go deep in taskgroups to get childCommands for this hierarchy and create actual dep
-                            targetCommandList = self._getAllChildCommands(repr["tasks"][target], repr)
-                            for targetId in targetCommandList:
-                                currCmd["dependencies"].append((targetId, statusList))
-                else:
-                    for cmdId in node['childCommands']:
-                        self.executionList[cmdId]["status"] = READY
-                        self.executionList[cmdId]["dependencies"] = None
-                pass
-            pass
-
-
-
-    def _getAllChildCommands(self, node, graphRepresentation):
-        result = []
-        if node['type'] == "Task":
-            result.extend(node['childCommands'])
-            # print "getting childs for node: %s -> %r" % (node['name'], node['childCommands'])
-
-        elif node['type'] == "TaskGroup":
-            for child in node['tasks']:
-                childCommands = self._getAllChildCommands(graphRepresentation["tasks"][child], graphRepresentation)
-                result.extend(childCommands)
-
-        else:
-            # Invalid node type
-            raise GraphExecError
-        return result
-
-    def _executeNodeList(self):
         print ""
         print("---------------------")
-        print "Executing %d commands locally:" % len(self.executionList)
+        print "Executing %d commands locally:" % len(executionList)
         print("---------------------")
         numDONE, numERROR, numCANCELED = 0, 0, 0
         startDate = time.time()
 
         # Loop while there are no ready commands left
         while True:
-            readyCommands = (command for command in self.executionList
+            readyCommands = (command for command in executionList
                              if command["status"] == READY)
             for command in readyCommands:
 
@@ -992,20 +984,17 @@ class Graph(object):
 
             # Check dependencies
             nbReadyAfterCheck = 0
-            blockedCommands = [command for command in self.executionList if command["status"] == BLOCKED]
+            blockedCommands = (command for command in executionList if command["status"] == BLOCKED)
             for command in blockedCommands:
                 targetId = command["dependencies"][0][0]
                 statuses = command["dependencies"][0][1]
 
-                for node in self.executionList:
-                    if node["execid"] == targetId and node["status"] in statuses:
+                for node in executionList:
+                    if node["taskid"] == targetId and node["status"] in statuses:
                         command["status"] = READY
                         nbReadyAfterCheck += 1
 
             if nbReadyAfterCheck == 0:
-                if len(blockedCommands) > 0:
-                    print "Warning: there are still some commands \"BLOCKED\"..."
-
                 endDate = time.time()
                 elapsedTime = endDate - startDate
                 print ""
@@ -1032,47 +1021,6 @@ class Graph(object):
             return ERROR
         return DONE
 
-    def execute(self, detached=False):
-        """
-        | Prepare a graph representation to execute locally.
-        | The following steps will be executed :
-
-        ::
-
-            1. Prepare the graph representation with GraphDumper
-            2. Parse the representation to extract all commands in a single list in "id" order
-               Several attribute of the task are stored with each command (taksid, end, dependencies...)
-            3. While there are some "ready" command
-              3.1 Parse ready commands
-                    Execute command
-              3.2 Parse blocked commands
-                    Check dependencies and increment "nbReadyAfterCheck" counter
-              3.3 If nbReadyAfterCheck == 0
-                    BREAK the while loop
-            4. Write summary and return
-
-        :return: the final state of the graph
-        :rtype: int
-        :raise: GraphExecError
-        """
-        import logging
-
-        if detached:
-
-            from threading import Thread
-            def threaded_function():
-                self._createExecutionList()
-                return self._executeNodeList()
-
-            thread = Thread(target=threaded_function)
-            thread.start()
-
-        else:
-            logging.getLogger().info("")
-            self._createExecutionList()
-            return self._executeNodeList()
-
-
     def execNode(self, pCommand):
         """
         | Emulate the execution of a command on a worker node.
@@ -1095,7 +1043,7 @@ class Graph(object):
         runnerPackages = pCommand.get("runnerPackages", "undefined")
         validationExpression = pCommand["validationExpression"]
 
-        # print(pCommand)
+        print(pCommand)
         #
         # SECURE WAY: start a subprocess
         #

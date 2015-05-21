@@ -1,13 +1,13 @@
 #!/usr/bin/python
-# -*- coding: latin-1 -*-
+# -*- coding: utf-8 -*-
 
 """
-Un webservice permettant de pouvoir repondre � des requetes de la sorte:
+Un webservice permettant de pouvoir repondre a des requetes de la sorte:
 
-Note les requetes http types pr�sentent les arguments de la mani�re suivante:
-field1=value1&field2=value2&field3=value3, Tonado autorise la d�finition de plusieurs valeurs pour un field donn�
+Note les requetes http types presentent les arguments de la maniere suivante:
+field1=value1&field2=value2&field3=value3, Tonado autorise la definition de plusieurs valeurs pour un field donne
 
-Le webservice prend en charge les requ�tes de la forme:
+Le webservice prend en charge les requetes de la forme:
 http://localhost:8004/query?attr=id
 http://localhost:8004/query?constraint_user=jsa
 http://localhost:8004/query?attr=id&attr=name&attr=user&constraint_user=jsa&constraint_prod=ddd

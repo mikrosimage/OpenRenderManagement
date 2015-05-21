@@ -172,7 +172,6 @@ class DispatchTree(object):
             if taskDef['type'] == 'Task':
                 # logger.debug("taskDef.watcherPackages = %s" % taskDef["watcherPackages"])
                 # logger.debug("taskDef.runnerPackages = %s" % taskDef["runnerPackages"])
-                # import pudb;pu.db
                 task = self._createTaskFromJSON(taskDef, user)
             elif taskDef['type'] == 'TaskGroup':
                 task = self._createTaskGroupFromJSON(taskDef, user)

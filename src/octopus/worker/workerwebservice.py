@@ -50,6 +50,8 @@ class WorkerWebService(Application):
             (r'/ramInUse/?$', RamInUseResource, dict(framework=framework)),
             (r'/reconfig/?$', WorkerReconfig, dict(framework=framework))
         ])
+        logging.getLogger('').info("start WS")
+
         self.queue = Queue()
         self.listen(port, "0.0.0.0")
         self.framework = framework
@@ -145,6 +147,14 @@ class CommandsResource(BaseResource):
         del dct['id']
 
         try:
+            # @TODO direct command creation here helps indicating to the dispatcher the result of adding process
+            # it is done to avoid having a command&RN staled in "assigned" status on the server.
+            # HOWEVER it can be a problem is the following case:
+            #   1. a command is deleted on the RN (via mijote/pulback or other)
+            #   2. quickly after deletion, the server has done a dispatch and has send a new command (sometime even the same cmd)
+            #   3. the mainloop of the worker occurs and tries to do the cleanup of the previously deleted command (and set the proper worker status). It detects a problem
+            #      with the newly created command and there will be a ghost command on the RN...
+
             # self.framework.addOrder(self.framework.application.addCommandApply, **dct)
             ret = self.framework.application.addCommandApply(None,
                                                              dct['commandId'],
@@ -264,13 +274,15 @@ class WorkerLogResource(RequestHandler):
 
         logFileName = "worker%d.log" % settings.PORT
         logFilePath = os.path.join(settings.LOGDIR, logFileName)
+
         if os.path.isfile(logFilePath):
             logFile = open(logFilePath, 'r')
             logFileContent = logFile.read()
             logFile.close()
             self.set_header('Content-Type', 'text/plain')
             self.write(logFileContent)
-        return Http404('no log file')
+        else:
+            raise Http404('no log file')
 
 
 class CommandLogResource(RequestHandler):
@@ -282,7 +294,8 @@ class CommandLogResource(RequestHandler):
             logFile.close()
             self.set_header('Content-Type', 'text/plain')
             self.write(logFileContent)
-        return Http404('no log file')
+        else:
+            raise Http404('no log file')
 
 
 class UpdateSysResource(BaseResource):

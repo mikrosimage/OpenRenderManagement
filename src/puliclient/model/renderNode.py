@@ -65,7 +65,6 @@ class RenderNode(object):
         return "%s" % self.name
 
     def encode(self, indent=0):
-        # import pudb; pu.db
         res = {}
         for field in self.__dict__:
             res[field] = getattr(self, field)

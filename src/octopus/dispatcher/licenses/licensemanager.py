@@ -141,5 +141,5 @@ class LicenseManager:
             if lic.maximum != number:
                 lic.setMaxNumber(number)
         except KeyError:
-            print "License %s not found... Creating new entry" % licenseName
             self.licenses[licenseName] = LicenseManager.License(licenseName, number)
+            print "License %r not found... Creating new entry" % licenseName

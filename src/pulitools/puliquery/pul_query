@@ -282,7 +282,6 @@ Reminder: Possible values for a job status
 
 if __name__ == '__main__':
 
-    # import pudb;pu.db
     options, args = process_args()
     VERBOSE = options.verbose
 

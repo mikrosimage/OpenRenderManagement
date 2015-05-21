@@ -1,5 +1,5 @@
 name = 'puli'
-version = 'dev'
+version = '1.7.14'
 
 # If your tool depends on some other package(s)
 requires = [
@@ -35,5 +35,3 @@ def commands():
 
     alias('puli_dispatcherd', 'python {root}/src/octopus/dispatcherd.py')
     alias('puli_dispatcherd_dev', 'python {root}/src/octopus/dispatcherd.py --debug --console -p 8004')
-
-

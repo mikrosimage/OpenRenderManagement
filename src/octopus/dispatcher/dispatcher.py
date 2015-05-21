@@ -623,10 +623,11 @@ class Dispatcher(MainLoopApplication):
                 # we should re-reserve the lic
                 rn.reserveLicense(command, self.licenseManager)
                 log.warning("re-assigning command %d on %s. (TIMEOUT?)" % (commandId, rn.name))
-            else:
-                # The command has been cancelled on the dispatcher but update from RN only arrives now
-                log.warning("Status update for %d (%d) from %s but command is currently assigned." % (commandId, int(dct['status']), renderNodeName))
-                pass
+
+            # Command is already remove from RN at this point (it happens when receiving a CANCEL order from external GUI)
+            # else:
+            #     # The command has been cancelled on the dispatcher but update from RN only arrives now
+            #     log.warning("Status update for %d (%d) from %s but command is currently assigned." % (commandId, int(dct['status']), renderNodeName))
 
         if "status" in dct:
             command.status = int(dct['status'])

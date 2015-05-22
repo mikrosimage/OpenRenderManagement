@@ -30,6 +30,8 @@ def commands():
     alias('pul_query', 'python {root}/src/pulitools/puliquery/pul_query')
 
     # Dev tools
+    # Alias for worker duplicated since workerd is still used by some workers
+    alias('workerd', 'python {root}/src/octopus/workerd.py')
     alias('puli_workerd', 'python {root}/src/octopus/workerd.py')
     alias('puli_workerd_dev', 'python {root}/src/octopus/workerd.py -s localhost --debug --console -p 9000 -K /tmp/render/kill9000 -P /tmp/worker9000.pid')
 

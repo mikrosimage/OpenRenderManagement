@@ -20,6 +20,7 @@ from puliclient.runner import CallableRunner
 from puliclient.runner import RunnerToolkit
 
 import httplib
+
 try:
     import simplejson as json
 except ImportError:
@@ -88,7 +89,6 @@ class TaskAlreadyDecomposedError(Error):
 
 
 class HierarchicalDict(dict):
-
     def __init__(self, parent, args):
         dict.__init__(self, args)
         self.parent = parent
@@ -121,6 +121,7 @@ def parseCallable(targetCall, name, user_args, user_kwargs):
     # Check callable given
     #
     import inspect
+
     if not (inspect.ismethod(targetCall) or inspect.isfunction(targetCall)):
         raise GraphError("Callable must be a function or method.")
 
@@ -167,6 +168,7 @@ class Command(object):
     | - timeout: a positive integer indicating the max number of second that \
                  the command can run before being interrupted
     """
+
     def __init__(self, description, task, arguments={}, runnerPackages=None, watcherPackages=None):
         self.description = description
         self.task = task
@@ -280,12 +282,12 @@ class Task(object):
             self.watcherPackages = watcherPackages
         else:
             rezResolve = os.environ.get('REZ_USED_RESOLVE', '')
-            for package in rezResolve.split():
+            for package in rezResolve:
                 if package.startswith('pulicontrib'):
                     self.watcherPackages = "%s %s" % (self.watcherPackages, package)
 
-        # print("runner packages: %s" % self.runnerPackages)
-        # print("watcher packages: %s" % self.watcherPackages)
+                    # print("runner packages: %s" % self.runnerPackages)
+                    # print("watcher packages: %s" % self.watcherPackages)
 
     def updateTags(self, pTags):
         """
@@ -456,7 +458,8 @@ class TaskGroup(object):
 
         return newTask
 
-    def addNewCallable(self, targetCall, name="", runner="puliclient.CallableRunner", user_args=(), user_kwargs={}, **kwargs):
+    def addNewCallable(self, targetCall, name="", runner="puliclient.CallableRunner", user_args=(), user_kwargs={},
+                       **kwargs):
         """
         | Wraps around TaskGroup  method to add a new Task. It accepts any callable
         | to run on the renderfarm. Additionnal Task arguments can be added as keyword args
@@ -540,6 +543,7 @@ class Graph(object):
     | Data structure to submit to Puli server.
     | It describes one or several tasks that will be executer on the renderfarm.
     """
+
     def __init__(self, name, root=None, user=None, poolName='default',
                  maxRN=-1, tags={}):
         """
@@ -573,6 +577,7 @@ class Graph(object):
         self.meta = {}
         if user is None:
             import getpass
+
             self.user = getpass.getuser()
         else:
             self.user = user
@@ -645,7 +650,7 @@ class Graph(object):
         return self.root.addNewTaskGroup(*args, **kwargs)
 
     # def addNewCallable(self, targetCall, *args, **kwargs):
-    #     '''
+    # '''
     #     '''
     #     task_specific_kwargs = {}
     #     # UNSUPPORTED TASK FIELDS: priority, validator, minNbCores, maxNbCores
@@ -662,7 +667,8 @@ class Graph(object):
     #     task_specific_kwargs['maxAttempt'] = kwargs.pop('maxAttempt', 1)
     #     self.addNewCallableTaskRAW(targetCall, user_args=args, user_kwargs=kwargs, **task_specific_kwargs)
 
-    def addNewCallable(self, targetCall, name="", runner="puliclient.CallableRunner", user_args=(), user_kwargs={}, **kwargs):
+    def addNewCallable(self, targetCall, name="", runner="puliclient.CallableRunner", user_args=(), user_kwargs={},
+                       **kwargs):
         """
         | Wraps around graph method to add a new Task. It accepts any callable
         | to run on the renderfarm. Additionnal Task arguments can be added as keyword args
@@ -692,13 +698,13 @@ class Graph(object):
 
             if len(edge) not in (2, 3):
                 if len(edge) < 2:
-                    msg = "Invalid connection for edge["+str(i)+"]=\
-                        "+str(edge)+": either source of destination was omitted\
+                    msg = "Invalid connection for edge[" + str(i) + "]=\
+                        " + str(edge) + ": either source of destination was omitted\
                         . The edge description must at least have 2 parts"
                     raise ConnectionError(msg)
                 if 3 < len(edge):
                     msg = "Invalid connection for \
-                        edge["+str(i)+"]="+str(edge)+": edge description can \
+                        edge[" + str(i) + "]=" + str(edge) + ": edge description can \
                         not have more thant 3 parts."
                     raise ConnectionError(msg)
 
@@ -711,7 +717,7 @@ class Graph(object):
                     statusList = edge[2]
                 else:
                     msg = "Invalid connection for\
-                        edge["+str(i)+"]="+str(edge)+": statuslist is not \
+                        edge[" + str(i) + "]=" + str(edge) + ": statuslist is not \
                         a proper list."
                     raise ConnectionError(msg)
 
@@ -812,16 +818,29 @@ class Graph(object):
 
         return repr
 
-    def save(self, filepath):
-        repr = json.dumps(self._toRepresentation())
-        jsonRepr = json.dumps(repr)
-        with open(filepath, 'w') as f:
-            f.write(jsonRepr)
+    def save(self, filePath):
+        """
+            Dump the current graph into a JSON file.
+        :param filePath str: the absolute path of the output file
+        """
+        repr = json.dumps(self._toRepresentation(), ensure_ascii=False)
+        with open(filePath, 'w') as f:
+            f.write(repr)
 
     @staticmethod
-    def loadAndSubmit(filepath, host=None, port=None):
-        with open(filepath, 'r') as f:
-             jsonRepr = f.read()
+    def loadAndSubmit(filePath, host=None, port=None):
+        """
+            Loads a JSON file and submits it to a sever. You can use save() to \
+             generate such a JSON file
+        :param filePath: the absolute path of the input file
+        :param host str: server name to connect to
+        :param port int: server port to connect to
+        :return: A tuple with the server response ie. ('SERVER_URL/nodes/Id', \
+            'Graph created. Created nodes: ...')
+        :raise: GraphSubmissionError
+        """
+        with open(filePath, 'r') as f:
+            jsonRepr = f.read()
         if host is None:
             host = os.getenv('PULIHOST', 'puliserver')
         if port is None:
@@ -1253,7 +1272,8 @@ class GraphDumper():
             'runner': task.runner,
             'arguments': task.arguments,
             'environment': task.environment,
-            'dependencies': [(self.getTaskIndex(dependency), statusList) for (dependency, statusList) in task.dependencies.items()],
+            'dependencies': [(self.getTaskIndex(dependency), statusList) for (dependency, statusList) in
+                             task.dependencies.items()],
             'maxRN': task.maxRN,
             'priority': task.priority,
             'dispatchKey': task.dispatchKey,
@@ -1287,13 +1307,15 @@ class GraphDumper():
             'name': taskGroup.name,
             'arguments': taskGroup.arguments,
             'environment': taskGroup.environment,
-            'dependencies': [(self.getTaskIndex(dependency), statusList) for (dependency, statusList) in taskGroup.dependencies.items()],
+            'dependencies': [(self.getTaskIndex(dependency), statusList) for (dependency, statusList) in
+                             taskGroup.dependencies.items()],
             'requirements': taskGroup.requirements,
             'maxRN': taskGroup.maxRN,
             'priority': taskGroup.priority,
             'dispatchKey': taskGroup.dispatchKey,
             'strategy': taskGroup.strategy,
-            'tasks': [self.getTaskIndex(task) for task in taskGroup.tasks] + [self.getTaskIndex(subtaskGroup) for subtaskGroup in taskGroup.taskGroups],
+            'tasks': [self.getTaskIndex(task) for task in taskGroup.tasks] + [self.getTaskIndex(subtaskGroup) for
+                                                                              subtaskGroup in taskGroup.taskGroups],
             'tags': taskGroup.tags,
             'timer': taskGroup.timer,
         }

@@ -45,8 +45,8 @@ RUN_AS = None
 #
 # LOG AND CONF FOLDERS
 #
-LOGDIR = "__LOGDIR_PLACEHOLDER__"
-CONFDIR = "__CONFDIR_PLACEHOLDER__"
+LOGDIR = "/s/apps/users/eth//puli_server/logs"
+CONFDIR = "/s/apps/users/eth//puli_server/conf/puli"
 
 #
 # COMMAND LAUNCHED DURING SHUTDOWN TO RESTART SERVER
@@ -75,4 +75,5 @@ WS_BACKEND_PORT = 11800
 DB_ENABLE = True
 DB_CLEAN_DATA = False
 
-DB_URL = "mysql://puliuser:0ct0pus@127.0.0.1/pulidb"
+DB_URL = "mysql://root:pass@127.0.0.1/pulidb"
+STAT_DB_URL = "mysql://root:pass@127.0.0.1/pulistatdb"

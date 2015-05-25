@@ -33,6 +33,7 @@ from octopus.dispatcher.model.pool import Pool, PoolShare
 from octopus.dispatcher.strategies import createStrategyInstance
 from octopus.core.tools import elapsedTimeToString
 
+
 from octopus.core import singletonconfig
 
 LOGGER = logging.getLogger('main.dispatcher')
@@ -255,7 +256,7 @@ class PuliDB(object):
                 conn = TaskNodes._connection
                 fields = {TaskNodes.q.id.fieldName: element.id,
                           TaskNodes.q.name.fieldName: element.name,
-                          TaskNodes.q.parentId.fieldName: element.parent.id,
+                          TaskNodes.q.parentId.fieldName: element.parent.id if element.parent else None,
                           TaskNodes.q.user.fieldName: element.user,
                           TaskNodes.q.priority.fieldName: element.priority,
                           TaskNodes.q.dispatchKey.fieldName: element.dispatchKey,
@@ -537,90 +538,46 @@ class PuliDB(object):
     def archiveElements(self, elements):
         if not len(elements):
             return
-        tasksList = []
-        taskgroupsList = []
-        commandsList = []
-        taskNodesList = []
-        folderNodesList = []
-        poolsList = []
-        poolsharesList = []
-        rendernodesList = []
         for element in elements:
             if isinstance(element, Task):
-                tasksList.append(element.id)
+                StatDB.archiveTask(self, element)
+                conn = Tasks._connection
+                conn.query(conn.sqlrepr(Delete(Tasks.q, where=(Tasks.q.id==element.id))))
+                conn.cache.clear()
             elif isinstance(element, TaskGroup):
-                taskgroupsList.append(element.id)
+                StatDB.archiveTaskGroup(self, element)
+                conn = TaskGroups._connection
+                conn.query(conn.sqlrepr(Delete(TaskGroups.q, where=(TaskGroups.q.id == element.id))))
+                conn.cache.clear()
             elif isinstance(element, Command):
-                commandsList.append(element.id)
-                # import gc
-                # gc.collect()
-                # LOGGER.warning("referrers of %s : %s" % (str(type(element)), str(gc.get_referrers(element))))
+                StatDB.archiveCommand(self, element)
+                conn = Commands._connection
+                conn.query(conn.sqlrepr(Delete(Commands.q, where=(Commands.q.id == element.id))))
+                conn.cache.clear()
             elif isinstance(element, TaskNode):
-                # LOGGER.info("            ----> Archiving task node = %s" % element )
-                taskNodesList.append(element.id)
+                StatDB.archiveTaskNode(self, element)
+                conn = TaskNodes._connection
+                conn.query(conn.sqlrepr(Delete(TaskNodes.q, where=(TaskNodes.q.id == element.id))))
+                conn.cache.clear()
             elif isinstance(element, FolderNode):
-                # LOGGER.info("            ----> Archiving folder node = %s" % element )
-                folderNodesList.append(element.id)
+                StatDB.archiveFolderNode(self, element)
+                conn = FolderNodes._connection
+                conn.query(conn.sqlrepr(Delete(FolderNodes.q, where=(FolderNodes.q.id == element.id))))
+                conn.cache.clear()
             elif isinstance(element, Pool):
-                poolsList.append(element.id)
+                StatDB.archivePool(self, element)
+                conn = Pools._connection
+                conn.query(conn.sqlrepr(Delete(Pools.q, where=(Pools.q.id == element.id))))
+                conn.cache.clear()
             elif isinstance(element, PoolShare):
-                poolsharesList.append(element.id)
+                StatDB.archivePoolShare(self, element)
+                conn = PoolShares._connection
+                conn.query(conn.sqlrepr(Delete(PoolShares.q, where=(PoolShares.q.id == element.id))))
+                conn.cache.clear()
             elif isinstance(element, RenderNode):
-                rendernodesList.append(element.id)
-        # del elements
-
-        # /////////////// Handling of the Tasks
-        if len(tasksList):
-            conn = Tasks._connection
-            sqlrepr = conn.sqlrepr(Update(Tasks.q, values={Tasks.q.archived.fieldName: True}, where=IN(Tasks.q.id, tasksList)))
-            conn.query(sqlrepr)
-            conn.cache.clear()
-        # /////////////// Handling of the TaskGroups
-        if len(taskgroupsList):
-            conn = TaskGroups._connection
-            conn.query(conn.sqlrepr(Update(TaskGroups.q, values={TaskGroups.q.archived.fieldName: True}, where=IN(TaskGroups.q.id, taskgroupsList))))
-            conn.cache.clear()
-        # /////////////// Handling of the Commands
-        if len(commandsList):
-            conn = Commands._connection
-            conn.query(conn.sqlrepr(Update(Commands.q, values={Commands.q.archived.fieldName: True}, where=IN(Commands.q.id, commandsList))))
-            conn.cache.clear()
-        # /////////////// Handling of the TaskNodes
-        if len(taskNodesList):
-            conn = TaskNodes._connection
-            sqlrepr = conn.sqlrepr(Update(TaskNodes.q, values={TaskNodes.q.archived.fieldName: True}, where=IN(TaskNodes.q.id, taskNodesList)))
-            conn.query(sqlrepr)
-            conn.cache.clear()
-            conn = PoolShares._connection
-            conn.query(conn.sqlrepr(Update(PoolShares.q, values={PoolShares.q.archived.fieldName: True}, where=IN(PoolShares.q.nodeId, taskNodesList))))
-            conn.cache.clear()
-        # /////////////// Handling of the FolderNodes
-        if len(folderNodesList):
-            conn = FolderNodes._connection
-            conn.query(conn.sqlrepr(Update(FolderNodes.q, values={FolderNodes.q.archived.fieldName: True}, where=IN(FolderNodes.q.id, folderNodesList))))
-            conn.cache.clear()
-            conn = PoolShares._connection
-            conn.query(conn.sqlrepr(Update(PoolShares.q, values={PoolShares.q.archived.fieldName: True}, where=IN(PoolShares.q.nodeId, folderNodesList))))
-            conn.cache.clear()
-        # /////////////// Handling of the Pools
-        if len(poolsList):
-            conn = Pools._connection
-            conn.query(conn.sqlrepr(Update(Pools.q, values={Pools.q.archived.fieldName: True}, where=IN(Pools.q.id, poolsList))))
-            conn.cache.clear()
-            conn = PoolShares._connection
-            conn.query(conn.sqlrepr(Update(PoolShares.q, values={PoolShares.q.archived.fieldName: True}, where=IN(PoolShares.q.poolId, poolsList))))
-            conn.cache.clear()
-        # /////////////// Handling of the PoolShares
-        if len(poolsharesList):
-            conn = PoolShares._connection
-            sqlrepr = conn.sqlrepr(Update(PoolShares.q, values={PoolShares.q.archived.fieldName: True}, where=IN(PoolShares.q.id, poolsharesList)))
-            conn.query(sqlrepr)
-            conn.cache.clear()
-        # /////////////// Handling of the RenderNodes
-        if len(rendernodesList):
-            conn = RenderNodes._connection
-            conn.query(conn.sqlrepr(Delete(RenderNodes.q, where=IN(RenderNodes.q.id, rendernodesList))))
-            conn.cache.clear()
+                StatDB.archiveRenderNode(self, element)
+                conn.query(conn.sqlrepr(Delete(RenderNodes.q, where=(RenderNodes.q.id == element.id))))
+                conn.cache.clear()
 
     def getDateFromTimeStamp(self, timeStamp):
         return datetime.datetime.fromtimestamp(timeStamp) if timeStamp else None
@@ -1252,3 +1209,191 @@ class PuliDB(object):
         LOGGER.warning("  - elapsed time %s" % elapsedTimeToString(startTimer))
 
         tree.toCreateElements = []
+
+class StatDB():
+    @staticmethod
+    def createConnection():
+        from octopus.dispatcher import settings
+        # init the connection
+        return connectionForURI(settings.STAT_DB_URL)
+
+    @staticmethod
+    def archiveTaskNode(pulidb, element):
+        conn = StatDB.createConnection()
+        fields = {TaskNodes.q.id.fieldName: element.id,
+                  TaskNodes.q.name.fieldName: element.name,
+                  TaskNodes.q.parentId.fieldName: element.parent.id if element.parent else None,
+                  TaskNodes.q.user.fieldName: element.user,
+                  TaskNodes.q.priority.fieldName: element.priority,
+                  TaskNodes.q.dispatchKey.fieldName: element.dispatchKey,
+                  TaskNodes.q.maxRN.fieldName: element.maxRN,
+                  TaskNodes.q.taskId.fieldName: element.task.id,
+                  TaskNodes.q.creationTime.fieldName: pulidb.getDateFromTimeStamp(element.creationTime),
+                  TaskNodes.q.startTime.fieldName: pulidb.getDateFromTimeStamp(element.startTime),
+                  TaskNodes.q.updateTime.fieldName: pulidb.getDateFromTimeStamp(element.updateTime),
+                  TaskNodes.q.endTime.fieldName: pulidb.getDateFromTimeStamp(element.endTime),
+                  TaskNodes.q.maxAttempt.fieldName: element.maxAttempt,
+                  TaskNodes.q.archived.fieldName: True}
+        conn.query(conn.sqlrepr(Insert(TaskNodes.q, values=fields)))
+        conn.cache.clear()
+        if element.dependencies:
+            for (toNode, statusList) in element.dependencies:
+                statusStringList = [str(i) for i in statusList]
+                fields = {Dependencies.q.toNodeId.fieldName: toNode.id,
+                          Dependencies.q.statusList.fieldName: ','.join(statusStringList),
+                          Dependencies.q.taskNodes.fieldName: element.id,
+                          Dependencies.q.folderNodes.fieldName: None,
+                          Dependencies.q.archived.fieldName: False}
+                conn.query(conn.sqlrepr(Insert(Dependencies.q, values=fields)))
+                Dependencies._connection.query(conn.sqlrepr(Delete(Dependencies.q, where=AND(
+                    Dependencies.q.toNodeId==toNode.id,
+                    Dependencies.q.taskNodes==element.id,
+                    Dependencies.q.folderNodes==None))))
+                Dependencies._connection.cache.clear()
+
+    @staticmethod
+    def archiveFolderNode(pulidb, element):
+        conn = StatDB.createConnection()
+        fields = {FolderNodes.q.id.fieldName: element.id,
+                  FolderNodes.q.name.fieldName: element.name,
+                  FolderNodes.q.parentId.fieldName: element.parent.id if element.parent else None,
+                  FolderNodes.q.user.fieldName: element.user,
+                  FolderNodes.q.priority.fieldName: element.priority,
+                  FolderNodes.q.dispatchKey.fieldName: element.dispatchKey,
+                  FolderNodes.q.maxRN.fieldName: element.maxRN,
+                  FolderNodes.q.taskGroupId.fieldName: element.taskGroup.id if element.taskGroup else None,
+                  FolderNodes.q.strategy.fieldName: element.strategy.getClassName(),
+                  FolderNodes.q.creationTime.fieldName: pulidb.getDateFromTimeStamp(element.creationTime),
+                  FolderNodes.q.startTime.fieldName: pulidb.getDateFromTimeStamp(element.startTime),
+                  FolderNodes.q.updateTime.fieldName: pulidb.getDateFromTimeStamp(element.updateTime),
+                  FolderNodes.q.endTime.fieldName: pulidb.getDateFromTimeStamp(element.endTime),
+                  FolderNodes.q.archived.fieldName: True}
+        conn.query(conn.sqlrepr(Insert(FolderNodes.q, values=fields)))
+        conn.cache.clear()
+        if element.dependencies:
+            for (toNode, statusList) in element.dependencies:
+                statusStringList = [str(i) for i in statusList]
+                fields = {Dependencies.q.toNodeId.fieldName: toNode.id,
+                          Dependencies.q.statusList.fieldName: ','.join(statusStringList),
+                          Dependencies.q.taskNodes.fieldName: None,
+                          Dependencies.q.folderNodes.fieldName: element.id,
+                          Dependencies.q.archived.fieldName: False}
+                conn.query(conn.sqlrepr(Insert(Dependencies.q, values=fields)))
+                conn.cache.clear()
+                Dependencies._connection.query(conn.sqlrepr(Delete(Dependencies.q, where=AND(
+                    Dependencies.q.toNodeId==toNode.id,
+                    Dependencies.q.taskNodes==None,
+                    Dependencies.q.folderNodes==element.id))))
+                Dependencies._connection.cache.clear()
+
+    @staticmethod
+    def archiveTaskGroup(pulidb, element):
+        conn = StatDB.createConnection()
+        fields = {TaskGroups.q.id.fieldName: element.id,
+                  TaskGroups.q.name.fieldName: element.name,
+                  TaskGroups.q.parentId.fieldName: element.parent.id if element.parent else None,
+                  TaskGroups.q.user.fieldName: element.user,
+                  TaskGroups.q.priority.fieldName: element.priority,
+                  TaskGroups.q.dispatchKey.fieldName: element.dispatchKey,
+                  TaskGroups.q.maxRN.fieldName: element.maxRN,
+                  TaskGroups.q.environment.fieldName: json.dumps(element.environment),
+                  TaskGroups.q.requirements.fieldName: json.dumps(element.requirements),
+                  TaskGroups.q.tags.fieldName: json.dumps(element.tags),
+                  TaskGroups.q.strategy.fieldName: element.strategy.getClassName(),
+                  TaskGroups.q.archived.fieldName: True,
+                  TaskGroups.q.args.fieldName: str(element.arguments)}
+        conn.query(conn.sqlrepr(Insert(TaskGroups.q, values=fields)))
+        conn.cache.clear()
+        for (rule, node) in element.nodes.iteritems():
+            fields = {Rules.q.name.fieldName: rule,
+                      Rules.q.taskNodeId.fieldName: None,
+                      Rules.q.folderNodeId.fieldName: node.id}
+            conn.query(conn.sqlrepr(Insert(Rules.q, values=fields)))
+            conn.cache.clear()
+            Rules._connection.query(conn.sqlrepr(Delete(Rules.q, where=(Rules.q.folderNodeId==node.id))))
+            Rules._connection.cache.clear()
+
+    @staticmethod
+    def archiveTask(pulidb, element):
+        conn = StatDB.createConnection()
+        fields = {Tasks.q.id.fieldName: element.id,
+                  Tasks.q.name.fieldName: element.name,
+                  Tasks.q.parentId.fieldName: element.parent.id if element.parent else None,
+                  Tasks.q.user.fieldName: element.user,
+                  Tasks.q.priority.fieldName: element.priority,
+                  Tasks.q.dispatchKey.fieldName: element.dispatchKey,
+                  Tasks.q.maxRN.fieldName: element.maxRN,
+                  Tasks.q.runner.fieldName: element.runner,
+                  Tasks.q.environment.fieldName: json.dumps(element.environment),
+                  Tasks.q.requirements.fieldName: json.dumps(element.requirements),
+                  Tasks.q.minNbCores.fieldName: element.minNbCores,
+                  Tasks.q.maxNbCores.fieldName: element.maxNbCores,
+                  Tasks.q.ramUse.fieldName: element.ramUse,
+                  Tasks.q.licence.fieldName: element.lic,
+                  Tasks.q.tags.fieldName: json.dumps(element.tags),
+                  Tasks.q.validationExpression.fieldName: element.validationExpression,
+                  Tasks.q.archived.fieldName: True,
+                  Tasks.q.args.fieldName: str(element.arguments),
+                  Tasks.q.maxAttempt.fieldName: element.maxAttempt,
+                  Tasks.q.runnerPackages.fieldName: json.dumps(element.runnerPackages),
+                  Tasks.q.watcherPackages.fieldName: json.dumps(element.watcherPackages)
+                  }
+        conn.query(conn.sqlrepr(Insert(Tasks.q, values=fields)))
+        conn.cache.clear()
+        for (rule, node) in element.nodes.iteritems():
+            fields = {Rules.q.name.fieldName: rule,
+                      Rules.q.taskNodeId.fieldName: None,
+                      Rules.q.folderNodeId.fieldName: node.id}
+            conn.query(conn.sqlrepr(Insert(Rules.q, values=fields)))
+            conn.cache.clear()
+            Rules._connection.query(conn.sqlrepr(Delete(Rules.q, where=(Rules.q.folderNodeId == node.id))))
+            Rules._connection.cache.clear()
+
+    @staticmethod
+    def archiveCommand(pulidb, element):
+        conn = StatDB.createConnection()
+        fields = {Commands.q.id.fieldName: element.id,
+                  Commands.q.description.fieldName: element.description,
+                  Commands.q.taskId.fieldName: element.task.id,
+                  Commands.q.status.fieldName: element.status,
+                  Commands.q.completion.fieldName: element.completion,
+                  Commands.q.creationTime.fieldName: pulidb.getDateFromTimeStamp(element.creationTime),
+                  Commands.q.startTime.fieldName: pulidb.getDateFromTimeStamp(element.startTime),
+                  Commands.q.updateTime.fieldName: pulidb.getDateFromTimeStamp(element.updateTime),
+                  Commands.q.endTime.fieldName: pulidb.getDateFromTimeStamp(element.endTime),
+                  Commands.q.assignedRNId.fieldName: element.renderNode.id if element.renderNode else None,
+                  Commands.q.message.fieldName: element.message,
+                  Commands.q.stats.fieldName: str(element.stats),
+                  Commands.q.archived.fieldName: True,
+                  Commands.q.args.fieldName: str(element.arguments),
+                  Commands.q.attempt.fieldName: str(element.attempt),
+                  Commands.q.runnerPackages.fieldName: json.dumps(element.runnerPackages),
+                  Commands.q.watcherPackages.fieldName: json.dumps(element.watcherPackages)
+                  }
+        conn.query(conn.sqlrepr(Insert(Commands.q, values=fields)))
+
+    @staticmethod
+    def archiveRenderNode(pulidb, element):
+        #Nothing to do since RenderNodes are not archived.
+        pass
+
+
+    @staticmethod
+    def archivePool(pulidb, element):
+        conn = StatDB.createConnection()
+        fields = {Pools.q.id.fieldName: element.id,
+                  Pools.q.name.fieldName: element.name,
+                  Pools.q.archived.fieldName: True}
+        conn.query(conn.sqlrepr(Insert(Pools.q, values=fields)))
+        conn.cache.clear()
+
+    @staticmethod
+    def archivePoolShare(pulidb, element):
+        conn = StatDB.createConnection()
+        fields = {PoolShares.q.id.fieldName: element.id,
+                  PoolShares.q.poolId.fieldName: element.pool.id,
+                  PoolShares.q.nodeId.fieldName: element.node.id,
+                  PoolShares.q.maxRN.fieldName: element.maxRN,
+                  PoolShares.q.archived.fieldName: True}
+        conn.query(conn.sqlrepr(Insert(PoolShares.q, values=fields)))
+

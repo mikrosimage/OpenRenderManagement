@@ -535,6 +535,8 @@ class PuliDB(object):
     ## Mark the provided elements as archived.
     # @param elements the elements to archive
     #
+
+
     def archiveElements(self, elements):
         if not len(elements):
             return
@@ -1372,10 +1374,22 @@ class StatDB():
                   }
         conn.query(conn.sqlrepr(Insert(Commands.q, values=fields)))
 
+
+
     @staticmethod
     def archiveRenderNode(pulidb, element):
-        #Nothing to do since RenderNodes are not archived.
-        pass
+        conn = StatDB.createConnection()
+        fields = {RenderNodes.q.id.fieldName: element.id,
+                  RenderNodes.q.name.fieldName: element.name,
+                  RenderNodes.q.coresNumber.fieldName: element.coresNumber,
+                  RenderNodes.q.speed.fieldName: element.speed,
+                  RenderNodes.q.ip.fieldName: element.host,
+                  RenderNodes.q.port.fieldName: element.port,
+                  RenderNodes.q.ramSize.fieldName: element.ramSize,
+                  RenderNodes.q.caracteristics.fieldName: json.dumps(element.caracteristics),
+                  RenderNodes.q.performance.fieldName: element.performance}
+        conn.query(conn.sqlrepr(Insert(RenderNodes.q, values=fields)))
+        conn.cache.clear()
 
 
     @staticmethod

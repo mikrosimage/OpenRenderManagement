@@ -75,4 +75,5 @@ WS_BACKEND_PORT = 11800
 DB_ENABLE = True
 DB_CLEAN_DATA = False
 
-DB_URL = "mysql://puliuser:0ct0pus@127.0.0.1/pulidb"
+DB_URL = "__DB_URL_PLACEHOLDER__"
+STAT_DB_URL = "__STAT_DB_URL_PLACEHOLDER__"

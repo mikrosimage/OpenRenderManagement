@@ -256,7 +256,7 @@ class PuliDB(object):
                 conn = TaskNodes._connection
                 fields = {TaskNodes.q.id.fieldName: element.id,
                           TaskNodes.q.name.fieldName: element.name,
-                          TaskNodes.q.parentId.fieldName: element.parent.id if element.parent else None,
+                          TaskNodes.q.parentId.fieldName: element.parent.id,
                           TaskNodes.q.user.fieldName: element.user,
                           TaskNodes.q.priority.fieldName: element.priority,
                           TaskNodes.q.dispatchKey.fieldName: element.dispatchKey,

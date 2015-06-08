@@ -282,12 +282,15 @@ class Task(object):
             self.watcherPackages = watcherPackages
         else:
             rezResolve = os.environ.get('REZ_USED_RESOLVE', '')
-            for package in rezResolve:
+            for package in rezResolve.split():
                 if package.startswith('pulicontrib'):
                     self.watcherPackages = "%s %s" % (self.watcherPackages, package)
 
-                    # print("runner packages: %s" % self.runnerPackages)
-                    # print("watcher packages: %s" % self.watcherPackages)
+        # HACK JSA: force python 2.7.2 to preserve compatibility with VFX pipe jobs (pb when instancing scripts with local version of python)
+        self.watcherPackages = "%s python-2.7.2" % (self.watcherPackages)
+
+        print("runner packages: %s" % self.runnerPackages)
+        print("watcher packages: %s" % self.watcherPackages)
 
     def updateTags(self, pTags):
         """

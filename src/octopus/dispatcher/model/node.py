@@ -557,24 +557,21 @@ class TaskNode(BaseNode):
         if ep is None:
             ep = self
 
-        # PRA : can we have several poolShares for one job ?
-        # Exception when the pool of a job is changed and some command are still in computation
-        for poolShare in ep.poolShares.values():
-            # We need some RNs dedicated to this job available
-            if not poolShare.hasRenderNodesAvailable():
-                raise NoRenderNodeAvailable
-
-            # Sort the RNs according to their performance value
-            rnList = sorted(poolShare.pool.renderNodes, key=lambda rn: rn.performance, reverse=True)
+        for poolshare in [poolShare for poolShare in ep.poolShares.values() if poolShare.hasRenderNodesAvailable()]:
+            # first, sort the rendernodes according their performance value
+            rnList = sorted(poolshare.pool.renderNodes, key=lambda rn: rn.performance, reverse=True)
             for rendernode in rnList:
-                # Check for a suitable RN : ie available and respecting the constraints for this command
                 if rendernode.isAvailable() and rendernode.canRun(command):
-                    # Check licence
-                    if not rendernode.reserveLicense(command, self.dispatcher.licenseManager):
+                    if rendernode.reserveLicense(command, self.dispatcher.licenseManager):
+                        rendernode.addAssignment(command)
+                        return rendernode
+                    else:
                         raise NoLicenseAvailableForTask
-                    rendernode.addAssignment(command)
-                    return rendernode
-        # PRA : Can happen if there are available RNs but they don't match the command constraint
+
+        # Might not be necessary anymore because first loop is based on poolShare's hasRNSavailable method
+        # It was not taking into account the tests before assignment: RN.canRun()
+        if not [poolShare for poolShare in ep.poolShares.values() if poolShare.hasRenderNodesAvailable()]:
+            raise NoRenderNodeAvailable
         return None
 
     def updateCompletionAndStatus(self):

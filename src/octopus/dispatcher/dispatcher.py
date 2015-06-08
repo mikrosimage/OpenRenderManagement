@@ -459,13 +459,19 @@ class Dispatcher(MainLoopApplication):
             # If we have dedicated render nodes for this poolShare
             if not any([poolShare.hasRenderNodesAvailable() for poolShare in entryPoint.poolShares.values()]):
                 continue
-
-            for (rn, com) in entryPoint.dispatchIterator(lambda: self.queue.qsize() > 0):
-                assignments.append((rn, com))
-                # increment the allocatedRN for the poolshare
-                entryPoint.mainPoolShare().allocatedRN += 1
-                # save the active poolshare of the rendernode
-                rn.currentpoolshare = entryPoint.mainPoolShare()
+	    
+	    try:
+	        for (rn, com) in entryPoint.dispatchIterator(lambda: self.queue.qsize() > 0):
+        	    assignments.append((rn, com))
+        	    # increment the allocatedRN for the poolshare
+        	    entryPoint.mainPoolShare().allocatedRN += 1
+        	    # save the active poolshare of the rendernode
+        	    rn.currentpoolshare = entryPoint.mainPoolShare()
+	    except NoRenderNodeAvailable:
+                 pass
+ 	    except NoLicenseAvailableForTask:
+                 LOGGER.info("Missing license for node \"%s\" (other commands can start anyway)." % entryPoint.name)
+		 pass
 
         assignmentDict = collections.defaultdict(list)
         for (rn, com) in assignments:

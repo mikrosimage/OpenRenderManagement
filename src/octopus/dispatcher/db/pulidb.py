@@ -578,6 +578,7 @@ class PuliDB(object):
                 conn.cache.clear()
             elif isinstance(element, RenderNode):
                 StatDB.archiveRenderNode(self, element)
+                conn = RenderNodes._connection
                 conn.query(conn.sqlrepr(Delete(RenderNodes.q, where=(RenderNodes.q.id == element.id))))
                 conn.cache.clear()
 
@@ -1168,43 +1169,80 @@ class PuliDB(object):
 
         ### calculate the correct max ids for all elements, get them from db in case of archived elements that would not appear in the dispatchtree
         prevTimer = time.time()
+        statConn = StatDB.createConnection()
         try:
-            tree.nodeMaxId = int(max([FolderNodes.select().max(FolderNodes.q.id), TaskNodes.select().max(TaskNodes.q.id)]))
+            folderConn = FolderNodes._connection
+            taskConn = TaskNodes._connection
+            FolderNodes._connection = statConn
+            TaskNodes._connection = statConn
+            #adding 0 to max([...]) to avoid TypeError if stat table is empty
+            statMaxId = int(max([FolderNodes.select().max(FolderNodes.q.id), TaskNodes.select().max(TaskNodes.q.id), 0]))
+            FolderNodes._connection = folderConn
+            TaskNodes._connection = taskConn
+            tree.nodeMaxId = int(max([FolderNodes.select().max(FolderNodes.q.id), TaskNodes.select().max(TaskNodes.q.id), statMaxId]))
         except:
             tree.nodeMaxId = 0
         LOGGER.warning("  - Set max id for nodes in %.3f s" % (time.time()-prevTimer))
 
         prevTimer = time.time()
         try:
-            tree.poolMaxId = int(Pools.select().max(Pools.q.id))
+            conn = Pools._connection
+            Pools._connection = statConn
+            #adding 0 to max([...]) to avoid TypeError if stat table is empty
+            statMaxId = int(max([Pools.select().max(Pools.q.id),0]))
+            Pools._connection = conn
+            tree.poolMaxId = int(max([Pools.select().max(Pools.q.id), statMaxId]))
         except:
             tree.poolMaxId = 0
         LOGGER.warning("  - Set max id for pools in %.3f s" % (time.time()-prevTimer))
 
         prevTimer = time.time()
         try:
-            tree.renderNodeMaxId = int(RenderNodes.select().max(RenderNodes.q.id))
+            conn = RenderNodes._connection
+            RenderNodes._connection = statConn
+            #adding 0 to max([...]) to avoid TypeError if stat table is empty
+            statMaxId = int(max([RenderNodes.select().max(RenderNodes.q.id),0]))
+            RenderNodes._connection = conn
+            tree.renderNodeMaxId = int(max([RenderNodes.select().max(RenderNodes.q.id),statMaxId ]))
         except:
             tree.renderNodeMaxId = 0
         LOGGER.warning("  - Set max id for render nodes in %.3f s" % (time.time()-prevTimer))
 
         prevTimer = time.time()
         try:
-            tree.taskMaxId = int(Tasks.select().max(Tasks.q.id))
+            taskConn = Tasks._connection
+            taskGroupConn = TaskGroups._connection
+            Tasks._connection = statConn
+            TaskGroups._connection = statConn
+            #adding 0 to max([...]) to avoid TypeError if stat table is empty
+            statMaxId = int(max([Tasks.select().max(Tasks.q.id), TaskGroups.select().max(TaskGroups.q.id),0]))
+            Tasks._connection = taskConn
+            TaskGroups._connection = taskGroupConn
+            tree.taskMaxId = int(max([Tasks.select().max(Tasks.q.id), TaskGroups.select().max(TaskGroups.q.id), statMaxId ]))
         except:
             tree.taskMaxId = 0
         LOGGER.warning("  - Set max id for tasks in %.3f s" % (time.time()-prevTimer))
 
         prevTimer = time.time()
         try:
-            tree.commandMaxId = int(Commands.select().max(Commands.q.id))
+            conn = Commands._connection
+            Commands._connection = statConn
+            #adding 0 to max([...]) to avoid TypeError if stat table is empty
+            statMaxId = int(max([Commands.select().max(Commands.q.id),0]))
+            Commands._connection = conn
+            tree.commandMaxId = int(max([Commands.select().max(Commands.q.id),statMaxId ]))
         except:
             tree.commandMaxId = 0
         LOGGER.warning("  - Set max id for commands in %.3f s" % (time.time()-prevTimer))
 
         prevTimer = time.time()
         try:
-            tree.poolShareMaxId = int(PoolShares.select().max(PoolShares.q.id))
+            conn = PoolShares._connection
+            PoolShares._connection = statConn
+            #adding 0 to max([...]) to avoid TypeError if stat table is empty
+            statMaxId = int(max([PoolShares.select().max(PoolShares.q.id),0]))
+            PoolShares._connection = conn
+            tree.poolShareMaxId = int(max([PoolShares.select().max(PoolShares.q.id),statMaxId ]))
         except:
             tree.poolShareMaxId = 0
         LOGGER.warning("  - Set max id for pool shares in %.3f s" % (time.time()-prevTimer))
@@ -1411,3 +1449,44 @@ class StatDB():
                   PoolShares.q.archived.fieldName: True}
         conn.query(conn.sqlrepr(Insert(PoolShares.q, values=fields)))
 
+    @staticmethod
+    def getMaxID(Table):
+        conn = Table._connection
+        Table._connection = StatDB.createConnection()
+        result = Table.select().max(Table.q.id)
+        Table._connection = conn
+        if result:
+            return int(result)
+        return 0
+
+    @staticmethod
+    def getRenderNodesMaxId():
+        return StatDB.getMaxID(RenderNodes)
+
+    @staticmethod
+    def getFolderNodesMaxId():
+        return StatDB.getMaxID(FolderNodes)
+
+    @staticmethod
+    def getTaskNodesMaxId():
+        return StatDB.getMaxID(TaskNodes)
+
+    @staticmethod
+    def getTasksMaxId():
+        return StatDB.getMaxID(Tasks)
+
+    @staticmethod
+    def getTaskGroupsMaxId():
+        return getMaxID(TaskGroups)
+
+    @staticmethod
+    def getPoolsMaxId():
+        return StatDB.getMaxID(Pools)
+
+    @staticmethod
+    def getPoolSharesMaxId():
+        return StatDB.getMaxID(PoolShares)
+
+    @staticmethod
+    def getCommandsMaxId():
+        return StatDB.getMaxID(Commands)

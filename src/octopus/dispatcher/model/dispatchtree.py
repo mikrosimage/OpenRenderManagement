@@ -10,6 +10,7 @@ from octopus.dispatcher.model.node import BaseNode
 from octopus.dispatcher.strategies import FifoStrategy, loadStrategyClass
 from octopus.core.enums.command import *
 from octopus.dispatcher.rules import RuleError
+from octopus.dispatcher.db.pulidb import StatDB
 
 logger = logging.getLogger('main.dispatcher.dispatchtree')
 
@@ -338,11 +339,17 @@ class DispatchTree(object):
     #
     def recomputeMaxIds(self):
         self.nodeMaxId = max([n.id for n in self.nodes.values()]) if self.nodes else 0
+        self.nodeMaxId = max(self.nodeMaxId, StatDB.getFolderNodesMaxId(), StatDB.getTaskNodesMaxId())
         self.poolMaxId = max([p.id for p in self.pools.values()]) if self.pools else 0
+        self.poolMaxId = max(self.poolMaxId,  StatDB.getPoolsMaxId())
         self.renderNodeMaxId = max([rn.id for rn in self.renderNodes.values()]) if self.renderNodes else 0
+        self.renderNodeMaxId = max(self.renderNodeMaxId, StatDB.getRenderNodesMaxId())
         self.taskMaxId = max([t.id for t in self.tasks.values()]) if self.tasks else 0
+        self.taskMaxId = max(self.taskMaxId , StatDB.getTasksMaxId())
         self.commandMaxId = max([c.id for c in self.commands.values()]) if self.commands else 0
+        self.commandMaxId = max(self.commandMaxId, StatDB.getCommandsMaxId())
         self.poolShareMaxId = max([ps.id for ps in self.poolShares.values()]) if self.poolShares else 0
+        self.poolShareMaxId = max(self.poolShareMaxId, StatDB.getPoolSharesMaxId())
 
     ## Removes from the dispatchtree the provided element and all its parents and children.
     #
@@ -419,7 +426,7 @@ class DispatchTree(object):
             task.id = self.taskMaxId
             self.toCreateElements.append(task)
         else:
-            self.taskMaxId = max(self.taskMaxId, task.id)
+            self.taskMaxId = max(self.taskMaxId, task.id, StatDB.getTasksMaxId())
         self.tasks[task.id] = task
 
     def onTaskDestruction(self, task):
@@ -446,7 +453,7 @@ class DispatchTree(object):
             node.id = self.nodeMaxId
             self.toCreateElements.append(node)
         else:
-            self.nodeMaxId = max(self.nodeMaxId, node.id)
+            self.nodeMaxId = max(self.nodeMaxId, node.id, StatDB.getFolderNodesMaxId(), StatDB.getTaskNodesMaxId())
         if node.parent is None:
             node.parent = self.root
 
@@ -470,7 +477,7 @@ class DispatchTree(object):
             renderNode.id = self.renderNodeMaxId
             self.toCreateElements.append(renderNode)
         else:
-            self.renderNodeMaxId = max(self.renderNodeMaxId, renderNode.id)
+            self.renderNodeMaxId = max(self.renderNodeMaxId, renderNode.id, StatDB.getRenderNodesMaxId())
         self.renderNodes[renderNode.name] = renderNode
 
     def onRenderNodeDestruction(self, rendernode):
@@ -493,7 +500,7 @@ class DispatchTree(object):
             pool.id = self.poolMaxId
             self.toCreateElements.append(pool)
         else:
-            self.poolMaxId = max(self.poolMaxId, pool.id)
+            self.poolMaxId = max(self.poolMaxId, pool.id, StatDB.getPoolsMaxId())
         self.pools[pool.name] = pool
 
     def onPoolDestruction(self, pool):
@@ -512,7 +519,7 @@ class DispatchTree(object):
             command.id = self.commandMaxId
             self.toCreateElements.append(command)
         else:
-            self.commandMaxId = max(self.commandMaxId, command.id)
+            self.commandMaxId = max(self.commandMaxId, command.id, StatDB.getCommandsMaxId())
         self.commands[command.id] = command
 
     def onCommandChange(self, command, field, oldvalue, newvalue):
@@ -529,5 +536,5 @@ class DispatchTree(object):
             poolShare.id = self.poolShareMaxId
             self.toCreateElements.append(poolShare)
         else:
-            self.poolShareMaxId = max(self.poolShareMaxId, poolShare.id)
+            self.poolShareMaxId = max(self.poolShareMaxId, poolShare.id, StatDB.getPoolSharesMaxId())
         self.poolShares[poolShare.id] = poolShare

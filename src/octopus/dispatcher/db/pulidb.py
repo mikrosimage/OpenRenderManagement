@@ -578,6 +578,7 @@ class PuliDB(object):
                 conn.cache.clear()
             elif isinstance(element, RenderNode):
                 StatDB.archiveRenderNode(self, element)
+                conn = RenderNodes._connection
                 conn.query(conn.sqlrepr(Delete(RenderNodes.q, where=(RenderNodes.q.id == element.id))))
                 conn.cache.clear()
 

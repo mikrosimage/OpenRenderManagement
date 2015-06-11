@@ -1449,3 +1449,44 @@ class StatDB():
                   PoolShares.q.archived.fieldName: True}
         conn.query(conn.sqlrepr(Insert(PoolShares.q, values=fields)))
 
+    @staticmethod
+    def getMaxID(Table):
+        conn = Table._connection
+        Table._connection = StatDB.createConnection()
+        result = Table.select().max(Table.q.id)
+        Table._connection = conn
+        if result:
+            return int(result)
+        return 0
+
+    @staticmethod
+    def getRenderNodesMaxId():
+        return StatDB.getMaxID(RenderNodes)
+
+    @staticmethod
+    def getFolderNodesMaxId():
+        return StatDB.getMaxID(FolderNodes)
+
+    @staticmethod
+    def getTaskNodesMaxId():
+        return StatDB.getMaxID(TaskNodes)
+
+    @staticmethod
+    def getTasksMaxId():
+        return StatDB.getMaxID(Tasks)
+
+    @staticmethod
+    def getTaskGroupsMaxId():
+        return getMaxID(TaskGroups)
+
+    @staticmethod
+    def getPoolsMaxId():
+        return StatDB.getMaxID(Pools)
+
+    @staticmethod
+    def getPoolSharesMaxId():
+        return StatDB.getMaxID(PoolShares)
+
+    @staticmethod
+    def getCommandsMaxId():
+        return StatDB.getMaxID(Commands)

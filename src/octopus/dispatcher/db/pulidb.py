@@ -541,46 +541,49 @@ class PuliDB(object):
         if not len(elements):
             return
         for element in elements:
-            if isinstance(element, Task):
-                StatDB.archiveTask(self, element)
-                conn = Tasks._connection
-                conn.query(conn.sqlrepr(Delete(Tasks.q, where=(Tasks.q.id==element.id))))
-                conn.cache.clear()
-            elif isinstance(element, TaskGroup):
-                StatDB.archiveTaskGroup(self, element)
-                conn = TaskGroups._connection
-                conn.query(conn.sqlrepr(Delete(TaskGroups.q, where=(TaskGroups.q.id == element.id))))
-                conn.cache.clear()
-            elif isinstance(element, Command):
-                StatDB.archiveCommand(self, element)
-                conn = Commands._connection
-                conn.query(conn.sqlrepr(Delete(Commands.q, where=(Commands.q.id == element.id))))
-                conn.cache.clear()
-            elif isinstance(element, TaskNode):
-                StatDB.archiveTaskNode(self, element)
-                conn = TaskNodes._connection
-                conn.query(conn.sqlrepr(Delete(TaskNodes.q, where=(TaskNodes.q.id == element.id))))
-                conn.cache.clear()
-            elif isinstance(element, FolderNode):
-                StatDB.archiveFolderNode(self, element)
-                conn = FolderNodes._connection
-                conn.query(conn.sqlrepr(Delete(FolderNodes.q, where=(FolderNodes.q.id == element.id))))
-                conn.cache.clear()
-            elif isinstance(element, Pool):
-                StatDB.archivePool(self, element)
-                conn = Pools._connection
-                conn.query(conn.sqlrepr(Delete(Pools.q, where=(Pools.q.id == element.id))))
-                conn.cache.clear()
-            elif isinstance(element, PoolShare):
-                StatDB.archivePoolShare(self, element)
-                conn = PoolShares._connection
-                conn.query(conn.sqlrepr(Delete(PoolShares.q, where=(PoolShares.q.id == element.id))))
-                conn.cache.clear()
-            elif isinstance(element, RenderNode):
-                StatDB.archiveRenderNode(self, element)
-                conn = RenderNodes._connection
-                conn.query(conn.sqlrepr(Delete(RenderNodes.q, where=(RenderNodes.q.id == element.id))))
-                conn.cache.clear()
+            try:
+                if isinstance(element, Task):
+                    StatDB.archiveTask(self, element)
+                    conn = Tasks._connection
+                    conn.query(conn.sqlrepr(Delete(Tasks.q, where=(Tasks.q.id==element.id))))
+                    conn.cache.clear()
+                elif isinstance(element, TaskGroup):
+                    StatDB.archiveTaskGroup(self, element)
+                    conn = TaskGroups._connection
+                    conn.query(conn.sqlrepr(Delete(TaskGroups.q, where=(TaskGroups.q.id == element.id))))
+                    conn.cache.clear()
+                elif isinstance(element, Command):
+                    StatDB.archiveCommand(self, element)
+                    conn = Commands._connection
+                    conn.query(conn.sqlrepr(Delete(Commands.q, where=(Commands.q.id == element.id))))
+                    conn.cache.clear()
+                elif isinstance(element, TaskNode):
+                    StatDB.archiveTaskNode(self, element)
+                    conn = TaskNodes._connection
+                    conn.query(conn.sqlrepr(Delete(TaskNodes.q, where=(TaskNodes.q.id == element.id))))
+                    conn.cache.clear()
+                elif isinstance(element, FolderNode):
+                    StatDB.archiveFolderNode(self, element)
+                    conn = FolderNodes._connection
+                    conn.query(conn.sqlrepr(Delete(FolderNodes.q, where=(FolderNodes.q.id == element.id))))
+                    conn.cache.clear()
+                elif isinstance(element, Pool):
+                    StatDB.archivePool(self, element)
+                    conn = Pools._connection
+                    conn.query(conn.sqlrepr(Delete(Pools.q, where=(Pools.q.id == element.id))))
+                    conn.cache.clear()
+                elif isinstance(element, PoolShare):
+                    StatDB.archivePoolShare(self, element)
+                    conn = PoolShares._connection
+                    conn.query(conn.sqlrepr(Delete(PoolShares.q, where=(PoolShares.q.id == element.id))))
+                    conn.cache.clear()
+                elif isinstance(element, RenderNode):
+                    StatDB.archiveRenderNode(self, element)
+                    conn = RenderNodes._connection
+                    conn.query(conn.sqlrepr(Delete(RenderNodes.q, where=(RenderNodes.q.id == element.id))))
+                    conn.cache.clear()
+            except DuplicateEntryError:
+                LOGGER.warning(str(element) + " was not archived because it is already in the stat DB. Consider manual fix.")
 
     def getDateFromTimeStamp(self, timeStamp):
         return datetime.datetime.fromtimestamp(timeStamp) if timeStamp else None

@@ -345,7 +345,7 @@ class DispatchTree(object):
         self.renderNodeMaxId = max([rn.id for rn in self.renderNodes.values()]) if self.renderNodes else 0
         self.renderNodeMaxId = max(self.renderNodeMaxId, StatDB.getRenderNodesMaxId())
         self.taskMaxId = max([t.id for t in self.tasks.values()]) if self.tasks else 0
-        self.taskMaxId = max(self.taskMaxId , StatDB.getTasksMaxId())
+        self.taskMaxId = max(self.taskMaxId , StatDB.getTasksMaxId(), StatDB.getTaskGroupsMaxId())
         self.commandMaxId = max([c.id for c in self.commands.values()]) if self.commands else 0
         self.commandMaxId = max(self.commandMaxId, StatDB.getCommandsMaxId())
         self.poolShareMaxId = max([ps.id for ps in self.poolShares.values()]) if self.poolShares else 0
@@ -426,7 +426,7 @@ class DispatchTree(object):
             task.id = self.taskMaxId
             self.toCreateElements.append(task)
         else:
-            self.taskMaxId = max(self.taskMaxId, task.id, StatDB.getTasksMaxId())
+            self.taskMaxId = max(self.taskMaxId, task.id, StatDB.getTasksMaxId(), StatDB.getTaskGroupsMaxId())
         self.tasks[task.id] = task
 
     def onTaskDestruction(self, task):

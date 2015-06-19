@@ -15,6 +15,7 @@ from sqlobject import (SQLObject, UnicodeCol, IntCol, FloatCol, DateTimeCol,
                        ForeignKey, sqlhub)
 # from sqlobject.sqlbuilder import *
 from sqlobject.sqlbuilder import Insert, Update, IN, Select, Table, AND, INNERJOINOn, Delete
+from sqlobject.dberrors import DuplicateEntryError
 
 from collections import defaultdict
 import datetime
@@ -1480,7 +1481,7 @@ class StatDB():
 
     @staticmethod
     def getTaskGroupsMaxId():
-        return getMaxID(TaskGroups)
+        return StatDB.getMaxID(TaskGroups)
 
     @staticmethod
     def getPoolsMaxId():

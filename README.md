@@ -80,10 +80,17 @@ Execute the following mysql commands to create the database and the dedicated us
 
 ```sql
 create database pulidb character set utf8;
+create database pulistatdb character set utf8;
+
 create user puliuser identified by 'yourpasswd';
 grant all privileges on pulidb.* 
       to 'puliuser'@'localhost' 
       identified by 'yourpasswd' with grant option;
+
+grant all privileges on pulistatdb.* 
+      to 'puliuser'@'localhost' 
+      identified by 'yourpasswd' with grant option;
+
 ```
 
 ### Installation and configuration
@@ -111,6 +118,7 @@ POOLS_BACKEND_TYPE = "file"
 DB_ENABLE = True
 DB_CLEAN_DATA = True
 DB_URL = "mysql://puliuser:yourpasswd@127.0.0.1/pulidb"
+STAT_DB_URL = "mysql://puliuser:yourpasswd@127.0.0.1/pulistatdb"
 ```
 ### First launch
 

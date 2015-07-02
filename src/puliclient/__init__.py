@@ -286,11 +286,6 @@ class Task(object):
                 if package.startswith('pulicontrib'):
                     self.watcherPackages = "%s %s" % (self.watcherPackages, package)
 
-        # HACK JSA: force python 2.7.2 to preserve compatibility with VFX pipe jobs (pb when instancing scripts with local version of python)
-        self.watcherPackages = "%s python-2.7.2" % (self.watcherPackages)
-
-        print("runner packages: %s" % self.runnerPackages)
-        print("watcher packages: %s" % self.watcherPackages)
 
     def updateTags(self, pTags):
         """

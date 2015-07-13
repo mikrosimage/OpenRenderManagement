@@ -76,3 +76,5 @@ RUN_AS = ""
 LOGDIR = "/var/log/puli"
 
 LIMIT_OPEN_FILES = 32768
+
+PIDFILES_TO_KEEP=["/var/run/tractor-blade.pid","/var/run/hqueue.pid" ]

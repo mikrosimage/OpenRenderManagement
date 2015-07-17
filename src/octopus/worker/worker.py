@@ -510,6 +510,21 @@ class Worker(MainLoopApplication):
             commandWatcher.finished = True
         self.ensureNoMoreRender()
 
+    @staticmethod
+    def getToKeepPIDs(self):
+        result = []
+        for pIDFileStr in settings.PIDFILES_TO_KEEP:
+            try:
+                pIDFile = open(pIDFileStr, 'r')
+                if pIDFile :
+                    pid = pIDFile.read()
+                    if pid :
+                        result.append(int(pid.rstrip('\n')))
+            except:
+                continue
+        return result
+
+
     def ensureNoMoreRender(self):
         """
         Force kill of all process attached to the current EUID. this ensures that all command processes have been killed.
@@ -518,7 +533,7 @@ class Worker(MainLoopApplication):
 
         try:
             # Ensure we don't have anymore rendering process
-            keepPID = [os.getpid(), os.getppid()]
+            keepPID = [os.getpid(), os.getppid()].extend(self.getToKeepPIDs())
             effectiveUID = os.geteuid()
             LOGGER.debug("PID to keep: %r" % keepPID)
 

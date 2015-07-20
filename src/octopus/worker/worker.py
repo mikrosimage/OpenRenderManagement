@@ -511,7 +511,7 @@ class Worker(MainLoopApplication):
         self.ensureNoMoreRender()
 
     @staticmethod
-    def getToKeepPIDs(self):
+    def getToKeepPIDs():
         result = []
         for pIDFileStr in settings.PIDFILES_TO_KEEP:
             try:

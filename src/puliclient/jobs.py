@@ -347,6 +347,7 @@ class DefaultTaskDecomposer(TaskDecomposer):
     # DEFAULT FIELDS USED TO DECOMPOSE A TASK
     START_LABEL = "start"
     END_LABEL = "end"
+    STEP_LABEL = "step"
     PACKETSIZE_LABEL = "packetSize"
     FRAMESLIST_LABEL = "framesList"
 
@@ -368,10 +369,11 @@ class DefaultTaskDecomposer(TaskDecomposer):
 
             start = task.arguments.get(self.START_LABEL, 1)
             end = task.arguments.get(self.END_LABEL, 1)
+            step = task.arguments.get(self.STEP_LABEL, 1)
             packetSize = task.arguments.get(self.PACKETSIZE_LABEL, 1)
             framesList = task.arguments.get(self.FRAMESLIST_LABEL, "")
 
-            self.decompose(start=start, end=end, packetSize=packetSize, callback=self, framesList=framesList)
+            self.decompose(start=start, end=end, step=step, packetSize=packetSize, callback=self, framesList=framesList)
 
         else:
             # If arguments given but no standard behaviour, simply transmit task arguments to single command
@@ -393,11 +395,12 @@ class DefaultTaskDecomposer(TaskDecomposer):
         cmdName = "%s_%s_%s" % (self.task.name, str(packetStart), str(packetEnd))
         self.task.addCommand(cmdName, cmdArgs)
 
-    def decompose(self, start, end, packetSize, callback, framesList=""):
+    def decompose(self, start, end, step, packetSize, callback, framesList=""):
         ''' Method extracted from PuliActionHelper. Default behaviour for decompozing a task.
 
         :param start: Integer representing the first frame
         :param end: Integer representing the last frame
+        :param step: Integer representing the steps
         :param packetSize: The number of frames to process in each command
         :param callback: A specific callback given to replace default's "addCommand" if necessary
         :param framesList: A string representing a list of frames
@@ -430,18 +433,22 @@ class DefaultTaskDecomposer(TaskDecomposer):
             start = int(start)
             end = int(end)
 
-            length = end - start + 1
-            fullPacketCount, lastPacketCount = divmod(length, packetSize)
+            packetCount = (end - start) // packetSize + 1
+            stepCount = packetCount // step
+            commandCount = (end - start + 1) - (step-1) * stepCount
+            fullPacketCount, lastPacketCount = divmod(commandCount, packetSize)
 
-            if length < packetSize:
+            if commandCount < packetSize:
                 callback.addCommand(start, end)
             else:
                 for i in range(fullPacketCount):
-                    packetStart = start + i * packetSize
+                    packetStart = start + i * (packetSize + step - 1)
                     packetEnd = packetStart + packetSize - 1
                     callback.addCommand(packetStart, packetEnd)
                 if lastPacketCount:
-                    packetStart = start + (i + 1) * packetSize
+                    packetStart = start + (i + 1) * (packetSize + step - 1)
+                    if packetStart > end:
+                        return
                     callback.addCommand(packetStart, end)
 
 

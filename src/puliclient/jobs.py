@@ -322,6 +322,7 @@ class TaskExpander(object):
 class TaskDecomposer(object):
     """
     | Base class for Decomposer hierarchy.
+
     | Implements a minimalist "addCommand" method.
     """
 
@@ -404,6 +405,8 @@ class DefaultTaskDecomposer(TaskDecomposer):
         :param packetSize: The number of frames to process in each command
         :param callback: A specific callback given to replace default's "addCommand" if necessary
         :param framesList: A string representing a list of frames
+
+        .. note:: packetSize has priority on step
         '''
         packetSize = int(packetSize)
         if len(framesList) != 0:
@@ -433,24 +436,24 @@ class DefaultTaskDecomposer(TaskDecomposer):
             start = int(start)
             end = int(end)
 
-            packetCount = (end - start) // packetSize + 1
-            stepCount = packetCount // step
-            commandCount = (end - start + 1) - (step-1) * stepCount
-            fullPacketCount, lastPacketCount = divmod(commandCount, packetSize)
+            if packetSize > 1:
+                length = end - start + 1
+                fullPacketCount, lastPacketCount = divmod(length, packetSize)
 
-            if commandCount < packetSize:
-                callback.addCommand(start, end)
-            else:
-                for i in range(fullPacketCount):
-                    packetStart = start + i * (packetSize + step - 1)
-                    packetEnd = packetStart + packetSize - 1
-                    callback.addCommand(packetStart, packetEnd)
-                if lastPacketCount:
-                    packetStart = start + (i + 1) * (packetSize + step - 1)
-                    if packetStart > end:
-                        return
-                    callback.addCommand(packetStart, end)
-
+                if length < packetSize:
+                    callback.addCommand(start, end)
+                else:
+                    for i in range(fullPacketCount):
+                        packetStart = start + i * packetSize
+                        packetEnd = packetStart + packetSize - 1
+                        callback.addCommand(packetStart, packetEnd)
+                    if lastPacketCount:
+                        packetStart = start + (i + 1) * packetSize
+                        callback.addCommand(packetStart, end)
+            elif step > 1:
+                frames = range(start, end, step)
+                for frame in frames:
+                    callback.addCommand(frame, frame)
 
 def _load(name, motherClass):
     try:

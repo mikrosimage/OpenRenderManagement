@@ -271,7 +271,7 @@ class Task(object):
         self.timer = timer
         self.maxAttempt = maxAttempt
         self.runnerPackages = None
-        self.watcherPackages = 'pulicontrib'
+        self.watcherPackages = ''
 
         if runnerPackages:
             self.runnerPackages = runnerPackages
